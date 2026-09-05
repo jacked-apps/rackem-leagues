@@ -17,7 +17,7 @@ import { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { RELEASES, UNRELEASED, type Release } from './releases';
-import { earlierReleases, resolveRelease } from './releaseSelectors';
+import { earlierReleases, groupEntries, resolveRelease } from './releaseSelectors';
 import { useMarkWhatsNewSeen } from './useWhatsNewSeen';
 
 /** "March 4, 2026" — or "Coming soon" for the block still being written. */
@@ -76,21 +76,30 @@ export default function WhatsNewPage() {
             {release.noUserFacingChanges ? (
               <p className="text-foreground">{release.noUserFacingChanges}</p>
             ) : (
-              <ul className="space-y-3 text-foreground">
-                {release.entries.map((entry, i) => (
-                  <li key={i} className="flex items-start">
-                    <span className="mr-2" aria-hidden="true">•</span>
-                    <span>
-                      {entry.text}
-                      {entry.forOperators && (
-                        <span className="ml-2 whitespace-nowrap rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
-                          For league operators
-                        </span>
-                      )}
-                    </span>
-                  </li>
+              <div className="space-y-5">
+                {groupEntries(release.entries).map((group) => (
+                  <div key={group.kind}>
+                    <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                      {group.heading}
+                    </h3>
+                    <ul className="space-y-3 text-foreground">
+                      {group.entries.map((entry, i) => (
+                        <li key={i} className="flex items-start">
+                          <span className="mr-2" aria-hidden="true">•</span>
+                          <span>
+                            {entry.text}
+                            {entry.forOperators && (
+                              <span className="ml-2 whitespace-nowrap rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+                                For league operators
+                              </span>
+                            )}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </section>
         )}

@@ -10,6 +10,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  groupEntries,
   earlierReleases,
   isReleased,
   latestReleasedVersion,
@@ -140,5 +141,47 @@ describe('releasedVersions', () => {
       '1.9.0',
       '1.8.0',
     ]);
+  });
+});
+
+describe('groupEntries', () => {
+  const entries = [
+    { text: 'a fix', kind: 'fix' as const },
+    { text: 'a feature', kind: 'feature' as const },
+    { text: 'an improvement', kind: 'improvement' as const },
+    { text: 'another feature', kind: 'feature' as const },
+  ];
+
+  it('puts New first and Fixed last', () => {
+    // A big feature buried between two small fixes gets missed.
+    expect(groupEntries(entries).map((g) => g.heading)).toEqual([
+      'New',
+      'Improved',
+      'Fixed',
+    ]);
+  });
+
+  it('keeps authored order within a group', () => {
+    // That order is the writer's judgement about what matters most; no
+    // automatic rule beats it.
+    const features = groupEntries(entries)[0].entries.map((e) => e.text);
+    expect(features).toEqual(['a feature', 'another feature']);
+  });
+
+  it('treats an untagged entry as an improvement rather than dropping it', () => {
+    // An entry must never vanish from the page because someone omitted a field.
+    const groups = groupEntries([{ text: 'no kind given' }]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].heading).toBe('Improved');
+    expect(groups[0].entries[0].text).toBe('no kind given');
+  });
+
+  it('drops empty groups so no bare heading renders', () => {
+    const groups = groupEntries([{ text: 'only a fix', kind: 'fix' }]);
+    expect(groups.map((g) => g.heading)).toEqual(['Fixed']);
+  });
+
+  it('returns nothing for no entries', () => {
+    expect(groupEntries([])).toEqual([]);
   });
 });

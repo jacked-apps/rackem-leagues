@@ -111,3 +111,46 @@ describe('PWAUpdatePrompt', () => {
     expect(reload).not.toHaveBeenCalled();
   });
 });
+
+describe('PWAUpdatePrompt — "Show me what\'s new"', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+  });
+
+  it('is ticked by default', () => {
+    render(<PWAUpdatePrompt />);
+    expect(screen.getByTestId('show-whats-new')).toBeChecked();
+  });
+
+  it('hands the intent to sessionStorage so it survives the reload', async () => {
+    // The update reloads the page, which wipes React state — storage is the
+    // only way the choice reaches the other side.
+    render(<PWAUpdatePrompt />);
+    fireEvent.click(screen.getByRole('button', { name: /update now/i }));
+
+    await waitFor(() =>
+      expect(sessionStorage.getItem('rackem:show-whats-new-after-update')).toBe('1')
+    );
+  });
+
+  it('sets no flag when unticked, so they stay where they are', async () => {
+    render(<PWAUpdatePrompt />);
+    fireEvent.click(screen.getByTestId('show-whats-new'));
+    fireEvent.click(screen.getByRole('button', { name: /update now/i }));
+
+    await waitFor(() => expect(updateServiceWorker).toHaveBeenCalled());
+    expect(sessionStorage.getItem('rackem:show-whats-new-after-update')).toBeNull();
+  });
+
+  it('remembers unticking, so it is asked once rather than every release', async () => {
+    const { unmount } = render(<PWAUpdatePrompt />);
+    fireEvent.click(screen.getByTestId('show-whats-new'));
+    fireEvent.click(screen.getByRole('button', { name: /update now/i }));
+    await waitFor(() => expect(updateServiceWorker).toHaveBeenCalled());
+    unmount();
+
+    render(<PWAUpdatePrompt />);
+    expect(screen.getByTestId('show-whats-new')).not.toBeChecked();
+  });
+});

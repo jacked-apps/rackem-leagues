@@ -31,6 +31,7 @@ import { ResetPassword } from '../login/ResetPassword';
 import { EmailConfirmation } from '../login/EmailConfirmation';
 import { About } from '../about/About';
 import WhatsNewPage from '../whatsNew/WhatsNewPage';
+import { useShowWhatsNewAfterUpdate } from '../whatsNew/useShowWhatsNewAfterUpdate';
 import { Pricing } from '../about/Pricing';
 import { PrivacyPolicy } from '../about/PrivacyPolicy';
 import { NewPlayerForm } from '../newPlayer/NewPlayerForm';
@@ -162,6 +163,10 @@ function withDeveloper(element: React.ReactNode) {
  * This is needed for createBrowserRouter to work with our provider structure
  */
 export function RootLayout() {
+  // If the user ticked "Take me to What's New" before applying an update, this
+  // is where that lands after the reload — inside the router, so it can
+  // navigate. See src/whatsNew/useShowWhatsNewAfterUpdate.ts
+  useShowWhatsNewAfterUpdate();
   return <Outlet />;
 }
 

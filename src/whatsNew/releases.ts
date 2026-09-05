@@ -41,10 +41,25 @@
  * @see docs/plans/2026-09-05-002-feat-whats-new-plan.md
  */
 
+/**
+ * What kind of change this is, which decides where it sits on the page.
+ *
+ * Grouped rather than chronological: a big new feature buried between two small
+ * fixes gets missed, and someone skimming wants the new things first. Fixes go
+ * last — worth publishing, not worth leading with.
+ */
+export type EntryKind = 'feature' | 'improvement' | 'fix';
+
 /** One line on the page. */
 export interface ReleaseEntry {
   /** Plain language, present tense, no jargon. See the writing rules above. */
   text: string;
+  /**
+   * Defaults to `improvement` — the middle ground, and the safest thing for an
+   * untagged entry to be. Reserve `feature` for something genuinely new that a
+   * user could not do before.
+   */
+  kind?: EntryKind;
   /**
    * Marks something only a league operator would care about, so a player can
    * skip it. A tag, not a separate view — one list is one thing to maintain.
@@ -99,34 +114,40 @@ export const RELEASES: Release[] = [
       'Message notifications on your phone, tournament brackets, and an update button that works',
     entries: [
       {
+        text: 'Tournaments: run a single or double elimination bracket for a week off or a special event. Add names, tap the winners, and share a link so anyone can follow along live. It’s free and it doesn’t need a league.',
+        kind: 'feature',
+      },
+      {
         text: 'Messages can now reach your phone even when the app is closed. Tap the notification and it opens straight to that conversation.',
+        kind: 'feature',
       },
       {
         text: 'You decide what comes through. Set quiet hours so nothing arrives overnight, pick a default for each kind of chat, and mute any single conversation on its own.',
+        kind: 'feature',
       },
       {
         text: 'A busy group chat notifies you once and then stays quiet for a few minutes, instead of buzzing for every message. Direct messages always come through.',
+        kind: 'feature',
       },
       {
-        text: 'Your phone was buzzing for the chat you were already reading. It does not any more.',
+        text: 'It won’t buzz for a conversation you’re already reading, and it won’t go off repeatedly for a chat you’ve just checked.',
+        kind: 'improvement',
       },
       {
-        text: 'Only the first message in a conversation was making a sound and the rest arrived silently. Every message announces itself properly now.',
+        text: 'The Update button works properly now, and shows you it’s working.',
+        kind: 'fix',
       },
       {
-        text: 'Tournaments: run a single or double elimination bracket for a bar night or a side event. Add names, tap the winners, and share a link so anyone can follow along live. It is free and it does not need a league.',
+        text: 'In a direct message the other person\u2019s name stays at the top instead of scrolling away, and it\u2019s no longer repeated above every single message.',
+        kind: 'improvement',
       },
       {
-        text: 'For about a week the app could not install its own updates, and tapping Update looked like it did nothing at all. That is fixed. It now shows you it is working and reloads on its own when it is done.',
+        text: 'You can see which version of the app you’re running at the bottom of this page. Worth knowing if something looks wrong and you want to tell us about it.',
+        kind: 'improvement',
       },
       {
-        text: 'In a direct message the other person\u2019s name stays at the top instead of scrolling away, and it is no longer repeated above every single message.',
-      },
-      {
-        text: 'You can see which version of the app you are running at the bottom of this page. Worth knowing if something looks wrong and you want to tell us about it.',
-      },
-      {
-        text: 'This page. From now on you can see what we have changed and when, and look back through earlier releases.',
+        text: 'This "What’s New" page. From now on you can see what we’ve changed and when, and look back through earlier releases.',
+        kind: 'feature',
       },
     ],
   },

@@ -6,7 +6,52 @@
  * without rendering anything.
  */
 
-import { RELEASES, UNRELEASED, type Release } from './releases';
+import {
+  RELEASES,
+  UNRELEASED,
+  type EntryKind,
+  type Release,
+  type ReleaseEntry,
+} from './releases';
+
+/**
+ * The order groups appear, and what each is called on the page.
+ *
+ * New things first: a big feature buried between two small fixes gets missed,
+ * and someone skimming wants what's new before what's mended. Fixes last —
+ * worth publishing, not worth leading with.
+ */
+export const KIND_GROUPS: { kind: EntryKind; heading: string }[] = [
+  { kind: 'feature', heading: 'New' },
+  { kind: 'improvement', heading: 'Improved' },
+  { kind: 'fix', heading: 'Fixed' },
+];
+
+/** A heading plus the entries under it. Empty groups are dropped. */
+export interface EntryGroup {
+  kind: EntryKind;
+  heading: string;
+  entries: ReleaseEntry[];
+}
+
+/**
+ * Split a release's entries into display groups.
+ *
+ * Within a group, authored order is preserved — that's the writer's judgement
+ * about what matters most, and no automatic rule beats it.
+ *
+ * @param entries - The release's entries
+ * @returns Non-empty groups, in display order
+ */
+export function groupEntries(entries: ReleaseEntry[]): EntryGroup[] {
+  return KIND_GROUPS.map(({ kind, heading }) => ({
+    kind,
+    heading,
+    // Untagged defaults to `improvement`, so an entry can never vanish from the
+    // page by omitting a field.
+    entries: entries.filter((e) => (e.kind ?? 'improvement') === kind),
+  })).filter((group) => group.entries.length > 0);
+}
 
 /** True for a real shipped release (excludes the accumulating block). */
 export function isReleased(release: Release): boolean {
