@@ -10,6 +10,9 @@
  *   - `push`            → show a message notification (suppress if already viewing)
  *   - `notificationclick` → focus/open the app at that conversation
  *
+ *   - `message` (SKIP_WAITING) → apply an update; injectManifest does NOT add
+ *     this for us the way generateSW did, and without it nothing can ever update
+ *
  * Registration is unchanged — `src/components/PWAUpdatePrompt.tsx` still drives it
  * via `virtual:pwa-register/react`; we do NOT self-register here. Update posture
  * stays `prompt` (no auto `skipWaiting`).
@@ -35,6 +38,32 @@ declare const self: ServiceWorkerGlobalScope & {
 // --- Precache the app shell (list injected at build time) ---
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
+
+// --- Apply an update when the page asks for one ---
+//
+// THIS IS LOAD-BEARING. `updateServiceWorker(true)` (from the "Update Now"
+// button) posts a SKIP_WAITING message to the waiting worker and then waits for
+// `controllerchange` before reloading. If nothing here listens, the message is
+// dropped, this worker sits in `waiting` forever, `controllerchange` never
+// fires, and the app can NEVER update — the button appears dead on every
+// device, permanently.
+//
+// vite-plugin-pwa injects this automatically under `generateSW`. It does NOT
+// under `injectManifest`, which is what we switched to in order to write our own
+// push handlers — so it has to live here by hand. It was missing between that
+// switch and 2026-09-05, during which no client could take an update.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Take control of already-open pages as soon as we activate, so the reload the
+// page performs is served by THIS worker (and therefore the new precache)
+// rather than the outgoing one.
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 // --- Runtime caching, ported 1:1 from the previous generateSW config ---
 // Supabase API: NetworkFirst, same URL regex, 100 entries / 24h, cache 0+200.
