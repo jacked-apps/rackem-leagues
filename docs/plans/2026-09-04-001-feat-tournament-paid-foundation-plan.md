@@ -26,8 +26,11 @@ This is roadmap item #1 — the identity foundation the other paid features
 - An **organizer roster** of "past players" that pre-fills a **hopper**; three
   ways in (search / share link / QR); a tap-name **manage menu** (eject / set
   paid / add unpaid) that admits players to the **official list**.
-- A **reusable saved setup** (per player) and **durable, tagged results** so paid
-  tournament games can later feed handicaps.
+- A **reusable saved setup** (per player), the **roster**, and a per-user
+  **"tournaments run" count** (free + paid stat). The tournament itself is
+  **disposable** (swept like free); if handicap-feedback (#5) is ever on, a
+  *registered* player's outcomes go to their own record — not kept on the
+  tournament.
 
 **Target branch note:** this builds directly on the free-tier bracket work
 (PR #264, branch `feat/tournament-bracket-free-tier`) — the `brackets` /
@@ -127,9 +130,11 @@ Traces to the origin doc's `PF*` requirements.
   same-name via nickname + player number + home; eject ≠ persistent ban.
 - **Reusable setup:** PF14, PF14a — per-player saved setup, reused/edited next
   time; owned after first paid run.
-- **Durable results:** PF16–PF17 — paid tournaments persist; results tagged
-  (organizer, tournament, game type, opponent, result) for a future handicap
-  engine to slice.
+- **Persistence (revised — Ed 2026-09-05):** tournaments are **disposable** (both
+  tiers); the durable footprint is per-player — saved **setup** (PF14), **roster**
+  (PF5), and a **run-count** stat (new). PF16–PF17 "durable results" is
+  **superseded**: results aren't kept on the tournament; #5 extracts a registered
+  player's outcomes to their own handicap history if/when enabled.
 
 ## Scope Boundaries
 
@@ -145,9 +150,14 @@ Traces to the origin doc's `PF*` requirements.
 
 ### Deferred to Separate Tasks
 
-- **Winner self-scoring** (organizer policy toggle) → paid roadmap #4.
-- **Handicap races + the handicap cascade / "tournament handicap"** (reads the
-  tagged results this plan persists) → paid roadmap #5.
+- **Winner self-scoring** (organizer policy toggle) → paid roadmap #4. **Steer
+  captured for that brainstorm (Ed, 2026-09-05):** how individual game records get
+  saved is TBD there; a tournament may need a **"team"-style record** so scoring
+  reuses the league's team-based model, and the tournament scoring system should
+  **translate to the league scoring** (shared, not a tournament-only duplicate).
+- **Handicap races + the handicap cascade / "tournament handicap"** → paid
+  roadmap #5, which owns extracting a registered player's outcomes to their own
+  handicap history (tournaments themselves are disposable here).
 - **Real per-tournament price + Stripe connectivity** → Jack's revenue work;
   this plan leaves the single charge-at-start seam.
 - **Money semantics of paid/unpaid** (entry-fee amounts, tracking) → roadmap #3;
@@ -266,8 +276,16 @@ external integration.
   identity; the join link/QR encodes only the tournament; revoke `anon`
   (mirrors the free-tier write-RPC posture). Any public participant read stays a
   column-projected SECURITY DEFINER RPC.
-- **Paid tournaments are excluded from the inactivity sweep** (durable), unlike
-  free brackets — the split that lets results feed handicaps later.
+- **Tournaments are disposable — both tiers** (Ed, 2026-09-05, reverses the
+  earlier "paid persists" backbone). A tournament (bracket, results, winner) is
+  swept like the free tier. The **only durable things** are per-player: the saved
+  **setup**, the **roster** (past registered players), and a **"tournaments run"
+  count** (a stat, free + paid). Individual game records are **not** durably kept
+  here; if handicap-feedback (#5) is ever on, a *registered* player's outcomes are
+  extracted to **their own** handicap history at completion — the foundation only
+  keeps registered games tied to `member_id` **during play** so #5 can do that.
+  A disposed walk-up never blanks a record because `display_name` is copied onto
+  the participant/match row (denormalized).
 - **Everything ships behind `BRACKETS_ENABLED`** (route + every entry point
   together) and lands in `LIST_FOR_ED.md`'s gated section.
 
@@ -313,7 +331,7 @@ flowchart TD
     E --> F["Official list"]
     F --> G["Start tournament<br/>($0/no-op charge seam) → seed bracket_participants"]
     G --> H["Play (existing free-tier engine)"]
-    H --> I["Durable, tagged results persist<br/>(paid = not swept) → future handicap engine (#5)"]
+    H --> I["Tournament disposable (swept like free);<br/>only setup + roster + run-count persist"]
     E -->|admit| J["Roster: add player (sticky)"]
 ```
 
@@ -331,7 +349,7 @@ flowchart LR
     C2 --> C3
     A2 --> D1["D1 reusable saved setup"]
     C1 --> D1
-    A1 --> D2["D2 durable tagged results"]
+    A1 --> D2["D2 run-count stat (free+paid)"]
     C1 --> D2
 ```
 
@@ -342,12 +360,13 @@ shared-file edits tangle).
 
 ### Phase A — Tier gate + paid-tournament backbone
 
-- [ ] **Unit A1: Paid-tournament schema (tier, premium features, payment, game type, sweep exclusion)**
+- [ ] **Unit A1: Paid-tournament schema (tier, premium features, payment, game type)**
 
 **Goal:** Extend `brackets` so a tournament can be paid, carry its premium-feature
-selections + verified card, be tagged by game type, and survive the sweep.
+selections + verified card, and be tagged by game type. Tournaments stay
+**disposable (swept like free)** — no persistence change here.
 
-**Requirements:** PF0a–PF0e, PF16, model #0c.
+**Requirements:** PF0a–PF0e, model #0c.
 
 **Dependencies:** Free-tier bracket schema (PR #264).
 
@@ -362,13 +381,12 @@ selections + verified card, be tagged by game type, and survive the sweep.
   `game_type text` (nullable; the tournament's game type for result tagging);
   `payment_token text`, `card_last4 text`, `card_brand text`,
   `payment_verified_at timestamptz` (verify-at-setup, from `PaymentCardData`).
-- **Sweep exclusion:** modify `sweep_stale_brackets` so `tier='paid'` brackets are
-  **never** idle-swept (an explicit close may still remove them, per PF16 —
-  confirm close policy: paid close should archive/keep results, not hard-delete).
+- **No sweep change** — paid tournaments are swept like free (disposable, Ed
+  2026-09-05). `sweep_stale_brackets` is untouched.
 - Keep all new columns nullable/defaulted so existing free brackets are unaffected.
 - **Enforce the tier invariant** (not just documented): a CHECK/trigger so
-  `premium_features` non-empty ⇒ `tier='paid'`. Downstream (sweep, charge,
-  results) branches on `tier` alone, so the two must never drift.
+  `premium_features` non-empty ⇒ `tier='paid'`. Downstream (charge, feature
+  gating) branches on `tier` alone, so the two must never drift.
 - **Migration hygiene:** A3 and D1 add their columns/tables as **sibling
   migrations with fresh UTC timestamps**, never by editing this file once it could
   be merged (project rule: no post-merge history edits; run the `uniq -d` check).
@@ -379,8 +397,8 @@ selections + verified card, be tagged by game type, and survive the sweep.
 **Test scenarios:**
 - Happy path: insert a `tier='paid'` bracket with `premium_features='{}'` and a
   `game_type` → row persists with defaults applied.
-- Edge case: a `tier='free'` bracket past the idle threshold is swept; a
-  `tier='paid'` bracket past the same threshold is **not** swept.
+- Edge case: both `tier='free'` and `tier='paid'` brackets past the idle threshold
+  are swept the same way (disposable — no tier divergence in the sweep).
 - Edge case: `premium_features` accepts an array (`{'self_scoring'}`) and empty.
 - Error path: `tier` CHECK rejects an unknown value.
 - Integration: existing free-tier brackets/participants/matches inserts still
@@ -576,7 +594,7 @@ any league placeholder/merge behavior (existing merge db tests untouched + green
 **Goal:** The staging model — a hopper (candidates), an official list (a status),
 a sticky organizer roster, and start-time conversion into seeded participants.
 
-**Requirements:** PF5, PF6, PF8, PF11 (structure), PF16.
+**Requirements:** PF5, PF6, PF8, PF11 (structure).
 
 **Dependencies:** A1, B2.
 
@@ -747,7 +765,7 @@ display (memory: nickname is the mobile display primary); free-tier
 **Verification:** organizer can fill, disambiguate, admit (paid/unpaid), and eject
 from the hopper; official list is what start seeds.
 
-### Phase D — Reusable setup + durable tagged results
+### Phase D — What persists: setup + roster + run-count (tournaments are disposable)
 
 - [ ] **Unit D1: Reusable saved setup (per player)**
 
@@ -782,60 +800,58 @@ and offer it pre-filled next time.
 
 **Test scenarios:**
 - Happy path: saving a setup then creating a new tournament pre-fills
-  `premium_features` + settings.
+  `premium_features` + `game_type`.
 - Edge case: a player with no saved setup gets the default blank flow.
 - Edge case: editing an applied setup does not mutate the saved original until
   re-saved.
-- Integration: settings jsonb round-trips an example future-feature block
-  untouched (extensibility).
 
 **Verification:** a returning organizer starts from their last setup, edits, and
 proceeds; the saved record is per-player.
 
 ---
 
-- [ ] **Unit D2: Durable, tagged results (persistence guarantee — schema/data only)**
+- [ ] **Unit D2: Per-user "tournaments run" count (free + paid stat)**
 
-**Goal:** Guarantee paid results persist and are joinable/tagged so a future
-handicap engine (#5) can slice them. **Persistence + joinability only — the read
-API is deferred to #5**, which will shape the query to its own needs.
+**Goal:** A durable per-user count of tournaments that person has **run** — a stat
+Ed wants across **both tiers** (a light statistical footprint that survives the
+disposable tournament itself).
 
-**Requirements:** PF16, PF17.
+**Requirements:** new (Ed, 2026-09-05).
 
-**Dependencies:** A1 (tier + game_type + sweep exclusion), C1 (member links).
+**Dependencies:** none hard (free-tier create path exists; this is additive).
 
 **Files:**
-- Create: `src/__tests__/database/bracket.results.db.test.ts` (proves the tagged,
-  member-linked shape is expressible + survives the sweep)
-- (No new columns beyond A1; **no `getPaidBracketResults` read surface in v1** —
-  a query with no v1 consumer would be built against guessed #5 requirements and
-  reshaped anyway. Race length is **not** added here — it arrives with #5.)
+- Create: `supabase/migrations/<real-utc-ts>_member_tournament_stats.sql` — a
+  small durable counter keyed to the organizer (e.g. `member_tournament_stats`
+  with `member_id`, `tournaments_run`, or an append-only run log summed on read)
+- Modify: the bracket create/run path (`src/api/mutations/brackets.ts`) to
+  increment when a tournament is actually **run** (decide the trigger point —
+  on start is cleanest; a created-but-never-started draft shouldn't count)
+- Create: `src/__tests__/database/member_tournament_stats.db.test.ts`
 
 **Approach:**
-- The persistence guarantee comes **entirely from A1** (sweep exclusion +
-  `tier`/`game_type`); D2 is a **verification unit**: confirm each completed paid
-  match resolves to real `member_id`s + `game_type` (organizer via
-  `brackets.created_by`, tournament via `bracket_id`, opponents/result via
-  `bracket_matches`) and that nothing purges it.
-- **Handicap feedback only applies to registered players** (walk-ups have no
-  account/handicap). A walk-up's result carries its `display_name` (copied into
-  `bracket_participants` at start), so it reads back even with no `member_id`. The
-  **orphaned-records** question (a disposed walk-up's rows) is **deferred** (see
-  Scope → Deferred). `bracket_participants.member_id` stays `ON DELETE SET NULL`.
+- **Must survive the sweep.** Because tournaments are disposable (swept),
+  `COUNT(brackets WHERE created_by=…)` would lose history — so the count is its
+  **own durable row**, incremented at run-time, not derived from bracket rows.
+- **Both tiers** increment it — this touches the already-built **free-tier**
+  create/start path too (a small additive change; note it lands against PR #264's
+  code, gated the same way).
+- Keep it minimal: a single integer per user is enough for v1. (Richer stats —
+  tournaments *played in*, wins, etc. — are future.)
 
 **Test scenarios:**
-- Happy path: a registered participant's completed matches join to their
-  `member_id` + winner + `game_type` (the shape #5 will read).
-- Edge case: a walk-up participant's result reads back via `display_name` with a
-  NULL `member_id` (never throws).
-- Integration: results survive a `sweep_stale_brackets` run (paid excluded).
+- Happy path: running a tournament increments the organizer's `tournaments_run`.
+- Edge case: the count **persists after the tournament is swept** (durability —
+  the whole point).
+- Edge case: a created-but-never-run draft does not increment (trigger point).
+- Integration: both a free and a paid tournament increment the same counter.
 
-**Verification:** paid results persist and are joinable + tagged; the sweep never
-removes them; no premature read API is built.
+**Verification:** a user's run-count reflects tournaments they've run and survives
+tournament disposal; free + paid both count.
 
 ## System-Wide Impact
 
-- **Interaction graph:** `sweep_stale_brackets` (now tier-aware),
+- **Interaction graph:** `sweep_stale_brackets` (unchanged — both tiers swept),
   `start_bracket` (now seeds from `bracket_hopper`), the bracket data layer
   (`src/api/*/brackets.ts`), nav routes + `AppDrawer`/`AppSidebar` (join route
   gating). **The league placeholder/merge machinery is deliberately NOT touched**
@@ -844,7 +860,8 @@ removes them; no premature read API is built.
   throw (guard unknown members). Charge-at-start isolates failures so a failed
   charge blocks start rather than corrupting state.
 - **State lifecycle risks:** hopper→official→seeded-participant conversion at
-  start; sticky roster vs ejected hopper rows; paid-vs-free sweep divergence;
+  start; sticky roster vs ejected hopper rows; the **run-count must survive the
+  sweep** (own durable row, not derived from bracket count);
   `UNIQUE(bracket_id, member_id)` prevents duplicate hopper identities.
 - **API surface parity:** any public/participant read must stay a column-projected
   SECURITY DEFINER RPC (like `get_bracket_share`); the self-add join mirrors the
@@ -867,7 +884,7 @@ removes them; no premature read API is built.
 | `tier` and `premium_features` drift (two write paths) | A1 invariant (CHECK/trigger): features non-empty ⇒ paid |
 | Payment token persisted in localStorage (if the `questionDefinitions.tsx` pattern is copied) | Write token straight to the row; keep only display fields client-side (A2) |
 | Charge-before-start ordering becomes a double-charge hazard once money is real | Charge after a successful start; test the failed-start-no-charge path (A3) |
-| Paid brackets never swept → unbounded growth incl. abandoned drafts | Define an explicit paid close/cleanup policy (abandoned-before-start pre-start drafts still need a path) |
+| Run-count derived from bracket rows would be lost when tournaments are swept | Count is its own durable row, incremented at run-time (D2) — not a `COUNT(brackets)` |
 | Tier "derived from checklist" vs "foundation is baseline" ambiguity with no v1 feature rows | Explicit `tier` column + extensible `premium_features`; documented reconciliation |
 | Public exposure of participant PII via a client `.select()` with RLS off | All participant/hopper public reads go through column-projected SECURITY DEFINER RPCs; writes revoke `anon` |
 | Realtime UPDATE events silently not firing on new tables | `REPLICA IDENTITY FULL` + publication add + `supabase stop && start` (documented in the migration header) |
