@@ -157,6 +157,57 @@ export type Database = {
           },
         ]
       }
+      bracket_hopper: {
+        Row: {
+          added_via: string | null
+          bracket_id: string
+          created_at: string
+          display_name: string
+          id: string
+          member_id: string | null
+          paid_status: string | null
+          seed: number | null
+          status: string
+        }
+        Insert: {
+          added_via?: string | null
+          bracket_id: string
+          created_at?: string
+          display_name: string
+          id?: string
+          member_id?: string | null
+          paid_status?: string | null
+          seed?: number | null
+          status?: string
+        }
+        Update: {
+          added_via?: string | null
+          bracket_id?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          member_id?: string | null
+          paid_status?: string | null
+          seed?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_hopper_bracket_id_fkey"
+            columns: ["bracket_id"]
+            isOneToOne: false
+            referencedRelation: "brackets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_hopper_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bracket_matches: {
         Row: {
           away_participant_id: string | null
@@ -296,6 +347,42 @@ export type Database = {
           {
             foreignKeyName: "bracket_participants_member_id_fkey"
             columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bracket_roster: {
+        Row: {
+          first_seen_at: string
+          id: string
+          organizer_member_id: string
+          player_member_id: string
+        }
+        Insert: {
+          first_seen_at?: string
+          id?: string
+          organizer_member_id: string
+          player_member_id: string
+        }
+        Update: {
+          first_seen_at?: string
+          id?: string
+          organizer_member_id?: string
+          player_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_roster_organizer_fkey"
+            columns: ["organizer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_roster_player_fkey"
+            columns: ["player_member_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
