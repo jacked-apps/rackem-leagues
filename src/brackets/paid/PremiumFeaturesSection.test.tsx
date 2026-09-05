@@ -35,18 +35,33 @@ describe('PremiumFeaturesSection', () => {
     }
   });
 
-  it('turning a feature ON opens the verify popup instead of enabling immediately', async () => {
+  it('with NO card on file, turning a feature ON opens the generic payment-method popup', async () => {
     const user = userEvent.setup();
-    const { onEnable } = setup();
+    const { onEnable } = setup({ cardOnFile: null });
     const first = PREMIUM_FEATURES[0];
 
     await user.click(screen.getByLabelText(first.label));
 
-    // Not enabled yet — the popup must be confirmed first.
+    // Not enabled yet — the card must be set up first.
     expect(onEnable).not.toHaveBeenCalled();
-    // The popup shows the feature blurb (appears in the dialog portal).
-    const blurbs = screen.getAllByText(first.blurb);
-    expect(blurbs.length).toBeGreaterThan(0);
+    // The GENERIC setup popup appears (no feature name), with the no-charge promise.
+    expect(screen.getByText(/set up a payment method/i)).toBeTruthy();
+    expect(screen.getByText(/only charged at checkout/i)).toBeTruthy();
+  });
+
+  it('with a card on file, turning a feature ON enables it immediately (no popup)', async () => {
+    const user = userEvent.setup();
+    const { onEnable } = setup({
+      cardOnFile: { paymentMethodId: 'pm1', last4: '4242', brand: 'visa' },
+    });
+    const first = PREMIUM_FEATURES[0];
+
+    await user.click(screen.getByLabelText(first.label));
+
+    expect(onEnable).toHaveBeenCalledTimes(1);
+    expect(onEnable.mock.calls[0][0].key).toBe(first.key);
+    expect(onEnable.mock.calls[0][1]).toBeUndefined(); // no card data — reused
+    expect(screen.queryByText(/set up a payment method/i)).toBeNull();
   });
 
   it('turning a checked feature OFF is immediate (no popup)', async () => {
@@ -60,6 +75,11 @@ describe('PremiumFeaturesSection', () => {
 
   it('shows a preview total for selected features', () => {
     setup({ selectedKeys: [PREMIUM_FEATURES[0].key] });
-    expect(screen.getByText(/Due when you start/i)).toBeTruthy();
+    expect(screen.getByText(/Due at checkout/i)).toBeTruthy();
+  });
+
+  it('shows a "payment method established" indicator when a card is on file', () => {
+    setup({ cardOnFile: { paymentMethodId: 'pm1', last4: '4242', brand: 'visa' } });
+    expect(screen.getByText(/payment method established/i)).toBeTruthy();
   });
 });

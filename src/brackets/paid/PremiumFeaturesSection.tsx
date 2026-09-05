@@ -2,10 +2,10 @@
  * @fileoverview The "Premium features" checklist on the create-tournament page
  * (tournament paid foundation).
  *
- * A list of paid features (each a checkbox + blurb + preview price). Turning one
- * ON opens the verify/confirm popup (`PremiumFeatureDialog`); once confirmed the
- * row checks and its price joins the total. Turning one OFF is immediate (no
- * popup). A free tournament (just names) leaves all of these off — no payment.
+ * A list of paid features (each a checkbox + blurb + $1 price). Turning one ON:
+ * if the player has no card on file yet, the generic "set up a payment method"
+ * popup appears first (once); once a card is established, turning features on/off
+ * is instant. A free tournament (just names) leaves all of these off — no payment.
  *
  * Presentational: card-saving + feature state live in the orchestrator, reached
  * via onEnable / onDisable.
@@ -22,17 +22,17 @@ import {
   totalPriceCents,
   type PremiumFeature,
 } from './premiumFeatures';
-import { PremiumFeatureDialog } from './PremiumFeatureDialog';
+import { PaymentMethodDialog } from './PaymentMethodDialog';
 import type { CardOnFile } from '../useCreateBracketForm';
 
 interface PremiumFeaturesSectionProps {
   /** Currently-checked feature keys. */
   selectedKeys: string[];
-  /** The player's card on file (null → the popup collects one). */
+  /** The player's card on file (null → a card is set up before the first feature). */
   cardOnFile: CardOnFile | null;
   /** Saving / enabling in flight. */
   saving: boolean;
-  /** Enable a feature — with card data first time, or reusing the card on file. */
+  /** Enable a feature — with card data (first-time card setup) or reusing the card on file. */
   onEnable: (feature: PremiumFeature, card?: PaymentCardData) => void;
   /** Disable a feature (immediate, no popup). */
   onDisable: (key: string) => void;
@@ -45,17 +45,27 @@ export function PremiumFeaturesSection({
   onEnable,
   onDisable,
 }: PremiumFeaturesSectionProps) {
-  const [pending, setPending] = useState<PremiumFeature | null>(null);
+  // The feature the organizer is turning on while the payment-method popup is open.
+  const [pendingFeature, setPendingFeature] = useState<PremiumFeature | null>(null);
   const total = totalPriceCents(selectedKeys);
 
   const handleToggle = (feature: PremiumFeature, checked: boolean) => {
-    if (checked) setPending(feature); // opens the verify/confirm popup
-    else onDisable(feature.key);
+    if (!checked) {
+      onDisable(feature.key);
+      return;
+    }
+    if (cardOnFile) {
+      // Payment method already established — enable straight away, no popup.
+      onEnable(feature);
+    } else {
+      // No card yet — set one up first (generic), then enable this feature.
+      setPendingFeature(feature);
+    }
   };
 
-  const handleConfirm = (card?: PaymentCardData) => {
-    if (pending) onEnable(pending, card);
-    setPending(null);
+  const handleVerified = (card: PaymentCardData) => {
+    if (pendingFeature) onEnable(pendingFeature, card);
+    setPendingFeature(null);
   };
 
   return (
@@ -68,6 +78,14 @@ export function PremiumFeaturesSection({
           just names — needs none of them.
         </p>
       </div>
+
+      {/* Payment-method status — so the organizer (and the flow) know a card is set up. */}
+      {cardOnFile && (
+        <p className="flex items-center gap-1.5 text-sm text-success">
+          <span aria-hidden>✓</span>
+          Payment method established — {cardOnFile.brand} ending in {cardOnFile.last4}.
+        </p>
+      )}
 
       <ul className="space-y-2">
         {PREMIUM_FEATURES.map((f) => {
@@ -100,7 +118,7 @@ export function PremiumFeaturesSection({
         <div className="space-y-1">
           <div className="flex items-center justify-between rounded-md bg-muted p-3">
             <span className="text-sm">
-              Due when you start{' '}
+              Due at checkout{' '}
               <span className="text-muted-foreground">(preview pricing)</span>
             </span>
             <span className="font-semibold">
@@ -110,20 +128,17 @@ export function PremiumFeaturesSection({
               )}
             </span>
           </div>
-          {cardOnFile && (
-            <p className="text-xs text-muted-foreground">
-              Card ending in {cardOnFile.last4} on file — not charged until you start.
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            Not charged now — only when you start the tournament.
+          </p>
         </div>
       )}
 
-      <PremiumFeatureDialog
-        feature={pending}
-        cardOnFile={cardOnFile}
+      <PaymentMethodDialog
+        open={pendingFeature !== null}
         saving={saving}
-        onConfirm={handleConfirm}
-        onCancel={() => setPending(null)}
+        onVerified={handleVerified}
+        onCancel={() => setPendingFeature(null)}
       />
     </div>
   );
