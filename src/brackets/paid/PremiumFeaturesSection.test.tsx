@@ -14,6 +14,8 @@ import { PREMIUM_FEATURES } from './premiumFeatures';
 function setup(overrides: Partial<Parameters<typeof PremiumFeaturesSection>[0]> = {}) {
   const onEnable = vi.fn();
   const onDisable = vi.fn();
+  const onEnableAll = vi.fn();
+  const onDisableAll = vi.fn();
   render(
     <PremiumFeaturesSection
       selectedKeys={[]}
@@ -21,10 +23,12 @@ function setup(overrides: Partial<Parameters<typeof PremiumFeaturesSection>[0]> 
       saving={false}
       onEnable={onEnable}
       onDisable={onDisable}
+      onEnableAll={onEnableAll}
+      onDisableAll={onDisableAll}
       {...overrides}
     />
   );
-  return { onEnable, onDisable };
+  return { onEnable, onDisable, onEnableAll, onDisableAll };
 }
 
 describe('PremiumFeaturesSection', () => {
@@ -81,5 +85,23 @@ describe('PremiumFeaturesSection', () => {
   it('shows a "payment method established" indicator when a card is on file', () => {
     setup({ cardOnFile: { paymentMethodId: 'pm1', last4: '4242', brand: 'visa' } });
     expect(screen.getByText(/payment method established/i)).toBeTruthy();
+  });
+
+  it('offers an "Everything for $5" option that enables all features (card on file)', async () => {
+    const user = userEvent.setup();
+    const { onEnableAll } = setup({
+      cardOnFile: { paymentMethodId: 'pm1', last4: '4242', brand: 'visa' },
+    });
+    expect(screen.getByText(/everything — all premium features/i)).toBeTruthy();
+    await user.click(screen.getByLabelText(/everything — all premium features/i));
+    expect(onEnableAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('"Everything for $5" with no card opens the payment popup first', async () => {
+    const user = userEvent.setup();
+    const { onEnableAll } = setup({ cardOnFile: null });
+    await user.click(screen.getByLabelText(/everything — all premium features/i));
+    expect(onEnableAll).not.toHaveBeenCalled();
+    expect(screen.getByText(/set up a payment method/i)).toBeTruthy();
   });
 });

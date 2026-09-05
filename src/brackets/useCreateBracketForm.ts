@@ -104,6 +104,12 @@ export function useCreateBracketForm() {
     }));
   }, []);
 
+  /** Replace the whole premium-feature selection (used by "All for $5" select/clear-all). */
+  const setPremiumFeatures = useCallback(
+    (keys: string[]) => set('premiumFeatures', keys),
+    [set]
+  );
+
   /** Record the verified card on file (after PaymentCardForm succeeds / a saved card is reused). */
   const setCardOnFile = useCallback((card: CardOnFile | null) => set('cardOnFile', card), [set]);
 
@@ -129,6 +135,7 @@ export function useCreateBracketForm() {
     removeParticipant,
     moveParticipant,
     togglePremiumFeature,
+    setPremiumFeatures,
     setCardOnFile,
     goTo,
     validation,

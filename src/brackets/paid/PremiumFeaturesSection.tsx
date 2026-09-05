@@ -36,7 +36,14 @@ interface PremiumFeaturesSectionProps {
   onEnable: (feature: PremiumFeature, card?: PaymentCardData, nickname?: string) => void;
   /** Disable a feature (immediate, no popup). */
   onDisable: (key: string) => void;
+  /** Enable ALL features ("Everything for $5") — with card data or reusing the card on file. */
+  onEnableAll: (card?: PaymentCardData, nickname?: string) => void;
+  /** Clear all features. */
+  onDisableAll: () => void;
 }
+
+/** What the payment popup will do once a card is set up. */
+type Pending = { kind: 'feature'; feature: PremiumFeature } | { kind: 'all' } | null;
 
 export function PremiumFeaturesSection({
   selectedKeys,
@@ -44,28 +51,34 @@ export function PremiumFeaturesSection({
   saving,
   onEnable,
   onDisable,
+  onEnableAll,
+  onDisableAll,
 }: PremiumFeaturesSectionProps) {
-  // The feature the organizer is turning on while the payment-method popup is open.
-  const [pendingFeature, setPendingFeature] = useState<PremiumFeature | null>(null);
+  // What the organizer is turning on while the payment-method popup is open.
+  const [pending, setPending] = useState<Pending>(null);
   const total = totalPriceCents(selectedKeys);
+  const allSelected = selectedKeys.length === PREMIUM_FEATURES.length;
+
+  /** Enable-path helper: reuse the card on file, or open the setup popup first. */
+  const enableOrSetUp = (pendingAction: Pending, enableNow: () => void) => {
+    if (cardOnFile) enableNow();
+    else setPending(pendingAction);
+  };
 
   const handleToggle = (feature: PremiumFeature, checked: boolean) => {
-    if (!checked) {
-      onDisable(feature.key);
-      return;
-    }
-    if (cardOnFile) {
-      // Payment method already established — enable straight away, no popup.
-      onEnable(feature);
-    } else {
-      // No card yet — set one up first (generic), then enable this feature.
-      setPendingFeature(feature);
-    }
+    if (!checked) onDisable(feature.key);
+    else enableOrSetUp({ kind: 'feature', feature }, () => onEnable(feature));
+  };
+
+  const handleToggleAll = (checked: boolean) => {
+    if (!checked) onDisableAll();
+    else enableOrSetUp({ kind: 'all' }, () => onEnableAll());
   };
 
   const handleVerified = (card: PaymentCardData, nickname?: string) => {
-    if (pendingFeature) onEnable(pendingFeature, card, nickname);
-    setPendingFeature(null);
+    if (pending?.kind === 'feature') onEnable(pending.feature, card, nickname);
+    else if (pending?.kind === 'all') onEnableAll(card, nickname);
+    setPending(null);
   };
 
   return (
@@ -88,6 +101,22 @@ export function PremiumFeaturesSection({
           {cardOnFile.brand} ending in {cardOnFile.last4}.
         </p>
       )}
+
+      {/* The deal: everything for $5, however many $1 features there are. */}
+      <label
+        htmlFor="pf-all"
+        className="flex cursor-pointer items-center gap-3 rounded-md border-2 border-primary/50 bg-primary/5 p-3"
+      >
+        <Checkbox
+          id="pf-all"
+          checked={allSelected}
+          onCheckedChange={(c) => handleToggleAll(c === true)}
+        />
+        <div className="flex flex-1 items-center justify-between gap-2">
+          <span className="font-medium">Everything — all premium features</span>
+          <span className="font-semibold">{formatPrice(PRICE_CAP_CENTS)}</span>
+        </div>
+      </label>
 
       <ul className="space-y-2">
         {PREMIUM_FEATURES.map((f) => {
@@ -137,10 +166,10 @@ export function PremiumFeaturesSection({
       )}
 
       <PaymentMethodDialog
-        open={pendingFeature !== null}
+        open={pending !== null}
         saving={saving}
         onVerified={handleVerified}
-        onCancel={() => setPendingFeature(null)}
+        onCancel={() => setPending(null)}
       />
     </div>
   );

@@ -30,7 +30,12 @@ import { DetailsStep } from './steps/DetailsStep';
 import { ParticipantsStep } from './steps/ParticipantsStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { PremiumFeaturesSection } from './paid/PremiumFeaturesSection';
-import { totalPriceCents, formatPrice, type PremiumFeature } from './paid/premiumFeatures';
+import {
+  PREMIUM_FEATURES,
+  totalPriceCents,
+  formatPrice,
+  type PremiumFeature,
+} from './paid/premiumFeatures';
 
 const STEP_TITLES = {
   details: 'Tournament details',
@@ -74,28 +79,42 @@ export function CreateBracketFlow() {
    * to the player's card-on-file; after that the same card is reused. Then check
    * the feature. Verify-at-setup — no charge happens here (that's at Start).
    */
+  /** Save a just-verified card to the player's card-on-file (first-time setup). */
+  const saveCardIfProvided = async (card?: PaymentCardData, nickname?: string) => {
+    if (!card || !member?.id) return;
+    const paymentMethodId = await saveCard.mutateAsync({
+      memberId: member.id,
+      token: card.paymentToken,
+      cardLast4: card.cardLast4,
+      cardBrand: card.cardBrand,
+      nickname,
+    });
+    form.setCardOnFile({
+      paymentMethodId,
+      last4: card.cardLast4,
+      brand: card.cardBrand,
+      nickname: nickname ?? null,
+    });
+  };
+
   const handleEnableFeature = async (
     feature: PremiumFeature,
     card?: PaymentCardData,
     nickname?: string
   ) => {
     try {
-      if (card && member?.id) {
-        const paymentMethodId = await saveCard.mutateAsync({
-          memberId: member.id,
-          token: card.paymentToken,
-          cardLast4: card.cardLast4,
-          cardBrand: card.cardBrand,
-          nickname,
-        });
-        form.setCardOnFile({
-          paymentMethodId,
-          last4: card.cardLast4,
-          brand: card.cardBrand,
-          nickname: nickname ?? null,
-        });
-      }
+      await saveCardIfProvided(card, nickname);
       form.togglePremiumFeature(feature.key);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save your card.');
+    }
+  };
+
+  /** "Everything for $5" — set up the card if needed, then select all features. */
+  const handleEnableAll = async (card?: PaymentCardData, nickname?: string) => {
+    try {
+      await saveCardIfProvided(card, nickname);
+      form.setPremiumFeatures(PREMIUM_FEATURES.map((f) => f.key));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not save your card.');
     }
@@ -172,6 +191,8 @@ export function CreateBracketFlow() {
                 saving={saveCard.isPending}
                 onEnable={handleEnableFeature}
                 onDisable={form.togglePremiumFeature}
+                onEnableAll={handleEnableAll}
+                onDisableAll={() => form.setPremiumFeatures([])}
               />
             </>
           )}
