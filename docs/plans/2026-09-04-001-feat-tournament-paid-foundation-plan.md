@@ -163,8 +163,17 @@ Traces to the origin doc's `PF*` requirements.
 - **Coupon / promo codes** (Ed, 2026-09-05) → a **checkout-time** field (belongs
   with A3 + Jack's Stripe). Nothing to discount while the charge is a $0 mock;
   Stripe has native coupons/promo codes, so this is mostly a code field passed to
-  Stripe, not a discount engine we build. Bank for when checkout + real charging
-  land.
+  Stripe, not a discount engine we build. **Why they matter:** they're the
+  **beta-tester comp mechanism** at the paid-transition — grandfather testers with
+  free tournaments/leagues so turning on charging doesn't burn them. **Scope:**
+  coupons span **both leagues and tournaments** (they ride the shared per-player
+  payment layer). Bank for when checkout + real charging land.
+- **The paid-transition gate** (Ed, 2026-09-05) — it stays **free everywhere
+  through beta** (Stripe off on purpose; announced later). Everything paid is a $0
+  mock, so listing not-yet-built features is fine *now*. When real charging is
+  announced: (a) only **expose/charge for features whose engines are built** (hide
+  or "coming soon" the rest), and (b) coupons go live for comping. No paywall
+  enforcement until then.
 - **Money semantics of paid/unpaid** (entry-fee amounts, tracking) → roadmap #3;
   this plan builds only the paid/unpaid *flag* structure + the admit actions.
 - **Transferable setups + starter templates** → later (PF15).
