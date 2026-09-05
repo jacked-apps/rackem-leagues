@@ -32,6 +32,12 @@ export interface PremiumFeature {
   blurb: string;
   /** Price in cents. Every feature is $1 (FEATURE_PRICE_CENTS). */
   priceCents: number;
+  /**
+   * If set, this feature needs configuration before it runs — the row shows
+   * "(some setup required)" + an info button with this text explaining what the
+   * organizer will set up (or that they can just use the defaults).
+   */
+  setupInfo?: string;
 }
 
 /** The paid features, in display order. Add a row to ship a new one. */
@@ -55,18 +61,24 @@ export const PREMIUM_FEATURES: readonly PremiumFeature[] = [
     label: 'Players score their own matches',
     blurb: 'Each pair confirms their own winner from their phones — you stop being the sole scorekeeper.',
     priceCents: FEATURE_PRICE_CENTS,
+    setupInfo:
+      'You’ll pick one thing: how a match with an unregistered walk-up is scored — trust the registered player’s word, or you enter it yourself. Registered-vs-registered always self-scores.',
   },
   {
     key: 'handicap_races',
     label: 'Handicapped races',
     blurb: 'Each match gets a race-to-N from the players’ ratings, so the stronger player has to win more.',
     priceCents: FEATURE_PRICE_CENTS,
+    setupInfo:
+      'Before you run this you’ll set a few things: which handicap system to use, each NEW player’s handicap (players we already know keep theirs), and the race lengths — the longest race, the shortest race, and how much shorter the loser’s-side race is. Or just use our defaults and tweak later.',
   },
   {
     key: 'venue_tables',
     label: 'Venue & tables (auto next-up)',
     blurb: 'Set your tables; as they free up the tool calls the next pair to an open table and tracks who’s on deck.',
     priceCents: FEATURE_PRICE_CENTS,
+    setupInfo:
+      'You’ll add your tables (how many, and their numbers) so the tool can call the next pair to an open table. Set it once and it’s saved for next time.',
   },
   {
     key: 'notifications',

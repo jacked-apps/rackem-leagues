@@ -87,6 +87,15 @@ describe('PremiumFeaturesSection', () => {
     expect(screen.getByText(/payment method established/i)).toBeTruthy();
   });
 
+  it('flags setup-required features with a note + an info button each', () => {
+    setup();
+    const flags = screen.getAllByText(/some setup required/i);
+    expect(flags.length).toBeGreaterThanOrEqual(2);
+    // One info "?" button per flagged feature (its panel explains the setup;
+    // InfoButton open-behavior is covered in PaymentMethodSetup.test).
+    expect(screen.getAllByRole('button', { name: '?' }).length).toBe(flags.length);
+  });
+
   it('offers an "Everything for $5" option that enables all features (card on file)', async () => {
     const user = userEvent.setup();
     const { onEnableAll } = setup({

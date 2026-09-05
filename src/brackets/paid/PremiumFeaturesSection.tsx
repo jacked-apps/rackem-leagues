@@ -14,6 +14,7 @@
 import { useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { InfoButton } from '@/components/InfoButton';
 import type { PaymentCardData } from '@/components/PaymentCardForm';
 import {
   PREMIUM_FEATURES,
@@ -139,6 +140,14 @@ export function PremiumFeaturesSection({
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">{f.blurb}</p>
+                {f.setupInfo && (
+                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                    <span>(some setup required)</span>
+                    <InfoButton title={`${f.label} — what you’ll set up`} size="sm" align="left">
+                      <p>{f.setupInfo}</p>
+                    </InfoButton>
+                  </div>
+                )}
               </div>
             </li>
           );
