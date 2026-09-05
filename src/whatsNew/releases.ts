@@ -104,12 +104,6 @@ export const RELEASES: Release[] = [
   {
     version: UNRELEASED,
     date: null,
-    summary: '',
-    entries: [],
-  },
-  {
-    version: '1.0.0',
-    date: '2026-09-05',
     summary:
       'Message notifications on your phone, tournament brackets, and an update button that works',
     entries: [
