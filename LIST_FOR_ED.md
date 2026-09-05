@@ -4,6 +4,22 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🔧 2026-09-05 — Reuse `PaymentMethodSetup` in the LO application
+
+The tournament paid flow introduced a **reusable** "set up a payment method"
+component: **`src/components/PaymentMethodSetup.tsx`** — the no-charge-now
+reassurance (caller supplies the charge timing) + `PaymentCardForm` verify,
+returning the card data for the caller to persist. It's built to be shared.
+
+The **League Operator application** flow does NOT use it — it wires
+`PaymentCardForm` + the application reducer **inline** in
+`src/leagueOperator/questionDefinitions.tsx` (the `paymentInfo` question). **TODO:
+refactor the LO application to use `PaymentMethodSetup`** so payment-method setup
+is one consistent component everywhere. Good to bundle with Jack's payment
+consolidation (he owns that flow + the eventual real Stripe wiring).
+
+---
+
 ## 🧪 2026-08-04 — VERIFY: tiebreaker scoring fix (PR #249)
 
 **Bug (live):** the first match to end in a games **tie** couldn't be scored —

@@ -46,7 +46,7 @@ describe('PremiumFeaturesSection', () => {
     expect(onEnable).not.toHaveBeenCalled();
     // The GENERIC setup popup appears (no feature name), with the no-charge promise.
     expect(screen.getByText(/set up a payment method/i)).toBeTruthy();
-    expect(screen.getByText(/only charged at checkout/i)).toBeTruthy();
+    expect(screen.getByText(/charged only at checkout/i)).toBeTruthy();
   });
 
   it('with a card on file, turning a feature ON enables it immediately (no popup)', async () => {

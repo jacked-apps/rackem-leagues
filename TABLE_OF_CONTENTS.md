@@ -1134,7 +1134,8 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `InviteStatusBadge.tsx` - **✅ Phase 9** Badge showing invite status on PP cards
 - `MatchCard.tsx` - Match card
 - `MemberCombobox.tsx` - Member selection combobox
-- `PaymentCardForm.tsx` - Payment card form
+- `PaymentCardForm.tsx` - Low-level card-entry form ($0 mock verify → returns a tokenized `PaymentCardData`). Used inside `PaymentMethodSetup`.
+- `PaymentMethodSetup.tsx` - **Reusable "set up a payment method" panel** — the no-charge-now reassurance (caller supplies the charge timing) + `PaymentCardForm` verify → returns the card. Used by the tournament paid flow (`PaymentMethodDialog`); the LO application should adopt it (see `LIST_FOR_ED.md`). Test: `PaymentMethodSetup.test.tsx`.
 - `PlayerNameLink.tsx` - Player name link (opens InvitePlayerModal for PPs)
 - `ProtectedRoute.tsx` - Route protection HOC
 - `ReportUserModal.tsx` - User reporting modal

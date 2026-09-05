@@ -10,7 +10,8 @@
  * then instant.
  */
 
-import { PaymentCardForm, type PaymentCardData } from '@/components/PaymentCardForm';
+import type { PaymentCardData } from '@/components/PaymentCardForm';
+import { PaymentMethodSetup } from '@/components/PaymentMethodSetup';
 import {
   Dialog,
   DialogContent,
@@ -47,18 +48,11 @@ export function PaymentMethodDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="rounded-md border border-success/40 bg-success/10 p-3 text-sm font-medium text-success">
-            We are <span className="underline">not</span> charging your card now — you&apos;re
-            only charged at checkout, when you start the tournament.
-          </div>
-
-          <PaymentCardForm
-            loading={saving}
-            verifyButtonText="Verify card"
-            onVerificationSuccess={onVerified}
-          />
-        </div>
+        <PaymentMethodSetup
+          saving={saving}
+          chargeTiming="charged only at checkout, when you start the tournament"
+          onVerified={onVerified}
+        />
       </DialogContent>
     </Dialog>
   );
