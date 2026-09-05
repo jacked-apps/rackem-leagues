@@ -6,6 +6,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { PaymentMethodSetup } from './PaymentMethodSetup';
 
 describe('PaymentMethodSetup', () => {
@@ -36,5 +37,12 @@ describe('PaymentMethodSetup', () => {
   it('offers an optional card-name field (for keeping >1 card later)', () => {
     render(<PaymentMethodSetup onVerified={vi.fn()} />);
     expect(screen.getByLabelText(/card name \(optional\)/i)).toBeTruthy();
+  });
+
+  it('explains card safety in plain language via an info button', async () => {
+    const user = userEvent.setup();
+    render(<PaymentMethodSetup onVerified={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: '?' }));
+    expect(screen.getByText(/never saved on our site/i)).toBeTruthy();
   });
 });

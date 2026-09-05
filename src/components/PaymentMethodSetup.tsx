@@ -17,6 +17,7 @@
 import { useState } from 'react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { InfoButton } from './InfoButton';
 import { PaymentCardForm, type PaymentCardData } from './PaymentCardForm';
 
 export interface PaymentMethodSetupProps {
@@ -54,9 +55,29 @@ export function PaymentMethodSetup({
         for anything you pay for.
       </p>
 
-      <div className="rounded-md border border-success/40 bg-success/10 p-3 text-sm font-medium text-success">
-        We are <span className="underline">not</span> charging your card now.
-        {chargeTiming ? ` ${chargeTiming}` : ''}
+      <div className="flex items-start justify-between gap-2 rounded-md border border-success/40 bg-success/10 p-3 text-sm font-medium text-success">
+        <span>
+          We are <span className="underline">not</span> charging your card now.
+          {chargeTiming ? ` ${chargeTiming}` : ''}
+        </span>
+        <InfoButton title="Is my card safe?" size="sm" align="right">
+          <div className="space-y-2">
+            <p>
+              Your card number is <strong>never saved on our site.</strong>
+            </p>
+            <p>
+              When you add a card, it goes straight to our payment company — the
+              same kind of company banks use — and they hand us back a private key,
+              not your actual card number. We use that key to charge you only when
+              you okay a purchase.
+            </p>
+            <p>
+              So even if someone broke into our site, there&apos;s no card number
+              here to steal. And you only enter it once — it stays ready for next
+              time.
+            </p>
+          </div>
+        </InfoButton>
       </div>
 
       <div className="space-y-1">
