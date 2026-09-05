@@ -160,6 +160,11 @@ Traces to the origin doc's `PF*` requirements.
   handicap history (tournaments themselves are disposable here).
 - **Real per-tournament price + Stripe connectivity** → Jack's revenue work;
   this plan leaves the single charge-at-start seam.
+- **Coupon / promo codes** (Ed, 2026-09-05) → a **checkout-time** field (belongs
+  with A3 + Jack's Stripe). Nothing to discount while the charge is a $0 mock;
+  Stripe has native coupons/promo codes, so this is mostly a code field passed to
+  Stripe, not a discount engine we build. Bank for when checkout + real charging
+  land.
 - **Money semantics of paid/unpaid** (entry-fee amounts, tracking) → roadmap #3;
   this plan builds only the paid/unpaid *flag* structure + the admit actions.
 - **Transferable setups + starter templates** → later (PF15).
