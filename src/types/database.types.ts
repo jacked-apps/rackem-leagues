@@ -301,8 +301,6 @@ export type Database = {
       }
       brackets: {
         Row: {
-          card_brand: string | null
-          card_last4: string | null
           created_at: string
           created_by: string
           format: string
@@ -311,8 +309,7 @@ export type Database = {
           id: string
           last_activity_at: string
           name: string
-          payment_token: string | null
-          payment_verified_at: string | null
+          payment_method_id: string | null
           premium_features: string[]
           seeding_mode: string
           share_token: string
@@ -320,8 +317,6 @@ export type Database = {
           tier: string
         }
         Insert: {
-          card_brand?: string | null
-          card_last4?: string | null
           created_at?: string
           created_by: string
           format: string
@@ -330,8 +325,7 @@ export type Database = {
           id?: string
           last_activity_at?: string
           name: string
-          payment_token?: string | null
-          payment_verified_at?: string | null
+          payment_method_id?: string | null
           premium_features?: string[]
           seeding_mode?: string
           share_token?: string
@@ -339,8 +333,6 @@ export type Database = {
           tier?: string
         }
         Update: {
-          card_brand?: string | null
-          card_last4?: string | null
           created_at?: string
           created_by?: string
           format?: string
@@ -349,8 +341,7 @@ export type Database = {
           id?: string
           last_activity_at?: string
           name?: string
-          payment_token?: string | null
-          payment_verified_at?: string | null
+          payment_method_id?: string | null
           premium_features?: string[]
           seeding_mode?: string
           share_token?: string
@@ -363,6 +354,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brackets_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
             referencedColumns: ["id"]
           },
         ]
@@ -1852,6 +1850,50 @@ export type Database = {
           {
             foreignKeyName: "organizations_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          card_brand: string | null
+          card_last4: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          member_id: string
+          stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          card_brand?: string | null
+          card_last4?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          member_id: string
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          card_brand?: string | null
+          card_last4?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          member_id?: string
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_methods_member_id_fkey"
+            columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]

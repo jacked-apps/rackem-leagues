@@ -19,13 +19,13 @@
 
 
 ALTER TABLE "public"."brackets"
-  ADD COLUMN IF NOT EXISTS "tier"                text NOT NULL DEFAULT 'free',
-  ADD COLUMN IF NOT EXISTS "premium_features"    text[] NOT NULL DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS "game_type"           text,
-  ADD COLUMN IF NOT EXISTS "payment_token"       text,
-  ADD COLUMN IF NOT EXISTS "card_last4"          text,
-  ADD COLUMN IF NOT EXISTS "card_brand"          text,
-  ADD COLUMN IF NOT EXISTS "payment_verified_at" timestamp with time zone;
+  ADD COLUMN IF NOT EXISTS "tier"             text NOT NULL DEFAULT 'free',
+  ADD COLUMN IF NOT EXISTS "premium_features" text[] NOT NULL DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS "game_type"        text;
+-- NOTE: the card-on-file does NOT live here. It is a per-PLAYER asset (reusable
+-- for tournaments, dues, LO, etc.) in `payment_methods`; a paid tournament
+-- references the card to charge via `brackets.payment_method_id`, added in the
+-- payment_methods migration.
 
 
 -- tier ∈ {free, paid}. (DROP-then-ADD keeps the migration idempotent on re-apply.)
@@ -49,7 +49,3 @@ COMMENT ON COLUMN "public"."brackets"."premium_features" IS
   'The organizer''s checked premium features for this tournament (extensible; empty for free). Any non-empty value forces tier=paid.';
 COMMENT ON COLUMN "public"."brackets"."game_type" IS
   'The tournament''s game type (e.g. eight_ball) — a per-tournament attribute, also part of the saved reusable setup. Nullable/free-form in v1; formalized by the scoring/handicap features.';
-COMMENT ON COLUMN "public"."brackets"."payment_token" IS
-  'Verify-at-setup: tokenized card on file (from PaymentCardForm). Written straight to the row, never held in client state/localStorage. Mock token today; real charge-at-start is a later seam.';
-COMMENT ON COLUMN "public"."brackets"."payment_verified_at" IS
-  'When the card-on-file was verified (verify-at-setup). NULL = no verified card on file.';

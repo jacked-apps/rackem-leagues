@@ -247,6 +247,17 @@ external integration.
 
 ## Key Technical Decisions
 
+- **Card-on-file is a per-PLAYER asset in a `payment_methods` table (Ed, 2026-09-05),
+  not on the tournament.** One saved card per row, owned by `member_id`, reusable
+  for anything the player pays for (tournaments, BCA dues, ...) — matches Stripe's
+  model (charges reference a card by id). A paid tournament stores
+  `brackets.payment_method_id` = the card to charge at Start. Mock token today;
+  Jack's real Stripe install backs `stripe_customer_id`/`stripe_payment_method_id`.
+  The existing **LO org card** (`organizations.stripe_customer_id` + `payment_method_id`)
+  is **left as-is** — pointing the org at the shared `payment_methods` is Jack's
+  payment consolidation, out of scope here. *(Revises A1/A2/A3: payment fields
+  moved bracket → `payment_methods`; verify-at-setup upserts the player's default
+  card, charge-at-start charges `brackets.payment_method_id`.)*
 - **`kind` is derived, not a new column.** A participant's kind (`registered` vs
   `walkup`) comes from whether a `member_id` is present on the entry. PF2's
   "first-class kind" is a derived/typed helper, not schema.

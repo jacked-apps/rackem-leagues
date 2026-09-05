@@ -41,37 +41,33 @@ describe('brackets paid-foundation schema (Unit A1)', () => {
     await closePostgresPool();
   });
 
-  it('an existing free-tier insert is unaffected — tier defaults to free, premium_features empty', async () => {
+  it('an existing free-tier insert is unaffected — tier defaults to free, premium_features empty, no card', async () => {
     const rows = await executeSql(
       `INSERT INTO public.brackets (name, format, created_by)
        VALUES ('Free Bar Night', 'single_elimination', $1)
-       RETURNING id, tier, premium_features, game_type, payment_token, payment_verified_at`,
+       RETURNING id, tier, premium_features, game_type, payment_method_id`,
       [memberId]
     );
     insertedBracketIds.push(rows[0].id);
     expect(rows[0].tier).toBe('free');
     expect(rows[0].premium_features).toEqual([]);
     expect(rows[0].game_type).toBeNull();
-    expect(rows[0].payment_token).toBeNull();
-    expect(rows[0].payment_verified_at).toBeNull();
+    expect(rows[0].payment_method_id).toBeNull();
   });
 
-  it('creates a paid tournament with premium features, a game type, and a card on file', async () => {
+  it('creates a paid tournament with premium features and a game type (card lives on the player, not here)', async () => {
     const rows = await executeSql(
       `INSERT INTO public.brackets
-         (name, format, created_by, tier, premium_features, game_type,
-          payment_token, card_last4, card_brand, payment_verified_at)
+         (name, format, created_by, tier, premium_features, game_type)
        VALUES ('Paid Bar Night', 'double_elimination', $1, 'paid',
-               ARRAY['self_scoring']::text[], 'eight_ball',
-               'tok_mock_123', '4242', 'visa', now())
-       RETURNING id, tier, premium_features, game_type, card_last4`,
+               ARRAY['self_scoring']::text[], 'eight_ball')
+       RETURNING id, tier, premium_features, game_type`,
       [memberId]
     );
     insertedBracketIds.push(rows[0].id);
     expect(rows[0].tier).toBe('paid');
     expect(rows[0].premium_features).toEqual(['self_scoring']);
     expect(rows[0].game_type).toBe('eight_ball');
-    expect(rows[0].card_last4).toBe('4242');
   });
 
   it('rejects an unknown tier value (CHECK)', async () => {
