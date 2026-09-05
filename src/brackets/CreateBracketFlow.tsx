@@ -58,6 +58,7 @@ export function CreateBracketFlow() {
         paymentMethodId: defaultCard.id,
         last4: defaultCard.card_last4 ?? '',
         brand: defaultCard.card_brand ?? '',
+        nickname: defaultCard.nickname,
       });
     }
   }, [defaultCard, state.cardOnFile, form]);
@@ -67,7 +68,11 @@ export function CreateBracketFlow() {
    * to the player's card-on-file; after that the same card is reused. Then check
    * the feature. Verify-at-setup — no charge happens here (that's at Start).
    */
-  const handleEnableFeature = async (feature: PremiumFeature, card?: PaymentCardData) => {
+  const handleEnableFeature = async (
+    feature: PremiumFeature,
+    card?: PaymentCardData,
+    nickname?: string
+  ) => {
     try {
       if (card && member?.id) {
         const paymentMethodId = await saveCard.mutateAsync({
@@ -75,8 +80,14 @@ export function CreateBracketFlow() {
           token: card.paymentToken,
           cardLast4: card.cardLast4,
           cardBrand: card.cardBrand,
+          nickname,
         });
-        form.setCardOnFile({ paymentMethodId, last4: card.cardLast4, brand: card.cardBrand });
+        form.setCardOnFile({
+          paymentMethodId,
+          last4: card.cardLast4,
+          brand: card.cardBrand,
+          nickname: nickname ?? null,
+        });
       }
       form.togglePremiumFeature(feature.key);
     } catch (err) {

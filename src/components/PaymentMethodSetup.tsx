@@ -14,11 +14,17 @@
  * where the card is stored (payment_methods, org, ...) is the caller's job.
  */
 
+import { useState } from 'react';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { PaymentCardForm, type PaymentCardData } from './PaymentCardForm';
 
 export interface PaymentMethodSetupProps {
-  /** Card verified — hand back the data to save it. */
-  onVerified: (card: PaymentCardData) => void;
+  /**
+   * Card verified — hand back the data plus the optional player-given label
+   * (a card nickname, e.g. "Personal Visa") for the caller to save.
+   */
+  onVerified: (card: PaymentCardData, nickname?: string) => void;
   /** Saving the card in flight (disables the form). */
   saving?: boolean;
   /**
@@ -37,6 +43,8 @@ export function PaymentMethodSetup({
   chargeTiming = 'charged only when you complete your purchase',
   verifyButtonText = 'Verify card',
 }: PaymentMethodSetupProps) {
+  const [nickname, setNickname] = useState('');
+
   return (
     <div className="space-y-4">
       <div className="rounded-md border border-success/40 bg-success/10 p-3 text-sm font-medium text-success">
@@ -44,10 +52,21 @@ export function PaymentMethodSetup({
         {chargeTiming}.
       </div>
 
+      <div className="space-y-1">
+        <Label htmlFor="card-nickname">Card name (optional)</Label>
+        <Input
+          id="card-nickname"
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          placeholder="e.g. Personal Visa"
+          maxLength={40}
+        />
+      </div>
+
       <PaymentCardForm
         loading={saving}
         verifyButtonText={verifyButtonText}
-        onVerificationSuccess={onVerified}
+        onVerificationSuccess={(card) => onVerified(card, nickname.trim() || undefined)}
       />
     </div>
   );

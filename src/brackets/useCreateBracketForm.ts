@@ -18,6 +18,8 @@ export interface CardOnFile {
   paymentMethodId: string;
   last4: string;
   brand: string;
+  /** Optional player-given label (e.g. "Personal Visa"). */
+  nickname?: string | null;
 }
 
 export interface CreateBracketFormState {

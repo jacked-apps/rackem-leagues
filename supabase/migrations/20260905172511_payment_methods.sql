@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS "public"."payment_methods" (
     "stripe_payment_method_id" text,   -- processor token / Stripe PM ref (mock tok_ today)
     "card_last4"               text,
     "card_brand"               text,
+    "nickname"                 text,   -- optional player-given label ("Personal Visa") for when a player keeps >1 card
     "verified_at"              timestamp with time zone,
     "is_default"               boolean NOT NULL DEFAULT true,
     "created_at"               timestamp with time zone NOT NULL DEFAULT now(),
@@ -43,6 +44,8 @@ COMMENT ON COLUMN "public"."payment_methods"."stripe_payment_method_id" IS
   'Processor token / Stripe payment-method reference used to charge this card (mock tok_ today).';
 COMMENT ON COLUMN "public"."payment_methods"."is_default" IS
   'The player''s default card. Partial-unique: at most one default per member (re-verify upserts the default).';
+COMMENT ON COLUMN "public"."payment_methods"."nickname" IS
+  'Optional player-given label ("Personal Visa"). Supports keeping more than one card later.';
 
 
 -- A paid tournament charges this player card-on-file at Start.

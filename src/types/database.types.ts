@@ -1864,6 +1864,7 @@ export type Database = {
           id: string
           is_default: boolean
           member_id: string
+          nickname: string | null
           stripe_customer_id: string | null
           stripe_payment_method_id: string | null
           verified_at: string | null
@@ -1875,6 +1876,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           member_id: string
+          nickname?: string | null
           stripe_customer_id?: string | null
           stripe_payment_method_id?: string | null
           verified_at?: string | null
@@ -1886,6 +1888,7 @@ export type Database = {
           id?: string
           is_default?: boolean
           member_id?: string
+          nickname?: string | null
           stripe_customer_id?: string | null
           stripe_payment_method_id?: string | null
           verified_at?: string | null

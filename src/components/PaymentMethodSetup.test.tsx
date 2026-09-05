@@ -24,4 +24,9 @@ describe('PaymentMethodSetup', () => {
     render(<PaymentMethodSetup onVerified={vi.fn()} verifyButtonText="Verify card" />);
     expect(screen.getByRole('button', { name: /verify card/i })).toBeTruthy();
   });
+
+  it('offers an optional card-name field (for keeping >1 card later)', () => {
+    render(<PaymentMethodSetup onVerified={vi.fn()} />);
+    expect(screen.getByLabelText(/card name \(optional\)/i)).toBeTruthy();
+  });
 });

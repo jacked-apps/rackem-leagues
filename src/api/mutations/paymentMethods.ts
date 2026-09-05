@@ -20,6 +20,8 @@ export interface SaveCardInput {
   token: string;
   cardLast4: string;
   cardBrand: string;
+  /** Optional player-given label (e.g. "Personal Visa"). */
+  nickname?: string;
 }
 
 /**
@@ -43,6 +45,7 @@ export async function upsertDefaultPaymentMethod(input: SaveCardInput): Promise<
     stripe_payment_method_id: input.token,
     card_last4: input.cardLast4,
     card_brand: input.cardBrand,
+    nickname: input.nickname ?? null,
     verified_at: new Date().toISOString(),
   };
 

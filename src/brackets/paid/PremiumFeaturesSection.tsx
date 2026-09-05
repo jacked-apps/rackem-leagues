@@ -32,8 +32,8 @@ interface PremiumFeaturesSectionProps {
   cardOnFile: CardOnFile | null;
   /** Saving / enabling in flight. */
   saving: boolean;
-  /** Enable a feature — with card data (first-time card setup) or reusing the card on file. */
-  onEnable: (feature: PremiumFeature, card?: PaymentCardData) => void;
+  /** Enable a feature — with card data + optional label (first-time setup) or reusing the card on file. */
+  onEnable: (feature: PremiumFeature, card?: PaymentCardData, nickname?: string) => void;
   /** Disable a feature (immediate, no popup). */
   onDisable: (key: string) => void;
 }
@@ -63,8 +63,8 @@ export function PremiumFeaturesSection({
     }
   };
 
-  const handleVerified = (card: PaymentCardData) => {
-    if (pendingFeature) onEnable(pendingFeature, card);
+  const handleVerified = (card: PaymentCardData, nickname?: string) => {
+    if (pendingFeature) onEnable(pendingFeature, card, nickname);
     setPendingFeature(null);
   };
 
@@ -83,7 +83,9 @@ export function PremiumFeaturesSection({
       {cardOnFile && (
         <p className="flex items-center gap-1.5 text-sm text-success">
           <span aria-hidden>✓</span>
-          Payment method established — {cardOnFile.brand} ending in {cardOnFile.last4}.
+          Payment method established —{' '}
+          {cardOnFile.nickname ? `${cardOnFile.nickname} · ` : ''}
+          {cardOnFile.brand} ending in {cardOnFile.last4}.
         </p>
       )}
 

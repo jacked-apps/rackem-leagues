@@ -25,8 +25,8 @@ interface PaymentMethodDialogProps {
   open: boolean;
   /** Saving the card in flight. */
   saving: boolean;
-  /** Card verified — hand back the card data to save + establish the method. */
-  onVerified: (card: PaymentCardData) => void;
+  /** Card verified — hand back the card data + optional label to save + establish. */
+  onVerified: (card: PaymentCardData, nickname?: string) => void;
   /** Dismiss without establishing a card. */
   onCancel: () => void;
 }
