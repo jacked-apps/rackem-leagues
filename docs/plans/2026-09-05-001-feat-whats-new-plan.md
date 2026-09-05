@@ -1,12 +1,18 @@
 ---
 title: "feat: What's New — telling users what changed, without using their inbox"
 type: feat
-status: not started
+status: superseded — rewrite from docs/brainstorms/2026-09-05-whats-new-requirements.md
 date: 2026-09-05
 origin: Ed, 2026-09-05 — "i would like a way to update a whats new page or some way to tell the users what the new updates are. perhaps a message thread we can send to all users?"
 ---
 
 # feat: What's New
+> **SUPERSEDED 2026-09-05.** Written before Ed raised two things this plan does
+> not cover: an archive of past updates, and a way to stop us forgetting to
+> write the entry at all. The second is the harder problem and reshapes the
+> feature. See `docs/brainstorms/2026-09-05-whats-new-requirements.md` and
+> rewrite this from it rather than patching it.
+
 
 ## Overview
 
