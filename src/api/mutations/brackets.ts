@@ -150,6 +150,8 @@ export async function startBracket(
  */
 export async function chargeForStart(bracketId: string, amountCents: number): Promise<void> {
   // TODO(payments): real charge of brackets.payment_method_id for amountCents (Stripe).
+  //   Beta comp: if the card's token is a MOCK (tok_mock_%), SKIP the charge and
+  //   mark paid — beta users grandfather in free. See LIST_FOR_ED.md.
   const { error } = await supabase
     .from('brackets')
     .update({ charged_at: new Date().toISOString(), charge_amount_cents: amountCents })

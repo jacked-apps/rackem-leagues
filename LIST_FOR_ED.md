@@ -20,23 +20,24 @@ consolidation (he owns that flow + the eventual real Stripe wiring).
 
 ---
 
-## 🧹 2026-09-05 — Before the real paywall: purge the MOCK cards on file
+## 💳 2026-09-05 — MOCK cards on file: keep them to comp beta users (or purge)
 
 During beta the tournament payment flow saves a **real, persistent per-player card
 on file** (`payment_methods`) so users enter a card once and it's reused across
 tournaments — but the token is a **mock** (`PaymentCardForm` returns
-`tok_mock_<ts>`; no real Stripe). These fake cards **cannot be charged**.
+`tok_mock_<ts>`; no real Stripe). Mock tokens are identifiable by the
+`tok_mock_%` prefix.
 
-**When Jack's real Stripe goes live**, delete the mock cards so beta users are
-prompted to enter a real one:
+**When Jack's real Stripe goes live, two options — Ed prefers KEEP:**
+- **Keep + comp (preferred):** at the charge-at-checkout seam (`chargeForStart`),
+  check if the card's token is a mock (`tok_mock_%`); if so, **skip the real
+  charge and mark the tournament paid** — so beta users keep playing **free**
+  forever. A clean grandfather perk (pairs with coupon codes).
+- **Purge (force re-enter):** `DELETE FROM public.payment_methods WHERE
+  stripe_payment_method_id LIKE 'tok_mock_%';`
 
-```sql
-DELETE FROM public.payment_methods WHERE stripe_payment_method_id LIKE 'tok_mock_%';
-```
-
-(Every card created before real Stripe is a mock, so this is safe. If you want a
-belt-and-suspenders marker instead of the token prefix, add an `is_mock boolean`
-column — ask and I'll do it.)
+(If you want a belt-and-suspenders marker instead of the token prefix, add an
+`is_mock boolean` column — ask and I'll do it.)
 
 ---
 
