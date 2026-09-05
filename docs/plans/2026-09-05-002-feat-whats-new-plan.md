@@ -1,0 +1,167 @@
+---
+title: "feat: What's New — a plain-language changelog users actually read"
+type: feat
+status: ready to build
+date: 2026-09-05
+origin: docs/brainstorms/2026-09-05-whats-new-requirements.md
+supersedes: docs/plans/2026-09-05-001-feat-whats-new-plan.md
+---
+
+# feat: What's New
+
+## Overview
+
+Features ship and nobody hears about it. Push notifications, tournament
+brackets, house rules, the payout calculator and the finances surface all went
+live without a word, and the About page listed two shipped features under
+"Coming Soon" for months.
+
+Two problems, and only the first is obvious:
+
+1. **Users don't learn what changed.**
+2. **We forget to write it down.** A changelog nobody updates is worse than
+   none — it actively misinforms. That's what happened to the About page.
+
+This plan addresses both: a page users will actually read, and a process that
+makes forgetting hard.
+
+## The voice — the part that matters most
+
+Ed, 2026-09-05: *"more informal and zero jargon easy to understand. so like
+instead of 'bug fix: bla bla jargon blah' we do something like 'we fixed this
+button so it doesn't double up a team chat'."*
+
+**Rules:**
+
+- **Say what changed for them, not what we did.** The reader is a pool player,
+  not an engineer.
+- **No jargon. None.** Not "service worker", "migration", "race condition",
+  "cache", "dispatcher". If a word only makes sense to us, it doesn't go on the
+  page.
+- **Name the thing they can see** — the button, the screen, the chat.
+- **Short.** One or two sentences. If it needs a paragraph, it's two entries or
+  it doesn't belong.
+- **No version numbers or ticket references in the text.**
+
+**Worked examples, from real work on 2026-09-05:**
+
+| Commit title (what we say to each other) | Entry (what we say to them) |
+|---|---|
+| `fix(pwa): SW had no SKIP_WAITING listener` | The app couldn't install its own updates. Tapping **Update** now actually updates it. |
+| `fix(messages): make duplicate team chats impossible` | Tapping **Create team chat** twice made two identical chats. Now it makes one. |
+| `fix(push): don't chime for the conversation you're already reading` | Your phone no longer buzzes for the chat you're already looking at. |
+| `feat(notifications): per-chat and per-type controls` | You can now set quiet hours, and tell a busy team chat to notify you once instead of every message. |
+| `fix(messages): keep the conversation header in view` | In a direct message, the other person's name stays at the top instead of scrolling away. |
+| `fix(db): renumber push_subscriptions migration off a duplicate version` | *(nothing — no user-facing effect)* |
+
+That last row is the discipline: **most of our commits don't belong on this
+page.** A changelog padded with internal work is one nobody reads.
+
+## When entries get written
+
+**Per PR, by whoever wrote the change** — while the reasoning is fresh and the
+user-facing effect is obvious. Writing them at release time means reconstructing
+a fortnight of work from commit subjects, which is how they end up jargon-y.
+
+A PR with no user-facing effect adds nothing. That's normal and expected.
+
+Entries accumulate under an `unreleased` heading and get stamped with the
+version at release.
+
+## Key Decisions
+
+- **Entries live in a committed file.** Release notes belong to the release; if
+  they're editable at runtime they can describe a build that isn't deployed.
+  Needing a commit is the point.
+- **The release gate compares against the GIT TAG, not `package.json`.** The tag
+  is what deploys, and the two have already drifted — `package.json` says 1.8.0
+  while main is far past the v1.8.0 tag.
+- **A release with genuinely nothing user-facing** declares that explicitly
+  (`entries: []` plus a one-line reason). Deliberate, not bypassed.
+- **The seen-marker is per USER, not per device** — a `members` column. Reading
+  the notes on a laptop should clear the marker on a phone.
+- **Quiet by design.** A small marker on the nav entry. No modal, no push, no
+  unread count. An update the user didn't ask about shouldn't block what they
+  came to do.
+- **The page is public.** Readable logged-out, so a prospective operator can see
+  a record of steady work before signing up.
+- **Version string in two places** — the What's New page and the foot of the
+  drawer. It's most useful when someone is confused, and that isn't when they'd
+  go hunting for a changelog. On 2026-09-05 we mistook a stale bundle for a
+  broken feature twice; both times the question was "am I on the new code?"
+
+## Still open — Ed's call
+
+- **How openly do we describe something that was broken?** Three registers, using
+  the update bug:
+  1. *"Fixed an issue where the app could fail to update."* — vague
+  2. *"The app now updates properly when a new version is available."* —
+     describes the present, doesn't dwell
+  3. *"For about a week the app couldn't update itself. That's fixed."* — fully
+     candid
+  Recommendation is **2**: never claim something worked when it didn't, but
+  don't narrate the failure either. **3** builds more trust with an operator
+  evaluating the app, at the cost of inviting "how did that happen?" mid-sales
+  conversation. The examples in this doc are written at level 2 — worth a look
+  to see whether that reads right before it's set.
+
+## Implementation Units
+
+### Unit 1 — Content file + page
+
+- `src/whatsNew/releases.ts` — typed:
+  `{ version: string | 'unreleased', date: string | null, entries: { text: string, forOperators?: boolean }[], noUserFacingChanges?: string }`
+- `src/whatsNew/WhatsNewPage.tsx` at `/whats-new`, public.
+  - Newest first, one section per version, each with a stable anchor
+    (`#v1-9-0`) so a version is linkable in a support conversation.
+  - `forOperators` entries carry a small tag — a tag, not a separate view; one
+    list is one thing to maintain.
+  - Running version at the foot.
+- Tests: newest first; an empty list doesn't crash; an anchor exists per
+  version; an operator-tagged entry renders its tag.
+
+### Unit 2 — The seen-marker
+
+- Migration: `members.last_seen_whats_new text` (nullable; NULL = never looked,
+  which is every existing user).
+- `useHasUnseenWhatsNew()` — compares the newest *released* version against that
+  column. `unreleased` entries never trigger it; users shouldn't be marked
+  "new" for something not yet shipped.
+- Nav entry in **both** `AppSidebar` and `AppDrawer` with the marker, per the
+  door-and-room rule.
+- Opening the page writes the current version.
+- A divider on the page — "new since you last looked" — rather than a separate
+  view.
+- Marker uses shape and text, never colour alone.
+- Tests: unseen when NULL; unseen when stored version is older; seen when equal;
+  `unreleased` doesn't trigger; opening clears it.
+
+### Unit 3 — The release gate
+
+- `scripts/check-whats-new.sh`, run in the **production deploy workflow before
+  the build**, and on PRs so it can't first fail during a release.
+- Fails when the tag being released has no matching entry AND no explicit
+  `noUserFacingChanges` reason.
+- Failure message says exactly what to add and where — a gate that doesn't tell
+  you how to satisfy it just gets bypassed.
+- Deliberately NOT a per-PR "you changed src/, write an entry" check: most
+  commits aren't user-facing, so it would be wrong most of the time, and people
+  route around a check that cries wolf.
+
+### Unit 4 — Backfill
+
+One `unreleased` entry covering what's actually live now, written to the voice
+rules. Ships with Units 1–3 so the page is never empty on arrival.
+
+Covers: push notifications with their controls, tournament brackets, house
+rules, league dues and payouts, operator scoring and corrections, the FargoRate
+results sheet, and the messaging fixes.
+
+## Follow-ups
+
+- An in-app editor, if maintaining the file becomes the bottleneck. It won't at
+  this cadence.
+- A commit-derived **draft** to solve the blank page — a prompt for a human to
+  rewrite, never published text. Worth it only once the cadence makes writing
+  from scratch feel like a chore.
+- Emailing release notes — different problem, different consent question.
