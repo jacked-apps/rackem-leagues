@@ -291,6 +291,19 @@ export const queryKeys = {
   },
 
   /**
+   * Payment-method query keys — a player's saved card(s) on file (reusable for
+   * tournaments, dues, etc.).
+   */
+  paymentMethods: {
+    /** Base key for all payment-method queries */
+    all: ['paymentMethods'] as const,
+
+    /** A member's default card on file (or none) */
+    default: (memberId: string) =>
+      [...queryKeys.paymentMethods.all, 'default', memberId] as const,
+  },
+
+  /**
    * Tournament-related query keys
    */
   tournaments: {

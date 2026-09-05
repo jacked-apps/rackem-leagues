@@ -8,7 +8,7 @@
  * persistence/resume, unlike the league wizard.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -19,10 +19,17 @@ import {
   useSetParticipants,
   useStartBracket,
 } from '@/api/hooks/useBrackets';
+import {
+  useDefaultPaymentMethod,
+  useSaveDefaultPaymentMethod,
+} from '@/api/hooks/usePaymentMethods';
+import type { PaymentCardData } from '@/components/PaymentCardForm';
 import { useCreateBracketForm } from './useCreateBracketForm';
 import { DetailsStep } from './steps/DetailsStep';
 import { ParticipantsStep } from './steps/ParticipantsStep';
 import { ReviewStep } from './steps/ReviewStep';
+import { PremiumFeaturesSection } from './paid/PremiumFeaturesSection';
+import type { PremiumFeature } from './paid/premiumFeatures';
 
 const STEP_TITLES = {
   details: 'Tournament details',
@@ -41,6 +48,42 @@ export function CreateBracketFlow() {
   const startBracket = useStartBracket();
   const [submitting, setSubmitting] = useState(false);
 
+  // The player's card on file (reusable across tournaments/dues). If they already
+  // have one, seed it so turning on a premium feature just confirms — no re-entry.
+  const { data: defaultCard } = useDefaultPaymentMethod(member?.id);
+  const saveCard = useSaveDefaultPaymentMethod();
+  useEffect(() => {
+    if (defaultCard && !state.cardOnFile) {
+      form.setCardOnFile({
+        paymentMethodId: defaultCard.id,
+        last4: defaultCard.card_last4 ?? '',
+        brand: defaultCard.card_brand ?? '',
+      });
+    }
+  }, [defaultCard, state.cardOnFile, form]);
+
+  /**
+   * Turn a premium feature on. First time (no card yet) we save the verified card
+   * to the player's card-on-file; after that the same card is reused. Then check
+   * the feature. Verify-at-setup — no charge happens here (that's at Start).
+   */
+  const handleEnableFeature = async (feature: PremiumFeature, card?: PaymentCardData) => {
+    try {
+      if (card && member?.id) {
+        const paymentMethodId = await saveCard.mutateAsync({
+          memberId: member.id,
+          token: card.paymentToken,
+          cardLast4: card.cardLast4,
+          cardBrand: card.cardBrand,
+        });
+        form.setCardOnFile({ paymentMethodId, last4: card.cardLast4, brand: card.cardBrand });
+      }
+      form.togglePremiumFeature(feature.key);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save your card.');
+    }
+  };
+
   /** Create → set participants → start, then go to the live view. */
   const handleSubmit = async () => {
     if (!member?.id || !validation.canSubmit) return;
@@ -52,6 +95,10 @@ export function CreateBracketFlow() {
         seedingMode: state.seedingMode,
         grandFinalReset: state.grandFinalReset,
         createdBy: member.id,
+        // Paid tier: any premium feature checked ⇒ paid; charge the card on file at Start.
+        premiumFeatures: state.premiumFeatures,
+        gameType: state.gameType,
+        paymentMethodId: state.cardOnFile?.paymentMethodId ?? null,
       });
       await setParticipants.mutateAsync({
         bracketId: bracket.id,
@@ -80,14 +127,25 @@ export function CreateBracketFlow() {
         </CardHeader>
         <CardContent className="space-y-6">
           {state.step === 'details' && (
-            <DetailsStep
-              name={state.name}
-              format={state.format}
-              grandFinalReset={state.grandFinalReset}
-              onNameChange={(v) => form.set('name', v)}
-              onFormatChange={(v) => form.set('format', v)}
-              onResetChange={(v) => form.set('grandFinalReset', v)}
-            />
+            <>
+              <DetailsStep
+                name={state.name}
+                format={state.format}
+                grandFinalReset={state.grandFinalReset}
+                gameType={state.gameType}
+                onNameChange={(v) => form.set('name', v)}
+                onFormatChange={(v) => form.set('format', v)}
+                onResetChange={(v) => form.set('grandFinalReset', v)}
+                onGameTypeChange={(v) => form.set('gameType', v)}
+              />
+              <PremiumFeaturesSection
+                selectedKeys={state.premiumFeatures}
+                cardOnFile={state.cardOnFile}
+                saving={saveCard.isPending}
+                onEnable={handleEnableFeature}
+                onDisable={form.togglePremiumFeature}
+              />
+            </>
           )}
 
           {state.step === 'participants' && (

@@ -13,7 +13,7 @@ import {
 /**
  * Payment card information interface
  */
-interface PaymentCardData {
+export interface PaymentCardData {
   paymentToken: string;
   cardLast4: string;
   cardBrand: string;

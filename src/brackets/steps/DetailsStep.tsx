@@ -9,24 +9,42 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { BracketFormat } from '@/types/bracket';
+
+/** Game types offered for a tournament (used later by handicap/scoring). */
+const GAME_TYPES = [
+  { value: 'eight_ball', label: '8-Ball' },
+  { value: 'nine_ball', label: '9-Ball' },
+  { value: 'ten_ball', label: '10-Ball' },
+] as const;
 
 interface DetailsStepProps {
   name: string;
   format: BracketFormat;
   grandFinalReset: boolean;
+  gameType: string | null;
   onNameChange: (name: string) => void;
   onFormatChange: (format: BracketFormat) => void;
   onResetChange: (reset: boolean) => void;
+  onGameTypeChange: (gameType: string) => void;
 }
 
 export function DetailsStep({
   name,
   format,
   grandFinalReset,
+  gameType,
   onNameChange,
   onFormatChange,
   onResetChange,
+  onGameTypeChange,
 }: DetailsStepProps) {
   return (
     <div className="space-y-6">
@@ -39,6 +57,22 @@ export function DetailsStep({
           placeholder="Friday Night 9-Ball"
           maxLength={80}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="game-type">Game</Label>
+        <Select value={gameType ?? undefined} onValueChange={onGameTypeChange}>
+          <SelectTrigger id="game-type">
+            <SelectValue placeholder="Choose a game" />
+          </SelectTrigger>
+          <SelectContent>
+            {GAME_TYPES.map((g) => (
+              <SelectItem key={g.value} value={g.value}>
+                {g.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">

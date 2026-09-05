@@ -29,6 +29,13 @@ export interface CreateBracketParams {
   grandFinalReset?: boolean;
   /** The creating member's id (from useCurrentMember) → brackets.created_by. */
   createdBy: string;
+  // ── Paid tier (all optional; omitted = a free tournament) ──────────────────
+  /** Checked premium features. Non-empty ⇒ the DB forces tier='paid'. */
+  premiumFeatures?: string[];
+  /** The tournament's game type (e.g. 'eight_ball'), or null. */
+  gameType?: string | null;
+  /** The player card-on-file (payment_methods.id) charged at Start, or null. */
+  paymentMethodId?: string | null;
 }
 
 /**
@@ -54,6 +61,7 @@ export async function sweepStaleBrackets(): Promise<void> {
 export async function createBracket(params: CreateBracketParams): Promise<BracketRow> {
   await sweepStaleBrackets();
 
+  const premiumFeatures = params.premiumFeatures ?? [];
   const { data, error } = await supabase
     .from('brackets')
     .insert({
@@ -62,6 +70,11 @@ export async function createBracket(params: CreateBracketParams): Promise<Bracke
       seeding_mode: params.seedingMode,
       grand_final_reset: params.grandFinalReset ?? false,
       created_by: params.createdBy,
+      // Paid tier: any premium feature checked ⇒ paid (the DB CHECK also enforces this).
+      tier: premiumFeatures.length > 0 ? 'paid' : 'free',
+      premium_features: premiumFeatures,
+      game_type: params.gameType ?? null,
+      payment_method_id: params.paymentMethodId ?? null,
     })
     .select()
     .single();
