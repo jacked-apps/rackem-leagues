@@ -109,56 +109,67 @@ version at release.
 
 ## Implementation Units
 
-### Unit 1 — Content file + the two surfaces
+### Unit 1 — Content file + the page
 
-**Shape: one release per screen, plus an index.** Two surfaces because they
-answer two different questions, and one page trying to do both does neither
-well.
+**Shape: the current release in full, with earlier ones listed beneath it as
+one-liners.** One route, one screen.
 
 Ed, 2026-09-05: *"a single page with all of the new shit from the last year
-would be too bulky… a date, the release number and each change, an arrow that
-clicks to the earlier one."*
+would be too bulky"* — and then, on the list vs a separate archive route:
+*"i think your idea of the list — date, release, and short explanation — is a
+better idea than the /all page."*
 
-| Question | Surface |
-|---|---|
-| "What's new?" | `/whats-new` — the latest release only |
-| "When did that change?" | `/whats-new/all` — a compact index |
+```
+What's New
 
-**`/whats-new`** — one release: date, version, its changes. An **← Older** link
-to the previous release, and **Newer →** once you're back in history. Each
-release is also its own route (`/whats-new/1.9.0`) so it's linkable and
-bookmarkable.
+1.9.0 · March 4
+  • Your phone no longer buzzes for the chat you're already looking at
+  • You can set quiet hours so nothing comes through at night
+  • Tapping Create team chat twice no longer makes two chats
 
-The common case is somebody who just updated, taps the marker, reads six lines
-and leaves. That should be one screen with nothing else on it.
+─────────────────────────────
+Earlier releases
 
-**`/whats-new/all`** — every release as a row: date, version, and a one-line
-summary. One scannable screen, click through to any release.
+1.8.2 · Feb 20 · Messaging fixes and faster standings
+1.8.1 · Feb 11 · Playoff bracket setup
+1.8.0 · Jan 30 · Tournament brackets
+```
 
-This exists because paging back one release at a time is miserable when you're
-hunting for *when* something changed — ten clicks to reach something from three
-months ago. The index makes a year of history useful rather than merely stored.
+Each earlier row links to that release in full at `/whats-new/1.8.1`.
 
-**Rejected: scrolling up to reveal older releases.** People expect newest at the
-top and older as they scroll DOWN. Inverting it reads as broken before it reads
-as clever, and on a phone there's no scrollbar to signal where you are.
+**Why this over a separate index route:** the bulk problem was never "a list of
+releases", it was "every release's full entries on one page". One line each
+isn't bulky, and keeping them here means "when did that change?" is answered by
+scanning rather than by a second navigation. One surface instead of two, and one
+less thing to drift.
+
+**Rejected — scrolling UP to reveal older releases.** People expect newest at
+the top and older as they scroll DOWN. Inverting it reads as broken before it
+reads as clever, and on a phone there's no scrollbar to signal position.
+
+**Rejected — a git hash on each row.** Ed confirmed the version number, not a
+commit hash. A hash means nothing to a player and makes the page look like a
+developer tool, which is the opposite of the voice.
 
 **Files:**
 
 - `src/whatsNew/releases.ts` — typed:
   `{ version: string | 'unreleased', date: string | null, summary: string, entries: { text: string, forOperators?: boolean }[], noUserFacingChanges?: string }`
-  - `summary` is the one-liner the index shows. Written with the entries, not
-    generated from them — a generated summary is either the first entry (often
+  - `summary` is the one-liner the "Earlier releases" list shows. Written with
+    the entries, not generated from them — a generated summary is either the first entry (often
     the least important) or a count (useless).
-- `src/whatsNew/WhatsNewPage.tsx` — the single-release view, public.
-- `src/whatsNew/AllReleasesPage.tsx` — the index, public.
+- `src/whatsNew/WhatsNewPage.tsx` — public. Renders the requested release in
+  full (defaulting to the newest) plus the "Earlier releases" list beneath.
+  One component serves both `/whats-new` and `/whats-new/:version`.
 - `forOperators` entries carry a small tag; a tag, not a separate view.
 - Running version at the foot of the single-release page.
 
-**Tests:** `/whats-new` shows only the newest released version; Older/Newer
-navigate correctly and are absent at each end; an unknown version in the URL
-falls back rather than crashing; the index lists every release newest first; an
-operator-tagged entry renders its tag; an empty list doesn't crash either page.
+**Tests:** `/whats-new` shows the newest RELEASED version in full (never
+`unreleased`); the earlier-releases list shows every other release, newest
+first, and excludes the one being displayed; `/whats-new/1.8.1` shows that one
+in full; an unknown version in the URL falls back to the newest rather than
+crashing; an operator-tagged entry renders its tag; a single-release history
+shows no "Earlier releases" section at all rather than an empty heading.
 
 ### Unit 2 — The seen-marker
 
