@@ -57,10 +57,37 @@ describe('latestReleasedVersion', () => {
 });
 
 describe('resolveRelease', () => {
-  it('defaults to the newest of anything, including unreleased', () => {
-    // On dev and staging the unreleased block is the only content there is;
-    // an empty page would be worse than showing it.
+  it('defaults to the unreleased block while it has entries', () => {
+    // On dev and staging that block is the only content there is; an empty
+    // page would be worse than showing it.
     expect(resolveRelease(undefined, FIXTURE)?.version).toBe(UNRELEASED);
+  });
+
+  it('skips an EMPTY unreleased block and shows the last real release', () => {
+    // Stamping a release opens a fresh empty `unreleased` at the top. Without
+    // this, everyone who followed the "New" marker on release day would land on
+    // a blank "In progress" page — on exactly the day they were told to look.
+    const justStamped: Release[] = [
+      { version: UNRELEASED, date: null, summary: '', entries: [] },
+      ...FIXTURE.slice(1),
+    ];
+    expect(resolveRelease(undefined, justStamped)?.version).toBe('1.10.0');
+  });
+
+  it('shows an empty-but-explained release rather than skipping it', () => {
+    // A release that deliberately changed nothing user-facing still has
+    // something to say, and saying it is the point of the opt-out.
+    const quiet: Release[] = [
+      {
+        version: UNRELEASED,
+        date: null,
+        summary: '',
+        entries: [],
+        noUserFacingChanges: 'Behind-the-scenes work only this time.',
+      },
+      ...FIXTURE.slice(1),
+    ];
+    expect(resolveRelease(undefined, quiet)?.version).toBe(UNRELEASED);
   });
 
   it('finds a named version', () => {

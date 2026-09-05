@@ -93,46 +93,40 @@ export const RELEASES: Release[] = [
     entries: [],
   },
   {
-    version: '1.9.0',
+    version: '1.0.0',
     date: '2026-09-05',
-    summary: 'Notifications you control, tournaments, and a pile of fixes',
+    summary:
+      'Message notifications on your phone, tournament brackets, and an update button that works',
     entries: [
       {
-        text: 'Messages can now reach your phone when the app is closed. You choose what comes through: quiet hours so nothing arrives overnight, a default per kind of chat, and a setting on any single conversation.',
+        text: 'Messages can now reach your phone even when the app is closed. Tap the notification and it opens straight to that conversation.',
       },
       {
-        text: 'A busy group chat notifies you once and then holds off for a few minutes, instead of buzzing for every message.',
+        text: 'You decide what comes through. Set quiet hours so nothing arrives overnight, pick a default for each kind of chat, and mute any single conversation on its own.',
       },
       {
-        text: 'Your phone was buzzing for the chat you were already looking at. It does not any more.',
+        text: 'A busy group chat notifies you once and then stays quiet for a few minutes, instead of buzzing for every message. Direct messages always come through.',
       },
       {
-        text: 'For about a week the app could not install its own updates — tapping Update appeared to do nothing. That is fixed, and it now shows you it is working.',
+        text: 'Your phone was buzzing for the chat you were already reading. It does not any more.',
       },
       {
-        text: 'Tournaments: run a single or double elimination bracket for a bar night or side event. Add names, tap winners, and share a link so anyone can follow along. Free, and it does not need a league.',
+        text: 'Only the first message in a conversation was making a sound and the rest arrived silently. Every message announces itself properly now.',
       },
       {
-        text: 'Tapping Create team chat twice made two identical chats. Now it makes one.',
+        text: 'Tournaments: run a single or double elimination bracket for a bar night or a side event. Add names, tap the winners, and share a link so anyone can follow along live. It is free and it does not need a league.',
       },
       {
-        text: 'In a direct message the other person’s name stays at the top instead of scrolling away, and their name is no longer repeated above every message.',
+        text: 'For about a week the app could not install its own updates, and tapping Update looked like it did nothing at all. That is fixed. It now shows you it is working and reloads on its own when it is done.',
       },
       {
-        text: 'House rules: add your own rules on top of the official rulebook, so "scratch on the 8 is a loss" is written down instead of argued about.',
-        forOperators: true,
+        text: 'In a direct message the other person\u2019s name stays at the top instead of scrolling away, and it is no longer repeated above every single message.',
       },
       {
-        text: 'League dues at a glance, and a payout calculator for working out prize money.',
-        forOperators: true,
+        text: 'You can see which version of the app you are running at the bottom of this page. Worth knowing if something looks wrong and you want to tell us about it.',
       },
       {
-        text: 'Enter a match that was played on paper, and reopen a finished match to correct it.',
-        forOperators: true,
-      },
-      {
-        text: 'Print a results sheet laid out the way CSI/FargoRate wants it, and tick off which matches you have already entered there.',
-        forOperators: true,
+        text: 'This page. From now on you can see what we have changed and when, and look back through earlier releases.',
       },
     ],
   },

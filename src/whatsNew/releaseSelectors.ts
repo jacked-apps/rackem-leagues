@@ -34,15 +34,26 @@ export function latestReleasedVersion(releases: Release[] = RELEASES): string | 
   return releasedVersions(releases)[0]?.version ?? null;
 }
 
+/** A release worth showing: it says something. */
+function hasContent(release: Release): boolean {
+  return release.entries.length > 0 || !!release.noUserFacingChanges;
+}
+
 /**
  * The release to show for a route.
  *
  * @param version - From the URL, or undefined for `/whats-new`
- * @returns The named release; otherwise the newest of anything, including the
- *          unreleased block — on a dev or staging build that block is the only
- *          content there is, and an empty page would be worse than showing it.
- *          An unknown version falls back rather than 404s: a stale link from a
- *          support conversation should still land somewhere useful.
+ * @returns The named release; otherwise the newest one that actually says
+ *          something.
+ *
+ * Skipping empty blocks matters immediately after a release: stamping opens a
+ * fresh empty `unreleased` at the top of the list, so defaulting to "the first
+ * entry" would greet everyone with a blank "In progress" page on exactly the
+ * day they were told to come and look. The unreleased block IS shown once it
+ * has entries, which is the normal state on dev and staging.
+ *
+ * An unknown version falls back rather than 404s: a stale link from a support
+ * conversation should still land somewhere useful.
  */
 export function resolveRelease(
   version?: string,
@@ -52,7 +63,7 @@ export function resolveRelease(
     const match = releases.find((r) => r.version === version);
     if (match) return match;
   }
-  return releases[0] ?? null;
+  return releases.find(hasContent) ?? releases[0] ?? null;
 }
 
 /**
