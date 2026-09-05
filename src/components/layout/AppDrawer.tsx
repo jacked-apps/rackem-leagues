@@ -31,6 +31,7 @@ import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
 import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
+import { useHasUnseenWhatsNew } from '@/whatsNew/useWhatsNewSeen';
 import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
 import { MyMatchPanel } from './MyMatchPanel';
@@ -206,6 +207,7 @@ function PlayerSection({
   // Doorbell: pending join requests for teams this user can approve. The link
   // appears only while requests are waiting and clears when handled.
   const joinRequestCount = usePendingJoinRequestCount();
+  const hasUnseenWhatsNew = useHasUnseenWhatsNew();
   // Captain re-up entry — shown only when the current user has open
   // re-up forms (last-3-weeks window + no submitted answer yet). Same
   // hook the syncer-modal uses, so the link appears the moment a
@@ -225,6 +227,12 @@ function PlayerSection({
       <DrawerLink to="/stats" label="Stats" />
       <DrawerLink to="/rules" label="Rules" />
       <DrawerLink to="/learn" label="Learn" />
+      {/* Marker is the WORD "New", not a coloured dot — it has to read without
+          relying on colour. */}
+      <DrawerLink
+        to="/whats-new"
+        label={hasUnseenWhatsNew ? "What's New (New)" : "What's New"}
+      />
       <DrawerLink to="/messages" label={messagesLabel} />
       {/* No "Profile" link — the name/avatar at the top of the drawer already
           opens /profile. The reclaimed slot holds the Tournaments side tool. */}

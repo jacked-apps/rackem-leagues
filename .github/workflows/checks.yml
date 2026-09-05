@@ -38,6 +38,33 @@ jobs:
       - name: Check for duplicate migration versions
         run: bash scripts/check-migration-versions.sh
 
+  whats-new:
+    name: What's New entry or opt-out
+    # PRs only — there's no description to read on a direct push to main.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Need the base commit to diff against; a shallow clone has neither.
+          fetch-depth: 0
+
+      # Written to files rather than passed as arguments: a PR description is
+      # arbitrary user text, and interpolating it into a shell command is a
+      # script-injection waiting to happen.
+      - name: Collect changed files and PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/changed-files.txt
+          printf '%s' "$PR_BODY" > /tmp/pr-body.txt
+
+      - name: Check for a What's New entry
+        run: node scripts/check-whats-new.mjs /tmp/changed-files.txt /tmp/pr-body.txt
+
   unit-tests:
     name: Unit tests
     runs-on: ubuntu-latest
