@@ -18,6 +18,7 @@ import { useUpdateProfanityFilter } from '@/api/hooks';
 import { useUser } from '@/context/useUser';
 import { useMemberId, useCurrentMember, usePushSubscription } from '@/api/hooks';
 import { PushNotificationSetting } from './PushNotificationSetting';
+import { NotificationPrefsSection } from './notifications/NotificationPrefsSection';
 import { PUSH_NOTIFICATIONS_ENABLED } from '@/config/featureFlags';
 import { BlockedUsersModal } from './BlockedUsersModal';
 import { Modal } from '@/components/shared';
@@ -215,7 +216,7 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
                     </div>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
+                <AccordionContent className="space-y-4 px-4 pb-4">
                   <PushNotificationSetting
                     capability={push.capability}
                     isSubscribed={push.isSubscribed}
@@ -223,6 +224,19 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
                     onEnable={push.subscribe}
                     onDisable={push.unsubscribe}
                   />
+                  {/* The member's global rules sit UNDER the device switch
+                      above and OVER anything per-chat. Rendered even when this
+                      device isn't subscribed — they're account settings, not
+                      device ones — with a note saying they can't take effect
+                      yet. Only shown once we know who the member is. */}
+                  {memberId && (
+                    <div className="border-t pt-4">
+                      <NotificationPrefsSection
+                        memberId={memberId}
+                        isSubscribed={push.isSubscribed}
+                      />
+                    </div>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             ) : (

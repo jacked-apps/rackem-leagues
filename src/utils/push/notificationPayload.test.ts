@@ -34,6 +34,8 @@ describe('buildNotification', () => {
       options: {
         body: 'you coming tonight?',
         tag: 'conversation:conv-1',
+        // Required alongside `tag` — see the renotify tests below.
+        renotify: true,
         data: { url: '/messages/conv-1', conversationId: 'conv-1' },
       },
     });
@@ -79,5 +81,29 @@ describe('isViewingConversation', () => {
   it('is false when there is no conversation id or the url is malformed', () => {
     expect(isViewingConversation('https://app.example/messages/conv-1')).toBe(false);
     expect(isViewingConversation('not a url', 'conv-1')).toBe(false);
+  });
+});
+
+describe('renotify (the chime on the 2nd+ message)', () => {
+  // Regression: notifications are tagged one-per-conversation so rapid messages
+  // collapse into a single banner. But a notification that REPLACES one with the
+  // same tag does not re-alert unless renotify is set — so in the field the
+  // first message in a thread rang and every one after it arrived silently.
+  it('sets renotify alongside the tag so replacements still alert', () => {
+    const { options } = buildNotification({
+      web_push: 8030,
+      notification: { title: 'Ed', body: 'your break' },
+      data: { conversationId: 'c1' },
+    });
+
+    expect(options.tag).toBe('conversation:c1');
+    expect(options.renotify).toBe(true);
+  });
+
+  it('sets renotify on the untagged fallback too', () => {
+    const { options } = buildNotification({});
+
+    expect(options.tag).toBe('rackem-message');
+    expect(options.renotify).toBe(true);
   });
 });

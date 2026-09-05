@@ -139,7 +139,16 @@ serve(async (req) => {
   let pruned = 0;
   let failed = 0;
 
+  // Members we actually reached. The rate-limit window opens from a SUCCESSFUL
+  // send only — stamping at selection time would start a quiet period for
+  // someone whose push then failed, so they'd get silence instead of the next
+  // message. A Set because one member can have several devices; the window is
+  // per member per conversation, not per device.
+  const notifiedMemberIds = new Set<string>();
+  let conversationId: string | null = null;
+
   for (const row of recipients) {
+    conversationId = row.conversation_id;
     const subscription = {
       endpoint: row.endpoint,
       keys: { p256dh: row.p256dh, auth: row.auth },
@@ -147,6 +156,7 @@ serve(async (req) => {
     try {
       await webpush.sendNotification(subscription, buildPayload(row));
       dispatched++;
+      notifiedMemberIds.add(row.member_id);
     } catch (err) {
       const statusCode = (err as { statusCode?: number })?.statusCode;
       if (statusCode === 404 || statusCode === 410) {
@@ -164,7 +174,33 @@ serve(async (req) => {
     }
   }
 
+  // Open the rate-limit window for whoever actually received this. Without
+  // this call last_notified_at stays NULL forever and the window check in
+  // get_push_recipients always passes — i.e. rate limiting silently does
+  // nothing, which is indistinguishable from working until a busy night.
+  if (conversationId && notifiedMemberIds.size > 0) {
+    const { error: stampError } = await supabase.rpc("mark_push_notified", {
+      p_conversation_id: conversationId,
+      p_member_ids: [...notifiedMemberIds],
+    });
+    // Never fail the dispatch over this: the pushes already went out. A missed
+    // stamp means someone can be notified again sooner than they asked, which
+    // is far better than erroring after delivery.
+    if (stampError) {
+      console.error("mark_push_notified failed", {
+        messageId,
+        message: stampError.message,
+      });
+    }
+  }
+
   // Structured counts so a silently-broken pipeline is diagnosable from logs.
-  console.log("dispatch-push-notifications", { messageId, dispatched, pruned, failed });
+  console.log("dispatch-push-notifications", {
+    messageId,
+    dispatched,
+    pruned,
+    failed,
+    rateLimitStamped: notifiedMemberIds.size,
+  });
   return json({ success: true, dispatched, pruned, failed });
 });

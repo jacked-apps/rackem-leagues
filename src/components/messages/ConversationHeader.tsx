@@ -8,7 +8,7 @@
  * Desktop: Shows only conversation title (back button hidden)
  */
 
-import { ArrowLeft, MoreVertical, LogOut, UserX } from 'lucide-react';
+import { ArrowLeft, MoreVertical, LogOut, UserX, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -25,9 +25,25 @@ interface ConversationHeaderProps {
   onBlock?: () => void;
   canLeave?: boolean;
   canBlock?: boolean;
+  /** Opens this conversation's notification settings. */
+  onNotifications?: () => void;
+  /**
+   * Whether this chat is muted, so the header can show it without the member
+   * opening the menu to find out. Conveyed by icon AND label, never colour.
+   */
+  isMuted?: boolean;
 }
 
-export function ConversationHeader({ title, onBack, onLeave, onBlock, canLeave = true, canBlock = false }: ConversationHeaderProps) {
+export function ConversationHeader({
+  title,
+  onBack,
+  onLeave,
+  onBlock,
+  canLeave = true,
+  canBlock = false,
+  onNotifications,
+  isMuted = false,
+}: ConversationHeaderProps) {
   return (
     <div className="flex-shrink-0 border-b bg-muted px-3 md:px-6 py-3 md:py-4 flex items-center gap-2 md:gap-3 justify-between">
       <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
@@ -44,10 +60,21 @@ export function ConversationHeader({ title, onBack, onLeave, onBlock, canLeave =
           </Button>
         )}
         <h2 className="text-base md:text-lg font-semibold truncate">{title}</h2>
+        {/* Muted marker — icon AND text, so it reads without relying on colour
+            or on the member opening the menu to check. */}
+        {isMuted && (
+          <span
+            className="flex flex-shrink-0 items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
+            data-testid="header-muted-badge"
+          >
+            <BellOff className="h-3 w-3" />
+            Muted
+          </span>
+        )}
       </div>
 
       {/* Options menu */}
-      {(canLeave || canBlock) && (
+      {(canLeave || canBlock || onNotifications) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -55,6 +82,19 @@ export function ConversationHeader({ title, onBack, onLeave, onBlock, canLeave =
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {onNotifications && (
+              <>
+                <DropdownMenuItem onClick={onNotifications} data-testid="menu-notifications">
+                  {isMuted ? (
+                    <BellOff className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Bell className="h-4 w-4 mr-2" />
+                  )}
+                  Notifications
+                </DropdownMenuItem>
+                {(canBlock || canLeave) && <DropdownMenuSeparator />}
+              </>
+            )}
             {canBlock && onBlock && (
               <>
                 <DropdownMenuItem onClick={onBlock} className="text-warning focus:text-warning">
