@@ -1251,3 +1251,43 @@ text/icon label.
 `src/player/ScoreMatch.tsx` — plus any shared scoring button helpers.
 
 
+
+---
+
+## 🐞 2026-09-05 — REMAINING: sync handlers that discard a promise
+
+`Button` now guards itself whenever `onClick` returns a promise (fixed
+2026-09-05), so **every async handler in the app is covered automatically**.
+
+What it can't see is a handler that *is* sync but calls something async and
+throws the promise away:
+
+```tsx
+const handleCreate = () => {
+  onCreateConversation(ids);   // async — promise discarded, button never disables
+};
+```
+
+The Button has nothing to track, so it stays live and a double-tap fires twice.
+
+**Fixed already** (the two that create things, so the highest cost when doubled):
+`NewMessageModal` and `AnnouncementModal` — both now `return` the call, and their
+prop types say to.
+
+**Still discarding, roughly by risk:**
+
+- `src/components/scoring/ConfirmationDialog.tsx` / `ConfirmationModal.tsx` /
+  `ScoringDialog.tsx` — call then `onClose()`. Lower risk because the modal
+  unmounts the button, but a slow close still leaves a window.
+- `src/components/lineup/LineupActions.tsx` — "Locking..." on lineup lock.
+- `src/wizards/**/CaptainsTeamsStep.tsx`, `ScheduleReview.tsx`,
+  `ScheduleSetupPage.tsx` — wizard steps that save and advance.
+- `src/profile/*Section.tsx`, `src/components/operator/ContactInfoCard.tsx` —
+  several already pass `disabled={isSaving}`, so they're guarded by other means;
+  they just don't show a spinner.
+
+**The fix is one line each**: `return` the async call instead of discarding it,
+and widen the prop type to `=> unknown`. No new state, no `isLoading`.
+
+Not urgent — none of these is known to have misfired. Worth doing as a sweep
+when someone is next in those files, rather than as its own task.
