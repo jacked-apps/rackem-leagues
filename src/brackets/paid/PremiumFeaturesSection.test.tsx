@@ -39,6 +39,18 @@ describe('PremiumFeaturesSection', () => {
     }
   });
 
+  it('offers a "Use basic version only" opt-out that clears premium', async () => {
+    const user = userEvent.setup();
+    const { onDisableAll } = setup({ selectedKeys: [PREMIUM_FEATURES[0].key] });
+    await user.click(screen.getByRole('button', { name: /use basic version only/i }));
+    expect(onDisableAll).toHaveBeenCalled();
+  });
+
+  it('states the save-your-setup value in the pitch (before the paywall)', () => {
+    setup();
+    expect(screen.getByText(/save these settings/i)).toBeTruthy();
+  });
+
   it('with NO card on file, turning a feature ON opens the generic payment-method popup', async () => {
     const user = userEvent.setup();
     const { onEnable } = setup({ cardOnFile: null });

@@ -12,6 +12,7 @@
  */
 
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { InfoButton } from '@/components/InfoButton';
@@ -83,13 +84,31 @@ export function PremiumFeaturesSection({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-1">
-        <Label>Premium features</Label>
-        <p className="text-sm text-muted-foreground">
-          Turn these on to run a smarter tournament — <span className="font-medium">$1 each,
-          or turn everything on for {formatPrice(PRICE_CAP_CENTS)}</span>. A free tournament —
-          just names — needs none of them.
+    <div className="space-y-4">
+      {/* The basic (no-cost) path — a small opt-out, kept distinct from premium. */}
+      <Button type="button" variant="outline" size="sm" onClick={onDisableAll}>
+        Use basic version only
+      </Button>
+
+      {/* ── Divider into the premium pitch ─────────────────────────────────── */}
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Premium
+        </span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      {/* The pitch — the value stated BEFORE the paywall so they can decide. */}
+      <div className="space-y-1 rounded-md bg-primary/5 p-3 text-sm">
+        <p className="font-medium">
+          Make your tournament run smoothly and automatically with a few premium
+          features — and save yourself time. Just {formatPrice(PRICE_CAP_CENTS)} maximum.
+        </p>
+        <p className="text-muted-foreground">
+          And you can <span className="font-medium text-foreground">save these settings</span> and
+          reuse them for future tournaments — race lengths, venue and tables carry over. You’ll just
+          add any new players’ handicaps.
         </p>
       </div>
 
@@ -102,22 +121,6 @@ export function PremiumFeaturesSection({
           {cardOnFile.brand} ending in {cardOnFile.last4}.
         </p>
       )}
-
-      {/* The deal: everything for $5, however many $1 features there are. */}
-      <label
-        htmlFor="pf-all"
-        className="flex cursor-pointer items-center gap-3 rounded-md border-2 border-primary/50 bg-primary/5 p-3"
-      >
-        <Checkbox
-          id="pf-all"
-          checked={allSelected}
-          onCheckedChange={(c) => handleToggleAll(c === true)}
-        />
-        <div className="flex flex-1 items-center justify-between gap-2">
-          <span className="font-medium">Everything — all premium features</span>
-          <span className="font-semibold">{formatPrice(PRICE_CAP_CENTS)}</span>
-        </div>
-      </label>
 
       <ul className="space-y-2">
         {PREMIUM_FEATURES.map((f) => {
@@ -154,6 +157,25 @@ export function PremiumFeaturesSection({
         })}
       </ul>
 
+      {/* The best deal, at the bottom — everything for $5, however many $1 features.
+          The individual toggles above let them pick exactly which to use; with the
+          $5 cap, checking 5+ hits the max anyway, so someone can pay ~the max and
+          still skip a feature they don't want (e.g. handicap races). */}
+      <label
+        htmlFor="pf-all"
+        className="flex cursor-pointer items-center gap-3 rounded-md border-2 border-primary/50 bg-primary/5 p-3"
+      >
+        <Checkbox
+          id="pf-all"
+          checked={allSelected}
+          onCheckedChange={(c) => handleToggleAll(c === true)}
+        />
+        <div className="flex flex-1 items-center justify-between gap-2">
+          <span className="font-medium">Everything — all premium features</span>
+          <span className="font-semibold">{formatPrice(PRICE_CAP_CENTS)}</span>
+        </div>
+      </label>
+
       {total > 0 && (
         <div className="space-y-1">
           <div className="flex items-center justify-between rounded-md bg-muted p-3">
@@ -170,11 +192,6 @@ export function PremiumFeaturesSection({
           </div>
           <p className="text-xs text-muted-foreground">
             Not charged now — only when you start the tournament.
-          </p>
-          <p className="rounded-md bg-primary/5 p-2 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Your setup is saved.</span> Name it and
-            reuse it for your next tournament — race lengths, venue and tables carry over. You’ll
-            just add any new players’ handicaps.
           </p>
         </div>
       )}
