@@ -171,6 +171,11 @@ export function PremiumFeaturesSection({
           <p className="text-xs text-muted-foreground">
             Not charged now — only when you start the tournament.
           </p>
+          <p className="rounded-md bg-primary/5 p-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Your setup is saved.</span> Name it and
+            reuse it for your next tournament — race lengths, venue and tables carry over. You’ll
+            just add any new players’ handicaps.
+          </p>
         </div>
       )}
 
