@@ -76,8 +76,10 @@ version at release.
 - **The release gate compares against the GIT TAG, not `package.json`.** The tag
   is what deploys, and the two have already drifted — `package.json` says 1.8.0
   while main is far past the v1.8.0 tag.
-- **A release with genuinely nothing user-facing** declares that explicitly
-  (`entries: []` plus a one-line reason). Deliberate, not bypassed.
+- **Nothing user-facing is always DECLARED, never inferred.** At PR level that is
+  `[no-changelog]` in the description; at release level an explicit
+  `noUserFacingChanges` reason. Both are one line, both are visible in review.
+  The goal throughout is that you cannot forget — you can only decide.
 - **The seen-marker is per USER, not per device** — a `members` column. Reading
   the notes on a laptop should clear the marker on a phone.
 - **Quiet by design.** A small marker on the nav entry. No modal, no push, no
@@ -136,22 +138,51 @@ version at release.
 - Tests: unseen when NULL; unseen when stored version is older; seen when equal;
   `unreleased` doesn't trigger; opening clears it.
 
-### Unit 3 — The release gate
+### Unit 3 — The PR check: answer the question, don't skip it
 
-- `scripts/check-whats-new.sh`, run in the **production deploy workflow before
-  the build**, and on PRs so it can't first fail during a release.
-- Fails when the tag being released has no matching entry AND no explicit
-  `noUserFacingChanges` reason.
-- Failure message says exactly what to add and where — a gate that doesn't tell
-  you how to satisfy it just gets bypassed.
-- Deliberately NOT a per-PR "you changed src/, write an entry" check: most
-  commits aren't user-facing, so it would be wrong most of the time, and people
-  route around a check that cries wolf.
+Ed, 2026-09-05: *"some PRs wont actually need a whats new blurb. but the pr
+SHOULD have a way to say yea this is not something user needs or wants to
+know."*
 
-### Unit 4 — Backfill
+A fourth job in `.github/workflows/checks.yml`. It passes when **either**:
+
+- the PR adds or edits an entry in `src/whatsNew/releases.ts`, **or**
+- the PR description contains `[no-changelog]`
+
+**Why not "changed `src/` ⇒ must have an entry":** that's wrong most of the
+time. Refactors, test fixes, dependency bumps, a migration renumber — none are
+user-facing. A check that's usually wrong gets routed around, and then it
+protects nothing.
+
+The point of this shape is that **you can't forget, you can only decide.**
+Declaring "no user-facing change" costs one line and is visible in review, so a
+`[no-changelog]` on a PR that plainly changes something a player sees gets
+caught by a human — which is the right place to catch a judgement call.
+
+- The failure message quotes the two ways to pass and links the voice rules. A
+  gate that doesn't say how to satisfy it just gets bypassed.
+- Runs on `pull_request` only. Nothing to check on a direct push to main.
+
+### Unit 4 — Stamping a release
+
+Entries accumulate under `unreleased`. Cutting a tag turns that into a released
+section, so the page and the release stay in step by construction — the entries
+were written by the PRs that made up that release.
+
+- `scripts/stamp-whats-new.mjs <version>` — renames the `unreleased` block to
+  the version, sets today's date, and opens a fresh empty `unreleased`.
+- Run when tagging, and the result committed with the tag.
+- A second gate in the **production deploy workflow**: fail if the tag being
+  released has no matching section, and no explicit `noUserFacingChanges`
+  reason. Compares against the **git tag**, not `package.json` — those have
+  already drifted (`package.json` says 1.8.0 while main is far past that tag).
+- This runs **before the build**, so a release that forgot its notes fails fast
+  rather than halfway through a deploy.
+
+### Unit 5 — Backfill
 
 One `unreleased` entry covering what's actually live now, written to the voice
-rules. Ships with Units 1–3 so the page is never empty on arrival.
+rules. Ships with Units 1-4 so the page is never empty on arrival.
 
 Covers: push notifications with their controls, tournament brackets, house
 rules, league dues and payouts, operator scoring and corrections, the FargoRate
