@@ -15,6 +15,7 @@ const mockNavigate = vi.fn();
 const mockCreate = vi.fn();
 const mockSetParticipants = vi.fn();
 const mockStart = vi.fn();
+const mockCharge = vi.fn();
 const mockUseCurrentMember = vi.fn();
 
 vi.mock('react-router-dom', async (orig) => ({
@@ -30,6 +31,7 @@ vi.mock('@/api/hooks/useBrackets', () => ({
   useCreateBracket: () => ({ mutateAsync: mockCreate }),
   useSetParticipants: () => ({ mutateAsync: mockSetParticipants }),
   useStartBracket: () => ({ mutateAsync: mockStart }),
+  useChargeForStart: () => ({ mutateAsync: mockCharge }),
 }));
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));

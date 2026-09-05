@@ -18,6 +18,7 @@ import {
   useCreateBracket,
   useSetParticipants,
   useStartBracket,
+  useChargeForStart,
 } from '@/api/hooks/useBrackets';
 import {
   useDefaultPaymentMethod,
@@ -29,7 +30,7 @@ import { DetailsStep } from './steps/DetailsStep';
 import { ParticipantsStep } from './steps/ParticipantsStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { PremiumFeaturesSection } from './paid/PremiumFeaturesSection';
-import type { PremiumFeature } from './paid/premiumFeatures';
+import { totalPriceCents, formatPrice, type PremiumFeature } from './paid/premiumFeatures';
 
 const STEP_TITLES = {
   details: 'Tournament details',
@@ -46,7 +47,12 @@ export function CreateBracketFlow() {
   const createBracket = useCreateBracket();
   const setParticipants = useSetParticipants();
   const startBracket = useStartBracket();
+  const chargeForStart = useChargeForStart();
   const [submitting, setSubmitting] = useState(false);
+
+  // Paid = any premium feature checked; its price is charged at Start (checkout).
+  const isPaid = state.premiumFeatures.length > 0;
+  const chargeCents = totalPriceCents(state.premiumFeatures);
 
   // The player's card on file (reusable across tournaments/dues). If they already
   // have one, seed it so turning on a premium feature just confirms — no re-entry.
@@ -98,6 +104,12 @@ export function CreateBracketFlow() {
   /** Create → set participants → start, then go to the live view. */
   const handleSubmit = async () => {
     if (!member?.id || !validation.canSubmit) return;
+    // A paid tournament must have a card on file (normally set up when a feature
+    // was enabled) — belt-and-suspenders before checkout.
+    if (isPaid && !state.cardOnFile) {
+      toast.error('Add a payment method before starting a paid tournament.');
+      return;
+    }
     setSubmitting(true);
     try {
       const bracket = await createBracket.mutateAsync({
@@ -122,6 +134,11 @@ export function CreateBracketFlow() {
         grandFinalReset: state.grandFinalReset,
         participantCount: state.participants.length,
       });
+      // Checkout: charge the card on file at Start (AFTER a successful start, so a
+      // failed start can't leave a charged-but-not-started bracket). $0 mock today.
+      if (isPaid) {
+        await chargeForStart.mutateAsync({ bracketId: bracket.id, amountCents: chargeCents });
+      }
       navigate(`/brackets/${bracket.id}`);
     } catch (err) {
       // Left in `setup` with participants intact — the organizer can retry.
@@ -190,6 +207,7 @@ export function CreateBracketFlow() {
               state.step === 'details' ? validation.nameOk : validation.countOk
             }
             canSubmit={validation.canSubmit}
+            submitLabel={isPaid ? `Start & pay ${formatPrice(chargeCents)}` : 'Start tournament'}
             submitting={submitting}
             onBack={() =>
               // On the first step there's no prior step — leave the flow back to
@@ -214,6 +232,7 @@ function FlowNav({
   step,
   canAdvance,
   canSubmit,
+  submitLabel,
   submitting,
   onBack,
   onNext,
@@ -222,6 +241,7 @@ function FlowNav({
   step: 'details' | 'participants' | 'review';
   canAdvance: boolean;
   canSubmit: boolean;
+  submitLabel: string;
   submitting: boolean;
   onBack: () => void;
   onNext: () => void;
@@ -240,7 +260,7 @@ function FlowNav({
           disabled={!canSubmit}
           onClick={onSubmit}
         >
-          Start tournament
+          {submitLabel}
         </Button>
       ) : (
         <Button type="button" loadingText="none" disabled={!canAdvance} onClick={onNext}>

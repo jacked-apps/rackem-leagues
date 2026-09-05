@@ -139,6 +139,25 @@ export async function startBracket(
 }
 
 /**
+ * Charge-at-checkout seam (A3). Records the (currently $0) charge for a paid
+ * tournament at Start — sets `charged_at` + `charge_amount_cents`.
+ *
+ * THIS is the single spot Jack swaps for a real charge: charge
+ * `brackets.payment_method_id` for `amountCents` via Stripe, then record it. $0
+ * mock today — no money moves, we just record that checkout happened. Called
+ * AFTER a successful start, so a failed start can never leave a
+ * charged-but-not-started bracket (real-money ordering; harmless at $0).
+ */
+export async function chargeForStart(bracketId: string, amountCents: number): Promise<void> {
+  // TODO(payments): real charge of brackets.payment_method_id for amountCents (Stripe).
+  const { error } = await supabase
+    .from('brackets')
+    .update({ charged_at: new Date().toISOString(), charge_amount_cents: amountCents })
+    .eq('id', bracketId);
+  if (error) throw new Error(`Failed to record charge: ${error.message}`);
+}
+
+/**
  * Record a match winner (the guarded advance). Returns true if it advanced,
  * false if it was a no-op (already decided / not ready — the concurrency +
  * idempotency guard in advance_bracket_winner).

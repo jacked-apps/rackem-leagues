@@ -70,6 +70,31 @@ describe('brackets paid-foundation schema (Unit A1)', () => {
     expect(rows[0].game_type).toBe('eight_ball');
   });
 
+  it('records the charge-at-checkout seam (charged_at + charge_amount_cents)', async () => {
+    const rows = await executeSql(
+      `INSERT INTO public.brackets (name, format, created_by, tier, premium_features)
+       VALUES ('Paid Start', 'single_elimination', $1, 'paid', ARRAY['self_scoring']::text[])
+       RETURNING id, charged_at, charge_amount_cents`,
+      [memberId]
+    );
+    insertedBracketIds.push(rows[0].id);
+    // Not charged until Start.
+    expect(rows[0].charged_at).toBeNull();
+    expect(rows[0].charge_amount_cents).toBeNull();
+
+    // The A3 seam records the ($0 mock) charge at Start.
+    await executeSql(
+      `UPDATE public.brackets SET charged_at = now(), charge_amount_cents = 500 WHERE id = $1`,
+      [rows[0].id]
+    );
+    const after = await executeSql(
+      `SELECT charged_at, charge_amount_cents FROM public.brackets WHERE id = $1`,
+      [rows[0].id]
+    );
+    expect(after[0].charged_at).toBeTruthy();
+    expect(after[0].charge_amount_cents).toBe(500);
+  });
+
   it('rejects an unknown tier value (CHECK)', async () => {
     await expect(
       executeSql(

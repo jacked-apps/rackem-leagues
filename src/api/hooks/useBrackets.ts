@@ -14,6 +14,7 @@ import {
   createBracket,
   setParticipants,
   startBracket,
+  chargeForStart,
   advanceWinner,
   setMatchInProgress,
   reopenMatch,
@@ -106,6 +107,18 @@ export function useStartBracket() {
 }
 
 /** Record a match winner (guarded advance). */
+/** Charge-at-checkout seam (A3): record the paid tournament's ($0 mock) charge at Start. */
+export function useChargeForStart() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { bracketId: string; amountCents: number }) =>
+      chargeForStart(vars.bracketId, vars.amountCents),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(vars.bracketId) });
+    },
+  });
+}
+
 export function useAdvanceWinner(bracketId: string) {
   const qc = useQueryClient();
   return useMutation({

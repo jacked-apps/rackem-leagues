@@ -301,6 +301,8 @@ export type Database = {
       }
       brackets: {
         Row: {
+          charge_amount_cents: number | null
+          charged_at: string | null
           created_at: string
           created_by: string
           format: string
@@ -317,6 +319,8 @@ export type Database = {
           tier: string
         }
         Insert: {
+          charge_amount_cents?: number | null
+          charged_at?: string | null
           created_at?: string
           created_by: string
           format: string
@@ -333,6 +337,8 @@ export type Database = {
           tier?: string
         }
         Update: {
+          charge_amount_cents?: number | null
+          charged_at?: string | null
           created_at?: string
           created_by?: string
           format?: string
