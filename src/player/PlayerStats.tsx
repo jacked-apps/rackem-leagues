@@ -50,9 +50,11 @@ export function PlayerStats() {
 
   const all = useMemo(() => rows ?? [], [rows]);
 
-  // Built from the UNFILTERED history: options that vanished as you narrowed
-  // would leave no way to widen again from the control itself.
-  const options = useMemo(() => buildFilterOptions(all), [all]);
+  // Counted against the rows surviving every OTHER filter, so each control's
+  // numbers predict what picking that option actually gives. Counting against
+  // the whole history instead showed "Billy (22)" while Fargo was selected and
+  // then returned nothing, because none of Billy's games were Fargo ones.
+  const options = useMemo(() => buildFilterOptions(all, filter), [all, filter]);
 
   const filtered = useMemo(() => applyGameFilter(all, filter), [all, filter]);
 

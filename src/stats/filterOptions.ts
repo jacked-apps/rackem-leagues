@@ -1,21 +1,31 @@
 /**
- * @fileoverview What each filter can offer, derived from the player's own games.
+ * @fileoverview What each filter can offer, given everything else that is set.
  *
- * Options come from the data rather than from a fixed list, so a player is
- * never offered a venue they have not played or a handicap system their league
- * does not use. A control with nothing to choose from is hidden by the caller
- * instead of presenting an empty menu.
+ * Options come from the player's own games, so they are never offered a venue
+ * they have not played. Crucially the counts are computed against the rows
+ * surviving every OTHER filter — not the whole history.
+ *
+ * That distinction is the difference between a useful control and a lying one.
+ * Counting against the full history showed "Billy (22)" while Fargo was
+ * selected, and clicking it produced nothing, because none of Billy's 22 games
+ * were Fargo ones. A count that does not predict its own result is worse than
+ * no count.
+ *
+ * Each control ignores ITS OWN dimension when counting, which is what keeps a
+ * narrowing reversible: the option you have chosen is always still listed, so
+ * you can always change or clear it from the control itself.
  *
  * @see src/stats/gameFilters.ts
  */
 
+import { applyGameFilter, NO_FILTER, type GameFilter } from './gameFilters';
 import type { PlayerGameRow } from './playerGameRow';
 
 /** One choice in a filter control. */
 export interface FilterOption<T> {
   value: T;
   label: string;
-  /** How many games this option would leave, so a player can see it is worth picking. */
+  /** Games this option would leave, given the other filters currently set. */
   count: number;
 }
 
@@ -44,14 +54,7 @@ const SYSTEM_LABELS: Record<string, string> = {
   none: 'No handicap',
 };
 
-/**
- * Count occurrences of a key, then turn them into sorted options.
- *
- * @param rows - Games to scan.
- * @param pick - Reads the value from a row; null/undefined rows are skipped.
- * @param label - Names a value for display.
- * @param compare - Orders the finished options.
- */
+/** Count values, then turn them into sorted options. */
 function optionsFrom<T>(
   rows: PlayerGameRow[],
   pick: (row: PlayerGameRow) => T | null | undefined,
@@ -74,57 +77,96 @@ function byCountThenLabel<T>(a: FilterOption<T>, b: FilterOption<T>): number {
   return b.count - a.count || a.label.localeCompare(b.label);
 }
 
-/** Ascending by value — handicaps and table numbers read as a scale. */
+/** Ascending — handicaps and table numbers read as a scale. */
 function byValue(a: FilterOption<number>, b: FilterOption<number>): number {
   return a.value - b.value;
 }
 
 /**
+ * Keep the chosen option visible even when nothing matches it any more.
+ *
+ * Selecting Fargo and then an opponent with no Fargo games would otherwise drop
+ * that opponent out of their own control — leaving it showing a blank with no
+ * way to see or undo the choice. Listing it as "(0)" says plainly why the page
+ * is empty.
+ */
+function withSelected<T>(
+  options: FilterOption<T>[],
+  selected: T | null,
+  label: (value: T) => string
+): FilterOption<T>[] {
+  if (selected === null) return options;
+  if (options.some((o) => o.value === selected)) return options;
+  return [...options, { value: selected, label: label(selected), count: 0 }];
+}
+
+/**
  * Build the filter options for a player's history.
  *
- * Derived from the UNFILTERED history on purpose: options that disappeared as
- * you narrowed would make it impossible to widen again from the control itself.
- *
- * @param rows - The player's full history.
- * @returns Options per control, each with a count.
+ * @param rows - The player's full, unfiltered history.
+ * @param filter - What is currently selected. Each control's options are
+ *                 counted with its own dimension ignored, so its counts predict
+ *                 what picking that option would actually give.
+ * @returns Options per control, each with an honest count.
  */
-export function buildFilterOptions(rows: PlayerGameRow[]): FilterOptions {
+export function buildFilterOptions(
+  rows: PlayerGameRow[],
+  filter: GameFilter = NO_FILTER
+): FilterOptions {
   const names = new Map<string, string>();
   for (const row of rows) {
     if (row.opponentId) names.set(row.opponentId, row.opponentName);
   }
+  const opponentLabel = (id: string) => names.get(id) ?? 'Unknown player';
+  const gameTypeLabel = (v: string) => GAME_TYPE_LABELS[v] ?? v;
+  const systemLabel = (v: string) => SYSTEM_LABELS[v] ?? v;
+  const tableLabel = (v: number) => `Table ${v}`;
+
+  /** Rows surviving every filter EXCEPT the named dimension(s). */
+  const without = (...dimensions: (keyof GameFilter)[]) => {
+    const relaxed = { ...filter };
+    for (const dimension of dimensions) relaxed[dimension] = null as never;
+    return applyGameFilter(rows, relaxed);
+  };
 
   return {
-    gameTypes: optionsFrom(
-      rows,
-      (r) => r.gameType,
-      (v) => GAME_TYPE_LABELS[v] ?? v,
-      byCountThenLabel
+    gameTypes: withSelected(
+      optionsFrom(without('gameType'), (r) => r.gameType, gameTypeLabel, byCountThenLabel),
+      filter.gameType,
+      gameTypeLabel
     ),
-    handicapSystems: optionsFrom(
-      rows,
-      (r) => r.handicapSystem,
-      (v) => SYSTEM_LABELS[v] ?? v,
-      byCountThenLabel
+    handicapSystems: withSelected(
+      optionsFrom(
+        without('handicapSystem'),
+        (r) => r.handicapSystem,
+        systemLabel,
+        byCountThenLabel
+      ),
+      filter.handicapSystem,
+      systemLabel
     ),
-    opponents: optionsFrom(
-      rows,
-      (r) => r.opponentId,
-      (v) => names.get(v) ?? 'Unknown player',
-      byCountThenLabel
+    opponents: withSelected(
+      optionsFrom(without('opponentId'), (r) => r.opponentId, opponentLabel, byCountThenLabel),
+      filter.opponentId,
+      opponentLabel
     ),
+    // Both ends relax together: the band is one control in two halves, and
+    // counting "from" against the current "to" would hide half the scale.
     handicaps: optionsFrom(
-      rows,
+      without('opponentHandicapMin', 'opponentHandicapMax'),
       (r) => r.opponentHandicap,
-      (v) => String(v),
+      String,
       byValue
     ),
-    venues: optionsFrom(rows, (r) => r.venueName, (v) => v, byCountThenLabel),
-    tables: optionsFrom(
-      rows,
-      (r) => r.tableNumber,
-      (v) => `Table ${v}`,
-      byValue
+    venues: withSelected(
+      optionsFrom(without('venueName'), (r) => r.venueName, (v) => v, byCountThenLabel),
+      filter.venueName,
+      (v) => v
+    ),
+    tables: withSelected(
+      optionsFrom(without('tableNumber'), (r) => r.tableNumber, tableLabel, byValue),
+      filter.tableNumber,
+      tableLabel
     ),
   };
 }
