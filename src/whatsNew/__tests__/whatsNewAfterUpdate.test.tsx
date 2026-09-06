@@ -120,15 +120,23 @@ describe('WhatsNewPage', () => {
     expect(screen.getByText(/You're running version/)).toBeInTheDocument();
   });
 
-  it('labels an unshipped block "In progress" rather than inventing a version', () => {
+  it('never tells a reader that a shipped change is still coming', () => {
+    // This file ships WITH the app, so anything visible on this page is in the
+    // build being read. "Coming soon" cannot be true here, and saying it told
+    // people their working features were unreleased.
+    renderWithProviders(<WhatsNewPage />);
+    expect(screen.queryByText('Coming soon')).not.toBeInTheDocument();
+    expect(screen.queryByText('In progress')).not.toBeInTheDocument();
+  });
+
+  it('heads an un-versioned block "Latest changes" rather than inventing a version', () => {
     const current = RELEASES.find(
       (r) => r.entries.length > 0 || r.noUserFacingChanges
     );
     renderWithProviders(<WhatsNewPage />);
 
     if (current?.version === UNRELEASED) {
-      expect(screen.getByText('In progress')).toBeInTheDocument();
-      expect(screen.getByText('Coming soon')).toBeInTheDocument();
+      expect(screen.getByText('Latest changes')).toBeInTheDocument();
     } else {
       expect(
         screen.getByText(`Version ${current!.version}`)

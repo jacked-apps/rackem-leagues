@@ -67,7 +67,7 @@ describe('resolveRelease', () => {
   it('skips an EMPTY unreleased block and shows the last real release', () => {
     // Stamping a release opens a fresh empty `unreleased` at the top. Without
     // this, everyone who followed the "New" marker on release day would land on
-    // a blank "In progress" page — on exactly the day they were told to look.
+    // a blank "Latest changes" page — on exactly the day they were told to look.
     const justStamped: Release[] = [
       { version: UNRELEASED, date: null, summary: '', entries: [] },
       ...FIXTURE.slice(1),

@@ -49,6 +49,7 @@ export interface ConfirmationResult {
   breakFouled: boolean;
   runout: boolean;
   winByForfeit: boolean;
+  earlyEight: boolean;
   winnerValue: number | null;
   loserValue: number | null;
 }
@@ -107,6 +108,7 @@ interface LatestVouch {
   break_fouled: boolean;
   runout: boolean;
   win_by_forfeit: boolean;
+  early_eight: boolean;
   winner_value: number | null;
   loser_value: number | null;
 }
@@ -131,6 +133,7 @@ function isSameVouch(
     latest.break_fouled === result.breakFouled &&
     latest.runout === result.runout &&
     latest.win_by_forfeit === result.winByForfeit &&
+    latest.early_eight === result.earlyEight &&
     latest.winner_value === result.winnerValue &&
     latest.loser_value === result.loserValue
   );
@@ -189,7 +192,7 @@ export async function appendConfirmation(
     const { data: latest } = await supabase
       .from('game_confirmations')
       .select(
-        'action, winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+        'action, winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, early_eight, winner_value, loser_value'
       )
       .eq('game_id', gameId)
       .eq('confirmer_id', confirmerId)
@@ -218,6 +221,7 @@ export async function appendConfirmation(
       break_fouled: result.breakFouled,
       runout: result.runout,
       win_by_forfeit: result.winByForfeit,
+      early_eight: result.earlyEight,
       winner_value: result.winnerValue,
       loser_value: result.loserValue,
     });

@@ -104,6 +104,33 @@ export const RELEASES: Release[] = [
   {
     version: UNRELEASED,
     date: null,
+    summary: 'My Stats, and early 8s on the scoring page',
+    entries: [
+      {
+        text: 'My Stats is real now. Every game you have played is in there: who you played, where, which table, whether you won, and how the game ended. It goes back over everything already recorded, so there is history to look at from day one.',
+        kind: 'feature',
+      },
+      {
+        text: 'It splits how games ended BOTH ways — not just the break and runs you made, but the ones that beat you. Two players can have the same win-loss record and be nothing alike, and this is where you see it.',
+        kind: 'feature',
+      },
+      {
+        text: 'Filter it however you like: one opponent, one venue, one table, bar box or big table, 8-ball only, or opponents in a handicap range. The totals recalculate as you go, so "my record on table 2" really is your record on table 2.',
+        kind: 'feature',
+      },
+      {
+        text: 'Scoring an 8-ball game now has an "Early 8" box. Tick it when the game ended because someone put the 8 down early. It goes on the record like a break and run does, so it can be counted later instead of just being remembered.',
+        kind: 'feature',
+      },
+      {
+        text: 'Fair warning: the My Stats page is brand new and has barely been tested against real games — it is going out to you to be tried properly. If a number looks wrong, or you want it to answer something it cannot, please say so. Tell your league operator, and it will get looked at.',
+        kind: 'improvement',
+      },
+    ],
+  },
+  {
+    version: '1.9.0',
+    date: '2026-09-06',
     summary:
       'Message notifications on your phone, tournament brackets, and an update button that works',
     entries: [

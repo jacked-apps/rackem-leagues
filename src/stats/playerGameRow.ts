@@ -1,0 +1,82 @@
+/**
+ * @fileoverview The shape every stats surface works on: one row per rack.
+ *
+ * Deliberately flat. Summary maths, filters and the log all read these rows and
+ * nothing else — no Supabase types, no nested match objects. That is what lets
+ * the data source underneath change (see `gameHistorySource`) without anything
+ * above it noticing.
+ *
+ * @see docs/plans/2026-09-06-001-feat-my-stats-page-plan.md
+ */
+
+/**
+ * How a rack ended.
+ *
+ * Describes the GAME, not either player — the row already says who won, so the
+ * same value reads from both chairs ("won with a break & run" / "lost to a
+ * break & run"). That symmetry is the point of the stats page.
+ *
+ * `plain` means it ended the ordinary way, which is most of them.
+ */
+export type GameEnding =
+  | 'break_and_run'
+  | 'golden_break'
+  | 'runout'
+  | 'early_eight'
+  | 'forfeit'
+  | 'plain';
+
+/** One rack, from one player's point of view. */
+export interface PlayerGameRow {
+  gameId: string;
+  matchId: string;
+  gameNumber: number;
+  /** ISO date of the match night. Null if the week has no scheduled date. */
+  playedOn: string | null;
+  seasonId: string | null;
+  /** Whether THIS player won. The row is always from their side. */
+  won: boolean;
+  ending: GameEnding;
+  /**
+   * What was being played: 'eight_ball', 'nine_ball', 'ten_ball'.
+   *
+   * Filtering on this is what makes a generic ending label unambiguous — narrow
+   * to 9-ball and every golden break shown is a 9 on the break. Null when the
+   * game predates the column or never recorded one.
+   */
+  gameType: string | null;
+
+  opponentId: string | null;
+  opponentName: string;
+  /**
+   * The opponent's handicap ON THE NIGHT, never their current one.
+   * Null = not recorded. Distinct from 0, which is a real handicap.
+   */
+  opponentHandicap: number | null;
+  /**
+   * Which handicap system that match was played under (`points`, `percentage`,
+   * `fargo`, …). Read, never inferred from the number's magnitude — the ranges
+   * overlap plausibly enough that a guess would be wrong silently, and a fourth
+   * system would break any such rule retroactively.
+   */
+  handicapSystem: string | null;
+
+  venueName: string | null;
+  /** Table number for the match. Per night, not per rack. */
+  tableNumber: number | null;
+  /**
+   * What size table it was played on: 'bar_box' (7ft), 'eight_foot',
+   * 'regulation' (9ft).
+   *
+   * Derived, not stored: the venue records which of ITS table numbers are which
+   * size, so this is that lookup applied to the match's table number. Null when
+   * the venue has not said, or the match has no table.
+   *
+   * Worth having because a 7ft and a 9ft table are close to different games —
+   * a record that is strong on a bar box and poor on a big table is a real
+   * thing about a player, and it is invisible in an overall win rate.
+   */
+  tableSize: string | null;
+  /** The team this player was on that night. */
+  myTeamId: string | null;
+}
