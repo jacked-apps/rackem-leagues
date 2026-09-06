@@ -97,17 +97,11 @@ describe('PlayerStats — with games', () => {
     expect(screen.getAllByText('Break & run').length).toBeGreaterThan(0);
   });
 
-  it('lists the games with their context', () => {
+  it('shows the game log', () => {
+    // Row CONTENT is asserted in GameLogTable's own tests, which stub the
+    // element measurements the virtualiser needs. Here we only care that the
+    // page hands the log its filtered rows and it reports the right total.
     renderWithProviders(<PlayerStats />);
-    expect(screen.getAllByText('Joe Smith').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Butera Billiards/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/620 \(fargo\)/).length).toBeGreaterThan(0);
-  });
-
-  it('states the result in words, not by colour alone', () => {
-    // Colour-blind readers must be able to read this column.
-    renderWithProviders(<PlayerStats />);
-    expect(screen.getAllByText('Won').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Lost').length).toBeGreaterThan(0);
+    expect(screen.getByText('Every game (3)')).toBeInTheDocument();
   });
 });
