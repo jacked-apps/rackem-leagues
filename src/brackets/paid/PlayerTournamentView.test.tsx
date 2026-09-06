@@ -38,14 +38,9 @@ describe('PlayerTournamentView', () => {
     renderWithProviders(<PlayerTournamentView view={view()} />);
 
     expect(screen.getByText('In the tournament (2)')).toBeTruthy();
-    expect(screen.getByText('Waiting to be added (2)')).toBeTruthy();
+    expect(screen.getByText('Waiting (2)')).toBeTruthy();
     expect(screen.getByText('Mike')).toBeTruthy();
     expect(screen.getByText('Slim')).toBeTruthy();
-  });
-
-  it('says the bracket has not been drawn yet', () => {
-    renderWithProviders(<PlayerTournamentView view={view()} />);
-    expect(screen.getByText(/hasn't been drawn yet/i)).toBeTruthy();
   });
 
   it('tells the player where they stand', () => {
@@ -67,7 +62,7 @@ describe('PlayerTournamentView', () => {
         })}
       />
     );
-    expect(screen.getByText(/your entry fee is not marked paid/i)).toBeTruthy();
+    expect(screen.getByText(/entry fee not marked paid/i)).toBeTruthy();
   });
 
   it('never shows an entry-fee line for anyone but the viewer', () => {
@@ -81,7 +76,7 @@ describe('PlayerTournamentView', () => {
     );
 
     expect(screen.getAllByText(/entry fee/i)).toHaveLength(1);
-    expect(screen.queryByText(/unpaid/i)).toBeNull();
+    expect(screen.queryByText(/not marked paid/i)).toBeNull();
   });
 
   it('says nothing about fees when the tournament does not track them', () => {
@@ -96,11 +91,9 @@ describe('PlayerTournamentView', () => {
     expect(screen.queryByText(/entry fee/i)).toBeNull();
   });
 
-  it('tells the player what they are playing', () => {
+  it('leaves the rules to the bar under the tournament name', () => {
+    // They sit at the top of the page, not buried under the player lists.
     renderWithProviders(<PlayerTournamentView view={view()} />);
-
-    expect(screen.getByText('Double elimination')).toBeTruthy();
-    expect(screen.getByText('Two losses')).toBeTruthy();
-    expect(screen.getByText('9-ball')).toBeTruthy();
+    expect(screen.queryByText('Double elimination')).toBeNull();
   });
 });

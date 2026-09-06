@@ -7,9 +7,10 @@
  * playing. Joining is something that happens on arrival and is announced with a
  * toast — it is not the destination.
  *
- * Two tabs: Players (always) and Bracket, which appears the moment the
- * organizer starts the tournament so the player can go back and forth without
- * losing this page.
+ * Two tabs, BOTH always present, pinned to the bottom of the screen where a
+ * thumb is. Bracket is shown even before there is one — tapping it says so —
+ * because a tab that appears out of nowhere later teaches nobody the shape of
+ * the page, and "is the bracket up yet?" is a question people ask by looking.
  *
  * Public route — the read is anon-safe (names only, plus the caller's own row),
  * so someone with no account still sees the tournament. They get two doors:
@@ -39,6 +40,7 @@ import { BracketTree } from '../BracketTree';
 import { useBracketRealtime } from '../useBracketRealtime';
 import { AddMyNameCard, MAX_WALKUP_NAME } from './AddMyNameCard';
 import { PlayerTournamentView } from './PlayerTournamentView';
+import { TournamentRulesBar } from './TournamentRulesBar';
 import { forgetWalkupName, recallWalkupName, rememberWalkupName } from './walkupMemory';
 
 export function JoinHopperPage() {
@@ -151,19 +153,19 @@ export function JoinHopperPage() {
 
   return (
     <Shell>
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-2xl font-bold">{view.bracket.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {view.bracket.status === 'setup' ? 'Getting players together' : 'Under way'}
-          </p>
-        </div>
+      <Tabs defaultValue="players" className="space-y-3">
+        <header className="space-y-2">
+          <div>
+            <h1 className="text-xl font-bold leading-tight">{view.bracket.name}</h1>
+            <p className="text-xs text-muted-foreground">
+              {view.bracket.status === 'setup' ? 'Getting players together' : 'Under way'}
+            </p>
+          </div>
+          {/* Second, under the name: what you're walking into. */}
+          <TournamentRulesBar bracket={view.bracket} />
+        </header>
 
-        {/*
-          Not signed in and not already on the list: two doors. Someone who
-          already typed a name sees themselves in the list instead, so the box
-          doesn't invite them to add a second entry.
-        */}
+        {/* Not signed in and not already on the list: sign in, register, or guest. */}
         {!member?.id && !localEntry && (
           <AddMyNameCard
             redirectPath={location.pathname}
@@ -182,33 +184,41 @@ export function JoinHopperPage() {
           />
         )}
 
-        {result?.reason === 'name_taken' && <NameTaken name={result.name} path={location.pathname} />}
+        {result?.reason === 'name_taken' && (
+          <NameTaken name={result.name} path={location.pathname} />
+        )}
         {result?.reason === 'not_accepting' && (
           <Notice title="Sign-ups are closed">
             This tournament has already started, so it's no longer taking sign-ups.
           </Notice>
         )}
 
-        <Tabs defaultValue="players">
-          <TabsList>
-            <TabsTrigger value="players">Players</TabsTrigger>
-            {/* Appears the moment there's a bracket to look at. */}
-            {tree && <TabsTrigger value="bracket">Bracket</TabsTrigger>}
-          </TabsList>
+        {/* pb leaves room for the fixed tab bar so the last row isn't under it. */}
+        <TabsContent value="players" className="pb-20">
+          {/* The server knows a signed-in player; a walk-up is only known to
+              their own browser, so the two identities merge here. */}
+          <PlayerTournamentView view={{ ...view, me: view.me ?? localEntry }} />
+        </TabsContent>
 
-          <TabsContent value="players" className="mt-4">
-            {/* The server knows a signed-in player; a walk-up is only known to
-                their own browser, so the two identities merge here. */}
-            <PlayerTournamentView view={{ ...view, me: view.me ?? localEntry }} />
-          </TabsContent>
-
-          {tree && (
-            <TabsContent value="bracket" className="mt-4">
-              <BracketTree view={tree} readOnly />
-            </TabsContent>
+        <TabsContent value="bracket" className="pb-20">
+          {tree ? (
+            <BracketTree view={tree} readOnly />
+          ) : (
+            <p className="rounded-md border border-dashed px-3 py-8 text-center text-sm text-muted-foreground">
+              The bracket isn't ready yet. It appears here once the organizer
+              starts the tournament.
+            </p>
           )}
-        </Tabs>
-      </div>
+        </TabsContent>
+
+        {/* Fixed to the bottom: this is read one-handed, standing up. */}
+        <TabsList className="fixed inset-x-0 bottom-0 z-10 grid h-14 w-full grid-cols-2 rounded-none border-t">
+          <TabsTrigger value="players">Players</TabsTrigger>
+          <TabsTrigger value="bracket">
+            Bracket{!tree && ' · not ready'}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
     </Shell>
   );
 }
@@ -271,19 +281,22 @@ function NameTaken({ name, path }: { name?: string; path: string }) {
 
 function Notice({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card>
-      <CardHeader className="py-4">
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="pb-4 text-sm text-muted-foreground">{children}</CardContent>
-    </Card>
+    <div className="rounded-md border px-3 py-2">
+      <p className="text-sm font-medium">{title}</p>
+      <p className="text-sm text-muted-foreground">{children}</p>
+    </div>
   );
 }
 
+/**
+ * Tight on purpose: read one-handed on a phone in a bar. The generous desktop
+ * padding this started with pushed the player lists — the thing people keep
+ * coming back to check — off the bottom of the screen.
+ */
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-muted p-4">
-      <div className="mx-auto w-full max-w-2xl py-8">{children}</div>
+    <div className="min-h-screen bg-background px-3 py-4">
+      <div className="mx-auto w-full max-w-2xl">{children}</div>
     </div>
   );
 }

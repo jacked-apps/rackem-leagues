@@ -85,7 +85,7 @@ describe('JoinHopperPage', () => {
 
     expect(screen.getByText('Friday 9-Ball')).toBeTruthy();
     expect(screen.getByText('In the tournament (1)')).toBeTruthy();
-    expect(screen.getByText('Waiting to be added (1)')).toBeTruthy();
+    expect(screen.getByText('Waiting (1)')).toBeTruthy();
   });
 
   it('watches the hopper live, since the point is seeing the room fill up', () => {
@@ -128,10 +128,26 @@ describe('JoinHopperPage', () => {
     ).toBe('/login?redirect=%2Fbrackets%2Fjoin%2Fjt-1');
   });
 
-  it('offers no Bracket tab before the tournament starts', () => {
+  it('shows the Bracket tab before there is a bracket, flagged as not ready', () => {
+    // A tab that materialises later teaches nobody the shape of the page.
     loaded();
     renderWithProviders(<JoinHopperPage />);
-    expect(screen.queryByRole('tab', { name: /bracket/i })).toBeNull();
+    expect(screen.getByRole('tab', { name: /bracket · not ready/i })).toBeTruthy();
+  });
+
+  it('explains the empty Bracket tab rather than showing nothing', async () => {
+    const user = userEvent.setup();
+    loaded();
+    renderWithProviders(<JoinHopperPage />);
+
+    await user.click(screen.getByRole('tab', { name: /bracket/i }));
+    expect(await screen.findByText(/bracket isn't ready yet/i)).toBeTruthy();
+  });
+
+  it('puts the tournament rules under the name, not below the player lists', () => {
+    loaded();
+    renderWithProviders(<JoinHopperPage />);
+    expect(screen.getByText('Double elimination')).toBeTruthy();
   });
 
   it('adds the Bracket tab once there is a bracket to look at', () => {
@@ -165,7 +181,8 @@ describe('JoinHopperPage', () => {
     });
     renderWithProviders(<JoinHopperPage />);
 
-    expect(screen.getByRole('tab', { name: /bracket/i })).toBeTruthy();
+    // Once a bracket exists the tab drops its "not ready" note.
+    expect(screen.getByRole('tab', { name: /^bracket$/i })).toBeTruthy();
   });
 
   it('sends a player whose name is taken to their profile', () => {
