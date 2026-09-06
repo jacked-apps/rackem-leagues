@@ -31,11 +31,13 @@ import {
   setHopperPaidStatus,
   ejectHopperEntry,
   finalizeHopper,
+  updateBracketSettings,
   forgetRosterEntry,
   advanceWinner,
   setMatchInProgress,
   reopenMatch,
   closeBracket,
+  type BracketSettings,
   type CreateBracketParams,
   type NewParticipant,
 } from '../mutations/brackets';
@@ -268,6 +270,18 @@ export function useForgetRosterEntry(bracketId: string) {
     mutationFn: (target: { memberId?: string | null; displayName?: string | null }) =>
       forgetRosterEntry(target),
     onSuccess: invalidate,
+  });
+}
+
+/** Edit a tournament's name, game and format while it is still in setup. */
+export function useUpdateBracketSettings(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: BracketSettings) => updateBracketSettings(bracketId, settings),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.all });
+    },
   });
 }
 

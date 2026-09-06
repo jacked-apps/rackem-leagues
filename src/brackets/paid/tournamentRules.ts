@@ -8,6 +8,8 @@
  * field, and so the wording is testable on its own.
  */
 
+import { gameTypeLabel } from '../gameTypes';
+
 /** What the player page needs to describe a tournament. */
 export interface RulesSource {
   format: string;
@@ -20,16 +22,6 @@ export interface RuleLine {
   label: string;
   value: string;
 }
-
-/** Human names for the game types the create page offers. */
-const GAME_TYPE_LABELS: Record<string, string> = {
-  eight_ball: '8-ball',
-  nine_ball: '9-ball',
-  ten_ball: '10-ball',
-  one_pocket: 'One pocket',
-  bank_pool: 'Bank pool',
-  straight_pool: 'Straight pool',
-};
 
 /**
  * Describe a tournament's rules as label/value lines.
@@ -67,7 +59,7 @@ export function tournamentRules(bracket: RulesSource): RuleLine[] {
   if (bracket.game_type) {
     lines.push({
       label: 'Game',
-      value: GAME_TYPE_LABELS[bracket.game_type] ?? bracket.game_type,
+      value: gameTypeLabel(bracket.game_type),
     });
   }
 

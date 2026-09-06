@@ -388,6 +388,46 @@ export async function forgetRosterEntry(target: {
   return data === true;
 }
 
+/** The settings an organizer can change before a tournament starts. */
+export interface BracketSettings {
+  name: string;
+  format: BracketFormat;
+  grandFinalReset: boolean;
+  gameType: string | null;
+}
+
+/**
+ * Update a tournament's settings.
+ *
+ * Guarded to `status = 'setup'` in the WHERE clause, not just the UI: the match
+ * tree is generated FROM the format, so changing it after the bracket exists
+ * would leave the stored tree describing a tournament that no longer matches
+ * its own rules. The guard makes that impossible rather than unlikely.
+ */
+export async function updateBracketSettings(
+  bracketId: string,
+  settings: BracketSettings
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('brackets')
+    .update({
+      name: settings.name.trim(),
+      format: settings.format,
+      grand_final_reset: settings.grandFinalReset,
+      game_type: settings.gameType,
+    })
+    .eq('id', bracketId)
+    .eq('status', 'setup')
+    .select('id');
+
+  if (error) throw new Error(`Could not save the tournament: ${error.message}`);
+  // No row matched: the status guard rejected it, i.e. it already started.
+  if (!data || data.length === 0) {
+    throw new Error('This tournament has already started, so its settings are locked.');
+  }
+  await touchBracket(bracketId);
+}
+
 /**
  * Convert a paid tournament's official hopper list into seeded participants,
  * ready for the tree generator. Returns the player count.

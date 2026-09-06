@@ -38,7 +38,7 @@ describe('tournamentRules', () => {
   it('names the game in plain English', () => {
     expect(rules({ game_type: 'eight_ball' })).toContainEqual({
       label: 'Game',
-      value: '8-ball',
+      value: '8-Ball',
     });
   });
 

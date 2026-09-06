@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, fireEvent, waitFor } from '@/test/utils';
+import { renderWithProviders, screen, fireEvent, waitFor, userEvent } from '@/test/utils';
 import type { HopperEntry } from '@/api/queries/brackets';
 
 const mocks = vi.hoisted(() => ({
@@ -42,6 +42,7 @@ vi.mock('@/api/hooks/useBrackets', () => {
     useAddRegisteredToHopper: noopMutation,
     useAddWalkupToHopper: noopMutation,
     useForgetRosterEntry: noopMutation,
+    useUpdateBracketSettings: noopMutation,
   };
 });
 
@@ -215,5 +216,26 @@ describe('BracketSetupPage', () => {
     renderWithProviders(<BracketSetupPage />);
 
     expect(screen.getByText(/doesn't use player sign-up/i)).toBeTruthy();
+  });
+
+  it('separates starting from the player lists, and offers both tabs', () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByRole('tab', { name: 'Info' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Players' })).toBeTruthy();
+    // Start lives below the lists, not inside them.
+    expect(screen.getByRole('button', { name: /Start & pay/ })).toBeTruthy();
+  });
+
+  it('lets the organizer edit the tournament from the Info tab', async () => {
+    const user = userEvent.setup();
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    await user.click(screen.getByRole('tab', { name: 'Info' }));
+    expect(await screen.findByLabelText('Tournament name')).toHaveValue('Friday 9-Ball');
+    expect(screen.getByLabelText('Game')).toBeTruthy();
+    expect(screen.getByLabelText('Format')).toBeTruthy();
   });
 });

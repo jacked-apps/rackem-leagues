@@ -20,7 +20,7 @@ describe('TournamentRulesBar', () => {
 
     expect(screen.getByText('Double elimination')).toBeTruthy();
     expect(screen.getByText('Two losses')).toBeTruthy();
-    expect(screen.getByText('9-ball')).toBeTruthy();
+    expect(screen.getByText('9-Ball')).toBeTruthy();
     expect(screen.getByText(/beaten twice/i)).toBeTruthy();
   });
 

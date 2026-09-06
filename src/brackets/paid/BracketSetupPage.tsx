@@ -18,17 +18,20 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useBracket,
   useBracketHopper,
   useFinalizeHopper,
   useStartBracket,
   useChargeForStart,
+  useUpdateBracketSettings,
 } from '@/api/hooks/useBrackets';
 import type { BracketFormat } from '@/types/bracket';
 import { queryKeys } from '@/api/queryKeys';
 import { useBracketRealtime } from '../useBracketRealtime';
+import { BracketInfoTab } from './BracketInfoTab';
 import { HopperView } from './HopperView';
 import { StartTournamentPanel } from './StartTournamentPanel';
 import { formatPrice, hasPremiumFeature, totalPriceCents } from './premiumFeatures';
@@ -44,6 +47,7 @@ export function BracketSetupPage() {
   const finalize = useFinalizeHopper(bracketId ?? '');
   const startBracket = useStartBracket();
   const chargeForStart = useChargeForStart();
+  const updateSettings = useUpdateBracketSettings(bracketId ?? '');
 
   // Watch the hopper live: players scan in while the organizer is looking at
   // this screen, and a list that only refreshes on reload is worse than useless
@@ -124,18 +128,20 @@ export function BracketSetupPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto w-full max-w-2xl px-3 py-4">
       <Link
         to="/brackets"
-        className="mb-4 inline-block text-sm text-muted-foreground hover:text-foreground"
+        className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground"
       >
         ← Tournaments
       </Link>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-3">
-          <CardTitle>{bracket.name}</CardTitle>
+
+      <Tabs defaultValue="players" className="space-y-3">
+        <header className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-xl font-bold leading-tight">{bracket.name}</h1>
           <div className="flex gap-2">
             <Button
+              size="sm"
               variant="outline"
               loadingText="none"
               onClick={() => copyJoinLink(bracket.join_token)}
@@ -143,25 +149,69 @@ export function BracketSetupPage() {
               Copy join link
             </Button>
             {/* Signs for the wall / the big screen behind the bar. */}
-            <Button variant="outline" asChild>
+            <Button size="sm" variant="outline" asChild>
               <Link to={`/brackets/${bracket.id}/qr`}>QR code</Link>
             </Button>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <HopperView bracketId={bracket.id} trackEntryFees={trackEntryFees} />
-          <StartTournamentPanel
-            officialCount={officialCount}
-            waitingCount={waitingCount}
-            includeWaiting={includeWaiting}
-            onIncludeWaitingChange={setIncludeWaiting}
-            onStart={handleStart}
-            starting={starting}
-            priceLabel={chargeCents > 0 ? formatPrice(chargeCents) : null}
-            trackEntryFees={trackEntryFees}
-          />
-        </CardContent>
-      </Card>
+        </header>
+
+        {/* pb clears the fixed tab bar so the last row isn't hidden under it. */}
+        <TabsContent value="players" className="space-y-3 pb-24">
+          {/* The player lists end here; starting is its own decision below. */}
+          <Card>
+            <CardContent className="pt-4">
+              <HopperView bracketId={bracket.id} trackEntryFees={trackEntryFees} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-4">
+              <StartTournamentPanel
+                officialCount={officialCount}
+                waitingCount={waitingCount}
+                includeWaiting={includeWaiting}
+                onIncludeWaitingChange={setIncludeWaiting}
+                onStart={handleStart}
+                starting={starting}
+                priceLabel={chargeCents > 0 ? formatPrice(chargeCents) : null}
+                trackEntryFees={trackEntryFees}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="info" className="pb-24">
+          <Card>
+            <CardContent className="pt-4">
+              <BracketInfoTab
+                settings={{
+                  name: bracket.name,
+                  format: bracket.format as BracketFormat,
+                  grandFinalReset: bracket.grand_final_reset ?? true,
+                  gameType: bracket.game_type,
+                }}
+                saving={updateSettings.isPending}
+                onSave={async (settings) => {
+                  try {
+                    await updateSettings.mutateAsync(settings);
+                    toast.success('Tournament updated.');
+                  } catch (err) {
+                    toast.error(
+                      err instanceof Error ? err.message : 'Could not save the tournament.'
+                    );
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Fixed to the bottom, matching the player's view of the same tournament. */}
+        <TabsList className="fixed inset-x-0 bottom-0 z-10 grid h-14 w-full grid-cols-2 rounded-none border-t">
+          <TabsTrigger value="info">Info</TabsTrigger>
+          <TabsTrigger value="players">Players</TabsTrigger>
+        </TabsList>
+      </Tabs>
     </div>
   );
 }

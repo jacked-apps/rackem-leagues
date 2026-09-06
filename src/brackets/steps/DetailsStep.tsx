@@ -17,15 +17,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { GAME_TYPES } from '../gameTypes';
 import type { BracketFormat } from '@/types/bracket';
 
 /** Game types offered for a tournament (used later by handicap/scoring). */
-const GAME_TYPES = [
-  { value: 'eight_ball', label: '8-Ball' },
-  { value: 'nine_ball', label: '9-Ball' },
-  { value: 'ten_ball', label: '10-Ball' },
-] as const;
-
 /** Elimination formats, with a one-line explanation each. */
 const FORMATS: { value: BracketFormat; label: string; desc: string }[] = [
   {
