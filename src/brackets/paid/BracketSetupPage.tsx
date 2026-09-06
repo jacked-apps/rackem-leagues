@@ -213,6 +213,7 @@ export function BracketSetupPage() {
             onStart={handleStart}
             starting={starting}
             priceLabel={chargeCents > 0 ? formatPrice(chargeCents) : null}
+            featureKeys={bracket.premium_features ?? []}
             trackEntryFees={trackEntryFees}
           />
         </CardContent>

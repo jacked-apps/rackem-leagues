@@ -11,6 +11,7 @@ import {
   totalPriceCents,
   formatPrice,
   hasPremiumFeature,
+  chargeBreakdown,
 } from './premiumFeatures';
 
 describe('premiumFeatures helpers', () => {
@@ -61,5 +62,45 @@ describe('hasPremiumFeature', () => {
     expect(hasPremiumFeature(null, 'payment_tracker')).toBe(false);
     expect(hasPremiumFeature(undefined, 'payment_tracker')).toBe(false);
     expect(hasPremiumFeature([], 'payment_tracker')).toBe(false);
+  });
+});
+
+describe('chargeBreakdown', () => {
+  it('itemises the features that were bought', () => {
+    const result = chargeBreakdown(['real_players', 'payment_tracker']);
+    expect(result.lines.map((l) => l.key)).toEqual(['real_players', 'payment_tracker']);
+    expect(result.subtotalCents).toBe(200);
+    expect(result.totalCents).toBe(200);
+    expect(result.capDiscountCents).toBe(0);
+  });
+
+  it('surfaces the cap as its own amount when it bites', () => {
+    // Six features at $1 come to $6, but the tournament is capped at $5 — the
+    // items must be shown adding up to the number on the button.
+    const all = PREMIUM_FEATURES.map((f) => f.key);
+    const result = chargeBreakdown(all);
+    expect(result.subtotalCents).toBe(all.length * FEATURE_PRICE_CENTS);
+    expect(result.totalCents).toBe(PRICE_CAP_CENTS);
+    expect(result.capDiscountCents).toBe(result.subtotalCents - PRICE_CAP_CENTS);
+    expect(result.subtotalCents - result.capDiscountCents).toBe(result.totalCents);
+  });
+
+  it('always agrees with the price actually charged', () => {
+    const keys = ['real_players', 'payment_tracker', 'self_scoring'];
+    expect(chargeBreakdown(keys).totalCents).toBe(totalPriceCents(keys));
+  });
+
+  it('skips a key no longer in the catalog rather than showing a blank row', () => {
+    const result = chargeBreakdown(['real_players', 'retired_feature']);
+    expect(result.lines).toHaveLength(1);
+    expect(result.totalCents).toBe(FEATURE_PRICE_CENTS);
+  });
+
+  it('handles a tournament with nothing bought', () => {
+    expect(chargeBreakdown([])).toMatchObject({
+      lines: [],
+      subtotalCents: 0,
+      totalCents: 0,
+    });
   });
 });

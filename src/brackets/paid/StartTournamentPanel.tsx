@@ -5,7 +5,9 @@
  *
  *  1. Say plainly who is about to be in the bracket, since the official list is
  *     what gets seeded and everything else is discarded.
- *  2. Offer the waiting room as one tap. It only mentions payment when the
+ *  2. Show what is being charged, itemised on demand — the price is on the
+ *     button, and the breakdown is there for whoever wonders what it covers.
+ *  3. Offer the waiting room as one tap. It only mentions payment when the
  *     tournament actually bought the entry-fee tracker. In practice the waiting room is people
  *     standing in the room wanting to play, so making the organizer admit twenty
  *     of them one at a time is busywork — but the checkbox is OFF by default and
@@ -14,6 +16,7 @@
  */
 
 import { Button } from '@/components/ui/button';
+import { ChargeBreakdownPanel } from './ChargeBreakdownPanel';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
@@ -26,6 +29,8 @@ interface StartTournamentPanelProps {
   starting: boolean;
   /** e.g. "$5" when premium features are being charged at start; null if free. */
   priceLabel: string | null;
+  /** `brackets.premium_features`, for the itemised breakdown. */
+  featureKeys?: readonly string[];
   /**
    * This tournament bought the entry-fee tracker. Only then does the sweep-in
    * checkbox say anything about payment — otherwise it is just "add them".
@@ -41,6 +46,7 @@ export function StartTournamentPanel({
   onStart,
   starting,
   priceLabel,
+  featureKeys = [],
   trackEntryFees = false,
 }: StartTournamentPanelProps) {
   // What the bracket will actually be built from, live as the checkbox flips.
@@ -64,6 +70,8 @@ export function StartTournamentPanel({
           </Label>
         </div>
       )}
+
+      <ChargeBreakdownPanel featureKeys={featureKeys} />
 
       <p className="text-sm text-muted-foreground">
         {canStart

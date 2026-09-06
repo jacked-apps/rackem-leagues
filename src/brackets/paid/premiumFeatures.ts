@@ -127,6 +127,57 @@ export function totalPriceCents(selectedKeys: readonly string[]): number {
   return Math.min(raw, PRICE_CAP_CENTS);
 }
 
+/** One line of the checkout breakdown. */
+export interface ChargeLine {
+  key: string;
+  label: string;
+  cents: number;
+}
+
+/** What the organizer is actually paying for, itemised. */
+export interface ChargeBreakdown {
+  lines: ChargeLine[];
+  /** What the features come to before the cap. */
+  subtotalCents: number;
+  /** How much the $5 cap knocks off. Zero unless the cap actually bit. */
+  capDiscountCents: number;
+  /** What will be charged — always equals totalPriceCents. */
+  totalCents: number;
+}
+
+/**
+ * Itemise a tournament's charge.
+ *
+ * The cap is surfaced as its own line rather than folded silently into the
+ * total: with six features at $1 the items add to $6 while the button says $5,
+ * and a list that doesn't add up reads like a bug even when the cheaper number
+ * is the honest one.
+ *
+ * @param selectedKeys - `brackets.premium_features`.
+ *
+ * @example
+ * chargeBreakdown(['real_players', 'payment_tracker'])
+ * // → { lines: [2 items], subtotalCents: 200, capDiscountCents: 0, totalCents: 200 }
+ */
+export function chargeBreakdown(selectedKeys: readonly string[]): ChargeBreakdown {
+  const lines: ChargeLine[] = selectedKeys.flatMap((key) => {
+    const feature = getPremiumFeature(key);
+    // An unknown key (a feature retired from the catalog) is skipped rather
+    // than shown as a blank row the organizer can't account for.
+    return feature ? [{ key, label: feature.label, cents: feature.priceCents }] : [];
+  });
+
+  const subtotalCents = lines.reduce((sum, line) => sum + line.cents, 0);
+  const totalCents = Math.min(subtotalCents, PRICE_CAP_CENTS);
+
+  return {
+    lines,
+    subtotalCents,
+    capDiscountCents: subtotalCents - totalCents,
+    totalCents,
+  };
+}
+
 /** Format cents as a USD price string (e.g. 500 → "$5.00"). */
 export function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
