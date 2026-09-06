@@ -119,6 +119,41 @@ export function JoinHopperPage() {
             </p>
           </CardContent>
         </>
+      ) : result?.reason === 'name_taken' ? (
+        /*
+         * Somebody got to this name first — names are one-per-tournament so that
+         * scoring, alerts and the bracket itself can tell two players apart.
+         * We never rename anyone: the nickname belongs to their profile and
+         * changing it here would change it on their league team too. They fix it
+         * where it lives and come back — no need to find the QR code again.
+         */
+        <>
+          <CardHeader>
+            <CardTitle>That name’s taken</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm">
+              Someone is already in{' '}
+              <span className="font-medium">{result.bracket_name}</span> as{' '}
+              <span className="font-medium">{result.name}</span>.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              If that isn’t you, change your nickname on your profile and come
+              back — two players with the same name can’t be told apart on the
+              bracket.
+            </p>
+            <div className="flex gap-2">
+              <Button asChild loadingText="none">
+                <Link to="/profile">Change my nickname</Link>
+              </Button>
+              <Button asChild variant="outline" loadingText="none">
+                <Link to={location.pathname} reloadDocument>
+                  Try again
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </>
       ) : (
         <>
           <CardHeader>

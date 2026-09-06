@@ -214,11 +214,22 @@ export async function setEntryFeePaid(
 /** Result of a self-add join (join_bracket_hopper RPC). */
 export interface JoinHopperResult {
   ok: boolean;
-  reason?: 'not_found' | 'not_accepting' | 'not_signed_in';
+  reason?: 'not_found' | 'not_accepting' | 'not_signed_in' | 'name_taken';
   status?: string;
+  /** For `name_taken`: the name the caller tried to join under. */
+  name?: string;
+  /** True when the caller was already in this hopper — a silent no-op. */
+  already_in?: boolean;
   bracket_id?: string;
   bracket_name?: string;
 }
+
+/**
+ * Postgres unique-violation code. A name collision in the hopper surfaces as a
+ * raw constraint error, which is useless to an organizer, so callers translate
+ * it into the sentence that says what to do about it.
+ */
+const UNIQUE_VIOLATION = '23505';
 
 /**
  * Self-add: the signed-in caller adds THEMSELVES to a tournament's hopper via its
@@ -237,22 +248,40 @@ export async function joinHopper(
   return data as JoinHopperResult;
 }
 
-/** Add a WALK-UP to the hopper (member_id NULL — a disposable tournament entrant). */
+/**
+ * Add a WALK-UP to the hopper (member_id NULL — a disposable tournament entrant).
+ *
+ * A name can only appear once per tournament (first come, first served), so a
+ * collision is an expected outcome here rather than a fault — it gets the
+ * plain-language message instead of a constraint error.
+ */
 export async function addWalkupToHopper(
   bracketId: string,
   displayName: string,
   addedVia: 'search' | 'link' | 'qr' = 'search'
 ): Promise<void> {
+  const name = displayName.trim();
   const { error } = await supabase.from('bracket_hopper').insert({
     bracket_id: bracketId,
-    display_name: displayName.trim(),
+    display_name: name,
     added_via: addedVia,
   });
-  if (error) throw new Error(`Failed to add walk-up: ${error.message}`);
+  if (error) {
+    if (error.code === UNIQUE_VIOLATION) {
+      throw new Error(`${name} is already on this list — use a different name.`);
+    }
+    throw new Error(`Failed to add walk-up: ${error.message}`);
+  }
   await touchBracket(bracketId);
 }
 
-/** Add a REGISTERED player (a real member) to the hopper. */
+/**
+ * Add a REGISTERED player (a real member) to the hopper.
+ *
+ * Same one-name-per-tournament rule as a walk-up, but the remedy differs: this
+ * player's name comes from their profile, so they change their nickname there
+ * rather than the organizer picking a different one for them.
+ */
 export async function addRegisteredToHopper(
   bracketId: string,
   memberId: string,
@@ -265,7 +294,14 @@ export async function addRegisteredToHopper(
     display_name: displayName.trim(),
     added_via: addedVia,
   });
-  if (error) throw new Error(`Failed to add player: ${error.message}`);
+  if (error) {
+    if (error.code === UNIQUE_VIOLATION) {
+      throw new Error(
+        `Someone is already on this list as ${displayName.trim()}. They'll need to change their nickname in their profile first.`
+      );
+    }
+    throw new Error(`Failed to add player: ${error.message}`);
+  }
   await touchBracket(bracketId);
 }
 

@@ -12,6 +12,10 @@
  * not_signed_in (proving anon cannot join). The authed happy path is covered by
  * the mutation wiring + a manual pass.
  *
+ * Also covers one-name-per-tournament (first come, first served): the name index
+ * decides the race, and the RPC reports `name_taken` rather than leaking a
+ * constraint error.
+ *
  * Runs in the `db` vitest project (sequential) against local Postgres via raw pg.
  */
 
@@ -75,5 +79,88 @@ describe('join_bracket_hopper (Unit C2)', () => {
     const result = await join(joinToken);
     expect(result.ok).toBe(false);
     expect(result.reason).toBe('not_signed_in');
+  });
+
+  it('allows a name only once per tournament, first come first served', async () => {
+    const { id } = await makeBracket('setup');
+    await executeSql(
+      `INSERT INTO public.bracket_hopper (bracket_id, display_name, added_via)
+       VALUES ($1, 'Tim P', 'search')`,
+      [id]
+    );
+
+    // The second entry loses the race, whatever the casing or padding.
+    await expect(
+      executeSql(
+        `INSERT INTO public.bracket_hopper (bracket_id, display_name, added_via)
+         VALUES ($1, '  tim p  ', 'search')`,
+        [id]
+      )
+    ).rejects.toThrow();
+  });
+
+  it('lets the same name live in DIFFERENT tournaments', async () => {
+    const first = await makeBracket('setup');
+    const second = await makeBracket('setup');
+    await executeSql(
+      `INSERT INTO public.bracket_hopper (bracket_id, display_name, added_via)
+       VALUES ($1, 'Tim P', 'search')`,
+      [first.id]
+    );
+    const row = await executeSql(
+      `INSERT INTO public.bracket_hopper (bracket_id, display_name, added_via)
+       VALUES ($1, 'Tim P', 'search') RETURNING id`,
+      [second.id]
+    );
+    expect(row[0].id).toBeTruthy();
+  });
+
+  it('reports name_taken instead of failing on the index', async () => {
+    const authed = await executeSql(
+      `SELECT id, user_id, COALESCE(NULLIF(btrim(nickname), ''),
+              NULLIF(btrim(concat_ws(' ', first_name, last_name)), ''), 'Player') AS name
+         FROM public.members WHERE user_id IS NOT NULL LIMIT 1`
+    );
+    if (authed.length < 1) throw new Error('needs a member with a user_id');
+
+    const { id, joinToken } = await makeBracket('setup');
+    // Someone else is already here under the caller's own nickname.
+    await executeSql(
+      `INSERT INTO public.bracket_hopper (bracket_id, display_name, added_via)
+       VALUES ($1, $2, 'search')`,
+      [id, authed[0].name]
+    );
+
+    const rows = await executeSql(
+      `SELECT public.join_bracket_hopper($1::uuid) AS r
+         FROM (SELECT set_config('request.jwt.claim.sub', $2, true)) s`,
+      [joinToken, authed[0].user_id]
+    );
+    const result = rows[0].r as Record<string, unknown>;
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('name_taken');
+    expect(result.name).toBe(authed[0].name);
+  });
+
+  it('treats a re-scan by someone already in as a no-op, not a taken name', async () => {
+    const authed = await executeSql(
+      `SELECT id, user_id FROM public.members WHERE user_id IS NOT NULL LIMIT 1`
+    );
+    const { joinToken } = await makeBracket('setup');
+
+    const join = async () => {
+      const rows = await executeSql(
+        `SELECT public.join_bracket_hopper($1::uuid) AS r
+           FROM (SELECT set_config('request.jwt.claim.sub', $2, true)) s`,
+        [joinToken, authed[0].user_id]
+      );
+      return rows[0].r as Record<string, unknown>;
+    };
+
+    expect((await join()).ok).toBe(true);
+    // Their own row must not be read as somebody else holding their name.
+    const second = await join();
+    expect(second.ok).toBe(true);
+    expect(second.already_in).toBe(true);
   });
 });

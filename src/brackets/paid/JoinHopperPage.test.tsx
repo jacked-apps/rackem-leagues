@@ -22,14 +22,16 @@ vi.mock('@/api/hooks/useCurrentMember', () => ({
   useCurrentMember: () => mocks.member(),
 }));
 
+const joinState = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock('@/api/hooks/useBrackets', () => ({
-  useJoinHopper: () => ({ mutate: mocks.join, data: undefined, isPending: false }),
+  useJoinHopper: () => ({ mutate: mocks.join, data: joinState.data, isPending: false }),
 }));
 
 import { JoinHopperPage } from './JoinHopperPage';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  joinState.data = undefined;
 });
 
 describe('JoinHopperPage', () => {
@@ -57,5 +59,33 @@ describe('JoinHopperPage', () => {
     renderWithProviders(<JoinHopperPage />);
 
     expect(mocks.join).toHaveBeenCalledWith({ joinToken: 'jt-1' });
+  });
+
+  it('sends a player whose name is taken to their profile, not into a rename here', () => {
+    mocks.member.mockReturnValue({ data: { id: 'm1' }, isLoading: false });
+    joinState.data = {
+      ok: false,
+      reason: 'name_taken',
+      name: 'Tim P',
+      bracket_name: 'Friday 9-Ball',
+    };
+    renderWithProviders(<JoinHopperPage />);
+
+    expect(screen.getByText(/that name’s taken/i)).toBeTruthy();
+    expect(screen.getByText('Tim P')).toBeTruthy();
+    // The nickname belongs to their profile — changing it here would change it
+    // on their league team too, so we send them there instead.
+    expect(
+      screen.getByRole('link', { name: /change my nickname/i }).getAttribute('href')
+    ).toBe('/profile');
+    expect(screen.getByRole('link', { name: /try again/i })).toBeTruthy();
+  });
+
+  it('tells a player the tournament already started', () => {
+    mocks.member.mockReturnValue({ data: { id: 'm1' }, isLoading: false });
+    joinState.data = { ok: false, reason: 'not_accepting', status: 'live' };
+    renderWithProviders(<JoinHopperPage />);
+
+    expect(screen.getByText(/sign-ups are closed/i)).toBeTruthy();
   });
 });
