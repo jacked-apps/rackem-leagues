@@ -37,6 +37,11 @@ const buttonVariants = cva(
           'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
         secondary:
           'bg-secondary border border-border text-secondary-foreground hover:bg-secondary/80',
+        // For an action that is allowed but carries a consequence — "start
+        // without them", "skip this". Distinct from `destructive`, which is for
+        // deleting something; this is caution, not danger.
+        warning:
+          'bg-warning text-warning-foreground hover:bg-warning/90 focus-visible:ring-warning/20 dark:focus-visible:ring-warning/40',
         ghost:
           'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
@@ -63,9 +68,9 @@ type ButtonBaseProps = React.ComponentProps<'button'> & {
   isLoading?: boolean;
 };
 
-/** Props for action variants (default, destructive) - loadingText is REQUIRED */
+/** Props for action variants (default, destructive, warning) - loadingText is REQUIRED */
 type ActionButtonProps = ButtonBaseProps & {
-  variant?: 'default' | 'destructive';
+  variant?: 'default' | 'destructive' | 'warning';
   /** Text to display while loading, or "none" if no loading behavior needed. REQUIRED. */
   loadingText: string;
 } & Omit<VariantProps<typeof buttonVariants>, 'variant'>;
@@ -82,11 +87,12 @@ type ButtonProps = ActionButtonProps | NonActionButtonProps;
 /**
  * Button component with built-in loading state support.
  *
- * Loading behavior is REQUIRED for action buttons (default, destructive variants).
- * Other variants (outline, secondary, ghost, link) auto-default to no loading.
+ * Loading behavior is REQUIRED for action buttons (default, destructive,
+ * warning variants). Other variants (outline, secondary, ghost, link)
+ * auto-default to no loading.
  *
  * @param loadingText - Text to show while loading, or "none" if no loading needed.
- *                      REQUIRED for default/destructive variants.
+ *                      REQUIRED for default/destructive/warning variants.
  *                      Optional for other variants (defaults to "none").
  * @param isLoading - Boolean to toggle loading state.
  * @param message - Optional error/info message to display below the button.
@@ -95,15 +101,21 @@ type ButtonProps = ActionButtonProps | NonActionButtonProps;
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant, size, asChild = false, message, loadingText, isLoading = false, disabled, children, ...props }, ref) => {
   const Comp = asChild ? Slot : 'button';
 
-  // Action variants (default, destructive) require explicit loadingText
+  // Action variants (default, destructive, warning) require explicit loadingText
   // Other variants (outline, secondary, ghost, link) default to "none"
-  const isActionVariant = variant === 'default' || variant === 'destructive' || variant === undefined;
+  const isActionVariant =
+    variant === 'default' ||
+    variant === 'destructive' ||
+    variant === 'warning' ||
+    variant === undefined;
   const effectiveLoadingText = loadingText ?? (isActionVariant ? undefined : 'none');
 
   // TypeScript will catch missing loadingText for action variants at compile time
   // This runtime check is a safety net
   if (isActionVariant && effectiveLoadingText === undefined) {
-    console.warn('Button: loadingText is required for default/destructive variants');
+    console.warn(
+      'Button: loadingText is required for default/destructive/warning variants'
+    );
   }
 
   // Determine if loading behavior is enabled

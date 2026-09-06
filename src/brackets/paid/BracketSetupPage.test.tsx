@@ -159,7 +159,7 @@ describe('BracketSetupPage', () => {
     renderWithProviders(<BracketSetupPage />);
 
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
-    fireEvent.click(await screen.findByRole('button', { name: /Add them and start/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Add them$/i }));
     fireEvent.click(await screen.findByRole('button', { name: /Pay .* and start/i }));
 
     await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(true));
@@ -327,7 +327,7 @@ describe('BracketSetupPage', () => {
     renderWithProviders(<BracketSetupPage />);
 
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
-    fireEvent.click(await screen.findByRole('button', { name: /Add them and start/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Add them$/i }));
 
     // 2 official + the 1 just swept in — not the 2 shown a moment ago.
     expect(await screen.findByText(/start with 3 players\?/i)).toBeTruthy();
@@ -342,5 +342,24 @@ describe('BracketSetupPage', () => {
 
     expect(mocks.finalize).not.toHaveBeenCalled();
     expect(mocks.charge).not.toHaveBeenCalled();
+  });
+
+  it('flags starting without waiting players as the cautionary choice', async () => {
+    setup([
+      entry({ id: 'a' }),
+      entry({ id: 'b' }),
+      entry({ id: 'c', status: 'hopper', paid_status: null }),
+    ]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+
+    // Warning, not destructive: it's allowed, it just has a consequence. And
+    // adding them keeps the ordinary primary colour.
+    const without = await screen.findByRole('button', { name: /Start without them/i });
+    expect(without.className).toContain('bg-warning');
+    expect(
+      screen.getByRole('button', { name: /^Add them$/i }).className
+    ).toContain('bg-primary');
   });
 });

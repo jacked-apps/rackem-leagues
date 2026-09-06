@@ -295,15 +295,31 @@ export function BracketSetupPage() {
               drawn and they can't be added to it.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:flex-col-reverse sm:space-x-0">
-            {/* Go back is the escape hatch, so it reads first on a phone. */}
-            <AlertDialogCancel className="mt-0">Go back</AlertDialogCancel>
-            <Button variant="outline" loadingText="none" onClick={() => answerWaiting(false)}>
-              Start without them
-            </Button>
-            <AlertDialogAction onClick={() => answerWaiting(true)}>
-              Add {waitingCount === 1 ? 'them' : 'all ' + waitingCount} and start
-            </AlertDialogAction>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
+            {/*
+              The two real choices share a row at equal width, so neither reads
+              as the afterthought. "Start without them" is `warning`, not
+              `destructive` — it is allowed, and it is the one with a
+              consequence; "add them" is the ordinary, safe path and gets the
+              primary colour.
+            */}
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="warning"
+                className="w-full"
+                loadingText="none"
+                onClick={() => answerWaiting(false)}
+              >
+                Start without them
+              </Button>
+              <AlertDialogAction className="w-full" onClick={() => answerWaiting(true)}>
+                Add {waitingCount === 1 ? 'them' : 'all ' + waitingCount}
+              </AlertDialogAction>
+            </div>
+            {/* Backing out is the quiet option, so it is smaller and plainer. */}
+            <AlertDialogCancel className="mt-0 h-8 self-center border-0 px-4 shadow-none">
+              Go back
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
