@@ -3639,6 +3639,7 @@ export type Database = {
         Returns: string
       }
       get_bracket_hopper: { Args: { p_bracket_id: string }; Returns: Json }
+      get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
       get_bracket_share: { Args: { p_share_token: string }; Returns: Json }
       get_current_member_id: { Args: never; Returns: string }
       get_invite_details: {

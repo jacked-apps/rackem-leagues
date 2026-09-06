@@ -7,6 +7,10 @@
  * bracket (UNIQUE), while multiple walk-ups (member_id NULL) are allowed; and a
  * walk-up admission does NOT create a roster row (roster is registered-only).
  *
+ * Unit C3 adds get_bracket_roster — the hopper screen's "past players" group —
+ * and the rule that keeps the screen's three groups free of duplicates: a past
+ * player already in THIS bracket's hopper drops out of the past-players list.
+ *
  * Runs in the `db` vitest project (sequential) against local Postgres via raw pg.
  */
 
@@ -163,5 +167,58 @@ describe('bracket hopper + roster (Unit C1)', () => {
       [organizerId]
     );
     expect(after[0].n).toBe(before[0].n); // no new roster row for a walk-up
+  });
+
+  it('get_bracket_roster lists a past player for a NEW bracket by the same organizer', async () => {
+    // Admit the player somewhere so the trigger records them on the sticky roster.
+    const first = await makeBracket();
+    await executeSql(
+      `INSERT INTO public.bracket_hopper (bracket_id, member_id, display_name, status, added_via)
+       VALUES ($1, $2, 'Alice', 'official', 'search')`,
+      [first, playerId]
+    );
+    expect(await rosterCount()).toBeGreaterThanOrEqual(1);
+
+    // A fresh bracket: they are a past player, not yet in it.
+    const next = await makeBracket();
+    const rows = await executeSql(`SELECT public.get_bracket_roster($1) AS roster`, [next]);
+    const roster = rows[0].roster as Array<Record<string, unknown>>;
+    const entry = roster.find((r) => r.member_id === playerId);
+    expect(entry).toBeTruthy();
+    expect(entry!.system_player_number).not.toBeNull(); // member fields joined for display
+  });
+
+  it('a past player already in the bracket drops out of get_bracket_roster (no duplicate groups)', async () => {
+    const first = await makeBracket();
+    await executeSql(
+      `INSERT INTO public.bracket_hopper (bracket_id, member_id, display_name, status, added_via)
+       VALUES ($1, $2, 'Alice', 'official', 'search')`,
+      [first, playerId]
+    );
+
+    const next = await makeBracket();
+    const before = await executeSql(`SELECT public.get_bracket_roster($1) AS roster`, [next]);
+    expect(
+      (before[0].roster as Array<Record<string, unknown>>).some((r) => r.member_id === playerId)
+    ).toBe(true);
+
+    // They scan the QR / get added — now they are a candidate, so the
+    // past-players list must no longer offer them.
+    await executeSql(
+      `INSERT INTO public.bracket_hopper (bracket_id, member_id, display_name, added_via)
+       VALUES ($1, $2, 'Alice', 'qr')`,
+      [next, playerId]
+    );
+    const after = await executeSql(`SELECT public.get_bracket_roster($1) AS roster`, [next]);
+    expect(
+      (after[0].roster as Array<Record<string, unknown>>).some((r) => r.member_id === playerId)
+    ).toBe(false);
+  });
+
+  it('get_bracket_roster returns an empty list for an unknown bracket (never throws)', async () => {
+    const rows = await executeSql(
+      `SELECT public.get_bracket_roster('00000000-0000-0000-0000-000000000000'::uuid) AS roster`
+    );
+    expect(rows[0].roster).toEqual([]);
   });
 });

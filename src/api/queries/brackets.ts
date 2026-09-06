@@ -47,6 +47,36 @@ export async function getBracketHopper(bracketId: string): Promise<HopperEntry[]
   return (data as HopperEntry[] | null) ?? [];
 }
 
+/**
+ * A past player from the organizer's sticky roster (`bracket_roster`), joined to
+ * their member record for display. Registered players only — walk-ups are
+ * tournament-scoped and never enter the roster.
+ */
+export interface RosterPlayer {
+  member_id: string;
+  nickname: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  system_player_number: number | null;
+  city: string | null;
+  state: string | null;
+  first_seen_at: string;
+}
+
+/**
+ * The organizer's past players for this bracket, EXCLUDING anyone already in its
+ * hopper — the RPC does that filtering, which is what keeps the hopper screen's
+ * three groups free of duplicates (a past player who links in leaves this list
+ * and shows up as a candidate instead).
+ */
+export async function getBracketRoster(bracketId: string): Promise<RosterPlayer[]> {
+  const { data, error } = await supabase.rpc('get_bracket_roster', {
+    p_bracket_id: bracketId,
+  });
+  if (error) throw new Error(`Failed to load past players: ${error.message}`);
+  return (data as RosterPlayer[] | null) ?? [];
+}
+
 /** The organizer's full bracket view: the bracket + its participants + matches. */
 export interface BracketDetail {
   bracket: BracketRow;

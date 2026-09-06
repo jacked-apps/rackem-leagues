@@ -9,7 +9,13 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
-import { getBracket, getBracketShare, getBracketsByCreator } from '../queries/brackets';
+import {
+  getBracket,
+  getBracketShare,
+  getBracketsByCreator,
+  getBracketHopper,
+  getBracketRoster,
+} from '../queries/brackets';
 import {
   createBracket,
   setParticipants,
@@ -17,6 +23,11 @@ import {
   chargeForStart,
   setEntryFeePaid,
   joinHopper,
+  addWalkupToHopper,
+  addRegisteredToHopper,
+  admitHopperEntry,
+  setHopperPaidStatus,
+  ejectHopperEntry,
   advanceWinner,
   setMatchInProgress,
   reopenMatch,
@@ -114,6 +125,101 @@ export function useJoinHopper() {
   return useMutation({
     mutationFn: (vars: { joinToken: string; via?: 'link' | 'qr' }) =>
       joinHopper(vars.joinToken, vars.via),
+  });
+}
+
+/**
+ * The organizer's hopper for a bracket — every candidate and every official
+ * entry in one list (the view splits them by `status`).
+ *
+ * staleTime 0 because players self-add live during setup; realtime pushes the
+ * invalidation and this fetch is the fallback.
+ */
+export function useBracketHopper(bracketId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.brackets.hopper(bracketId ?? ''),
+    queryFn: () => getBracketHopper(bracketId!),
+    enabled: !!bracketId,
+    staleTime: 0,
+  });
+}
+
+/**
+ * The organizer's past players who are NOT yet in this bracket's hopper — the
+ * one-tap add source at the bottom of the hopper screen. Every hopper mutation
+ * invalidates this too, since adding a past player must remove them from it.
+ */
+export function useBracketRoster(bracketId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.brackets.roster(bracketId ?? ''),
+    queryFn: () => getBracketRoster(bracketId!),
+    enabled: !!bracketId,
+    staleTime: 0,
+  });
+}
+
+/**
+ * Shared invalidation for every hopper write.
+ *
+ * Both keys always refresh together: the three on-screen groups are derived from
+ * these two reads, and a player moving between groups changes both at once (an
+ * admitted past player leaves the roster list and joins the official list). The
+ * bracket detail refreshes too because admissions drive the eventual seed count.
+ */
+function useHopperInvalidation(bracketId: string) {
+  const qc = useQueryClient();
+  return () => {
+    qc.invalidateQueries({ queryKey: queryKeys.brackets.hopper(bracketId) });
+    qc.invalidateQueries({ queryKey: queryKeys.brackets.roster(bracketId) });
+    qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+  };
+}
+
+/** Organizer adds a walk-up (a typed name, no account) to the hopper. */
+export function useAddWalkupToHopper(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    mutationFn: (displayName: string) => addWalkupToHopper(bracketId, displayName),
+    onSuccess: invalidate,
+  });
+}
+
+/** Organizer adds a registered player (from search or the past-players list). */
+export function useAddRegisteredToHopper(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    mutationFn: (vars: { memberId: string; displayName: string }) =>
+      addRegisteredToHopper(bracketId, vars.memberId, vars.displayName),
+    onSuccess: invalidate,
+  });
+}
+
+/** Admit a candidate to the official list, flagged paid or unpaid. */
+export function useAdmitHopperEntry(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    mutationFn: (vars: { entryId: string; paidStatus: 'paid' | 'unpaid' }) =>
+      admitHopperEntry(vars.entryId, bracketId, vars.paidStatus),
+    onSuccess: invalidate,
+  });
+}
+
+/** Flip an already-official entry's paid flag (they paid after being added). */
+export function useSetHopperPaidStatus(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    mutationFn: (vars: { entryId: string; paidStatus: 'paid' | 'unpaid' }) =>
+      setHopperPaidStatus(vars.entryId, bracketId, vars.paidStatus),
+    onSuccess: invalidate,
+  });
+}
+
+/** Remove an entry from the hopper entirely. The sticky roster is untouched. */
+export function useEjectHopperEntry(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    mutationFn: (entryId: string) => ejectHopperEntry(entryId, bracketId),
+    onSuccess: invalidate,
   });
 }
 

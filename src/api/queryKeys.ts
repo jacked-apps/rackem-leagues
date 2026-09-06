@@ -285,6 +285,12 @@ export const queryKeys = {
     /** The public share view for a share token */
     share: (shareToken: string) => [...queryKeys.brackets.all, 'share', shareToken] as const,
 
+    /** A bracket's hopper — candidates + the official list (organizer only) */
+    hopper: (id: string) => [...queryKeys.brackets.all, id, 'hopper'] as const,
+
+    /** The organizer's past players available to add to this bracket */
+    roster: (id: string) => [...queryKeys.brackets.all, id, 'roster'] as const,
+
     /** The current organizer's list of brackets */
     byCreator: (memberId: string) =>
       [...queryKeys.brackets.all, 'creator', memberId] as const,
