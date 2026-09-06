@@ -399,6 +399,100 @@ so the idea isn't lost. Fold into
 `docs/brainstorms/2026-08-26-tournament-bracket-requirements.md`'s Paid Feature
 Roadmap when that branch is next touched.
 
+## Future Idea — Tournament game records + history (NOT this foundation)
+
+**Captured 2026-09-06 (Ed). TABLED for a proper brainstorm + plan when the
+feature is built — "it's too much to figure for now."** Recorded because the
+discussion surfaced a genuine collision between two decisions already made.
+
+### Why Ed wants it
+
+A handicap is relative to the room you play in. Two leagues with different skill
+pools give the same player two different numbers, even at the same game. A
+tournament is a **third pool again**, and a regularly-run tournament means a
+constantly changing set of opponents. So tournament results are not a duplicate
+of league results — they are a separate measurement, and a player should be able
+to look up their **tournament stats** on their own.
+
+Ed's leaning: a **paid option** ("save tournament history and record game
+records"), cheap to run — text rows, no images — and plausibly worth a couple of
+dollars on its own. **The Tournament Series idea above REQUIRES this**: a series
+cannot roll results up into an overall standing if the stops don't keep their
+results.
+
+### The structural mapping (verified 2026-09-06, already true)
+
+Tournaments already mirror the league shape; nothing needs restructuring:
+
+| League | Tournament |
+| --- | --- |
+| team's player list | `bracket_roster` (past players) |
+| `match_lineups` (playing tonight) | hopper rows with `status='official'` |
+| `match_games` (one player vs one player) | `bracket_matches` |
+
+`match_games` is **already per-pairing**, not per-team — it stores
+`home_player_id` / `away_player_id` / `winner_player_id`, break-and-run, golden
+break, confirmations and game type. An **individual-race league** (APA-style, vs
+BCA's round robin) is therefore not a new shape either; it is the same row with
+a race length attached. This matches the locked glossary: a *matchup* is teams,
+a *pairing* is players.
+
+The real work is extracting the **pairing** as the shared primitive, so an
+individual-race league and a tournament bracket become two ways of GENERATING
+pairings rather than two systems each owning a copy. That reaches into the
+league side and needs its own brainstorm.
+
+### Ed's proposed shape
+
+- Keep game records for tournaments, with a **`source`** column
+  (`league` | `tournament` | future third) plus a single **`source_id`**. Look at
+  `source` first; it tells you whether the id is a match id or a bracket id. Ed's
+  argument for one column over two: a third source is a new enum value, not a
+  new column.
+- A **generic sentinel player id for walk-ups**, exactly like the existing
+  substitute sentinels (`src/utils/lineup/substituteHelpers.ts`:
+  `00000000-…-0001` etc.). Verified as a real, in-use pattern with the right
+  rule: the sentinel is excluded from every leaderboard, but the game **still
+  counts for the real opponent**. Known limit to design in deliberately: all
+  walk-ups everywhere share one id, so "how did Rocket do across tournaments"
+  can never be asked — which is fine, Rocket has no account to ask with.
+
+### The collision to resolve FIRST
+
+**Tournaments are hard-deleted.** `sweep_stale_brackets` does a cascading
+`DELETE FROM brackets` for anything closed, or idle for 7 days — bracket,
+participants and matches all go. So a tournament game record has about a week
+before whatever it points at is gone:
+
+- with a real FK, the cascade **deletes the game records too** — the stats
+  evaporate;
+- without one (Ed's `source_id`), the records survive but point at a tournament
+  id that no longer exists.
+
+So the question is not which pointer pattern wins. It is: **what does a
+tournament game record need in order to still make sense after the tournament is
+gone?** Which suggests a third answer neither position argued for — the record
+**carries its own context** (tournament name, date, game type) rather than
+reaching for a swept row. `source`/`source_id` still earns its place for lineage
+while the tournament exists, and for leagues, which persist.
+
+The alternative is to stop hard-deleting tournaments that have saved games,
+which fights the **disposability decision** deliberately made on 2026-09-05. Ed:
+"I may have to taco on my disposability thing. Not sure."
+
+### The question the brainstorm has to answer
+
+**How much of a finished tournament is worth keeping forever** — just enough for
+a player's own stat line, or the whole bracket so it can be re-viewed later?
+Everything else follows from that.
+
+Secondary, noted at the time: `match_games` carries league-only columns
+(`winner_team_id`, home/away position, tiebreaker flag) that tournament rows
+would leave empty. Tolerable, but it is the point where one table starts serving
+two masters; the alternative is a separate tournament-games table behind a
+shared view. Ed leans single-table — one place to query "my games" is worth some
+empty columns.
+
 ## Next Steps
 
 → `/ce:plan` **done** — see
