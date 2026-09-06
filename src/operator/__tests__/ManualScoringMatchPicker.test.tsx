@@ -7,6 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Stub PageHeader to avoid its provider/nav dependencies in a unit render.
 vi.mock('@/components/PageHeader', () => ({
@@ -45,20 +46,29 @@ function mockSchedule(matches: Array<ReturnType<typeof mkMatch>>) {
 }
 
 function renderPicker() {
+  // A QueryClient is required because reviewable rows render
+  // <LmsEnteredCheckbox>, which owns a mutation for the "entered into LMS"
+  // marker. Retries off so a failed mutation surfaces immediately in tests.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+
   return render(
-    <MemoryRouter initialEntries={['/league/L1/manual-scoring']}>
-      <Routes>
-        <Route path="/league/:leagueId/manual-scoring" element={<ManualScoringMatchPicker />} />
-        <Route
-          path="/league/:leagueId/manual-scoring/:matchId"
-          element={<div>SCORING PAGE</div>}
-        />
-        <Route
-          path="/league/:leagueId/match-review/:matchId"
-          element={<div>REVIEW PAGE</div>}
-        />
-      </Routes>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/league/L1/manual-scoring']}>
+        <Routes>
+          <Route path="/league/:leagueId/manual-scoring" element={<ManualScoringMatchPicker />} />
+          <Route
+            path="/league/:leagueId/manual-scoring/:matchId"
+            element={<div>SCORING PAGE</div>}
+          />
+          <Route
+            path="/league/:leagueId/match-review/:matchId"
+            element={<div>REVIEW PAGE</div>}
+          />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

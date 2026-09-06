@@ -30,6 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Printer, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LmsEnteredCheckbox } from '@/components/operator/LmsEnteredCheckbox';
 
 /** A match_games row, narrowed to what the sheet reads. */
 interface SheetGame {
@@ -82,6 +83,7 @@ export default function LmsResultsSheet() {
     scheduled_date?: string | null;
     season_id?: string | null;
     season_week_id?: string | null;
+    lms_entered_at?: string | null;
   } | undefined;
 
   // Sibling matches in the same WEEK (with results) — so the LO can blow through
@@ -151,11 +153,22 @@ export default function LmsResultsSheet() {
         <ChevronLeft className="mr-1 h-4 w-4" />
         Prev
       </Button>
-      <span className="text-sm text-muted-foreground">
-        {currentIndex >= 0 && weekMatches.length > 0
-          ? `Match ${currentIndex + 1} of ${weekMatches.length}`
-          : ''}
-      </span>
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-sm text-muted-foreground">
+          {currentIndex >= 0 && weekMatches.length > 0
+            ? `Match ${currentIndex + 1} of ${weekMatches.length}`
+            : ''}
+        </span>
+        {/* Tick it here the moment LMS accepts the entry, then hit Next — no
+            trip back to the picker just to record that this one is done. */}
+        {matchId && (
+          <LmsEnteredCheckbox
+            matchId={matchId}
+            enteredAt={match?.lms_entered_at}
+            seasonId={match?.season_id ?? undefined}
+          />
+        )}
+      </div>
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
