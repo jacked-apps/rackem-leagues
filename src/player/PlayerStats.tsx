@@ -27,6 +27,7 @@ import { buildFilterOptions } from '@/stats/filterOptions';
 import { StatsSummary } from '@/components/stats/StatsSummary';
 import { GameLogTable } from '@/components/stats/GameLogTable';
 import { FilterBar } from '@/components/stats/FilterBar';
+import { BetaNotice } from '@/components/stats/BetaNotice';
 
 /** A one-line message in the page's normal frame. */
 function Notice({ title, body }: { title: string; body: string }) {
@@ -69,6 +70,8 @@ export function PlayerStats() {
         subtitle="Your record across every league you play in"
       />
       <div className="container mx-auto max-w-4xl space-y-4 px-4 py-6">
+        <BetaNotice />
+
         {isLoading && (
           <Notice title="Loading your games" body="This only happens once per visit." />
         )}
