@@ -28,7 +28,6 @@ import { AnnouncementModal } from '@/components/messages/AnnouncementModal';
 import { MessageSettingsModal } from '@/components/messages/MessageSettingsModal';
 import { ProfanityOnboardingModal } from '@/components/onboarding/ProfanityOnboardingModal';
 import { PushOnboardingPrompt } from '@/components/messages/PushOnboardingPrompt';
-import { PUSH_NOTIFICATIONS_ENABLED } from '@/config/featureFlags';
 import {
   useCurrentMember,
   useUserProfile,
@@ -85,7 +84,6 @@ export function Messages() {
   // so it re-asks next visit; the local flag only hides it for this mount.
   const [pushPromptResolved, setPushPromptResolved] = useState(false);
   const showPushOnboarding =
-    PUSH_NOTIFICATIONS_ENABLED &&
     !!member?.user_id &&
     !!memberId &&
     member.push_enabled == null &&

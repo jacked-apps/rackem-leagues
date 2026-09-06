@@ -19,7 +19,6 @@ import { useUser } from '@/context/useUser';
 import { useMemberId, useCurrentMember, usePushSubscription } from '@/api/hooks';
 import { PushNotificationSetting } from './PushNotificationSetting';
 import { NotificationPrefsSection } from './notifications/NotificationPrefsSection';
-import { PUSH_NOTIFICATIONS_ENABLED } from '@/config/featureFlags';
 import { BlockedUsersModal } from './BlockedUsersModal';
 import { Modal } from '@/components/shared';
 
@@ -200,10 +199,10 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
               </AccordionContent>
             </AccordionItem>
 
-            {/* Notifications Section — gated until the sender (Units 7–8) ships.
-                In production the flag is off, so this stays a "coming soon"
-                placeholder rather than a toggle that subscribes to a dead channel. */}
-            {PUSH_NOTIFICATIONS_ENABLED ? (
+            {/* Notifications — live in every environment. Was gated behind
+                PUSH_NOTIFICATIONS_ENABLED while nothing could SEND a push;
+                un-gated 2026-09-05 now the dispatcher, trigger and per-chat
+                controls are all in place. */}
               <AccordionItem value="notifications" className="border rounded-lg">
                 <AccordionTrigger className="px-4 hover:no-underline hover:bg-muted">
                   <div className="flex items-center gap-3">
@@ -239,21 +238,7 @@ export function MessageSettingsModal({ onClose, onUnblocked }: MessageSettingsMo
                   )}
                 </AccordionContent>
               </AccordionItem>
-            ) : (
-              <AccordionItem value="notifications" className="border rounded-lg opacity-50">
-                <AccordionTrigger className="px-4 hover:no-underline cursor-not-allowed" disabled>
-                  <div className="flex items-center gap-3">
-                    <div className="h-5 w-5 flex items-center justify-center text-muted-foreground">🔔</div>
-                    <div className="text-left">
-                      <div className="font-semibold">Notifications</div>
-                      <div className="text-sm text-muted-foreground font-normal">
-                        Coming soon
-                      </div>
-                    </div>
-                  </div>
-                </AccordionTrigger>
-              </AccordionItem>
-            )}
+
 
             {/* Preferences Section - Coming Soon */}
             <AccordionItem value="preferences" className="border rounded-lg opacity-50">

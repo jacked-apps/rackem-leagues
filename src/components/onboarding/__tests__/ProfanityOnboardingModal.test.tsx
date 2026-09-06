@@ -12,10 +12,16 @@
  *
  * `useMarkProfanityOnboardingComplete` is mocked so each test controls
  * the persistence contract directly.
+ *
+ * NOTE ON `waitFor`: `onResolved` fires AFTER the awaited mutation, so asserting
+ * it synchronously right after a click races the microtask queue — the same
+ * flake that hit ChangeSeasonLengthDialog under parallel load on 2026-09-05.
+ * Assertions on `mockMutateAsync` need no wait: that call is synchronous, it is
+ * only its EFFECT that is deferred.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, userEvent } from '@/test/utils';
+import { renderWithProviders, screen, userEvent, waitFor } from '@/test/utils';
 
 const mockMutateAsync = vi.fn();
 
@@ -69,7 +75,7 @@ describe('ProfanityOnboardingModal — explicit choices', () => {
       userId: USER_ID,
       filterEnabled: true,
     });
-    expect(onResolved).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onResolved).toHaveBeenCalledTimes(1));
   });
 
   it('"Turn filter off" persists filterEnabled=false and calls onResolved', async () => {
@@ -82,7 +88,7 @@ describe('ProfanityOnboardingModal — explicit choices', () => {
       userId: USER_ID,
       filterEnabled: false,
     });
-    expect(onResolved).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onResolved).toHaveBeenCalledTimes(1));
   });
 });
 
@@ -97,7 +103,7 @@ describe('ProfanityOnboardingModal — dismiss defaults the filter ON', () => {
       userId: USER_ID,
       filterEnabled: true,
     });
-    expect(onResolved).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onResolved).toHaveBeenCalledTimes(1));
   });
 });
 
@@ -125,7 +131,7 @@ describe('ProfanityOnboardingModal — failure + double-resolve guards', () => {
 
     await user.click(screen.getByTestId('onboarding-turn-off'));
     expect(mockMutateAsync).toHaveBeenCalledTimes(2);
-    expect(onResolved).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onResolved).toHaveBeenCalledTimes(1));
   });
 
   it('only resolves once even if a choice is followed by a dismiss', async () => {
@@ -137,6 +143,6 @@ describe('ProfanityOnboardingModal — failure + double-resolve guards', () => {
 
     // The post-choice dismiss must NOT fire a second mutation or resolve.
     expect(mockMutateAsync).toHaveBeenCalledTimes(1);
-    expect(onResolved).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onResolved).toHaveBeenCalledTimes(1));
   });
 });

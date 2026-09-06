@@ -3,7 +3,7 @@
  * flow, with the apply helper mocked.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, userEvent } from '@/test/utils';
+import { renderWithProviders, screen, userEvent, waitFor } from '@/test/utils';
 import { ChangeSeasonLengthDialog, type DialogWeek } from './ChangeSeasonLengthDialog';
 import { applySeasonLengthChange } from '@/utils/applySeasonLengthChange';
 
@@ -62,8 +62,12 @@ describe('ChangeSeasonLengthDialog', () => {
     expect(screen.getByText(/Adds 2 weeks/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    // `user.click` awaits the click, NOT the async work the handler kicks off.
+    // `onApplied` fires after the mocked apply resolves, so asserting
+    // synchronously here races the microtask queue — which is exactly how this
+    // file failed intermittently under parallel load on 2026-09-05.
+    await waitFor(() => expect(onApplied).toHaveBeenCalled());
     expect(mockApply).toHaveBeenCalledWith('season-1', 18);
-    expect(onApplied).toHaveBeenCalled();
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
@@ -83,8 +87,9 @@ describe('ChangeSeasonLengthDialog', () => {
     expect(screen.getByText(/Week 16/)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    // Wait for the async apply to settle before asserting its effects.
+    await waitFor(() => expect(onApplied).toHaveBeenCalled());
     expect(mockApply).toHaveBeenCalledWith('season-1', 14);
-    expect(onApplied).toHaveBeenCalled();
   });
 
   it('surfaces a guard/error from apply without closing', async () => {
@@ -100,7 +105,14 @@ describe('ChangeSeasonLengthDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Review' }));
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
 
-    expect(screen.getByText(/already has a match that's been played/i)).toBeInTheDocument();
+    // The error only renders once the rejected-guard result comes back.
+    await waitFor(() =>
+      expect(
+        screen.getByText(/already has a match that's been played/i)
+      ).toBeInTheDocument()
+    );
+    // Checked AFTER the wait above: asserting "didn't happen" before the async
+    // work has run would pass even if it were about to happen.
     expect(onApplied).not.toHaveBeenCalled();
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });

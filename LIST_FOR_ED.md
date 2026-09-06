@@ -4,6 +4,40 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🧪 2026-09-05 — Database tests are not run by CI, and three files have rotted
+
+CI (`.github/workflows/checks.yml`) runs the vitest **unit** project only. The
+**db** project needs a live Postgres, so nothing on GitHub has ever run it —
+these failures are invisible to every PR.
+
+Ran locally on 2026-09-05, after applying two migrations the local DB was
+missing. Seven tests fail, in three files, none of them related to each other:
+
+| File | Failing | Introduced by |
+|---|---|---|
+| `request-team-join.test.ts` | 2 | PR #165 |
+| `approve-surface-roster.test.ts` + `approve-join-request.test.ts` | 4 | PR #219 |
+| `messagePushTrigger.db.test.ts` | 1 | push Unit 8 |
+
+The first two look like fixture drift — they assert against seeded rows that have
+since changed shape. Worth a look, but they are testing code that has been in
+production for months, so this is stale tests rather than a broken feature.
+
+The push one is **not** a product bug — I traced it. The trigger enqueues
+correctly. The test then reads the request back out of `net.http_request_queue`
+to check its body and headers, and the pg_net background worker drains that queue
+within milliseconds of the commit, so the row is usually gone before the test
+looks. The fix is to do that read inside an uncommitted transaction, where the
+worker cannot see the row. Not done — it needs a small transaction helper in
+`dbTestUtils`, and it did not belong in the PR I was on.
+
+**The decision worth making:** either give CI a Postgres service container so the
+db project runs on every PR, or accept that these tests only run when someone
+remembers to run them locally. The current middle ground — having them, and never
+running them — is the one option with no upside.
+
+---
+
 ## 🧪 2026-08-04 — VERIFY: tiebreaker scoring fix (PR #249)
 
 **Bug (live):** the first match to end in a games **tie** couldn't be scored —
@@ -139,26 +173,6 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
-- **Message Push Notifications (client side, Units 1–6)** — branch
-  `feat/message-push-notifications`. The subscribe flow + UI are done, but nothing
-  SENDS a push yet (the dispatcher edge function + DB trigger are Units 7–8, a
-  separate follow-up PR). Gated by the `PUSH_NOTIFICATIONS_ENABLED` flag in
-  `src/config/featureFlags.ts` (on in dev, OFF in production unless
-  `VITE_PUSH_NOTIFICATIONS=true`). Both user-facing entry points are gated with it:
-  the first-run onboarding prompt (`src/pages/Messages.tsx` → `showPushOnboarding`)
-  AND the Settings toggle (`src/components/messages/MessageSettingsModal.tsx` →
-  Notifications section; falls back to "Coming soon" when off).
-  Units 7–8 (dispatcher + trigger) are done too — PR #255, stacked on this one.
-  **Staging is auto-enabled on merge:** `deploy-staging.yml` now sets
-  `VITE_PUSH_NOTIFICATIONS=true`, bakes in the public key, and deploys the edge
-  function. The only manual staging step is the **one-time secret setup** (GitHub
-  `staging` env `VITE_VAPID_PUBLIC_KEY`; Supabase function secrets; one
-  `push_dispatch_config` SQL UPDATE) — see the "Staging setup (one-time)" section
-  in `docs/ops/push-notifications-secrets.md`. After that, test on a phone via the
-  staging HTTPS URL (iOS: Add to Home Screen first).
-  **Do NOT un-gate production** until a real end-to-end push is verified on staging —
-  then set `VITE_PUSH_NOTIFICATIONS=true` for the production build + the prod Supabase
-  secrets + `push_dispatch_config`, and remove this entry.
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
 commit. The half-gated bug that prompted it: the "Score a Match" button +
@@ -1250,3 +1264,44 @@ text/icon label.
 `src/components/scoring/MatchEndVerification.tsx`,
 `src/player/ScoreMatch.tsx` — plus any shared scoring button helpers.
 
+
+
+---
+
+## 🐞 2026-09-05 — REMAINING: sync handlers that discard a promise
+
+`Button` now guards itself whenever `onClick` returns a promise (fixed
+2026-09-05), so **every async handler in the app is covered automatically**.
+
+What it can't see is a handler that *is* sync but calls something async and
+throws the promise away:
+
+```tsx
+const handleCreate = () => {
+  onCreateConversation(ids);   // async — promise discarded, button never disables
+};
+```
+
+The Button has nothing to track, so it stays live and a double-tap fires twice.
+
+**Fixed already** (the two that create things, so the highest cost when doubled):
+`NewMessageModal` and `AnnouncementModal` — both now `return` the call, and their
+prop types say to.
+
+**Still discarding, roughly by risk:**
+
+- `src/components/scoring/ConfirmationDialog.tsx` / `ConfirmationModal.tsx` /
+  `ScoringDialog.tsx` — call then `onClose()`. Lower risk because the modal
+  unmounts the button, but a slow close still leaves a window.
+- `src/components/lineup/LineupActions.tsx` — "Locking..." on lineup lock.
+- `src/wizards/**/CaptainsTeamsStep.tsx`, `ScheduleReview.tsx`,
+  `ScheduleSetupPage.tsx` — wizard steps that save and advance.
+- `src/profile/*Section.tsx`, `src/components/operator/ContactInfoCard.tsx` —
+  several already pass `disabled={isSaving}`, so they're guarded by other means;
+  they just don't show a spinner.
+
+**The fix is one line each**: `return` the async call instead of discarding it,
+and widen the prop type to `=> unknown`. No new state, no `isLoading`.
+
+Not urgent — none of these is known to have misfired. Worth doing as a sweep
+when someone is next in those files, rather than as its own task.
