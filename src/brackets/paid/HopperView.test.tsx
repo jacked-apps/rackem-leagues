@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   setPaid: vi.fn(),
   eject: vi.fn(),
   addRegistered: vi.fn(),
+  addWalkup: vi.fn(),
 }));
 
 /** A mutation hook's return shape — only what HopperView reads. */
@@ -32,6 +33,7 @@ vi.mock('@/api/hooks/useBrackets', () => ({
   useSetHopperPaidStatus: () => mutation(mocks.setPaid),
   useEjectHopperEntry: () => mutation(mocks.eject),
   useAddRegisteredToHopper: () => mutation(mocks.addRegistered),
+  useAddWalkupToHopper: () => mutation(mocks.addWalkup),
 }));
 
 import { HopperView } from './HopperView';
@@ -59,6 +61,7 @@ function entry(over: Partial<HopperEntry>): HopperEntry {
 function rosterPlayer(over: Partial<RosterPlayer> = {}): RosterPlayer {
   return {
     member_id: 'm-kenny',
+    display_name: null,
     nickname: 'Kenny',
     first_name: 'Ken',
     last_name: 'Baker',
@@ -68,6 +71,20 @@ function rosterPlayer(over: Partial<RosterPlayer> = {}): RosterPlayer {
     first_seen_at: '2026-08-01T00:00:00Z',
     ...over,
   };
+}
+
+/** A remembered walk-up: no account, the name is the whole identity. */
+function rememberedWalkup(name: string): RosterPlayer {
+  return rosterPlayer({
+    member_id: null,
+    display_name: name,
+    nickname: null,
+    first_name: null,
+    last_name: null,
+    system_player_number: null,
+    city: null,
+    state: null,
+  });
 }
 
 /** Point the read hooks at fixed data in their loaded state. */
@@ -82,6 +99,7 @@ beforeEach(() => {
   mocks.setPaid.mockResolvedValue(undefined);
   mocks.eject.mockResolvedValue(undefined);
   mocks.addRegistered.mockResolvedValue(undefined);
+  mocks.addWalkup.mockResolvedValue(undefined);
   loaded([]);
 });
 
@@ -181,5 +199,24 @@ describe('HopperView', () => {
     renderWithProviders(<HopperView bracketId="b1" />);
 
     expect(screen.getByText(/couldn't load the players/i)).toBeTruthy();
+  });
+
+  it('re-adds a remembered walk-up by name, not as a registered player', () => {
+    loaded([], [rememberedWalkup('Rocket')]);
+    renderWithProviders(<HopperView bracketId="b1" />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Rocket/ }));
+
+    expect(mocks.addWalkup).toHaveBeenCalledWith('Rocket');
+    expect(mocks.addRegistered).not.toHaveBeenCalled();
+  });
+
+  it('lists registered past players and remembered walk-ups together', () => {
+    loaded([], [rosterPlayer(), rememberedWalkup('Rocket')]);
+    renderWithProviders(<HopperView bracketId="b1" />);
+
+    expect(screen.getByText('Past players (2)')).toBeTruthy();
+    expect(screen.getByText('Kenny')).toBeTruthy();
+    expect(screen.getByText('Rocket')).toBeTruthy();
   });
 });

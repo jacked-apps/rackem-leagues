@@ -7,7 +7,8 @@
  *
  *   1. IN THE TOURNAMENT — admitted entries (`status='official'`); what Start seeds.
  *   2. WAITING TO BE ADDED — candidates who scanned/linked in or were added.
- *   3. PAST PLAYERS — the organizer's sticky roster, a one-tap add source.
+ *   3. PAST PLAYERS — the organizer's sticky roster (registered members AND
+ *      remembered walk-up names), a one-tap add source.
  *
  * A player appears in exactly ONE group. Groups 1 and 2 can't overlap because a
  * hopper row has a single `status`; group 3 can't overlap either because the
@@ -32,7 +33,13 @@ export interface HopperRow {
 
 /** A past player resolved for display in group 3. */
 export interface RosterRow {
-  memberId: string;
+  /**
+   * React key and identity for the row. A registered player is keyed by member
+   * id; a remembered walk-up has no id at all, so it is keyed by its name —
+   * unique within the list because the roster stores names case-insensitively
+   * unique per organizer.
+   */
+  key: string;
   player: RosterPlayer;
   identity: ParticipantIdentity;
   duplicateName: boolean;
@@ -79,11 +86,13 @@ export function buildHopperGroups(
   waiting.sort(byArrival);
 
   const past: RosterRow[] = roster.map((player) => ({
-    memberId: player.member_id,
+    key: player.member_id ?? `walkup:${(player.display_name ?? '').trim().toLowerCase()}`,
     player,
+    // Same resolver as the hopper rows: a registered player renders from their
+    // member fields, a walk-up from the remembered name.
     identity: resolveParticipantIdentity(
-      { member_id: player.member_id, display_name: null },
-      player
+      { member_id: player.member_id, display_name: player.display_name },
+      player.member_id ? player : null
     ),
     duplicateName: false,
   }));

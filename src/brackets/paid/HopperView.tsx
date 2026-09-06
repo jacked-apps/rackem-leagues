@@ -8,7 +8,8 @@
  *   1. IN THE TOURNAMENT — the official list; this is what Start seeds.
  *   2. WAITING TO BE ADDED — people who scanned the QR, opened the link, or were
  *      added by the organizer, but haven't been let in yet.
- *   3. PAST PLAYERS — everyone they've run a tournament with before, one tap to add.
+ *   3. PAST PLAYERS — everyone they've run a tournament with before (registered
+ *      players AND remembered walk-up names), one tap to add.
  *
  * Stacked rather than tabbed because admitting is a back-and-forth between the
  * groups; tabs would lose the organizer's place on every tap. A player is only
@@ -27,6 +28,7 @@ import {
   useSetHopperPaidStatus,
   useEjectHopperEntry,
   useAddRegisteredToHopper,
+  useAddWalkupToHopper,
 } from '@/api/hooks/useBrackets';
 import { buildHopperGroups, type HopperRow } from './hopperGroups';
 import { HopperEntryMenu } from './HopperEntryMenu';
@@ -47,6 +49,7 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
   const setPaid = useSetHopperPaidStatus(bracketId);
   const eject = useEjectHopperEntry(bracketId);
   const addRegistered = useAddRegisteredToHopper(bracketId);
+  const addWalkup = useAddWalkupToHopper(bracketId);
 
   const groups = useMemo(
     () => buildHopperGroups(hopper.data ?? [], roster.data ?? []),
@@ -60,7 +63,8 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
     admit.isPending ||
     setPaid.isPending ||
     eject.isPending ||
-    addRegistered.isPending;
+    addRegistered.isPending ||
+    addWalkup.isPending;
 
   if (hopper.isLoading) return <Note>Loading players…</Note>;
   if (hopper.isError) return <Note>Couldn't load the players for this tournament.</Note>;
@@ -110,16 +114,20 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
         empty="Players from your past tournaments show up here for one-tap adding."
       >
         {groups.past.map((row) => (
-          <li key={row.memberId}>
+          <li key={row.key}>
             <button
               type="button"
               disabled={locked}
               onClick={() =>
                 run(
-                  addRegistered.mutateAsync({
-                    memberId: row.memberId,
-                    displayName: row.identity.displayName,
-                  })
+                  // A remembered walk-up has no account to link to — re-adding
+                  // them just re-types the name we saved on their behalf.
+                  row.player.member_id
+                    ? addRegistered.mutateAsync({
+                        memberId: row.player.member_id,
+                        displayName: row.identity.displayName,
+                      })
+                    : addWalkup.mutateAsync(row.identity.displayName)
                 )
               }
               className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left hover:bg-accent disabled:pointer-events-none disabled:opacity-60"

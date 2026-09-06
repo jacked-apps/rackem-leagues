@@ -9,8 +9,9 @@
  *
  * Admitting and flipping paid are non-destructive, so they fire on the tap.
  * Remove deletes the entry, so it takes a second confirming tap (project
- * precedent for destructive actions) and the copy says what does and doesn't
- * survive: a registered player stays in Past players, a walk-up is simply gone.
+ * precedent for destructive actions) and the copy says exactly what survives —
+ * which depends on the row, so it is worth getting right rather than hedging.
+ * See removalConsequence.
  */
 
 import { useState } from 'react';
@@ -33,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { HopperRow } from './hopperGroups';
 import { HopperIdentityLine } from './HopperIdentityLine';
+import { removalConsequence } from './removalConsequence';
 
 interface HopperEntryMenuProps {
   row: HopperRow;
@@ -111,11 +113,7 @@ export function HopperEntryMenu({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove {identity.displayName}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {identity.kind === 'registered'
-                ? 'They come out of this tournament. They stay in your past players, so you can add them back with one tap.'
-                : "Walk-ups aren't saved anywhere, so this one is gone for good. You'd have to type the name again."}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{removalConsequence(row)}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

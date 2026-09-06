@@ -26,9 +26,10 @@ function entry(over: Partial<HopperEntry>): HopperEntry {
   };
 }
 
-function rosterPlayer(over: Partial<RosterPlayer>): RosterPlayer {
+function rosterPlayer(over: Partial<RosterPlayer> = {}): RosterPlayer {
   return {
     member_id: 'm1',
+    display_name: null,
     nickname: 'Kenny',
     first_name: 'Ken',
     last_name: 'Baker',
@@ -40,6 +41,20 @@ function rosterPlayer(over: Partial<RosterPlayer>): RosterPlayer {
   };
 }
 
+/** A remembered walk-up: no account, the name is the whole identity. */
+function rememberedWalkup(name: string): RosterPlayer {
+  return rosterPlayer({
+    member_id: null,
+    display_name: name,
+    nickname: null,
+    first_name: null,
+    last_name: null,
+    system_player_number: null,
+    city: null,
+    state: null,
+  });
+}
+
 describe('buildHopperGroups', () => {
   it('splits hopper rows into the official and waiting groups with counts', () => {
     const groups = buildHopperGroups(
@@ -48,7 +63,7 @@ describe('buildHopperGroups', () => {
         entry({ id: 'b', status: 'hopper', display_name: 'Slim' }),
         entry({ id: 'c', status: 'hopper', display_name: 'Doc' }),
       ],
-      [rosterPlayer({})]
+      [rosterPlayer()]
     );
 
     expect(groups.official.map((r) => r.id)).toEqual(['a']);
@@ -135,5 +150,36 @@ describe('buildHopperGroups', () => {
   it('handles both reads being empty', () => {
     const groups = buildHopperGroups([], []);
     expect(groups.counts).toEqual({ official: 0, waiting: 0, past: 0 });
+  });
+
+  it('lists a remembered walk-up in past players, keyed by name', () => {
+    const groups = buildHopperGroups([], [rememberedWalkup('Rocket')]);
+
+    expect(groups.counts.past).toBe(1);
+    const row = groups.past[0];
+    expect(row.key).toBe('walkup:rocket');
+    expect(row.identity.kind).toBe('walkup');
+    expect(row.identity.displayName).toBe('Rocket');
+    expect(row.identity.playerNumber).toBeNull();
+  });
+
+  it('keeps registered and remembered-walk-up past players in one list', () => {
+    const groups = buildHopperGroups(
+      [],
+      [rosterPlayer({ member_id: 'm-kenny', nickname: 'Kenny' }), rememberedWalkup('Rocket')]
+    );
+
+    expect(groups.past.map((r) => r.identity.displayName)).toEqual(['Kenny', 'Rocket']);
+    expect(groups.past.map((r) => r.player.member_id)).toEqual(['m-kenny', null]);
+  });
+
+  it('flags a walk-up in the tournament sharing a name with a remembered one', () => {
+    const groups = buildHopperGroups(
+      [entry({ id: 'a', display_name: 'Rocket' })],
+      [rememberedWalkup('Rocket')]
+    );
+
+    expect(groups.waiting[0].duplicateName).toBe(true);
+    expect(groups.past[0].duplicateName).toBe(true);
   });
 });

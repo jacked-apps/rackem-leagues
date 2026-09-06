@@ -48,12 +48,18 @@ export async function getBracketHopper(bracketId: string): Promise<HopperEntry[]
 }
 
 /**
- * A past player from the organizer's sticky roster (`bracket_roster`), joined to
- * their member record for display. Registered players only — walk-ups are
- * tournament-scoped and never enter the roster.
+ * A past player from the organizer's sticky roster — either a registered member
+ * (`bracket_roster`, joined to their member record for display) or a remembered
+ * walk-up name (`bracket_walkup_roster`).
+ *
+ * The two kinds are told apart the same way as everywhere else in this feature:
+ * `member_id` set = registered; `member_id` NULL = walk-up, whose entire
+ * identity is `display_name`.
  */
 export interface RosterPlayer {
-  member_id: string;
+  member_id: string | null;
+  /** The walk-up's typed name; null for a registered player (use their member fields). */
+  display_name: string | null;
   nickname: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -64,10 +70,12 @@ export interface RosterPlayer {
 }
 
 /**
- * The organizer's past players for this bracket, EXCLUDING anyone already in its
- * hopper — the RPC does that filtering, which is what keeps the hopper screen's
- * three groups free of duplicates (a past player who links in leaves this list
- * and shows up as a candidate instead).
+ * The organizer's past players for this bracket — registered members and
+ * remembered walk-ups in one list — EXCLUDING anyone already in its hopper. The
+ * RPC does that filtering, which is what keeps the hopper screen's three groups
+ * free of duplicates (a past player who links in leaves this list and shows up
+ * as a candidate instead). Walk-ups are matched by trimmed, case-insensitive
+ * name, since that is the only identity they have.
  */
 export async function getBracketRoster(bracketId: string): Promise<RosterPlayer[]> {
   const { data, error } = await supabase.rpc('get_bracket_roster', {
