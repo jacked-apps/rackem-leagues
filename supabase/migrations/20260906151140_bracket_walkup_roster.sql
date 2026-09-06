@@ -13,9 +13,12 @@
 -- A remembered walk-up is a private note in one organizer's list — no identity
 -- reaches the rest of the app, which keeps the Resolved Decision (walk-ups are
 -- tournament-scoped, LOs use their existing placeholder tools separately) intact.
--- A handicap is NOT stored here either; that belongs to the handicap_races
+-- The handicap column is RESERVED, not implemented: nothing on a tournament
+-- entrant produces a handicap yet (that arrives with the handicap_races premium
 -- feature, whose own description already promises "players we already know keep
--- theirs".
+-- theirs"). It is here so remembering one costs no migration later, and is free
+-- text because the handicap SYSTEM is that feature's decision to make, not this
+-- one's. Expect it to be NULL on every row until then.
 --
 -- Three parts: the table, a trigger mirroring the registered-roster one, and a
 -- rewritten get_bracket_roster that returns both kinds as one list.
@@ -28,6 +31,8 @@ CREATE TABLE IF NOT EXISTS "public"."bracket_walkup_roster" (
     "organizer_member_id" uuid NOT NULL,
     -- The whole identity of a walk-up. Stored as the organizer typed it.
     "display_name"        text NOT NULL,
+    -- RESERVED for handicap_races (see header). Free text, always NULL today.
+    "handicap"            text,
     "first_seen_at"       timestamp with time zone NOT NULL DEFAULT now(),
     CONSTRAINT "bracket_walkup_roster_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "bracket_walkup_roster_organizer_fkey"
@@ -41,6 +46,9 @@ ALTER TABLE "public"."bracket_walkup_roster" OWNER TO "postgres";
 -- first; a later spelling is simply not re-added.
 CREATE UNIQUE INDEX IF NOT EXISTS "bracket_walkup_roster_organizer_name_key"
   ON "public"."bracket_walkup_roster" ("organizer_member_id", lower(btrim("display_name")));
+
+COMMENT ON COLUMN "public"."bracket_walkup_roster"."handicap" IS
+  'RESERVED for the handicap_races feature — no code writes this yet. Free text because the handicap system is that feature''s decision.';
 
 COMMENT ON TABLE "public"."bracket_walkup_roster" IS
   'An organizer''s remembered WALK-UP names (entrants with no account), so regulars who never register do not have to be re-typed every week. Added on admission by a trigger, never removed on eject. Private to one organizer — creates no global member or placeholder.';
@@ -114,6 +122,7 @@ BEGIN
              jsonb_build_object(
                'member_id', m.id,
                'display_name', NULL,
+               'handicap', NULL,
                'nickname', m.nickname,
                'first_name', m.first_name,
                'last_name', m.last_name,
@@ -139,6 +148,7 @@ BEGIN
              jsonb_build_object(
                'member_id', NULL,
                'display_name', w.display_name,
+               'handicap', w.handicap,
                'nickname', NULL,
                'first_name', NULL,
                'last_name', NULL,

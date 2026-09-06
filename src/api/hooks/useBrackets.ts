@@ -29,6 +29,7 @@ import {
   setHopperPaidStatus,
   ejectHopperEntry,
   finalizeHopper,
+  forgetRosterEntry,
   advanceWinner,
   setMatchInProgress,
   reopenMatch,
@@ -220,6 +221,20 @@ export function useEjectHopperEntry(bracketId: string) {
   const invalidate = useHopperInvalidation(bracketId);
   return useMutation({
     mutationFn: (entryId: string) => ejectHopperEntry(entryId, bracketId),
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * Housekeeping on the organizer's remembered past players — one person at a
+ * time. Invalidates the same pair as every other hopper write, since forgetting
+ * someone changes what the past-players group offers.
+ */
+export function useForgetRosterEntry(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    mutationFn: (target: { memberId?: string | null; displayName?: string | null }) =>
+      forgetRosterEntry(target),
     onSuccess: invalidate,
   });
 }

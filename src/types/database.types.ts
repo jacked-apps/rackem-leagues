@@ -3638,6 +3638,10 @@ export type Database = {
         Args: { p_season_id: string; p_team_id: string }
         Returns: string
       }
+      forget_bracket_roster_entry: {
+        Args: { p_member_id?: string; p_display_name?: string }
+        Returns: boolean
+      }
       finalize_bracket_hopper: {
         Args: { p_bracket_id: string; p_include_waiting?: boolean }
         Returns: number

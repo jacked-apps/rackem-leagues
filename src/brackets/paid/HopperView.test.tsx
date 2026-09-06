@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, fireEvent } from '@/test/utils';
+import { renderWithProviders, screen, fireEvent, userEvent } from '@/test/utils';
 import type { HopperEntry, RosterPlayer } from '@/api/queries/brackets';
 
 const mocks = vi.hoisted(() => ({
@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   eject: vi.fn(),
   addRegistered: vi.fn(),
   addWalkup: vi.fn(),
+  forget: vi.fn(),
 }));
 
 /** A mutation hook's return shape — only what HopperView reads. */
@@ -34,6 +35,7 @@ vi.mock('@/api/hooks/useBrackets', () => ({
   useEjectHopperEntry: () => mutation(mocks.eject),
   useAddRegisteredToHopper: () => mutation(mocks.addRegistered),
   useAddWalkupToHopper: () => mutation(mocks.addWalkup),
+  useForgetRosterEntry: () => mutation(mocks.forget),
 }));
 
 import { HopperView } from './HopperView';
@@ -62,6 +64,7 @@ function rosterPlayer(over: Partial<RosterPlayer> = {}): RosterPlayer {
   return {
     member_id: 'm-kenny',
     display_name: null,
+    handicap: null,
     nickname: 'Kenny',
     first_name: 'Ken',
     last_name: 'Baker',
@@ -100,6 +103,7 @@ beforeEach(() => {
   mocks.eject.mockResolvedValue(undefined);
   mocks.addRegistered.mockResolvedValue(undefined);
   mocks.addWalkup.mockResolvedValue(undefined);
+  mocks.forget.mockResolvedValue(true);
   loaded([]);
 });
 
@@ -164,16 +168,42 @@ describe('HopperView', () => {
     expect(screen.getAllByText(/same name as another player/i).length).toBe(2);
   });
 
-  it('adds a past player to the hopper on one tap', () => {
+  it('adds a past player from their menu', async () => {
+    const user = userEvent.setup();
     loaded([], [rosterPlayer()]);
     renderWithProviders(<HopperView bracketId="b1" />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Kenny/ }));
+    await user.click(screen.getByRole('button', { name: /Kenny/ }));
+    await user.click(await screen.findByText('Add to this tournament'));
 
     expect(mocks.addRegistered).toHaveBeenCalledWith({
       memberId: 'm-kenny',
       displayName: 'Kenny',
     });
+  });
+
+  it('forgets a registered past player by member id', async () => {
+    const user = userEvent.setup();
+    loaded([], [rosterPlayer()]);
+    renderWithProviders(<HopperView bracketId="b1" />);
+
+    await user.click(screen.getByRole('button', { name: /Kenny/ }));
+    await user.click(await screen.findByText('Forget this player'));
+    await user.click(screen.getByRole('button', { name: 'Forget' }));
+
+    expect(mocks.forget).toHaveBeenCalledWith({ memberId: 'm-kenny' });
+  });
+
+  it('forgets a remembered walk-up by their saved name', async () => {
+    const user = userEvent.setup();
+    loaded([], [rememberedWalkup('Rocket')]);
+    renderWithProviders(<HopperView bracketId="b1" />);
+
+    await user.click(screen.getByRole('button', { name: /Rocket/ }));
+    await user.click(await screen.findByText('Forget this player'));
+    await user.click(screen.getByRole('button', { name: 'Forget' }));
+
+    expect(mocks.forget).toHaveBeenCalledWith({ displayName: 'Rocket' });
   });
 
   it('explains what fills each group when it is empty', () => {
@@ -190,6 +220,7 @@ describe('HopperView', () => {
     renderWithProviders(<HopperView bracketId="b1" readOnly />);
 
     fireEvent.click(screen.getByRole('button', { name: /Kenny/ }));
+    expect(screen.queryByText('Add to this tournament')).toBeNull();
     expect(mocks.addRegistered).not.toHaveBeenCalled();
   });
 
@@ -201,11 +232,13 @@ describe('HopperView', () => {
     expect(screen.getByText(/couldn't load the players/i)).toBeTruthy();
   });
 
-  it('re-adds a remembered walk-up by name, not as a registered player', () => {
+  it('re-adds a remembered walk-up by name, not as a registered player', async () => {
+    const user = userEvent.setup();
     loaded([], [rememberedWalkup('Rocket')]);
     renderWithProviders(<HopperView bracketId="b1" />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Rocket/ }));
+    await user.click(screen.getByRole('button', { name: /Rocket/ }));
+    await user.click(await screen.findByText('Add to this tournament'));
 
     expect(mocks.addWalkup).toHaveBeenCalledWith('Rocket');
     expect(mocks.addRegistered).not.toHaveBeenCalled();

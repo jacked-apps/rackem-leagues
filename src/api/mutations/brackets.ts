@@ -302,6 +302,27 @@ export async function setHopperPaidStatus(
 }
 
 /**
+ * Housekeeping: drop ONE person from the organizer's remembered past players.
+ *
+ * @param target - A registered player (`memberId`) or a remembered walk-up
+ *   (`displayName`). The RPC resolves the organizer from the session, so this
+ *   can only ever touch the caller's own list.
+ * @returns true if a row was removed; false if there was nothing there (a
+ *   double tap is a no-op, not an error).
+ */
+export async function forgetRosterEntry(target: {
+  memberId?: string | null;
+  displayName?: string | null;
+}): Promise<boolean> {
+  const { data, error } = await supabase.rpc('forget_bracket_roster_entry', {
+    p_member_id: target.memberId ?? undefined,
+    p_display_name: target.displayName ?? undefined,
+  });
+  if (error) throw new Error(`Could not update your past players: ${error.message}`);
+  return data === true;
+}
+
+/**
  * Convert a paid tournament's official hopper list into seeded participants,
  * ready for the tree generator. Returns the player count.
  *

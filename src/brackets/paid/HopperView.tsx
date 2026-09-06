@@ -29,11 +29,12 @@ import {
   useEjectHopperEntry,
   useAddRegisteredToHopper,
   useAddWalkupToHopper,
+  useForgetRosterEntry,
 } from '@/api/hooks/useBrackets';
 import { buildHopperGroups, type HopperRow } from './hopperGroups';
 import { HopperEntryMenu } from './HopperEntryMenu';
 import { HopperGroup } from './HopperGroup';
-import { HopperIdentityLine } from './HopperIdentityLine';
+import { PastPlayerMenu } from './PastPlayerMenu';
 
 interface HopperViewProps {
   bracketId: string;
@@ -50,6 +51,7 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
   const eject = useEjectHopperEntry(bracketId);
   const addRegistered = useAddRegisteredToHopper(bracketId);
   const addWalkup = useAddWalkupToHopper(bracketId);
+  const forget = useForgetRosterEntry(bracketId);
 
   const groups = useMemo(
     () => buildHopperGroups(hopper.data ?? [], roster.data ?? []),
@@ -64,7 +66,8 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
     setPaid.isPending ||
     eject.isPending ||
     addRegistered.isPending ||
-    addWalkup.isPending;
+    addWalkup.isPending ||
+    forget.isPending;
 
   if (hopper.isLoading) return <Note>Loading players…</Note>;
   if (hopper.isError) return <Note>Couldn't load the players for this tournament.</Note>;
@@ -115,10 +118,10 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
       >
         {groups.past.map((row) => (
           <li key={row.key}>
-            <button
-              type="button"
+            <PastPlayerMenu
+              row={row}
               disabled={locked}
-              onClick={() =>
+              onAdd={() =>
                 run(
                   // A remembered walk-up has no account to link to — re-adding
                   // them just re-types the name we saved on their behalf.
@@ -130,11 +133,16 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
                     : addWalkup.mutateAsync(row.identity.displayName)
                 )
               }
-              className="flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left hover:bg-accent disabled:pointer-events-none disabled:opacity-60"
-            >
-              <HopperIdentityLine identity={row.identity} duplicateName={row.duplicateName} />
-              <span className="shrink-0 text-xs font-medium text-muted-foreground">Add</span>
-            </button>
+              onForget={() =>
+                run(
+                  forget.mutateAsync(
+                    row.player.member_id
+                      ? { memberId: row.player.member_id }
+                      : { displayName: row.player.display_name }
+                  )
+                )
+              }
+            />
           </li>
         ))}
       </HopperGroup>

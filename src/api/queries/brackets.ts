@@ -60,6 +60,11 @@ export interface RosterPlayer {
   member_id: string | null;
   /** The walk-up's typed name; null for a registered player (use their member fields). */
   display_name: string | null;
+  /**
+   * RESERVED for the handicap_races feature — nothing writes it yet, so expect
+   * null on every row. Free text: the handicap system is that feature's call.
+   */
+  handicap: string | null;
   nickname: string | null;
   first_name: string | null;
   last_name: string | null;

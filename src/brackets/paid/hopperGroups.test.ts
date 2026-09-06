@@ -30,6 +30,7 @@ function rosterPlayer(over: Partial<RosterPlayer> = {}): RosterPlayer {
   return {
     member_id: 'm1',
     display_name: null,
+    handicap: null,
     nickname: 'Kenny',
     first_name: 'Ken',
     last_name: 'Baker',
