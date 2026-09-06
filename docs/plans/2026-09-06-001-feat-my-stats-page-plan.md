@@ -28,30 +28,70 @@ history from April 2026 onward the day it ships, not just on new games.
 | "Games" means **racks** | That's what carries an ending. Venue/table are per night and filter whole nights. |
 | Default frame is **everything**, season is a filter | "How many teams have I been on" is a career question. |
 
-## Architectural call worth making explicit
+## The performance requirement comes first
 
-**Fetch the player's full history once, filter in memory.**
+Ed:
 
-Production is 45 completed matches — a few hundred racks for the most active
-player. Every filter Ed described (opponent, handicap, system, venue, table,
-recent-vs-previous) is trivial over an array that size, and the filters have to
-recompute the *summary* as well as the list, which is far simpler when
-everything is already in hand.
+> I would really like this to be snappy and reactive, not sluggish and constant
+> spinnerations.
 
-The alternative — a server-side filter API — means a round trip per filter
-change and a query builder per dimension, to solve a scale problem we do not
-have. If a league ever reaches tens of thousands of racks, this becomes a
-paginated server query; the pure functions in Unit 2 would be reused as-is.
+This is a design constraint, not a nice-to-have, and it decides the
+architecture. A page that asks the server every time you change a filter shows
+a spinner on every click by definition. So: **fetch the player's history once,
+then every filter is instant and offline.** Changing "table 2" to "table 3"
+costs a few milliseconds of array work and zero network.
 
-This is a deliberate, reversible bet on current scale, not an oversight.
+That happens to also be the simpler build, but speed is the reason for it.
+
+### What that costs at scale, with real numbers
+
+At about 5 racks per player per night:
+
+| Play pattern | Racks | Payload |
+|---|---|---|
+| Production today (45 matches, whole league) | few hundred | negligible |
+| 3 nights a week, 10 years | ~6,000 | ~1 MB |
+| 5 nights a week, 20 years | ~22,000 | ~4–5 MB |
+
+Filtering 22,000 rows in a browser is instant — that was never the constraint.
+**Sending** them is: several MB before the page can draw, on a phone, in a pool
+hall. The approach stops being the fast one somewhere around **10,000 racks** —
+roughly 15 years of one league night, or 5 years of three.
+
+### Designed so that day is a one-file change
+
+The two halves scale differently, and it's worth not conflating them:
+
+- **Career totals** are a handful of numbers. Postgres can aggregate 22,000
+  rows and return twenty bytes without noticing.
+- **The game log** is the heavy part — and nobody scrolls 22,000 rows anyway;
+  they filter down to what they care about.
+
+So the long-term shape is totals computed in the database and the log fetched a
+page at a time. Building that now would be solving a problem we will not have
+for years, and it would be *slower to use* today.
+
+The hedge is one module between the page and the data:
+
+    src/stats/gameHistorySource.ts
+      getPlayerHistory(memberId) → all rows          (today)
+      later: getSummary(filter) + getPage(filter)    (same callers)
+
+Everything above it — the summary maths, the filters, the page — works on rows
+and a filter spec, and does not know where either came from. The day the swap is
+needed it is that file plus the query beneath it, not the feature.
+
+**Trigger for the swap:** when any single player's history passes ~10,000 racks,
+or first load exceeds ~1 second on a phone. Worth writing down because nobody
+will notice the slide otherwise.
 
 ## Units
 
 Each unit is independently reviewable and leaves the app working.
 
-### Unit 1 — The query
+### Unit 1 — The query and the boundary
 
-`src/api/queries/playerGameHistory.ts`
+`src/api/queries/playerGameHistory.ts` + `src/stats/gameHistorySource.ts`
 
 One function returning a flat row per rack for a given member:
 
@@ -67,8 +107,12 @@ The opponent's handicap is the fiddly part: `match_games.home_position` /
 because getting it off by one silently attributes the wrong handicap to every
 opponent.
 
+Also establishes the `gameHistorySource` boundary described above, so nothing
+built on top ever calls Supabase directly.
+
 **Done when:** the query returns correct rows for a seeded player, including a
-game whose opponent's current handicap differs from their handicap that night.
+game whose opponent's current handicap differs from their handicap that night,
+and everything above the boundary depends only on rows plus a filter spec.
 
 ### Unit 2 — Summary maths
 
@@ -130,10 +174,11 @@ hide.** Every other field is read directly; this one is derived, so an
 off-by-one misattributes every opponent's handicap without ever erroring. Hence
 the dedicated helper and tests in Unit 1.
 
-**Substitutes and mid-match swaps.** `match_lineups` carries
-`swap_new_player_handicap`, so a substitute may not sit in the slot their
-handicap implies. To be checked during Unit 1 rather than assumed — flagged here
-so it is not discovered in Unit 4.
+**Substitutes — largely cleared.** Ed: subs have real player ids and play the
+full match, so they occupy a lineup slot like anyone else and their handicap
+sits with it. Still verified in Unit 1 against a real swapped lineup, since
+`swap_new_player_handicap` exists and something must be writing it, but this is
+no longer expected to be a design problem.
 
 ## Explicitly not in this plan
 
