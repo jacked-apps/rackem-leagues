@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { FilterOption, FilterOptions } from '@/stats/filterOptions';
+import { HandicapFilter } from './HandicapFilter';
 import { activeFilterCount, isUnfiltered, type GameFilter } from '@/stats/gameFilters';
 
 /**
@@ -135,24 +136,20 @@ export function FilterBar({
           onChange={(opponentId) => set({ opponentId })}
           parse={(raw) => raw}
         />
-        {/* Two ends rather than one value, so "2s" (from 2 to 2) and "50 and
-            over" (from 50, no upper end) are the same control. */}
-        <FilterControl
-          label="Opponent H/C from"
-          allLabel="Any"
-          value={filter.opponentHandicapMin}
-          options={options.handicaps}
-          onChange={(opponentHandicapMin) => set({ opponentHandicapMin })}
-          parse={Number}
-        />
-        <FilterControl
-          label="Opponent H/C to"
-          allLabel="Any"
-          value={filter.opponentHandicapMax}
-          options={options.handicaps}
-          onChange={(opponentHandicapMax) => set({ opponentHandicapMax })}
-          parse={Number}
-        />
+        {/* Typed, not a dropdown: handicaps span three systems with different
+            scales, so a menu of every value faced runs to hundreds of entries.
+            Hidden entirely when no handicaps were recorded at all. */}
+        {options.handicaps.length > 0 && (
+          <HandicapFilter
+            min={filter.opponentHandicapMin}
+            max={filter.opponentHandicapMax}
+            onChange={({ min, max }) =>
+              set({ opponentHandicapMin: min, opponentHandicapMax: max })
+            }
+            lowest={options.handicaps[0]?.value ?? null}
+            highest={options.handicaps[options.handicaps.length - 1]?.value ?? null}
+          />
+        )}
         <FilterControl
           label="Venue"
           value={filter.venueName}
