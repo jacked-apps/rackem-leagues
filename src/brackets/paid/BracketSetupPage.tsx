@@ -128,61 +128,47 @@ export function BracketSetupPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-3 py-4">
+    <div className="mx-auto w-full max-w-2xl space-y-3 px-3 py-4">
       <Link
         to="/brackets"
-        className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground"
+        className="inline-block text-sm text-muted-foreground hover:text-foreground"
       >
         ← Tournaments
       </Link>
 
-      <Tabs defaultValue="players" className="space-y-3">
-        <header className="flex flex-wrap items-center justify-between gap-2">
-          <h1 className="text-xl font-bold leading-tight">{bracket.name}</h1>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              loadingText="none"
-              onClick={() => copyJoinLink(bracket.join_token)}
-            >
-              Copy join link
-            </Button>
-            {/* Signs for the wall / the big screen behind the bar. */}
-            <Button size="sm" variant="outline" asChild>
-              <Link to={`/brackets/${bracket.id}/qr`}>QR code</Link>
-            </Button>
-          </div>
-        </header>
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-bold leading-tight">{bracket.name}</h1>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            loadingText="none"
+            onClick={() => copyJoinLink(bracket.join_token)}
+          >
+            Copy join link
+          </Button>
+          {/* Signs for the wall / the big screen behind the bar. */}
+          <Button size="sm" variant="outline" asChild>
+            <Link to={`/brackets/${bracket.id}/qr`}>QR code</Link>
+          </Button>
+        </div>
+      </header>
 
-        {/* pb clears the fixed tab bar so the last row isn't hidden under it. */}
-        <TabsContent value="players" className="space-y-3 pb-24">
-          {/* The player lists end here; starting is its own decision below. */}
-          <Card>
-            <CardContent className="pt-4">
+      {/*
+        The setup card. Its tabs live at ITS bottom, not pinned to the screen —
+        they belong to this card, and the page is free to carry other things.
+        Nearly every premium feature configures BEFORE the bracket is drawn
+        (venue, tables, alerts, handicaps, payouts), so this tab set is where
+        the crowding will land: keep it to 4-5 and combine as features arrive.
+      */}
+      <Card>
+        <Tabs defaultValue="players">
+          <CardContent className="pt-4">
+            <TabsContent value="players" className="mt-0">
               <HopperView bracketId={bracket.id} trackEntryFees={trackEntryFees} />
-            </CardContent>
-          </Card>
+            </TabsContent>
 
-          <Card>
-            <CardContent className="pt-4">
-              <StartTournamentPanel
-                officialCount={officialCount}
-                waitingCount={waitingCount}
-                includeWaiting={includeWaiting}
-                onIncludeWaitingChange={setIncludeWaiting}
-                onStart={handleStart}
-                starting={starting}
-                priceLabel={chargeCents > 0 ? formatPrice(chargeCents) : null}
-                trackEntryFees={trackEntryFees}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="info" className="pb-24">
-          <Card>
-            <CardContent className="pt-4">
+            <TabsContent value="info" className="mt-0">
               <BracketInfoTab
                 settings={{
                   name: bracket.name,
@@ -202,16 +188,35 @@ export function BracketSetupPage() {
                   }
                 }}
               />
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
+          </CardContent>
 
-        {/* Fixed to the bottom, matching the player's view of the same tournament. */}
-        <TabsList className="fixed inset-x-0 bottom-0 z-10 grid h-14 w-full grid-cols-2 rounded-none border-t">
-          <TabsTrigger value="info">Info</TabsTrigger>
-          <TabsTrigger value="players">Players</TabsTrigger>
-        </TabsList>
-      </Tabs>
+          <TabsList className="grid w-full grid-cols-2 rounded-none rounded-b-xl border-t">
+            <TabsTrigger value="info">Info</TabsTrigger>
+            <TabsTrigger value="players">Players</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </Card>
+
+      {/*
+        Starting is its own card, outside the tabs, so it is reachable from
+        whichever tab the organizer happens to be on — it is the one action that
+        ends setup, not a place to navigate to.
+      */}
+      <Card>
+        <CardContent className="pt-4">
+          <StartTournamentPanel
+            officialCount={officialCount}
+            waitingCount={waitingCount}
+            includeWaiting={includeWaiting}
+            onIncludeWaitingChange={setIncludeWaiting}
+            onStart={handleStart}
+            starting={starting}
+            priceLabel={chargeCents > 0 ? formatPrice(chargeCents) : null}
+            trackEntryFees={trackEntryFees}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

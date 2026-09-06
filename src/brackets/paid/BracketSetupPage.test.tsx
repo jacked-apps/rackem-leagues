@@ -218,13 +218,24 @@ describe('BracketSetupPage', () => {
     expect(screen.getByText(/doesn't use player sign-up/i)).toBeTruthy();
   });
 
-  it('separates starting from the player lists, and offers both tabs', () => {
+  it('offers both tabs', () => {
     setup([entry({ id: 'a' }), entry({ id: 'b' })]);
     renderWithProviders(<BracketSetupPage />);
 
     expect(screen.getByRole('tab', { name: 'Info' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Players' })).toBeTruthy();
-    // Start lives below the lists, not inside them.
+  });
+
+  it('keeps Start reachable from every tab, not buried inside one', async () => {
+    const user = userEvent.setup();
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByRole('button', { name: /Start & pay/ })).toBeTruthy();
+
+    // Still there after switching tabs — it lives outside them.
+    await user.click(screen.getByRole('tab', { name: 'Info' }));
+    expect(await screen.findByLabelText('Tournament name')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Start & pay/ })).toBeTruthy();
   });
 
