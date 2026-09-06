@@ -12,8 +12,11 @@
  * losing this page.
  *
  * Public route — the read is anon-safe (names only, plus the caller's own row),
- * so someone with no account still sees the tournament and is offered sign-in.
- * Auth is handled inside rather than by a route guard.
+ * so someone with no account still sees the tournament. They get two doors:
+ * sign in, or simply type a name. The typed name is remembered in their own
+ * browser per tournament, and re-checked against the live list every visit —
+ * the organizer may have removed them, and a note in one browser proves
+ * nothing about the actual tournament.
  */
 
 import { useEffect, useMemo, useRef } from 'react';
@@ -25,11 +28,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { queryKeys } from '@/api/queryKeys';
 import { useCurrentMember } from '@/api/hooks/useCurrentMember';
-import { useBracketPlayerView, useJoinHopper } from '@/api/hooks/useBrackets';
+import type { SelfWalkupResult } from '@/api/mutations/brackets';
+import {
+  useAddSelfAsWalkup,
+  useBracketPlayerView,
+  useJoinHopper,
+} from '@/api/hooks/useBrackets';
 import { buildBracketView } from '../bracketViewModel';
 import { BracketTree } from '../BracketTree';
 import { useBracketRealtime } from '../useBracketRealtime';
+import { AddMyNameCard, MAX_WALKUP_NAME } from './AddMyNameCard';
 import { PlayerTournamentView } from './PlayerTournamentView';
+import { forgetWalkupName, recallWalkupName, rememberWalkupName } from './walkupMemory';
 
 export function JoinHopperPage() {
   const { joinToken } = useParams<{ joinToken: string }>();
@@ -39,6 +49,7 @@ export function JoinHopperPage() {
   const attempted = useRef(false);
 
   const { data: view, isLoading: viewLoading } = useBracketPlayerView(joinToken);
+  const addSelf = useAddSelfAsWalkup(joinToken ?? '');
 
   // Watch the hopper, not just the matches — the whole point before the start
   // is seeing players arrive.
@@ -64,6 +75,33 @@ export function JoinHopperPage() {
       }
     );
   }, [joinToken, member?.id, memberLoading, viewLoading, alreadyListed, join]);
+
+  /**
+   * Who the viewer is when they have no account: the name this browser noted,
+   * but only if it is still on the live list. If the organizer removed them the
+   * note is stale, so it is dropped rather than showing them as on a list they
+   * are not on.
+   */
+  const localName = joinToken ? recallWalkupName(joinToken) : null;
+  const localEntry = useMemo(() => {
+    if (!localName || !view?.found) return null;
+    const inOfficial = view.official.includes(localName);
+    const inWaiting = view.waiting.includes(localName);
+    if (!inOfficial && !inWaiting) return null;
+    return {
+      display_name: localName,
+      status: (inOfficial ? 'official' : 'hopper') as 'official' | 'hopper',
+      // A typed name proves nothing about who they are, so no fee status is
+      // shown for it — that would leak another player's standing to anyone
+      // willing to guess a name.
+      paid_status: null,
+    };
+  }, [localName, view?.found, view?.official, view?.waiting]);
+
+  // Drop a note the list no longer backs up.
+  useEffect(() => {
+    if (joinToken && localName && view?.found && !localEntry) forgetWalkupName(joinToken);
+  }, [joinToken, localName, view?.found, localEntry]);
 
   const tree = useMemo(
     () =>
@@ -106,8 +144,25 @@ export function JoinHopperPage() {
           </p>
         </div>
 
-        {/* Anyone not signed in still sees the tournament — they just can't join yet. */}
-        {!member?.id && <SignInPrompt path={location.pathname} />}
+        {/*
+          Not signed in and not already on the list: two doors. Someone who
+          already typed a name sees themselves in the list instead, so the box
+          doesn't invite them to add a second entry.
+        */}
+        {!member?.id && !localEntry && (
+          <AddMyNameCard
+            redirectPath={location.pathname}
+            onAdd={async (name) => {
+              const result = await addSelf.mutateAsync(name);
+              if (result.ok) {
+                if (joinToken) rememberWalkupName(joinToken, result.name ?? name);
+                toast.success("You're on the list.");
+                return null;
+              }
+              return selfAddProblem(result);
+            }}
+          />
+        )}
 
         {result?.reason === 'name_taken' && <NameTaken name={result.name} path={location.pathname} />}
         {result?.reason === 'not_accepting' && (
@@ -124,7 +179,9 @@ export function JoinHopperPage() {
           </TabsList>
 
           <TabsContent value="players" className="mt-4">
-            <PlayerTournamentView view={view} />
+            {/* The server knows a signed-in player; a walk-up is only known to
+                their own browser, so the two identities merge here. */}
+            <PlayerTournamentView view={{ ...view, me: view.me ?? localEntry }} />
           </TabsContent>
 
           {tree && (
@@ -138,25 +195,26 @@ export function JoinHopperPage() {
   );
 }
 
-/** Not signed in: show the tournament, offer the way in. */
-function SignInPrompt({ path }: { path: string }) {
-  return (
-    <Card>
-      <CardHeader className="py-4">
-        <CardTitle className="text-base">Sign in to join</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 pb-4">
-        <p className="text-sm text-muted-foreground">
-          You can watch this page without an account. Sign in to add yourself to
-          the list.
-        </p>
-        {/* Carry the join intent through sign-in so they land back here. */}
-        <Button asChild loadingText="none">
-          <Link to={`/login?redirect=${encodeURIComponent(path)}`}>Sign in</Link>
-        </Button>
-      </CardContent>
-    </Card>
-  );
+/**
+ * Turn a rejected self-add into the sentence that says what to do about it.
+ * Every one of these is an ordinary outcome, not a fault, so none of them
+ * should read like an error.
+ */
+function selfAddProblem(result: SelfWalkupResult): string {
+  switch (result.reason) {
+    case 'name_taken':
+      return `${result.name} is already on this list — try another name.`;
+    case 'name_too_long':
+      return `Keep it to ${result.max ?? MAX_WALKUP_NAME} characters.`;
+    case 'not_accepting':
+      return 'This tournament has already started, so it’s no longer taking names.';
+    case 'full':
+      return 'This list is full — see the organizer.';
+    case 'not_found':
+      return 'This tournament link isn’t valid any more.';
+    default:
+      return 'That didn’t go through — try again.';
+  }
 }
 
 /**

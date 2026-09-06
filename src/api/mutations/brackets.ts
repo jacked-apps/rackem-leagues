@@ -248,6 +248,36 @@ export async function joinHopper(
   return data as JoinHopperResult;
 }
 
+export interface SelfWalkupResult {
+  ok: boolean;
+  reason?: 'name_required' | 'name_too_long' | 'not_found' | 'not_accepting' | 'full' | 'name_taken';
+  name?: string;
+  max?: number;
+  status?: string;
+  bracket_name?: string;
+}
+
+/**
+ * Anonymous self-add: someone with no account types their name on the
+ * tournament page and lands in the waiting room.
+ *
+ * Every rule (setup only, entry cap, name length, one name per tournament) is
+ * enforced by the RPC, not here — an input box is trivially bypassed. Failures
+ * come back as a `reason` for the page to phrase, never as a thrown error,
+ * because losing a name race is an ordinary outcome rather than a fault.
+ */
+export async function addSelfAsWalkup(
+  joinToken: string,
+  displayName: string
+): Promise<SelfWalkupResult> {
+  const { data, error } = await supabase.rpc('add_self_as_walkup', {
+    p_join_token: joinToken,
+    p_display_name: displayName,
+  });
+  if (error) throw new Error(`Could not add your name: ${error.message}`);
+  return data as SelfWalkupResult;
+}
+
 /**
  * Add a WALK-UP to the hopper (member_id NULL — a disposable tournament entrant).
  *

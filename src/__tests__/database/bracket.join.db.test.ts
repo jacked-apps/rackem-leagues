@@ -238,4 +238,79 @@ describe('join_bracket_hopper (Unit C2)', () => {
       expect(v.found).toBe(false);
     });
   });
+
+  describe('add_self_as_walkup (anonymous)', () => {
+    async function addSelf(joinToken: string, name: string) {
+      const rows = await executeSql(
+        `SELECT public.add_self_as_walkup($1::uuid, $2::text) AS r`,
+        [joinToken, name]
+      );
+      return rows[0].r as Record<string, any>;
+    }
+
+    it('lets someone with no account put themselves on the waiting list', async () => {
+      // Raw pg has no session — this IS the anonymous path.
+      const { id, joinToken } = await makeBracket('setup');
+      const result = await addSelf(joinToken, 'Rocket');
+      expect(result.ok).toBe(true);
+
+      const rows = await executeSql(
+        `SELECT display_name, status, member_id FROM public.bracket_hopper WHERE bracket_id = $1`,
+        [id]
+      );
+      expect(rows[0].display_name).toBe('Rocket');
+      expect(rows[0].status).toBe('hopper'); // a proposal, not in the tournament
+      expect(rows[0].member_id).toBeNull(); // never creates an account
+    });
+
+    it('holds the line on name length rather than trusting the input box', async () => {
+      const { joinToken } = await makeBracket('setup');
+      const result = await addSelf(joinToken, 'ThisNameIsFarTooLong');
+      expect(result.ok).toBe(false);
+      expect(result.reason).toBe('name_too_long');
+      expect(result.max).toBe(12);
+    });
+
+    it('refuses an empty or whitespace-only name', async () => {
+      const { joinToken } = await makeBracket('setup');
+      expect((await addSelf(joinToken, '   ')).reason).toBe('name_required');
+    });
+
+    it('reports a taken name instead of a constraint error', async () => {
+      const { joinToken } = await makeBracket('setup');
+      await addSelf(joinToken, 'Rocket');
+      const second = await addSelf(joinToken, '  rocket  ');
+      expect(second.ok).toBe(false);
+      expect(second.reason).toBe('name_taken');
+    });
+
+    it('will not add to a tournament that has started', async () => {
+      const { joinToken } = await makeBracket('live');
+      expect((await addSelf(joinToken, 'Rocket')).reason).toBe('not_accepting');
+    });
+
+    it('will not add to a tournament that never bought sign-up', async () => {
+      const rows = await executeSql(
+        `INSERT INTO public.brackets (name, format, created_by, status, tier, premium_features)
+         VALUES ('No Signup', 'single_elimination', $1, 'setup', 'paid', ARRAY['payment_tracker']::text[])
+         RETURNING id, join_token`,
+        [organizerId]
+      );
+      bracketIds.push(rows[0].id);
+      expect((await addSelf(rows[0].join_token, 'Rocket')).reason).toBe('not_accepting');
+    });
+
+    it('caps the list so nobody can bury it overnight', async () => {
+      const { id, joinToken } = await makeBracket('setup');
+      // Fill to the cap directly, then try one more through the front door.
+      await executeSql(
+        `INSERT INTO public.bracket_hopper (bracket_id, display_name, added_via)
+         SELECT $1, 'Filler ' || g, 'search' FROM generate_series(1, 128) g`,
+        [id]
+      );
+      const result = await addSelf(joinToken, 'Rocket');
+      expect(result.ok).toBe(false);
+      expect(result.reason).toBe('full');
+    });
+  });
 });

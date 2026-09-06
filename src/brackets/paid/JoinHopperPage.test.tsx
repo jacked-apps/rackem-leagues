@@ -29,9 +29,11 @@ vi.mock('@/api/hooks/useCurrentMember', () => ({
   useCurrentMember: () => mocks.member(),
 }));
 
+const addSelf = vi.hoisted(() => vi.fn());
 vi.mock('@/api/hooks/useBrackets', () => ({
   useJoinHopper: () => ({ mutate: mocks.join, data: joinState.data, isPending: false }),
   useBracketPlayerView: () => mocks.view(),
+  useAddSelfAsWalkup: () => ({ mutateAsync: addSelf, isPending: false }),
 }));
 
 vi.mock('../useBracketRealtime', () => ({
@@ -69,6 +71,8 @@ function loaded(over: Partial<BracketPlayerView> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
+  addSelf.mockResolvedValue({ ok: true, name: 'Rocket' });
   joinState.data = undefined;
   mocks.member.mockReturnValue({ data: { id: 'm1' }, isLoading: false });
   loaded();
@@ -110,7 +114,7 @@ describe('JoinHopperPage', () => {
     expect(mocks.join).not.toHaveBeenCalled();
   });
 
-  it('shows the tournament to a signed-out visitor and offers sign-in that returns here', () => {
+  it('gives a signed-out visitor both doors: type a name or sign in', () => {
     mocks.member.mockReturnValue({ data: null, isLoading: false });
     loaded();
     renderWithProviders(<JoinHopperPage />);
@@ -118,6 +122,7 @@ describe('JoinHopperPage', () => {
     // Anon can watch — the read is names-only.
     expect(screen.getByText('In the tournament (1)')).toBeTruthy();
     expect(mocks.join).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Add my name')).toBeTruthy();
     expect(
       screen.getByRole('link', { name: /sign in/i }).getAttribute('href')
     ).toBe('/login?redirect=%2Fbrackets%2Fjoin%2Fjt-1');
@@ -179,5 +184,38 @@ describe('JoinHopperPage', () => {
     renderWithProviders(<JoinHopperPage />);
 
     expect(screen.getByText(/link not valid/i)).toBeTruthy();
+  });
+
+  describe('a walk-up who typed a name', () => {
+    it('remembers them on return and stops offering the box again', () => {
+      mocks.member.mockReturnValue({ data: null, isLoading: false });
+      localStorage.setItem('bracket-walkup:jt-1', 'Rocket');
+      loaded({ waiting: ['Rocket'] });
+      renderWithProviders(<JoinHopperPage />);
+
+      expect(screen.getByText(/you're on the waiting list as rocket/i)).toBeTruthy();
+      expect(screen.queryByLabelText('Add my name')).toBeNull();
+    });
+
+    it('does not carry the name to a different tournament', () => {
+      mocks.member.mockReturnValue({ data: null, isLoading: false });
+      // A note left on another tournament must not identify them here.
+      localStorage.setItem('bracket-walkup:jt-OTHER', 'Rocket');
+      loaded({ waiting: ['Rocket'] });
+      renderWithProviders(<JoinHopperPage />);
+
+      expect(screen.getByLabelText('Add my name')).toBeTruthy();
+    });
+
+    it('drops a remembered name the organizer has removed', () => {
+      mocks.member.mockReturnValue({ data: null, isLoading: false });
+      localStorage.setItem('bracket-walkup:jt-1', 'Rocket');
+      // Rocket is not on the live list any more — the note is stale.
+      loaded({ waiting: ['Slim'], official: ['Mike'] });
+      renderWithProviders(<JoinHopperPage />);
+
+      expect(screen.getByLabelText('Add my name')).toBeTruthy();
+      expect(localStorage.getItem('bracket-walkup:jt-1')).toBeNull();
+    });
   });
 });

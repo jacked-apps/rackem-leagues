@@ -24,6 +24,7 @@ import {
   chargeForStart,
   setEntryFeePaid,
   joinHopper,
+  addSelfAsWalkup,
   addWalkupToHopper,
   addRegisteredToHopper,
   admitHopperEntry,
@@ -158,6 +159,21 @@ export function useBracketRoster(bracketId: string | undefined) {
     queryFn: () => getBracketRoster(bracketId!),
     enabled: !!bracketId,
     staleTime: 0,
+  });
+}
+
+/**
+ * Anonymous self-add from the tournament page. Invalidates the player view so
+ * the name appears in the waiting list immediately, without waiting for the
+ * realtime event to make the round trip.
+ */
+export function useAddSelfAsWalkup(joinToken: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (displayName: string) => addSelfAsWalkup(joinToken, displayName),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.playerView(joinToken) });
+    },
   });
 }
 
