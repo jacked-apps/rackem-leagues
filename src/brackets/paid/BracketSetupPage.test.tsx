@@ -45,6 +45,10 @@ vi.mock('@/api/hooks/useBrackets', () => {
   };
 });
 
+// A component test must not open a real websocket; the hook's own behavior is
+// covered where it matters (JoinHopperPage asserts it watches the hopper).
+vi.mock('../useBracketRealtime', () => ({ useBracketRealtime: vi.fn() }));
+
 vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: mocks.toastError, info: vi.fn() },
 }));

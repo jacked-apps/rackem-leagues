@@ -90,6 +90,51 @@ export async function getBracketRoster(bracketId: string): Promise<RosterPlayer[
   return (data as RosterPlayer[] | null) ?? [];
 }
 
+/**
+ * A player's view of a tournament, from its join token — what someone sees
+ * after scanning the code.
+ *
+ * Names only: this is reachable from a link printed on a poster, so it carries
+ * no player numbers, home cities, or member ids. `me` is the ONE place a paid
+ * flag appears, and only for the signed-in caller's own row — a public list of
+ * who still owes money would be a debt board.
+ */
+export interface BracketPlayerView {
+  found: boolean;
+  bracket: {
+    id: string;
+    name: string;
+    status: string;
+    format: string;
+    grand_final_reset: boolean;
+    game_type: string | null;
+    premium_features: string[] | null;
+  } | null;
+  /** Display names of players still waiting to be added, in arrival order. */
+  waiting: string[];
+  /** Display names of players in the tournament, in seed order once seeded. */
+  official: string[];
+  /** The caller's own entry, or null if they are anonymous / not on the list. */
+  me: {
+    display_name: string;
+    status: 'hopper' | 'official';
+    paid_status: 'paid' | 'unpaid' | null;
+  } | null;
+  /** Empty until the tournament starts. Names + seeds only, no member ids. */
+  participants: BracketParticipantRow[];
+  /** Empty until the tournament starts. */
+  matches: BracketMatchRow[];
+}
+
+/** Fetch the player-facing view of a tournament by its join token. */
+export async function getBracketPlayerView(joinToken: string): Promise<BracketPlayerView> {
+  const { data, error } = await supabase.rpc('get_bracket_player_view', {
+    p_join_token: joinToken,
+  });
+  if (error) throw new Error(`Failed to load tournament: ${error.message}`);
+  return data as BracketPlayerView;
+}
+
 /** The organizer's full bracket view: the bracket + its participants + matches. */
 export interface BracketDetail {
   bracket: BracketRow;

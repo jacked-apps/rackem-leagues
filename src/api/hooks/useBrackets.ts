@@ -15,6 +15,7 @@ import {
   getBracketsByCreator,
   getBracketHopper,
   getBracketRoster,
+  getBracketPlayerView,
 } from '../queries/brackets';
 import {
   createBracket,
@@ -156,6 +157,21 @@ export function useBracketRoster(bracketId: string | undefined) {
     queryKey: queryKeys.brackets.roster(bracketId ?? ''),
     queryFn: () => getBracketRoster(bracketId!),
     enabled: !!bracketId,
+    staleTime: 0,
+  });
+}
+
+/**
+ * A player's live view of a tournament, from its join token.
+ *
+ * staleTime 0 and realtime on the hopper: the entire point is watching the room
+ * fill up while you stand in it. Anon-safe — a walk-up has no session.
+ */
+export function useBracketPlayerView(joinToken: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.brackets.playerView(joinToken ?? ''),
+    queryFn: () => getBracketPlayerView(joinToken!),
+    enabled: !!joinToken,
     staleTime: 0,
   });
 }

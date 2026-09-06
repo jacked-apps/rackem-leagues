@@ -27,6 +27,8 @@ import {
   useChargeForStart,
 } from '@/api/hooks/useBrackets';
 import type { BracketFormat } from '@/types/bracket';
+import { queryKeys } from '@/api/queryKeys';
+import { useBracketRealtime } from '../useBracketRealtime';
 import { HopperView } from './HopperView';
 import { StartTournamentPanel } from './StartTournamentPanel';
 import { formatPrice, hasPremiumFeature, totalPriceCents } from './premiumFeatures';
@@ -41,6 +43,11 @@ export function BracketSetupPage() {
   const finalize = useFinalizeHopper(bracketId ?? '');
   const startBracket = useStartBracket();
   const chargeForStart = useChargeForStart();
+
+  // Watch the hopper live: players scan in while the organizer is looking at
+  // this screen, and a list that only refreshes on reload is worse than useless
+  // when someone is standing there asking if they're on it.
+  useBracketRealtime(bracketId, queryKeys.brackets.hopper(bracketId ?? ''), true);
 
   const [includeWaiting, setIncludeWaiting] = useState(false);
   const [starting, setStarting] = useState(false);

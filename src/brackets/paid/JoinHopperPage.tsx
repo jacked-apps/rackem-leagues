@@ -1,34 +1,35 @@
 /**
- * @fileoverview JoinHopperPage — where a player lands after scanning a paid
- * tournament's QR / opening its join link (`/brackets/join/:joinToken`).
+ * @fileoverview The player's tournament page (`/brackets/join/:joinToken`).
  *
- * A signed-in player is added to the hopper automatically (they only add
- * themselves — the token carries no identity). A not-signed-in scanner is asked
- * to sign in first; the seamless "sign in and come right back" round-trip is the
- * passwordless sign-in work (feat/passwordless-sign-in) — until then this links
- * to the login page.
+ * Where a scanned QR / opened join link lands. It is a LIVE page, not a
+ * one-shot confirmation: a player standing in a bar wants to watch the room
+ * fill up, see whether the organizer has added them yet, and know what they're
+ * playing. Joining is something that happens on arrival and is announced with a
+ * toast — it is not the destination.
  *
- * Public route (no auth wrapper) so a cold scanner can reach it; auth is handled
- * inside.
+ * Two tabs: Players (always) and Bracket, which appears the moment the
+ * organizer starts the tournament so the player can go back and forth without
+ * losing this page.
+ *
+ * Public route — the read is anon-safe (names only, plus the caller's own row),
+ * so someone with no account still sees the tournament and is offered sign-in.
+ * Auth is handled inside rather than by a route guard.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useLocation, useParams, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { queryKeys } from '@/api/queryKeys';
 import { useCurrentMember } from '@/api/hooks/useCurrentMember';
-import { useJoinHopper } from '@/api/hooks/useBrackets';
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-muted p-4">
-      <div className="mx-auto w-full max-w-md py-16">
-        <Card>{children}</Card>
-      </div>
-    </div>
-  );
-}
+import { useBracketPlayerView, useJoinHopper } from '@/api/hooks/useBrackets';
+import { buildBracketView } from '../bracketViewModel';
+import { BracketTree } from '../BracketTree';
+import { useBracketRealtime } from '../useBracketRealtime';
+import { PlayerTournamentView } from './PlayerTournamentView';
 
 export function JoinHopperPage() {
   const { joinToken } = useParams<{ joinToken: string }>();
@@ -37,141 +38,176 @@ export function JoinHopperPage() {
   const join = useJoinHopper();
   const attempted = useRef(false);
 
-  // Join once, as soon as we know the player is signed in.
+  const { data: view, isLoading: viewLoading } = useBracketPlayerView(joinToken);
+
+  // Watch the hopper, not just the matches — the whole point before the start
+  // is seeing players arrive.
+  useBracketRealtime(
+    view?.bracket?.id,
+    queryKeys.brackets.playerView(joinToken ?? ''),
+    true
+  );
+
+  // Join once, as soon as we know the player is signed in and isn't already on
+  // the list. Announced with a toast so the page itself stays the destination.
+  const alreadyListed = !!view?.me;
   useEffect(() => {
     if (!joinToken || memberLoading || !member?.id || attempted.current) return;
+    if (viewLoading || alreadyListed) return;
     attempted.current = true;
-    join.mutate({ joinToken });
-  }, [joinToken, member?.id, memberLoading, join]);
+    join.mutate(
+      { joinToken },
+      {
+        onSuccess: (result) => {
+          if (result.ok && !result.already_in) toast.success("You're on the list.");
+        },
+      }
+    );
+  }, [joinToken, member?.id, memberLoading, viewLoading, alreadyListed, join]);
 
-  // Still resolving the session.
-  if (memberLoading) {
+  const tree = useMemo(
+    () =>
+      view?.matches?.length
+        ? buildBracketView(view.participants, view.matches)
+        : null,
+    [view?.participants, view?.matches]
+  );
+
+  if (viewLoading || memberLoading) {
     return (
       <Shell>
-        <CardContent className="flex items-center gap-3 py-8">
+        <div className="flex items-center justify-center gap-3 py-16 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-muted-foreground">Checking your account…</span>
-        </CardContent>
+          Loading tournament…
+        </div>
       </Shell>
     );
   }
 
-  // Not signed in (cold scanner) — ask them to sign in first.
-  if (!member?.id) {
+  if (!view?.found || !view.bracket) {
     return (
       <Shell>
-        <CardHeader>
-          <CardTitle>Sign in to join</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Sign in (or create a free account) to add yourself to this tournament.
-          </p>
-          <Button asChild loadingText="none">
-            {/*
-              Carry the join intent through sign-in. Without this the scanner
-              signs in, lands on the dashboard, and never joins — they'd have to
-              find and scan the code a second time. Login validates the value
-              with getSafeRedirectPath, so only a same-origin path is honored.
-            */}
-            <Link to={`/login?redirect=${encodeURIComponent(location.pathname)}`}>
-              Sign in
-            </Link>
-          </Button>
-        </CardContent>
+        <Notice title="Link not valid">
+          This join link isn't valid — double-check the QR code or link.
+        </Notice>
       </Shell>
     );
   }
 
-  // Joining / joined / rejected.
   const result = join.data;
+
   return (
     <Shell>
-      {join.isPending || (!result && !join.isError) ? (
-        <CardContent className="flex items-center gap-3 py-8">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-muted-foreground">Joining…</span>
-        </CardContent>
-      ) : join.isError ? (
-        <>
-          <CardHeader>
-            <CardTitle>Couldn’t join</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Something went wrong. Open the link again to retry.
-            </p>
-          </CardContent>
-        </>
-      ) : result?.ok ? (
-        <>
-          <CardHeader>
-            <CardTitle>You’re in! 🎱</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-sm">
-              You’ve joined the hopper for{' '}
-              <span className="font-medium">{result.bracket_name}</span>.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              The organizer will add you to the bracket once you’ve checked in. You can
-              close this page.
-            </p>
-          </CardContent>
-        </>
-      ) : result?.reason === 'name_taken' ? (
-        /*
-         * Somebody got to this name first — names are one-per-tournament so that
-         * scoring, alerts and the bracket itself can tell two players apart.
-         * We never rename anyone: the nickname belongs to their profile and
-         * changing it here would change it on their league team too. They fix it
-         * where it lives and come back — no need to find the QR code again.
-         */
-        <>
-          <CardHeader>
-            <CardTitle>That name’s taken</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm">
-              Someone is already in{' '}
-              <span className="font-medium">{result.bracket_name}</span> as{' '}
-              <span className="font-medium">{result.name}</span>.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              If that isn’t you, change your nickname on your profile and come
-              back — two players with the same name can’t be told apart on the
-              bracket.
-            </p>
-            <div className="flex gap-2">
-              <Button asChild loadingText="none">
-                <Link to="/profile">Change my nickname</Link>
-              </Button>
-              <Button asChild variant="outline" loadingText="none">
-                <Link to={location.pathname} reloadDocument>
-                  Try again
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </>
-      ) : (
-        <>
-          <CardHeader>
-            <CardTitle>
-              {result?.reason === 'not_accepting'
-                ? 'Sign-ups are closed'
-                : 'Link not valid'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {result?.reason === 'not_accepting'
-                ? 'This tournament has already started, so it’s no longer taking sign-ups.'
-                : 'This join link isn’t valid — double-check the QR code or link.'}
-            </p>
-          </CardContent>
-        </>
-      )}
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-2xl font-bold">{view.bracket.name}</h1>
+          <p className="text-sm text-muted-foreground">
+            {view.bracket.status === 'setup' ? 'Getting players together' : 'Under way'}
+          </p>
+        </div>
+
+        {/* Anyone not signed in still sees the tournament — they just can't join yet. */}
+        {!member?.id && <SignInPrompt path={location.pathname} />}
+
+        {result?.reason === 'name_taken' && <NameTaken name={result.name} path={location.pathname} />}
+        {result?.reason === 'not_accepting' && (
+          <Notice title="Sign-ups are closed">
+            This tournament has already started, so it's no longer taking sign-ups.
+          </Notice>
+        )}
+
+        <Tabs defaultValue="players">
+          <TabsList>
+            <TabsTrigger value="players">Players</TabsTrigger>
+            {/* Appears the moment there's a bracket to look at. */}
+            {tree && <TabsTrigger value="bracket">Bracket</TabsTrigger>}
+          </TabsList>
+
+          <TabsContent value="players" className="mt-4">
+            <PlayerTournamentView view={view} />
+          </TabsContent>
+
+          {tree && (
+            <TabsContent value="bracket" className="mt-4">
+              <BracketTree view={tree} readOnly />
+            </TabsContent>
+          )}
+        </Tabs>
+      </div>
     </Shell>
+  );
+}
+
+/** Not signed in: show the tournament, offer the way in. */
+function SignInPrompt({ path }: { path: string }) {
+  return (
+    <Card>
+      <CardHeader className="py-4">
+        <CardTitle className="text-base">Sign in to join</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 pb-4">
+        <p className="text-sm text-muted-foreground">
+          You can watch this page without an account. Sign in to add yourself to
+          the list.
+        </p>
+        {/* Carry the join intent through sign-in so they land back here. */}
+        <Button asChild loadingText="none">
+          <Link to={`/login?redirect=${encodeURIComponent(path)}`}>Sign in</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Somebody got to this name first. We never rename anyone from here — the
+ * nickname belongs to their profile and changing it would change it on their
+ * league team too.
+ */
+function NameTaken({ name, path }: { name?: string; path: string }) {
+  return (
+    <Card className="border-destructive/40">
+      <CardHeader className="py-4">
+        <CardTitle className="text-base">That name's taken</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 pb-4">
+        <p className="text-sm">
+          Someone is already on this list as <span className="font-medium">{name}</span>.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          If that isn't you, change your nickname on your profile and come back —
+          two players with the same name can't be told apart on the bracket.
+        </p>
+        <div className="flex gap-2">
+          <Button asChild loadingText="none">
+            <Link to="/profile">Change my nickname</Link>
+          </Button>
+          <Button asChild variant="outline" loadingText="none">
+            <Link to={path} reloadDocument>
+              Try again
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Notice({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardHeader className="py-4">
+        <CardTitle className="text-base">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="pb-4 text-sm text-muted-foreground">{children}</CardContent>
+    </Card>
+  );
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-muted p-4">
+      <div className="mx-auto w-full max-w-2xl py-8">{children}</div>
+    </div>
   );
 }

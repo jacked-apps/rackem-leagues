@@ -21,10 +21,15 @@ import { supabase } from '@/supabaseClient';
  * @param bracketId the bracket to watch
  * @param invalidateKey the query key to invalidate on any change (organizer
  *   detail key, or the public share key for the read-only view)
+ * @param watchHopper also watch the candidate/official list. Off by default
+ *   because a live bracket's matches are the only thing that moves; ON for the
+ *   setup screen and the player's view, where the whole point is watching
+ *   players arrive one at a time.
  */
 export function useBracketRealtime(
   bracketId: string | undefined,
-  invalidateKey: readonly unknown[]
+  invalidateKey: readonly unknown[],
+  watchHopper = false
 ) {
   const queryClient = useQueryClient();
 
@@ -55,13 +60,27 @@ export function useBracketRealtime(
           filter: `id=eq.${bracketId}`,
         },
         invalidate
-      )
-      .subscribe();
+      );
+
+    if (watchHopper) {
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bracket_hopper',
+          filter: `bracket_id=eq.${bracketId}`,
+        },
+        invalidate
+      );
+    }
+
+    channel.subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
     // invalidateKey is a stable tuple from queryKeys.*; stringify to compare.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bracketId, queryClient, JSON.stringify(invalidateKey)]);
+  }, [bracketId, queryClient, watchHopper, JSON.stringify(invalidateKey)]);
 }

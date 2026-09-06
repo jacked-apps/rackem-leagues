@@ -163,4 +163,79 @@ describe('join_bracket_hopper (Unit C2)', () => {
     expect(second.ok).toBe(true);
     expect(second.already_in).toBe(true);
   });
+
+  describe('get_bracket_player_view', () => {
+    async function playerView(joinToken: string, uid?: string) {
+      const rows = uid
+        ? await executeSql(
+            `SELECT public.get_bracket_player_view($1::uuid) AS v
+               FROM (SELECT set_config('request.jwt.claim.sub', $2, true)) s`,
+            [joinToken, uid]
+          )
+        : await executeSql(`SELECT public.get_bracket_player_view($1::uuid) AS v`, [
+            joinToken,
+          ]);
+      return rows[0].v as Record<string, any>;
+    }
+
+    it('splits the waiting and official lists, names only', async () => {
+      const { id, joinToken } = await makeBracket('setup');
+      await executeSql(
+        `INSERT INTO public.bracket_hopper (bracket_id, display_name, status, added_via)
+         VALUES ($1, 'Waiting Person', 'hopper', 'search'),
+                ($1, 'In Person', 'official', 'search')`,
+        [id]
+      );
+
+      const v = await playerView(joinToken);
+      expect(v.found).toBe(true);
+      expect(v.waiting).toEqual(['Waiting Person']);
+      expect(v.official).toEqual(['In Person']);
+      // Names are strings, not objects — no member ids or player numbers ride along.
+      expect(typeof v.waiting[0]).toBe('string');
+    });
+
+    it('never exposes another player\'s paid status', async () => {
+      const { id, joinToken } = await makeBracket('setup');
+      await executeSql(
+        `INSERT INTO public.bracket_hopper (bracket_id, display_name, status, paid_status, added_via)
+         VALUES ($1, 'Rich Person', 'official', 'paid', 'search'),
+                ($1, 'Broke Person', 'official', 'unpaid', 'search')`,
+        [id]
+      );
+
+      const v = await playerView(joinToken);
+      // The page is reachable from a code on a wall — it must not be a debt board.
+      expect(JSON.stringify(v.official)).not.toMatch(/paid|unpaid/i);
+      expect(v.me).toBeNull();
+    });
+
+    it('gives a signed-in player their OWN row, paid flag included', async () => {
+      const authed = await executeSql(
+        `SELECT id, user_id FROM public.members WHERE user_id IS NOT NULL LIMIT 1`
+      );
+      const { id, joinToken } = await makeBracket('setup');
+      await executeSql(
+        `INSERT INTO public.bracket_hopper (bracket_id, member_id, display_name, status, paid_status, added_via)
+         VALUES ($1, $2, 'Me', 'official', 'unpaid', 'search')`,
+        [id, authed[0].id]
+      );
+
+      const v = await playerView(joinToken, authed[0].user_id);
+      expect(v.me.display_name).toBe('Me');
+      expect(v.me.paid_status).toBe('unpaid');
+    });
+
+    it('has no bracket to show until the tournament starts', async () => {
+      const { joinToken } = await makeBracket('setup');
+      const v = await playerView(joinToken);
+      expect(v.matches).toEqual([]);
+      expect(v.participants).toEqual([]);
+    });
+
+    it('returns found:false for an unknown token rather than erroring', async () => {
+      const v = await playerView('00000000-0000-0000-0000-000000000000');
+      expect(v.found).toBe(false);
+    });
+  });
 });

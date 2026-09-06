@@ -1,16 +1,23 @@
 /**
- * @fileoverview Tests for JoinHopperPage — the QR / link self-add landing page.
+ * @fileoverview Tests for JoinHopperPage — the player's live tournament page.
  *
- * The load-bearing case is the COLD SCANNER: someone who scans a code with no
- * session must come back here after signing in. If the join intent is lost in
- * that round trip they land on the dashboard and never join, and the code on
- * the wall silently does nothing.
+ * Two things carry the feature: the COLD SCANNER must come back here after
+ * signing in (lose the intent and the code on the wall silently does nothing),
+ * and the page must be a live view rather than a one-shot "you're in" that
+ * never changes again.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithProviders, screen } from '@/test/utils';
+import type { BracketPlayerView } from '@/api/queries/brackets';
 
-const mocks = vi.hoisted(() => ({ member: vi.fn(), join: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  member: vi.fn(),
+  join: vi.fn(),
+  view: vi.fn(),
+  realtime: vi.fn(),
+}));
+const joinState = vi.hoisted(() => ({ data: undefined as unknown }));
 
 vi.mock('react-router-dom', async (orig) => ({
   ...(await orig<typeof import('react-router-dom')>()),
@@ -22,70 +29,155 @@ vi.mock('@/api/hooks/useCurrentMember', () => ({
   useCurrentMember: () => mocks.member(),
 }));
 
-const joinState = vi.hoisted(() => ({ data: undefined as unknown }));
 vi.mock('@/api/hooks/useBrackets', () => ({
   useJoinHopper: () => ({ mutate: mocks.join, data: joinState.data, isPending: false }),
+  useBracketPlayerView: () => mocks.view(),
 }));
 
+vi.mock('../useBracketRealtime', () => ({
+  useBracketRealtime: (...args: unknown[]) => mocks.realtime(...args),
+}));
+
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+
 import { JoinHopperPage } from './JoinHopperPage';
+
+function playerView(over: Partial<BracketPlayerView> = {}): BracketPlayerView {
+  return {
+    found: true,
+    bracket: {
+      id: 'b1',
+      name: 'Friday 9-Ball',
+      status: 'setup',
+      format: 'double_elimination',
+      grand_final_reset: false,
+      game_type: null,
+      premium_features: ['real_players'],
+    },
+    waiting: ['Slim'],
+    official: ['Mike'],
+    me: null,
+    participants: [],
+    matches: [],
+    ...over,
+  };
+}
+
+function loaded(over: Partial<BracketPlayerView> = {}) {
+  mocks.view.mockReturnValue({ data: playerView(over), isLoading: false });
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
   joinState.data = undefined;
+  mocks.member.mockReturnValue({ data: { id: 'm1' }, isLoading: false });
+  loaded();
 });
 
 describe('JoinHopperPage', () => {
-  it('carries the join intent through sign-in for a cold scanner', () => {
-    mocks.member.mockReturnValue({ data: null, isLoading: false });
+  it('lands on the live tournament, not a dead-end confirmation', () => {
+    loaded();
     renderWithProviders(<JoinHopperPage />);
 
-    const signIn = screen.getByRole('link', { name: /Sign in/ });
-    // Without the redirect they sign in, land on the dashboard, and never join.
-    expect(signIn.getAttribute('href')).toBe(
-      '/login?redirect=%2Fbrackets%2Fjoin%2Fjt-1'
+    expect(screen.getByText('Friday 9-Ball')).toBeTruthy();
+    expect(screen.getByText('In the tournament (1)')).toBeTruthy();
+    expect(screen.getByText('Waiting to be added (1)')).toBeTruthy();
+  });
+
+  it('watches the hopper live, since the point is seeing the room fill up', () => {
+    loaded();
+    renderWithProviders(<JoinHopperPage />);
+
+    const [bracketId, , watchHopper] = mocks.realtime.mock.calls[0];
+    expect(bracketId).toBe('b1');
+    expect(watchHopper).toBe(true);
+  });
+
+  it('joins a signed-in player who is not on the list yet', () => {
+    loaded({ me: null });
+    renderWithProviders(<JoinHopperPage />);
+
+    expect(mocks.join).toHaveBeenCalledWith(
+      { joinToken: 'jt-1' },
+      expect.anything()
     );
   });
 
-  it('does not try to join before the session is known', () => {
-    mocks.member.mockReturnValue({ data: undefined, isLoading: true });
+  it('does not re-join someone already on the list', () => {
+    loaded({ me: { display_name: 'Tim P', status: 'hopper', paid_status: null } });
     renderWithProviders(<JoinHopperPage />);
 
     expect(mocks.join).not.toHaveBeenCalled();
-    expect(screen.getByText(/checking your account/i)).toBeTruthy();
   });
 
-  it('joins a signed-in player automatically, with their own token', () => {
-    mocks.member.mockReturnValue({ data: { id: 'm1' }, isLoading: false });
+  it('shows the tournament to a signed-out visitor and offers sign-in that returns here', () => {
+    mocks.member.mockReturnValue({ data: null, isLoading: false });
+    loaded();
     renderWithProviders(<JoinHopperPage />);
 
-    expect(mocks.join).toHaveBeenCalledWith({ joinToken: 'jt-1' });
+    // Anon can watch — the read is names-only.
+    expect(screen.getByText('In the tournament (1)')).toBeTruthy();
+    expect(mocks.join).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('link', { name: /sign in/i }).getAttribute('href')
+    ).toBe('/login?redirect=%2Fbrackets%2Fjoin%2Fjt-1');
   });
 
-  it('sends a player whose name is taken to their profile, not into a rename here', () => {
-    mocks.member.mockReturnValue({ data: { id: 'm1' }, isLoading: false });
-    joinState.data = {
-      ok: false,
-      reason: 'name_taken',
-      name: 'Tim P',
-      bracket_name: 'Friday 9-Ball',
-    };
+  it('offers no Bracket tab before the tournament starts', () => {
+    loaded();
+    renderWithProviders(<JoinHopperPage />);
+    expect(screen.queryByRole('tab', { name: /bracket/i })).toBeNull();
+  });
+
+  it('adds the Bracket tab once there is a bracket to look at', () => {
+    loaded({
+      bracket: { ...playerView().bracket!, status: 'live' },
+      participants: [
+        { id: 'p1', bracket_id: 'b1', display_name: 'Mike', seed: 1 },
+        { id: 'p2', bracket_id: 'b1', display_name: 'Sara', seed: 2 },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ] as any,
+      matches: [
+        {
+          id: 'm1',
+          bracket_id: 'b1',
+          round: 1,
+          side: 'winners',
+          slot: 0,
+          home_participant_id: 'p1',
+          away_participant_id: 'p2',
+          winner_participant_id: null,
+          status: 'ready',
+          in_progress: false,
+          is_reset_match: false,
+          next_match_id: null,
+          next_match_slot: null,
+          loser_next_match_id: null,
+          loser_next_match_slot: null,
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ] as any,
+    });
     renderWithProviders(<JoinHopperPage />);
 
-    expect(screen.getByText(/that name’s taken/i)).toBeTruthy();
-    expect(screen.getByText('Tim P')).toBeTruthy();
-    // The nickname belongs to their profile — changing it here would change it
-    // on their league team too, so we send them there instead.
+    expect(screen.getByRole('tab', { name: /bracket/i })).toBeTruthy();
+  });
+
+  it('sends a player whose name is taken to their profile', () => {
+    joinState.data = { ok: false, reason: 'name_taken', name: 'Tim P' };
+    loaded();
+    renderWithProviders(<JoinHopperPage />);
+
+    expect(screen.getByText(/that name's taken/i)).toBeTruthy();
     expect(
       screen.getByRole('link', { name: /change my nickname/i }).getAttribute('href')
     ).toBe('/profile');
-    expect(screen.getByRole('link', { name: /try again/i })).toBeTruthy();
   });
 
-  it('tells a player the tournament already started', () => {
-    mocks.member.mockReturnValue({ data: { id: 'm1' }, isLoading: false });
-    joinState.data = { ok: false, reason: 'not_accepting', status: 'live' };
+  it('reports an invalid link rather than an empty tournament', () => {
+    mocks.view.mockReturnValue({ data: { found: false }, isLoading: false });
     renderWithProviders(<JoinHopperPage />);
 
-    expect(screen.getByText(/sign-ups are closed/i)).toBeTruthy();
+    expect(screen.getByText(/link not valid/i)).toBeTruthy();
   });
 });

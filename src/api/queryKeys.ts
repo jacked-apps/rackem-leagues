@@ -291,6 +291,10 @@ export const queryKeys = {
     /** The organizer's past players available to add to this bracket */
     roster: (id: string) => [...queryKeys.brackets.all, id, 'roster'] as const,
 
+    /** A player's view of a tournament, keyed by its join token */
+    playerView: (joinToken: string) =>
+      [...queryKeys.brackets.all, 'player', joinToken] as const,
+
     /** The current organizer's list of brackets */
     byCreator: (memberId: string) =>
       [...queryKeys.brackets.all, 'creator', memberId] as const,
