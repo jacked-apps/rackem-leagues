@@ -14,7 +14,7 @@ describe('AddWalkupForm', () => {
 
     const input = screen.getByLabelText('Add a player');
     await user.type(input, '  Rocket  ');
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(screen.getByRole('button', { name: /add this name/i }));
 
     expect(onAdd).toHaveBeenCalledWith('Rocket');
     await waitFor(() => expect(input).toHaveValue(''));
@@ -27,7 +27,7 @@ describe('AddWalkupForm', () => {
 
     const input = screen.getByLabelText('Add a player');
     await user.type(input, 'Rocket');
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(screen.getByRole('button', { name: /add this name/i }));
 
     await waitFor(() => expect(onAdd).toHaveBeenCalled());
     expect(input).toHaveValue('Rocket');
@@ -38,9 +38,9 @@ describe('AddWalkupForm', () => {
     const onAdd = vi.fn();
     renderWithProviders(<AddWalkupForm onAdd={onAdd} />);
 
-    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /add this name/i })).toBeDisabled();
     await user.type(screen.getByLabelText('Add a player'), '   ');
-    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /add this name/i })).toBeDisabled();
     expect(onAdd).not.toHaveBeenCalled();
   });
 

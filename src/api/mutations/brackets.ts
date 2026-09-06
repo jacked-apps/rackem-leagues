@@ -305,34 +305,39 @@ export async function addWalkupToHopper(
   await touchBracket(bracketId);
 }
 
+export interface AddRegisteredResult {
+  ok: boolean;
+  reason?:
+    | 'not_found'
+    | 'not_accepting'
+    | 'no_such_player'
+    | 'not_registered'
+    | 'name_taken';
+  name?: string;
+  already_in?: boolean;
+  status?: string;
+}
+
 /**
- * Add a REGISTERED player (a real member) to the hopper.
+ * Organizer search-add: put a REGISTERED player in the waiting room.
  *
- * Same one-name-per-tournament rule as a walk-up, but the remedy differs: this
- * player's name comes from their profile, so they change their nickname there
- * rather than the organizer picking a different one for them.
+ * Goes through an RPC rather than inserting directly so the display name is
+ * derived server-side, exactly as the self-join path derives it. A name picked
+ * in the browser could differ from the one the same player gets by scanning the
+ * code — and since a name may appear only once per tournament, that would
+ * surface as a collision nobody could account for.
  */
 export async function addRegisteredToHopper(
   bracketId: string,
-  memberId: string,
-  displayName: string,
-  addedVia: 'search' | 'link' | 'qr' = 'search'
-): Promise<void> {
-  const { error } = await supabase.from('bracket_hopper').insert({
-    bracket_id: bracketId,
-    member_id: memberId,
-    display_name: displayName.trim(),
-    added_via: addedVia,
+  memberId: string
+): Promise<AddRegisteredResult> {
+  const { data, error } = await supabase.rpc('add_registered_to_hopper', {
+    p_bracket_id: bracketId,
+    p_member_id: memberId,
   });
-  if (error) {
-    if (error.code === UNIQUE_VIOLATION) {
-      throw new Error(
-        `Someone is already on this list as ${displayName.trim()}. They'll need to change their nickname in their profile first.`
-      );
-    }
-    throw new Error(`Failed to add player: ${error.message}`);
-  }
+  if (error) throw new Error(`Could not add that player: ${error.message}`);
   await touchBracket(bracketId);
+  return data as AddRegisteredResult;
 }
 
 /**

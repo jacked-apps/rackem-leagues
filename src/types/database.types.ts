@@ -3650,6 +3650,10 @@ export type Database = {
       get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
       get_bracket_player_view: { Args: { p_join_token: string }; Returns: Json }
       get_my_tournaments: { Args: never; Returns: Json }
+      add_registered_to_hopper: {
+        Args: { p_bracket_id: string; p_member_id: string }
+        Returns: Json
+      }
       add_self_as_walkup: {
         Args: { p_join_token: string; p_display_name: string }
         Returns: Json

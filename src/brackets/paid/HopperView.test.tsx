@@ -101,7 +101,7 @@ beforeEach(() => {
   mocks.admit.mockResolvedValue(undefined);
   mocks.setPaid.mockResolvedValue(undefined);
   mocks.eject.mockResolvedValue(undefined);
-  mocks.addRegistered.mockResolvedValue(undefined);
+  mocks.addRegistered.mockResolvedValue({ ok: true });
   mocks.addWalkup.mockResolvedValue(undefined);
   mocks.forget.mockResolvedValue(true);
   loaded([]);
@@ -176,10 +176,9 @@ describe('HopperView', () => {
     await user.click(screen.getByRole('button', { name: /Kenny/ }));
     await user.click(await screen.findByText('Add to this tournament'));
 
-    expect(mocks.addRegistered).toHaveBeenCalledWith({
-      memberId: 'm-kenny',
-      displayName: 'Kenny',
-    });
+    // Only the id — the server derives the name, so a player enters under the
+    // same name however they got there.
+    expect(mocks.addRegistered).toHaveBeenCalledWith('m-kenny');
   });
 
   it('forgets a registered past player by member id', async () => {
@@ -261,7 +260,7 @@ describe('HopperView', () => {
     renderWithProviders(<HopperView bracketId="b1" />);
 
     await user.type(screen.getByLabelText('Add a player'), 'Rocket');
-    await user.click(screen.getByRole('button', { name: 'Add' }));
+    await user.click(screen.getByRole('button', { name: /add this name/i }));
 
     expect(mocks.addWalkup).toHaveBeenCalledWith('Rocket');
   });
@@ -371,6 +370,28 @@ describe('HopperView', () => {
 
       rerender(<HopperView bracketId="b1" onIncludeWaitingChange={vi.fn()} />);
       expect(screen.queryByText(/unpaid/i)).toBeNull();
+    });
+  });
+
+  describe('searching for a registered player', () => {
+    it('offers a search alongside the type-a-name box', () => {
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      expect(screen.getByLabelText(/search players/i)).toBeTruthy();
+      expect(screen.getByLabelText(/add a player/i)).toBeTruthy();
+    });
+
+    it('says plainly which box is for whom', () => {
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+      expect(screen.getByText(/for players with an account/i)).toBeTruthy();
+    });
+
+    it('takes no additions once the tournament has started', () => {
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" readOnly />);
+      expect(screen.getByLabelText(/search players/i)).toBeDisabled();
     });
   });
 });

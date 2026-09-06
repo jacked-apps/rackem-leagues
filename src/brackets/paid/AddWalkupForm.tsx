@@ -59,9 +59,11 @@ export function AddWalkupForm({ onAdd, disabled = false }: AddWalkupFormProps) {
           placeholder="Name"
           onChange={(e) => setName(e.target.value)}
         />
+        {/* See AddRegisteredPlayer: distinct accessible name, same visible text. */}
         <Button
           type="submit"
           variant="outline"
+          aria-label="Add this name"
           loadingText="none"
           isLoading={adding}
           disabled={disabled || !trimmed}

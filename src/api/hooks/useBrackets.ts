@@ -236,12 +236,16 @@ export function useAddWalkupToHopper(bracketId: string) {
   });
 }
 
-/** Organizer adds a registered player (from search or the past-players list). */
+/**
+ * Organizer adds a registered player (from search or the past-players list).
+ *
+ * Takes only the member id — the display name is the server's to derive, so
+ * that a player enters under the same name however they got there.
+ */
 export function useAddRegisteredToHopper(bracketId: string) {
   const invalidate = useHopperInvalidation(bracketId);
   return useMutation({
-    mutationFn: (vars: { memberId: string; displayName: string }) =>
-      addRegisteredToHopper(bracketId, vars.memberId, vars.displayName),
+    mutationFn: (memberId: string) => addRegisteredToHopper(bracketId, memberId),
     onSuccess: invalidate,
   });
 }

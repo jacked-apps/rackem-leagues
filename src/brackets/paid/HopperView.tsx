@@ -34,6 +34,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { buildHopperGroups, type HopperRow } from './hopperGroups';
+import type { AddRegisteredResult } from '@/api/mutations/brackets';
+import { AddRegisteredPlayer } from './AddRegisteredPlayer';
 import { AddWalkupForm } from './AddWalkupForm';
 import { HopperEntryMenu } from './HopperEntryMenu';
 import { HopperGroup } from './HopperGroup';
@@ -80,6 +82,13 @@ export function HopperView({
     [hopper.data, roster.data]
   );
 
+  // Anyone already here is hidden from search: the database would refuse them,
+  // and an option that always errors is worse than no option.
+  const memberIdsInHopper = useMemo(
+    () => (hopper.data ?? []).flatMap((e) => (e.member_id ? [e.member_id] : [])),
+    [hopper.data]
+  );
+
   // A write in flight disables the menus — the lists re-order underneath a
   // successful one, and a second tap during that shuffle would hit the wrong row.
   const locked =
@@ -117,6 +126,21 @@ export function HopperView({
         <span className="text-muted-foreground">Waiting {counts.waiting}</span>
         <span className="text-muted-foreground">Past {counts.past}</span>
       </div>
+
+      {/*
+        Three ways in, in the order an organizer reaches for them: look up
+        someone with an account, or type a name for someone without one. The
+        third — players adding themselves by QR or link — needs nothing here.
+      */}
+      <AddRegisteredPlayer
+        disabled={locked}
+        excludeMemberIds={memberIdsInHopper}
+        onAdd={async (memberId) => {
+          const result = await addRegistered.mutateAsync(memberId);
+          if (result.ok) return null;
+          return registeredAddProblem(result);
+        }}
+      />
 
       <AddWalkupForm
         // Rethrown after reporting, so the form knows to keep the typed name.
@@ -178,10 +202,7 @@ export function HopperView({
                   // A remembered walk-up has no account to link to — re-adding
                   // them just re-types the name we saved on their behalf.
                   row.player.member_id
-                    ? addRegistered.mutateAsync({
-                        memberId: row.player.member_id,
-                        displayName: row.identity.displayName,
-                      })
+                    ? addRegistered.mutateAsync(row.player.member_id)
                     : addWalkup.mutateAsync(row.identity.displayName)
                 )
               }
@@ -209,6 +230,26 @@ export function HopperView({
  */
 function run(promise: Promise<unknown>): void {
   promise.catch(reportError);
+}
+
+/**
+ * Turn a refused search-add into a sentence that says what to do about it. Each
+ * of these is an ordinary outcome rather than a fault, so none should read like
+ * an error.
+ */
+function registeredAddProblem(result: AddRegisteredResult): string {
+  switch (result.reason) {
+    case 'name_taken':
+      return `Someone is already on this list as ${result.name}. They'd need to change their nickname first.`;
+    case 'not_accepting':
+      return 'This tournament has already started.';
+    case 'not_registered':
+      return "That player doesn't have an account — add them by name instead.";
+    case 'no_such_player':
+      return 'That player could not be found.';
+    default:
+      return "That didn't go through — try again.";
+  }
 }
 
 /** Show a failed write as the organizer-facing sentence it usually already is. */

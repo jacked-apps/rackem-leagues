@@ -125,6 +125,11 @@ export const RELEASES: Release[] = [
         forOperators: true,
       },
       {
+        text: 'Running a tournament, you can now search for a player by name or player number and add them, instead of retyping a name you know we already have.',
+        kind: 'feature',
+        forOperators: true,
+      },
+      {
         text: 'Tournaments you\u2019ve joined now show up on your Tournaments page, so you can get back to one without hunting down the QR code again.',
         kind: 'fix',
       },
