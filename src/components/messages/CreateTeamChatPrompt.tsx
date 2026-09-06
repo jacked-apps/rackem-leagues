@@ -11,6 +11,7 @@
  * otherwise.
  */
 
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,10 @@ export function CreateTeamChatPrompt({
   const { data: member } = useCurrentMember();
   const memberId = member?.id;
   const { data: missing = [] } = useCaptainTeamsMissingChat();
+  // Which team is mid-creation. Keyed by team rather than a single boolean
+  // because a captain can have several teams listed here, and creating one
+  // shouldn't freeze the others.
+  const [creatingTeamId, setCreatingTeamId] = useState<string | null>(null);
 
   if (missing.length === 0) return null;
 
@@ -47,6 +52,14 @@ export function CreateTeamChatPrompt({
     teamId: string,
     teamName: string
   ) => {
+    // Without this the button stays live during the request, and a double-tap
+    // fires two creations. The idempotency check inside createTeamChat is
+    // check-then-act, so both calls look before either inserts and both create
+    // — which is exactly how a captain ended up with two identical team chats
+    // on 2026-09-05. The DB unique index is the real guarantee; this stops the
+    // request being made twice in the first place.
+    if (creatingTeamId) return;
+    setCreatingTeamId(teamId);
     try {
       const { conversationId } = await createTeamChat({ seasonId, teamId });
       toast.success(`Team chat created for ${teamName}`);
@@ -67,6 +80,8 @@ export function CreateTeamChatPrompt({
       const message =
         err instanceof Error ? err.message : 'Failed to create team chat';
       toast.error(message);
+    } finally {
+      setCreatingTeamId(null);
     }
   };
 
@@ -84,6 +99,8 @@ export function CreateTeamChatPrompt({
             <Button
               size="sm"
               loadingText="Creating..."
+              isLoading={creatingTeamId === team.team_id}
+              disabled={creatingTeamId !== null}
               onClick={() =>
                 handleCreate(team.season_id, team.team_id, team.team_name)
               }

@@ -31,7 +31,11 @@ interface AnnouncementTarget {
 
 interface AnnouncementModalProps {
   onClose: () => void;
-  onCreateAnnouncement: (targets: AnnouncementTarget[], message: string) => void;
+  /**
+   * Send the announcement. RETURN the promise if async — the Button reads it to
+   * disable itself in flight, which is what stops a double-tap sending twice.
+   */
+  onCreateAnnouncement: (targets: AnnouncementTarget[], message: string) => unknown;
   currentUserId: string;
   canAccessOperatorFeatures: boolean;
 }
@@ -177,7 +181,8 @@ export function AnnouncementModal({
     }
 
     const selectedTargets = targets.filter((t) => selectedTargetIds.includes(t.id));
-    onCreateAnnouncement(selectedTargets, announcementText);
+    // Returned so the Button can track it and block a second send.
+    return onCreateAnnouncement(selectedTargets, announcementText);
   };
 
   const selectedTargets = targets.filter((t) => selectedTargetIds.includes(t.id));
