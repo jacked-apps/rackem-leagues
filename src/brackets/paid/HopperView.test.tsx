@@ -331,4 +331,46 @@ describe('HopperView', () => {
       expect(mocks.setPaid).toHaveBeenCalledWith({ entryId: 'a', paidStatus: 'paid' });
     });
   });
+
+  describe('the sweep-in choice', () => {
+    it('sits with the waiting list, and is off by default', () => {
+      loaded([entry({ id: 'a', status: 'hopper' })]);
+      renderWithProviders(
+        <HopperView bracketId="b1" onIncludeWaitingChange={vi.fn()} />
+      );
+
+      const box = screen.getByLabelText(/add anyone still waiting when i start/i);
+      expect(box.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('is offered before anyone has arrived, since it is a standing rule', () => {
+      loaded([]);
+      renderWithProviders(
+        <HopperView bracketId="b1" onIncludeWaitingChange={vi.fn()} />
+      );
+      expect(screen.getByLabelText(/add anyone still waiting when i start/i)).toBeTruthy();
+    });
+
+    it('reports the change rather than acting on it', () => {
+      const onIncludeWaitingChange = vi.fn();
+      loaded([]);
+      renderWithProviders(
+        <HopperView bracketId="b1" onIncludeWaitingChange={onIncludeWaitingChange} />
+      );
+
+      fireEvent.click(screen.getByLabelText(/add anyone still waiting when i start/i));
+      expect(onIncludeWaitingChange).toHaveBeenCalledWith(true);
+    });
+
+    it('mentions unpaid only when the tournament tracks entry fees', () => {
+      loaded([]);
+      const { rerender } = renderWithProviders(
+        <HopperView bracketId="b1" onIncludeWaitingChange={vi.fn()} trackEntryFees />
+      );
+      expect(screen.getByText(/go in as unpaid/i)).toBeTruthy();
+
+      rerender(<HopperView bracketId="b1" onIncludeWaitingChange={vi.fn()} />);
+      expect(screen.queryByText(/unpaid/i)).toBeNull();
+    });
+  });
 });

@@ -13,28 +13,15 @@ function props(over: Record<string, unknown> = {}) {
     officialCount: 4,
     waitingCount: 2,
     includeWaiting: false,
-    onIncludeWaitingChange: vi.fn(),
     onStart: vi.fn(),
     starting: false,
     priceLabel: null,
-    trackEntryFees: true,
     ...over,
   };
 }
 
 describe('StartTournamentPanel', () => {
-  it('offers the waiting room by its count, unchecked', () => {
-    renderWithProviders(<StartTournamentPanel {...props()} />);
 
-    const checkbox = screen.getByLabelText('Also add the 2 still waiting, as unpaid');
-    expect(checkbox).toBeTruthy();
-    expect(checkbox.getAttribute('data-state')).toBe('unchecked');
-  });
-
-  it('hides the offer entirely when nobody is waiting', () => {
-    renderWithProviders(<StartTournamentPanel {...props({ waitingCount: 0 })} />);
-    expect(screen.queryByText(/still waiting/i)).toBeNull();
-  });
 
   it('counts only the official list until the waiting room is included', () => {
     const { rerender } = renderWithProviders(<StartTournamentPanel {...props()} />);
@@ -44,13 +31,6 @@ describe('StartTournamentPanel', () => {
     expect(screen.getByText('Starting with 6 players.')).toBeTruthy();
   });
 
-  it('reports the checkbox change rather than acting on it', () => {
-    const onIncludeWaitingChange = vi.fn();
-    renderWithProviders(<StartTournamentPanel {...props({ onIncludeWaitingChange })} />);
-
-    fireEvent.click(screen.getByLabelText('Also add the 2 still waiting, as unpaid'));
-    expect(onIncludeWaitingChange).toHaveBeenCalledWith(true);
-  });
 
   it('will not start below two players, and says why', () => {
     renderWithProviders(
@@ -83,10 +63,10 @@ describe('StartTournamentPanel', () => {
     expect(onStart).toHaveBeenCalled();
   });
 
-  it('says nothing about payment without the entry-fee tracker', () => {
-    renderWithProviders(<StartTournamentPanel {...props({ trackEntryFees: false })} />);
 
-    expect(screen.getByLabelText('Also add the 2 still waiting')).toBeTruthy();
-    expect(screen.queryByText(/unpaid/i)).toBeNull();
+  it('leaves the sweep-in choice to the waiting list, not this card', () => {
+    renderWithProviders(<StartTournamentPanel {...props()} />);
+    // It's a rule about that list, and it's set over there.
+    expect(screen.queryByText(/still waiting/i)).toBeNull();
   });
 });

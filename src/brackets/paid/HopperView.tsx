@@ -31,6 +31,8 @@ import {
   useAddWalkupToHopper,
   useForgetRosterEntry,
 } from '@/api/hooks/useBrackets';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { buildHopperGroups, type HopperRow } from './hopperGroups';
 import { AddWalkupForm } from './AddWalkupForm';
 import { HopperEntryMenu } from './HopperEntryMenu';
@@ -39,6 +41,14 @@ import { PastPlayerMenu } from './PastPlayerMenu';
 
 interface HopperViewProps {
   bracketId: string;
+  /**
+   * Standing instruction: when the organizer starts, sweep whoever is still
+   * waiting into the tournament. It lives HERE rather than on the checkout card
+   * because it is a rule about this list — and it can be set before anyone has
+   * arrived, so it shows even when the list is empty.
+   */
+  includeWaiting?: boolean;
+  onIncludeWaitingChange?: (include: boolean) => void;
   /**
    * This tournament bought the entry-fee tracker. Sold separately from sign-up
    * links, so without it the screen shows no paid/unpaid anything.
@@ -50,6 +60,8 @@ interface HopperViewProps {
 
 export function HopperView({
   bracketId,
+  includeWaiting = false,
+  onIncludeWaitingChange,
   trackEntryFees = false,
   readOnly = false,
 }: HopperViewProps) {
@@ -133,6 +145,23 @@ export function HopperView({
       >
         {groups.waiting.map(entryRow)}
       </HopperGroup>
+
+      {onIncludeWaitingChange && (
+        <div className="flex items-start gap-2 px-2">
+          <Checkbox
+            id="auto-add-waiting"
+            checked={includeWaiting}
+            disabled={locked}
+            onCheckedChange={(c) => onIncludeWaitingChange(c === true)}
+          />
+          <Label htmlFor="auto-add-waiting" className="cursor-pointer font-normal">
+            <span className="text-sm">Add anyone still waiting when I start</span>
+            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+              {trackEntryFees ? 'They go in as unpaid.' : 'Off by default.'}
+            </span>
+          </Label>
+        </div>
+      )}
 
       <HopperGroup
         title="Past players"

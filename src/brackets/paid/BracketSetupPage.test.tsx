@@ -133,7 +133,7 @@ describe('BracketSetupPage', () => {
     );
   });
 
-  it('passes the organizer\'s waiting-room choice through to the conversion', async () => {
+  it('warns rather than silently leaving waiting players out', async () => {
     setup([
       entry({ id: 'a' }),
       entry({ id: 'b' }),
@@ -141,12 +141,52 @@ describe('BracketSetupPage', () => {
     ]);
     renderWithProviders(<BracketSetupPage />);
 
-    // This tournament bought sign-up links only, so the label says nothing
-    // about payment — see the entry-fee-tracker case below.
-    fireEvent.click(screen.getByLabelText('Also add the 1 still waiting'));
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
 
+    // Nothing irreversible happens until the organizer picks.
+    expect(await screen.findByRole('alertdialog')).toBeTruthy();
+    expect(screen.getByText(/1 player is still waiting/i)).toBeTruthy();
+    expect(mocks.finalize).not.toHaveBeenCalled();
+  });
+
+  it('sweeps the waiting players in when the warning says to', async () => {
+    setup([
+      entry({ id: 'a' }),
+      entry({ id: 'b' }),
+      entry({ id: 'c', status: 'hopper', paid_status: null }),
+    ]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Add them and start/i }));
+
     await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(true));
+  });
+
+  it('starts without them when the warning says to', async () => {
+    setup([
+      entry({ id: 'a' }),
+      entry({ id: 'b' }),
+      entry({ id: 'c', status: 'hopper', paid_status: null }),
+    ]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Start without them/i }));
+
+    await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(false));
+  });
+
+  it('does not warn when nobody is waiting', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+
+    await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(false));
+    // Query the dialog, not the text — the waiting-list checkbox label also
+    // contains "still waiting".
+    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
   it('charges for every feature the tournament bought, not just sign-up', async () => {
@@ -188,8 +228,6 @@ describe('BracketSetupPage', () => {
       premium_features: ['real_players'],
     });
     renderWithProviders(<BracketSetupPage />);
-
-    expect(screen.getByLabelText('Also add the 1 still waiting')).toBeTruthy();
     expect(screen.queryByText('Unpaid')).toBeNull();
   });
 
@@ -198,8 +236,6 @@ describe('BracketSetupPage', () => {
       premium_features: ['real_players', 'payment_tracker'],
     });
     renderWithProviders(<BracketSetupPage />);
-
-    expect(screen.getByLabelText('Also add the 1 still waiting, as unpaid')).toBeTruthy();
     expect(screen.getByText('Unpaid')).toBeTruthy();
   });
 

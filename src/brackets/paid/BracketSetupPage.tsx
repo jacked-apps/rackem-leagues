@@ -12,12 +12,27 @@
  * (start_bracket, the same call the free flow makes), then record the checkout
  * charge. The charge runs LAST so a failed start can never leave a
  * charged-but-not-started tournament.
+ *
+ * One guard sits in front of all that: if people are still waiting and the
+ * organizer hasn't asked for them to be swept in, starting asks first. Leaving
+ * someone out is not recoverable — the bracket is drawn and they are simply not
+ * in the tournament — so it must be a decision rather than an omission.
  */
 
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -56,6 +71,7 @@ export function BracketSetupPage() {
 
   const [includeWaiting, setIncludeWaiting] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [confirmingWaiting, setConfirmingWaiting] = useState(false);
 
   if (isLoading) return <Centered>Loading tournament…</Centered>;
   if (isError || !data) return <Centered>Tournament not found.</Centered>;
@@ -97,13 +113,21 @@ export function BracketSetupPage() {
   // when this tournament actually bought the tracker.
   const trackEntryFees = hasPremiumFeature(bracket.premium_features, 'payment_tracker');
 
-  const handleStart = async () => {
+  /**
+   * Start, sweeping in the waiting list or not.
+   *
+   * Takes the choice as an argument rather than reading state: the warning
+   * dialog decides it at the moment of the tap, and a setState wouldn't have
+   * landed before this ran.
+   */
+  const runStart = async (sweepInWaiting: boolean) => {
     if (!bracketId) return;
+    setConfirmingWaiting(false);
     setStarting(true);
     try {
       // 1. Official list → seeded participants (optionally sweeping in the
       //    waiting room first). Returns the count the generator needs.
-      const participantCount = await finalize.mutateAsync(includeWaiting);
+      const participantCount = await finalize.mutateAsync(sweepInWaiting);
 
       // 2. Same start path as the free tier, now that participants exist.
       await startBracket.mutateAsync({
@@ -125,6 +149,19 @@ export function BracketSetupPage() {
       toast.error(err instanceof Error ? err.message : 'Could not start the tournament.');
       setStarting(false);
     }
+  };
+
+  /**
+   * The Start button. Anyone left in the waiting room is about to be shut out of
+   * a bracket that can't be redrawn, so if the organizer hasn't already said to
+   * include them, ask before doing anything irreversible.
+   */
+  const handleStart = () => {
+    if (!includeWaiting && waitingCount > 0) {
+      setConfirmingWaiting(true);
+      return;
+    }
+    void runStart(includeWaiting);
   };
 
   return (
@@ -165,7 +202,12 @@ export function BracketSetupPage() {
         <Tabs defaultValue="players">
           <CardContent className="pt-4">
             <TabsContent value="players" className="mt-0">
-              <HopperView bracketId={bracket.id} trackEntryFees={trackEntryFees} />
+              <HopperView
+                bracketId={bracket.id}
+                trackEntryFees={trackEntryFees}
+                includeWaiting={includeWaiting}
+                onIncludeWaitingChange={setIncludeWaiting}
+              />
             </TabsContent>
 
             <TabsContent value="info" className="mt-0">
@@ -209,15 +251,38 @@ export function BracketSetupPage() {
             officialCount={officialCount}
             waitingCount={waitingCount}
             includeWaiting={includeWaiting}
-            onIncludeWaitingChange={setIncludeWaiting}
             onStart={handleStart}
             starting={starting}
             priceLabel={chargeCents > 0 ? formatPrice(chargeCents) : null}
             featureKeys={bracket.premium_features ?? []}
-            trackEntryFees={trackEntryFees}
           />
         </CardContent>
       </Card>
+
+      <AlertDialog open={confirmingWaiting} onOpenChange={setConfirmingWaiting}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {waitingCount} {waitingCount === 1 ? 'player is' : 'players are'} still
+              waiting
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              They aren't in the tournament yet. Once you start, the bracket is
+              drawn and they can't be added to it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:flex-col-reverse sm:space-x-0">
+            {/* Go back is the escape hatch, so it reads first on a phone. */}
+            <AlertDialogCancel className="mt-0">Go back</AlertDialogCancel>
+            <Button variant="outline" loadingText="none" onClick={() => void runStart(false)}>
+              Start without them
+            </Button>
+            <AlertDialogAction onClick={() => void runStart(true)}>
+              Add {waitingCount === 1 ? 'them' : 'all ' + waitingCount} and start
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
