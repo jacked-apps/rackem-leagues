@@ -13,19 +13,28 @@
  * The QR is forced to black-on-white rather than theme colours. It has to
  * survive being printed and being scanned across a dim room, and a themed QR in
  * dark mode is a black square on a dark card — unreadable both ways.
+ *
+ * The code can also be saved as a file (see qrExport), because an organizer
+ * making their own flyer needs it as an asset in their own tool, not as our
+ * page. Right-clicking wouldn't do it — browsers only offer "copy image" on an
+ * <img>, and this is an inline <svg>.
  */
 
+import { useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useBracket } from '@/api/hooks/useBrackets';
 import { hasPremiumFeature } from './premiumFeatures';
 import { joinUrl } from './joinUrl';
+import { downloadQrPng, downloadQrSvg } from './qrExport';
 
 export function JoinQrPoster() {
   const { bracketId } = useParams<{ bracketId: string }>();
   const { data, isLoading, isError } = useBracket(bracketId);
+  const qrRef = useRef<SVGSVGElement>(null);
 
   if (isLoading) return <Centered>Loading…</Centered>;
   if (isError || !data) return <Centered>Tournament not found.</Centered>;
@@ -46,6 +55,18 @@ export function JoinQrPoster() {
 
   const url = joinUrl(bracket.join_token);
 
+  /** Save the code as a file for the organizer's own flyer. */
+  const save = async (format: 'svg' | 'png') => {
+    const svg = qrRef.current;
+    if (!svg) return;
+    try {
+      if (format === 'svg') downloadQrSvg(svg, bracket.name);
+      else await downloadQrPng(svg, bracket.name);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save the image.');
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-3xl px-4 py-6">
       {/* Chrome — deliberately absent from the printed sheet. */}
@@ -56,10 +77,21 @@ export function JoinQrPoster() {
         >
           ← Back to players
         </Link>
-        <Button loadingText="none" onClick={() => window.print()}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print
-        </Button>
+        <div className="flex gap-2">
+          {/* Vector first — it's the one that survives being blown up. */}
+          <Button variant="outline" loadingText="none" onClick={() => save('svg')}>
+            <Download className="mr-2 h-4 w-4" />
+            SVG
+          </Button>
+          <Button variant="outline" loadingText="none" onClick={() => save('png')}>
+            <Download className="mr-2 h-4 w-4" />
+            PNG
+          </Button>
+          <Button loadingText="none" onClick={() => window.print()}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+        </div>
       </div>
 
       {/* The sign itself. White ground so it prints clean and scans in any theme. */}
@@ -70,6 +102,7 @@ export function JoinQrPoster() {
         </div>
 
         <QRCodeSVG
+          ref={qrRef}
           value={url}
           size={512}
           level="M"
@@ -88,6 +121,11 @@ export function JoinQrPoster() {
           <p className="font-mono text-sm break-all">{url}</p>
         </div>
       </div>
+
+      <p className="mt-4 text-center text-xs text-muted-foreground print:hidden">
+        Making your own flyer? Save the code as SVG for print (it scales to any
+        size) or PNG for tools that don't take SVG.
+      </p>
     </div>
   );
 }

@@ -5,7 +5,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithProviders, screen, fireEvent } from '@/test/utils';
 
-const mocks = vi.hoisted(() => ({ bracket: vi.fn(), print: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  bracket: vi.fn(),
+  print: vi.fn(),
+  downloadSvg: vi.fn(),
+  downloadPng: vi.fn(),
+}));
 
 vi.mock('react-router-dom', async (orig) => ({
   ...(await orig<typeof import('react-router-dom')>()),
@@ -13,6 +18,13 @@ vi.mock('react-router-dom', async (orig) => ({
 }));
 
 vi.mock('@/api/hooks/useBrackets', () => ({ useBracket: () => mocks.bracket() }));
+
+vi.mock('./qrExport', () => ({
+  downloadQrSvg: (...args: unknown[]) => mocks.downloadSvg(...args),
+  downloadQrPng: (...args: unknown[]) => mocks.downloadPng(...args),
+}));
+
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 import { JoinQrPoster } from './JoinQrPoster';
 
@@ -39,6 +51,7 @@ function setup(over: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   window.print = mocks.print;
+  mocks.downloadPng.mockResolvedValue(undefined);
 });
 
 describe('JoinQrPoster', () => {
@@ -80,5 +93,28 @@ describe('JoinQrPoster', () => {
     renderWithProviders(<JoinQrPoster />);
 
     expect(screen.getByText(/no join code/i)).toBeTruthy();
+  });
+
+  it('saves the code as a vector file for a flyer, handing over the real <svg>', () => {
+    setup();
+    renderWithProviders(<JoinQrPoster />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'SVG' }));
+
+    expect(mocks.downloadSvg).toHaveBeenCalled();
+    // The ref must actually reach the rendered SVG, or nothing gets exported.
+    const [node, name] = mocks.downloadSvg.mock.calls[0];
+    expect(node).toBeInstanceOf(SVGSVGElement);
+    expect(name).toBe('Friday 9-Ball');
+  });
+
+  it('saves a PNG for tools that will not take SVG', () => {
+    setup();
+    renderWithProviders(<JoinQrPoster />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'PNG' }));
+
+    expect(mocks.downloadPng).toHaveBeenCalled();
+    expect(mocks.downloadPng.mock.calls[0][0]).toBeInstanceOf(SVGSVGElement);
   });
 });
