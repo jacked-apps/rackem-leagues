@@ -1,11 +1,17 @@
 /**
- * Create test users for RLS testing
+ * Create test users for RLS testing / local dev login.
  *
  * These users can be used in automated tests with createAuthenticatedClient()
- * Password for all users: test-password-123
+ * and to log in to the local app. Password for all users: test-password-123
  *
  * Password hash generated with: bcrypt('test-password-123', 10)
  * Hash: $2a$10$rN8eJLJ3mRqKWPkKXq.5ieTqMbE4z.QZJ5v3G5.5k5VxYqJ5Gu5K2
+ *
+ * GoTrue compatibility (v2.19x+): password login requires (a) the auth.users
+ * token columns be empty strings, NOT NULL — GoTrue scans them into Go strings
+ * and a NULL throws "Database error finding user" — and (b) a matching
+ * auth.identities row per user. Both are handled in the fix-up block at the
+ * bottom of this file, so a fresh run is login-ready without manual patching.
  */
 
 -- Player user (regular player, no special permissions)
@@ -194,3 +200,41 @@ INSERT INTO public.members (
     NOW()
   )
 ON CONFLICT (user_id) DO NOTHING;
+
+
+-- ============================================================================
+-- GoTrue compatibility fix-up (see header) — makes the users login-ready.
+-- ============================================================================
+
+-- (a) Empty-string the token columns GoTrue scans as non-null strings. A NULL
+--     here throws "Database error finding user" on login in GoTrue v2.19x+.
+UPDATE auth.users
+SET confirmation_token         = COALESCE(confirmation_token, ''),
+    email_change               = COALESCE(email_change, ''),
+    email_change_token_new     = COALESCE(email_change_token_new, ''),
+    email_change_token_current = COALESCE(email_change_token_current, ''),
+    recovery_token             = COALESCE(recovery_token, ''),
+    reauthentication_token     = COALESCE(reauthentication_token, ''),
+    phone_change               = COALESCE(phone_change, ''),
+    phone_change_token         = COALESCE(phone_change_token, '')
+WHERE email LIKE '%@test.com';
+
+-- (b) One auth.identities row per user (email provider). Newer GoTrue requires
+--     it for password login. `email` is a generated column — do NOT insert it.
+--     provider_id = the user id (the Supabase convention for email identities).
+INSERT INTO auth.identities (
+  provider_id, user_id, identity_data, provider,
+  last_sign_in_at, created_at, updated_at
+)
+SELECT
+  u.id::text,
+  u.id,
+  jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true),
+  'email',
+  NOW(), NOW(), NOW()
+FROM auth.users u
+WHERE u.email LIKE '%@test.com'
+  AND NOT EXISTS (
+    SELECT 1 FROM auth.identities i
+    WHERE i.user_id = u.id AND i.provider = 'email'
+  );

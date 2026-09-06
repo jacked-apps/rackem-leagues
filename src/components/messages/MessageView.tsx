@@ -12,6 +12,8 @@
 
 import { useState, useEffect } from 'react';
 import { ConversationHeader } from './ConversationHeader';
+import { ChatNotificationControl } from './notifications/ChatNotificationControl';
+import { useConversationNotificationPref } from '@/api/hooks/useConversationNotificationPref';
 import { MessageInput } from './MessageInput';
 import { ReadOnlyBanner } from './ReadOnlyBanner';
 import { MessageList, type Message } from './messageview/MessageList';
@@ -35,6 +37,10 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  // Read here as well as in the dialog so the header can show a muted marker
+  // without the member opening the menu to find out.
+  const { data: chatPref } = useConversationNotificationPref(conversationId, currentUserId);
 
   // TanStack Query hooks
   const { data: messagesData = [], isLoading: loading } = useConversationMessages(conversationId);
@@ -197,6 +203,18 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
         onBlock={handleBlockClick}
         canLeave={true}
         canBlock={isDM}
+        onNotifications={() => setShowNotificationSettings(true)}
+        isMuted={chatPref?.notificationMode === 'none'}
+      />
+
+      {/* Per-conversation notification settings — the bottom of the veto
+          chain. Can only add silence on top of the member's global rules. */}
+      <ChatNotificationControl
+        open={showNotificationSettings}
+        onClose={() => setShowNotificationSettings(false)}
+        conversationId={conversationId}
+        title={recipientName || 'this chat'}
+        conversationType={conversationType}
       />
 
       {/* Leave Conversation Confirmation */}

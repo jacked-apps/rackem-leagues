@@ -224,7 +224,6 @@ from this list when un-gated.
   **Do NOT un-gate production** until a real end-to-end push is verified on staging —
   then set `VITE_PUSH_NOTIFICATIONS=true` for the production build + the prod Supabase
   secrets + `push_dispatch_config`, and remove this entry.
-
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
 commit. The half-gated bug that prompted it: the "Score a Match" button +

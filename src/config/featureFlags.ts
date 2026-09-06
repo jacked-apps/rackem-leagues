@@ -53,3 +53,11 @@ export const EMAIL_INVITES_ENABLED = import.meta.env.VITE_EMAIL_INVITES === 'tru
  */
 export const PUSH_NOTIFICATIONS_ENABLED =
   import.meta.env.VITE_PUSH_NOTIFICATIONS === 'true' || import.meta.env.DEV;
+
+// The tournament bracket tool (Free Tier v1) shipped un-gated: it's the free
+// product, complete and tested, so it's live in every environment. Its old
+// `BRACKETS_ENABLED` launch gate is gone rather than left permanently true —
+// a flag that must be ON everywhere is only a way to lose the feature when an
+// env var is forgotten. Still tracked in PRE_LAUNCH_CHECKLIST.md for the RLS
+// pass (bracket writes must require created_by = calling member; the public
+// share view stays a names-only RPC read).
