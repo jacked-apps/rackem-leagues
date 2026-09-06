@@ -4,68 +4,37 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
-## 🐞 2026-09-04 — FIX: push chimes even when you're already in the conversation
+## 🧪 2026-09-05 — Database tests are not run by CI, and three files have rotted
 
-**Confirmed on staging** during the first end-to-end push test (Android). Push
-works: app fully closed → message sent → phone chimes. But sitting *inside* a
-conversation and receiving a message in it **also** chimes, which isn't the
-intent ("as close to a text message as possible" — quiet for the thread you're
-staring at).
+CI (`.github/workflows/checks.yml`) runs the vitest **unit** project only. The
+**db** project needs a live Postgres, so nothing on GitHub has ever run it —
+these failures are invisible to every PR.
 
-**Cause — found, not suspected.** `src/sw.ts`'s push handler calls
-`isViewingConversation(client.url, conversationId)`, which only matches the
-deep-link URL form `/messages/:id`. But `src/pages/Messages.tsx` keeps the open
-thread in React state (`selectedConversationId`) and **never updates the URL** —
-tapping a conversation in the list leaves the address at `/messages`. So the
-service worker cannot tell which thread is on screen and shows the
-notification. This is documented as an accepted v1 limitation in
-`notificationPayload.ts`; it just doesn't match what we actually want.
+Ran locally on 2026-09-05, after applying two migrations the local DB was
+missing. Seven tests fail, in three files, none of them related to each other:
 
-Arriving via a **notification tap** already suppresses correctly, because that
-path sets the URL to `/messages/:id`. Only list-selection is broken.
+| File | Failing | Introduced by |
+|---|---|---|
+| `request-team-join.test.ts` | 2 | PR #165 |
+| `approve-surface-roster.test.ts` + `approve-join-request.test.ts` | 4 | PR #219 |
+| `messagePushTrigger.db.test.ts` | 1 | push Unit 8 |
 
-**Fix:** when a conversation is opened, `navigate()` to `/messages/<id>` instead
-of only setting state (and back to `/messages` on close). The route already
-exists — Unit 3 added it for deep links. Contained to `Messages.tsx`. Bonus: the
-back button starts behaving correctly on mobile.
+The first two look like fixture drift — they assert against seeded rows that have
+since changed shape. Worth a look, but they are testing code that has been in
+production for months, so this is stale tests rather than a broken feature.
 
-**iOS caveat:** this cannot be fixed on iPhone. iOS uses declarative push that
-renders the notification before our service-worker code runs, so it will always
-buzz. Android + desktop only.
+The push one is **not** a product bug — I traced it. The trigger enqueues
+correctly. The test then reads the request back out of `net.http_request_queue`
+to check its body and headers, and the pg_net background worker drains that queue
+within milliseconds of the commit, so the row is usually gone before the test
+looks. The fix is to do that read inside an uncommitted transaction, where the
+worker cannot see the row. Not done — it needs a small transaction helper in
+`dbTestUtils`, and it did not belong in the PR I was on.
 
----
-
-## 🐞 2026-09-04 — FIX: "Update Available" prompt gives no feedback, sometimes doesn't update
-
-**Reported by Ed** while updating staging to pick up the push-notification
-bundle. Two symptoms in `src/components/PWAUpdatePrompt.tsx`:
-
-1. **Pressing "Update Now" shows nothing.** No spinner, no disabled state, no
-   acknowledgement. The button looks ignored, so you press it again.
-2. **Sometimes it doesn't actually update.** The prompt dismisses (or sits
-   there) and the app is still running the old bundle.
-
-**Suspected cause (code-read, NOT yet verified):**
-
-- The button is `onClick={() => updateServiceWorker(true)}`. That arrow is
-  sync and **discards the promise** `updateServiceWorker` returns, so the
-  `loadingText="Updating..."` prop on our `Button` has nothing to await — it
-  can never enter its loading state. Returning the promise is likely the whole
-  of symptom 1.
-- Symptom 2 is probably the harder half. `updateServiceWorker(true)` sends
-  `SKIP_WAITING` and reloads on the `controllerchange` event. If there is no
-  worker in `waiting` at that moment — a race with registration, an already-
-  activated worker, or the tab having been backgrounded — no `controllerchange`
-  ever fires and the reload never happens. Wants a timeout fallback that forces
-  `location.reload()` rather than waiting forever on an event that won't come.
-
-**Also worth doing while in there:** the component's only error handling is
-`console.log` in `onRegisterError`. A registration failure is invisible to both
-the user and us.
-
-**Priority:** do this AFTER push notifications are verified working on staging —
-Ed's call, 2026-09-04. It's the mechanism users rely on to receive every future
-fix, so a broken updater quietly caps how fast anything else reaches them.
+**The decision worth making:** either give CI a Postgres service container so the
+db project runs on every PR, or accept that these tests only run when someone
+remembers to run them locally. The current middle ground — having them, and never
+running them — is the one option with no upside.
 
 ---
 
@@ -1315,3 +1284,44 @@ text/icon label.
 `src/components/scoring/MatchEndVerification.tsx`,
 `src/player/ScoreMatch.tsx` — plus any shared scoring button helpers.
 
+
+
+---
+
+## 🐞 2026-09-05 — REMAINING: sync handlers that discard a promise
+
+`Button` now guards itself whenever `onClick` returns a promise (fixed
+2026-09-05), so **every async handler in the app is covered automatically**.
+
+What it can't see is a handler that *is* sync but calls something async and
+throws the promise away:
+
+```tsx
+const handleCreate = () => {
+  onCreateConversation(ids);   // async — promise discarded, button never disables
+};
+```
+
+The Button has nothing to track, so it stays live and a double-tap fires twice.
+
+**Fixed already** (the two that create things, so the highest cost when doubled):
+`NewMessageModal` and `AnnouncementModal` — both now `return` the call, and their
+prop types say to.
+
+**Still discarding, roughly by risk:**
+
+- `src/components/scoring/ConfirmationDialog.tsx` / `ConfirmationModal.tsx` /
+  `ScoringDialog.tsx` — call then `onClose()`. Lower risk because the modal
+  unmounts the button, but a slow close still leaves a window.
+- `src/components/lineup/LineupActions.tsx` — "Locking..." on lineup lock.
+- `src/wizards/**/CaptainsTeamsStep.tsx`, `ScheduleReview.tsx`,
+  `ScheduleSetupPage.tsx` — wizard steps that save and advance.
+- `src/profile/*Section.tsx`, `src/components/operator/ContactInfoCard.tsx` —
+  several already pass `disabled={isSaving}`, so they're guarded by other means;
+  they just don't show a spinner.
+
+**The fix is one line each**: `return` the async call instead of discarding it,
+and widen the prop type to `=> unknown`. No new state, no `isLoading`.
+
+Not urgent — none of these is known to have misfired. Worth doing as a sweep
+when someone is next in those files, rather than as its own task.
