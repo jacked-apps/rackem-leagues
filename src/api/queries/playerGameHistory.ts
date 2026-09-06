@@ -64,8 +64,12 @@ export const GAME_SELECT = `
     assigned_table_number,
     system_snapshot,
     week:season_weeks ( scheduled_date ),
-    venue:venues!matches_actual_venue_id_fkey ( name ),
-    scheduled_venue:venues!matches_scheduled_venue_id_fkey ( name ),
+    venue:venues!matches_actual_venue_id_fkey (
+      name, bar_box_table_numbers, eight_foot_table_numbers, regulation_table_numbers
+    ),
+    scheduled_venue:venues!matches_scheduled_venue_id_fkey (
+      name, bar_box_table_numbers, eight_foot_table_numbers, regulation_table_numbers
+    ),
     lineups:match_lineups!match_lineups_match_id_fkey (
       team_id,
       player1_id, player1_handicap,

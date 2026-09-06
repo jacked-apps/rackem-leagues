@@ -12,6 +12,19 @@
 import { handicapForPlayer, type LineupHandicaps } from './handicapForPlayer';
 import type { GameEnding, PlayerGameRow } from './playerGameRow';
 
+/**
+ * A venue, plus which of its table numbers are which size.
+ *
+ * The size lists are the venue's own record of its room. A table number that
+ * appears in none of them is simply unrecorded, not a fourth size.
+ */
+export interface VenueTables {
+  name: string | null;
+  bar_box_table_numbers?: number[] | null;
+  eight_foot_table_numbers?: number[] | null;
+  regulation_table_numbers?: number[] | null;
+}
+
 /** A `match_lineups` row, narrowed to what this needs. */
 export interface RawLineup extends LineupHandicaps {
   team_id: string | null;
@@ -39,9 +52,9 @@ export interface RawGame {
     system_snapshot: { handicap_type?: string | null } | null;
     week: { scheduled_date: string | null } | null;
     /** Where it was actually played. Null until the match is under way. */
-    venue: { name: string | null } | null;
+    venue: VenueTables | null;
     /** Where it was meant to be played — the fallback. */
-    scheduled_venue?: { name: string | null } | null;
+    scheduled_venue?: VenueTables | null;
     lineups: RawLineup[] | null;
   } | null;
 }
@@ -52,6 +65,26 @@ export interface HistoryContext {
   playerNames: Map<string, string>;
   /** season id → the league's handicap_type, for matches with no snapshot. */
   seasonHandicapSystem: Map<string, string | null>;
+}
+
+/**
+ * What size table this match was played on.
+ *
+ * @param venue - The venue, carrying its per-size table-number lists.
+ * @param tableNumber - The table this match was assigned.
+ * @returns The size, or null when either is unknown. Never guessed: a venue
+ *          that has not catalogued its room says nothing rather than
+ *          defaulting everything to the commonest size.
+ */
+function tableSizeOf(
+  venue: VenueTables | null | undefined,
+  tableNumber: number | null
+): string | null {
+  if (!venue || tableNumber === null) return null;
+  if (venue.bar_box_table_numbers?.includes(tableNumber)) return 'bar_box';
+  if (venue.eight_foot_table_numbers?.includes(tableNumber)) return 'eight_foot';
+  if (venue.regulation_table_numbers?.includes(tableNumber)) return 'regulation';
+  return null;
 }
 
 /**
@@ -145,6 +178,10 @@ export function toPlayerGameRows(
       // where the player actually stood, not where the schedule said.
       venueName: match?.venue?.name ?? match?.scheduled_venue?.name ?? null,
       tableNumber: match?.assigned_table_number ?? null,
+      tableSize: tableSizeOf(
+        match?.venue ?? match?.scheduled_venue ?? null,
+        match?.assigned_table_number ?? null
+      ),
       myTeamId,
     });
   }

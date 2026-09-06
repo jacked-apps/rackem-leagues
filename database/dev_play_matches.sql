@@ -94,14 +94,31 @@ BEGIN
 
   SELECT id INTO v_dev_member FROM members WHERE email = 'dev@test.com';
 
-  -- A second venue, so venue filters have more than one option.
+  -- A second venue, so venue filters have more than one option. Mixed table
+  -- sizes on purpose: a 7ft bar box and a 9ft table are close to different
+  -- games, and a fixture where every table is the same size gives the
+  -- table-size filter nothing to do, so it hides itself.
   IF NOT EXISTS (SELECT 1 FROM venues WHERE name = 'Corner Pocket Tavern') THEN
-    INSERT INTO venues (organization_id, name, street_address, city, state, zip_code, phone, bar_box_tables, bar_box_table_numbers)
-    SELECT id, 'Corner Pocket Tavern', '88 Second St', 'Testville', 'TX', '00000', '5550000000', 4, ARRAY[1,2,3,4]
+    INSERT INTO venues (organization_id, name, street_address, city, state, zip_code, phone,
+                        bar_box_tables, bar_box_table_numbers,
+                        regulation_tables, regulation_table_numbers)
+    SELECT id, 'Corner Pocket Tavern', '88 Second St', 'Testville', 'TX', '00000', '5550000000',
+           2, ARRAY[1,2], 2, ARRAY[3,4]
     FROM organizations
     WHERE organization_name IN ('Tester Org', 'Dev Test Leagues')
     LIMIT 1;
   END IF;
+
+  -- Give any pre-existing fixture venue a mix of sizes too, same reasoning.
+  -- Only touches venues whose tables are recorded as all one size.
+  UPDATE venues
+     SET bar_box_table_numbers = ARRAY[1, 2],
+         bar_box_tables = 2,
+         regulation_table_numbers = ARRAY[3, 4],
+         regulation_tables = 2
+   WHERE COALESCE(array_length(regulation_table_numbers, 1), 0) = 0
+     AND COALESCE(array_length(eight_foot_table_numbers, 1), 0) = 0
+     AND COALESCE(array_length(bar_box_table_numbers, 1), 0) >= 4;
 
   -- Put the dev login on one team per league, so /stats has a real subject
   -- whose record spans several leagues and both game types.

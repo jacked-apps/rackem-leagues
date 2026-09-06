@@ -34,6 +34,7 @@ function row(overrides: Partial<PlayerGameRow> = {}): PlayerGameRow {
     handicapSystem: 'points',
     venueName: 'Butera Billiards',
     tableNumber: 2,
+    tableSize: 'bar_box',
     myTeamId: 'team-1',
     ...overrides,
   };
@@ -189,5 +190,43 @@ describe('filter state helpers', () => {
 
   it('counts a one-ended handicap band', () => {
     expect(activeFilterCount({ ...NO_FILTER, opponentHandicapMin: 50 })).toBe(1);
+  });
+});
+
+describe('applyGameFilter - table size', () => {
+  const rows = [
+    row({ tableSize: 'bar_box', tableNumber: 1 }),
+    row({ tableSize: 'bar_box', tableNumber: 2 }),
+    row({ tableSize: 'regulation', tableNumber: 3 }),
+    row({ tableSize: null, tableNumber: 9 }),
+  ];
+
+  it('narrows to one size', () => {
+    // A 7ft and a 9ft table are close to different games, so this is a real
+    // question about a player rather than a detail.
+    const out = applyGameFilter(rows, { ...NO_FILTER, tableSize: 'bar_box' });
+    expect(out).toHaveLength(2);
+  });
+
+  it('excludes games whose table size was never recorded', () => {
+    const out = applyGameFilter(rows, { ...NO_FILTER, tableSize: 'regulation' });
+    expect(out.every((r) => r.tableSize === 'regulation')).toBe(true);
+  });
+
+  it('keeps unrecorded sizes when no size is selected', () => {
+    expect(applyGameFilter(rows, NO_FILTER)).toHaveLength(4);
+  });
+
+  it('combines with the other filters', () => {
+    const out = applyGameFilter(rows, {
+      ...NO_FILTER,
+      tableSize: 'bar_box',
+      tableNumber: 1,
+    });
+    expect(out).toHaveLength(1);
+  });
+
+  it('counts as one active filter', () => {
+    expect(activeFilterCount({ ...NO_FILTER, tableSize: 'bar_box' })).toBe(1);
   });
 });

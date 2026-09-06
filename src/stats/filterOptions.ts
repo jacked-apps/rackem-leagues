@@ -37,6 +37,7 @@ export interface FilterOptions {
   handicaps: FilterOption<number>[];
   venues: FilterOption<string>[];
   tables: FilterOption<number>[];
+  tableSizes: FilterOption<string>[];
 }
 
 /** Readable names for the game types actually stored. */
@@ -44,6 +45,18 @@ const GAME_TYPE_LABELS: Record<string, string> = {
   eight_ball: '8-ball',
   nine_ball: '9-ball',
   ten_ball: '10-ball',
+};
+
+/**
+ * Readable names for table sizes, with the dimension spelled out.
+ *
+ * "Bar box" is what players say; the footage is what settles an argument about
+ * which one someone means.
+ */
+const TABLE_SIZE_LABELS: Record<string, string> = {
+  bar_box: 'Bar box (7ft)',
+  eight_foot: '8ft',
+  regulation: 'Regulation (9ft)',
 };
 
 /** Readable names for handicap systems. */
@@ -142,6 +155,7 @@ export function buildFilterOptions(
   const gameTypeLabel = (v: string) => GAME_TYPE_LABELS[v] ?? v;
   const systemLabel = (v: string) => SYSTEM_LABELS[v] ?? v;
   const tableLabel = (v: number) => `Table ${v}`;
+  const sizeLabel = (v: string) => TABLE_SIZE_LABELS[v] ?? v;
 
   /** Rows surviving every filter EXCEPT the named dimension(s). */
   const without = (...dimensions: (keyof GameFilter)[]) => {
@@ -192,6 +206,11 @@ export function buildFilterOptions(
       optionsFrom(without('tableNumber'), (r) => r.tableNumber, tableLabel, byValue),
       filter.tableNumber,
       tableLabel
+    ),
+    tableSizes: useless((r) => r.tableSize) ? [] : withSelected(
+      optionsFrom(without('tableSize'), (r) => r.tableSize, sizeLabel, byCountThenLabel),
+      filter.tableSize,
+      sizeLabel
     ),
   };
 }

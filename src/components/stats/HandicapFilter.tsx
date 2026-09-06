@@ -91,7 +91,7 @@ export function HandicapFilter({ min, max, onChange, options }: HandicapFilterPr
       : null;
 
   return (
-    <div className="min-w-[14rem] flex-1">
+    <div className="min-w-0 flex-1 sm:min-w-[12rem]">
       <Label className="text-xs text-muted-foreground">Opponent handicap</Label>
 
       {/* Range mode uses flex-nowrap with min-w-0 boxes: the two ends of one

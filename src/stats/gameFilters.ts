@@ -39,6 +39,8 @@ export interface GameFilter {
   opponentHandicapMax: number | null;
   venueName: string | null;
   tableNumber: number | null;
+  /** 'bar_box' | 'eight_foot' | 'regulation' — what size table. */
+  tableSize: string | null;
   seasonId: string | null;
 }
 
@@ -51,6 +53,7 @@ export const NO_FILTER: GameFilter = {
   opponentHandicapMax: null,
   venueName: null,
   tableNumber: null,
+  tableSize: null,
   seasonId: null,
 };
 
@@ -71,6 +74,7 @@ export function activeFilterCount(filter: GameFilter): number {
     'opponentId',
     'venueName',
     'tableNumber',
+    'tableSize',
     'seasonId',
   ];
   return others.filter((key) => filter[key] !== null).length + (handicapActive ? 1 : 0);
@@ -117,6 +121,7 @@ export function applyGameFilter(
     if (filter.opponentId !== null && row.opponentId !== filter.opponentId) return false;
     if (filter.venueName !== null && row.venueName !== filter.venueName) return false;
     if (filter.tableNumber !== null && row.tableNumber !== filter.tableNumber) return false;
+    if (filter.tableSize !== null && row.tableSize !== filter.tableSize) return false;
     if (filter.seasonId !== null && row.seasonId !== filter.seasonId) return false;
     return withinHandicapBand(row, filter);
   });

@@ -267,3 +267,55 @@ describe('toPlayerGameRows - venue', () => {
     expect(row.venueName).toBeNull();
   });
 });
+
+describe('toPlayerGameRows - table size', () => {
+  /** The venue records which of ITS table numbers are which size. */
+  const venue = {
+    name: 'Butera Billiards',
+    bar_box_table_numbers: [1, 2],
+    eight_foot_table_numbers: [5],
+    regulation_table_numbers: [3, 4],
+  };
+
+  it.each([
+    [1, 'bar_box'],
+    [3, 'regulation'],
+    [5, 'eight_foot'],
+  ])('reads table %i as %s', (tableNumber, expected) => {
+    const [r] = toPlayerGameRows(
+      [game({}, { venue, assigned_table_number: tableNumber })],
+      ME,
+      ctx,
+    );
+    expect(r.tableSize).toBe(expected);
+  });
+
+  it('is null for a table the venue has not catalogued', () => {
+    // Never guessed. A venue that has not recorded its room says nothing
+    // rather than defaulting everything to the commonest size.
+    const [r] = toPlayerGameRows(
+      [game({}, { venue, assigned_table_number: 9 })],
+      ME,
+      ctx,
+    );
+    expect(r.tableSize).toBeNull();
+  });
+
+  it('is null when there is no table number', () => {
+    const [r] = toPlayerGameRows(
+      [game({}, { venue, assigned_table_number: null })],
+      ME,
+      ctx,
+    );
+    expect(r.tableSize).toBeNull();
+  });
+
+  it('falls back to the scheduled venue when no actual one is recorded', () => {
+    const [r] = toPlayerGameRows(
+      [game({}, { venue: null, scheduled_venue: venue, assigned_table_number: 3 })],
+      ME,
+      ctx,
+    );
+    expect(r.tableSize).toBe('regulation');
+  });
+});

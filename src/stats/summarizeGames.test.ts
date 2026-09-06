@@ -30,6 +30,7 @@ function row(overrides: Partial<PlayerGameRow> = {}): PlayerGameRow {
     handicapSystem: 'points',
     venueName: 'Butera Billiards',
     tableNumber: 2,
+    tableSize: 'bar_box',
     myTeamId: 'team-1',
     ...overrides,
   };

@@ -31,6 +31,7 @@ function row(overrides: Partial<PlayerGameRow> = {}): PlayerGameRow {
     handicapSystem: 'points',
     venueName: 'Hall A',
     tableNumber: 1,
+    tableSize: 'bar_box',
     myTeamId: 'team-1',
     ...overrides,
   };

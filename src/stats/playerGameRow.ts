@@ -64,6 +64,19 @@ export interface PlayerGameRow {
   venueName: string | null;
   /** Table number for the match. Per night, not per rack. */
   tableNumber: number | null;
+  /**
+   * What size table it was played on: 'bar_box' (7ft), 'eight_foot',
+   * 'regulation' (9ft).
+   *
+   * Derived, not stored: the venue records which of ITS table numbers are which
+   * size, so this is that lookup applied to the match's table number. Null when
+   * the venue has not said, or the match has no table.
+   *
+   * Worth having because a 7ft and a 9ft table are close to different games —
+   * a record that is strong on a bar box and poor on a big table is a real
+   * thing about a player, and it is invisible in an overall win rate.
+   */
+  tableSize: string | null;
   /** The team this player was on that night. */
   myTeamId: string | null;
 }

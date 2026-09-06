@@ -62,7 +62,7 @@ function FilterControl<T extends string | number>({
   if (options.length === 0 && value === null) return null;
 
   return (
-    <div className="min-w-[10rem] flex-1">
+    <div className="min-w-0 flex-1 sm:min-w-[8rem]">
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <Select
         value={value === null ? ALL : String(value)}
@@ -138,7 +138,7 @@ export function FilterBar({
 
         {/* The handicap pair. A handicap number means nothing without the
             system it is measured in, so the two travel together. */}
-        <div className="flex min-w-[18rem] flex-[2] flex-wrap items-start gap-3">
+        <div className="flex min-w-[18rem] flex-[2] flex-nowrap items-start gap-3">
           <FilterControl
             label="Handicap system"
             value={filter.handicapSystem}
@@ -160,8 +160,10 @@ export function FilterBar({
           )}
         </div>
 
-        {/* Where. Venue and table are one question in two parts. */}
-        <div className="flex min-w-[16rem] flex-1 flex-wrap items-start gap-3">
+        {/* Where, in three parts: which room, which table, what size it was.
+            flex-nowrap so they ride together rather than peeling off one at a
+            time; min-w-0 children shrink instead. */}
+        <div className="flex min-w-[16rem] flex-1 flex-nowrap items-start gap-3">
           <FilterControl
             label="Venue"
             value={filter.venueName}
@@ -175,6 +177,13 @@ export function FilterBar({
             options={options.tables}
             onChange={(tableNumber) => set({ tableNumber })}
             parse={Number}
+          />
+          <FilterControl
+            label="Table size"
+            value={filter.tableSize}
+            options={options.tableSizes}
+            onChange={(tableSize) => set({ tableSize })}
+            parse={(raw) => raw}
           />
         </div>
       </div>
