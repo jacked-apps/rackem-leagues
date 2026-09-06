@@ -118,13 +118,25 @@ its number range.
   once you know you mean points-handicap 2s. If a player has games under more
   than one system, the page needs a system filter — which is Ed's "a way to
   filter for which handicap I play if there are more than one."
-- **Legacy matches may have no snapshot.** The column is NULL for matches that
-  predate it. There is a `populateMatchSnapshotIfNeeded` backfill used
-  elsewhere, but it fills from CURRENT league config — safe for a match being
-  played now, wrong for an old one if the league has changed system since. For
-  the stats page the honest treatment is to show those games as system-unknown
-  rather than assume; how many are affected in production is worth checking
-  before deciding.
+- **Legacy matches with no snapshot need no backfill — resolved.** 9 of
+  production's 45 completed matches (20%) have a NULL `system_snapshot`, which
+  is too many to write off as system-unknown. It turns out not to matter:
+  `handicap_type` **cannot change on an existing league**, enforced by a
+  Postgres trigger (`20260418000002_lock_tier1_preferences.sql`):
+
+  > Cannot change handicap_type on an existing league. Create a new league if
+  > you need a different scoring system. (tier 1 immutable)
+
+  So a league's current `handicap_type` *is* the one every match it has ever
+  played was played under. For a match with no snapshot, reading the league's
+  value is not a guess — it recovers a value that could not have changed.
+
+  **This needs no migration and no backfill.** Read `handicap_type` from the
+  snapshot when present, fall back to the league when it isn't. Deliberately
+  only that one field: the snapshot's other contents are tier-2 dials that CAN
+  change, so a blanket backfill of the whole snapshot from today's config would
+  be wrong for them. The narrow fallback is safe precisely because the trigger
+  makes this one field immutable.
 
 ## What the data already supports
 
