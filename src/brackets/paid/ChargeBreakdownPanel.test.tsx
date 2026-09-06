@@ -25,7 +25,9 @@ describe('ChargeBreakdownPanel', () => {
 
     expect(await screen.findByText('Real players & sign-up')).toBeTruthy();
     expect(screen.getByText('Entry-fee tracker')).toBeTruthy();
-    expect(screen.getByText('Charged at start')).toBeTruthy();
+    // A receipt's total, not another line item.
+    expect(screen.getByText('Total')).toBeTruthy();
+    expect(screen.getByText(/charged when you start/i)).toBeTruthy();
   });
 
   it('shows the cap as its own line so the items add up to the total', async () => {
@@ -39,7 +41,9 @@ describe('ChargeBreakdownPanel', () => {
     await user.click(screen.getByRole('button', { name: /features/ }));
 
     expect(await screen.findByText(/everything-included discount/i)).toBeTruthy();
-    expect(screen.getByText(/capped at \$5\.00/)).toBeTruthy();
+    // The subtotal is shown so the arithmetic reconciles on the page.
+    expect(screen.getByText('Subtotal')).toBeTruthy();
+    expect(screen.getByText('−$1.00')).toBeTruthy();
   });
 
   it('says nothing about a discount that did not happen', async () => {
@@ -53,5 +57,17 @@ describe('ChargeBreakdownPanel', () => {
   it('renders nothing for a tournament that bought nothing', () => {
     const { container } = renderWithProviders(<ChargeBreakdownPanel featureKeys={[]} />);
     expect(container.textContent).toBe('');
+  });
+
+  it('shows a subtotal only when there is a discount to reconcile', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <ChargeBreakdownPanel featureKeys={['real_players', 'payment_tracker']} />
+    );
+
+    await user.click(screen.getByRole('button', { name: /2 features/ }));
+    // Uncapped, a subtotal identical to the total is just noise.
+    expect(screen.queryByText('Subtotal')).toBeNull();
+    expect(screen.getByText('Total')).toBeTruthy();
   });
 });
