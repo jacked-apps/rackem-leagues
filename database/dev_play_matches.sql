@@ -227,9 +227,18 @@ BEGIN
     UPDATE matches
        SET status = 'completed',
            completed_at = now(),
+           -- Spread across the venues that exist rather than defaulting all
+           -- of them to whichever sorts first — otherwise the venue filter has
+           -- a single option and hides itself, which looks like a missing
+           -- feature rather than a fixture with one venue in it.
            actual_venue_id = COALESCE(
              scheduled_venue_id,
-             (SELECT id FROM venues ORDER BY name LIMIT 1)
+             (
+               SELECT id FROM venues
+               ORDER BY name
+               OFFSET (dev_hash(id::text || ':venue') % GREATEST((SELECT count(*) FROM venues), 1))
+               LIMIT 1
+             )
            ),
            -- Spread across tables so table filters have options.
            assigned_table_number = 1 + (dev_hash(id::text || ':table') % 4)

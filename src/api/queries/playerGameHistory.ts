@@ -38,7 +38,12 @@ const COUNTED_STATUSES = ['completed', 'verified'] as const;
  * defeats supabase-js's type inference and the result degenerates to
  * `GenericStringError` — see memory/project_build_typecheck_and_supabase_select.
  */
-const GAME_SELECT = `
+/**
+ * Exported ONLY so a database test can run the real select against Postgres.
+ * Unit tests cover the mapping; nothing but a live PostgREST call can catch an
+ * ambiguous embed or a renamed column, which is exactly what shipped broken.
+ */
+export const GAME_SELECT = `
   id,
   game_number,
   home_player_id,
@@ -61,7 +66,7 @@ const GAME_SELECT = `
     week:season_weeks ( scheduled_date ),
     venue:venues!matches_actual_venue_id_fkey ( name ),
     scheduled_venue:venues!matches_scheduled_venue_id_fkey ( name ),
-    lineups:match_lineups (
+    lineups:match_lineups!match_lineups_match_id_fkey (
       team_id,
       player1_id, player1_handicap,
       player2_id, player2_handicap,
