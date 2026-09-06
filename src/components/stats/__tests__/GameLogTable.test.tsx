@@ -8,10 +8,26 @@
  * the page has no business knowing how the log measures itself.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { renderWithProviders, screen } from '@/test/utils';
 import { GameLogTable } from '../GameLogTable';
 import type { PlayerGameRow } from '@/stats/playerGameRow';
+
+// Saved so they can be put back. These are PROTOTYPE-wide overrides: vitest
+// runs several test files per worker process, so leaving them in place makes
+// every later file believe every element is 900x600. That is not a subtle
+// difference — it broke seven unrelated tests in other files, which passed
+// individually and failed in a full run, the most expensive kind of failure to
+// diagnose.
+const originalGetRect = HTMLElement.prototype.getBoundingClientRect;
+const originalOffsetHeight = Object.getOwnPropertyDescriptor(
+  HTMLElement.prototype,
+  'offsetHeight'
+);
+const originalOffsetWidth = Object.getOwnPropertyDescriptor(
+  HTMLElement.prototype,
+  'offsetWidth'
+);
 
 beforeAll(() => {
   // Give every element a size, so the virtualiser has a viewport to fill.
@@ -36,12 +52,19 @@ beforeAll(() => {
       toJSON: () => ({}),
     } as DOMRect;
   };
-  if (!('ResizeObserver' in globalThis)) {
-    (globalThis as unknown as Record<string, unknown>).ResizeObserver = class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    };
+});
+
+afterAll(() => {
+  HTMLElement.prototype.getBoundingClientRect = originalGetRect;
+  if (originalOffsetHeight) {
+    Object.defineProperty(HTMLElement.prototype, 'offsetHeight', originalOffsetHeight);
+  } else {
+    delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight;
+  }
+  if (originalOffsetWidth) {
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', originalOffsetWidth);
+  } else {
+    delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetWidth;
   }
 });
 
