@@ -43,6 +43,13 @@ export interface Member {
   // Global push-notification switch (message push notifications, Unit 1).
   // NULL = never prompted; true = on; false = globally off.
   push_enabled?: boolean | null;
+  /**
+   * Version of the What's New page this member last opened; NULL = never.
+   * Compared for EQUALITY against the newest shipped release to decide whether
+   * to show the "New" nav marker. Never parsed or ordered — semver isn't a
+   * number, and "1.10.0" sorts before "1.9.0" as text.
+   */
+  last_seen_whats_new?: string | null;
   fargo_rating: number | null; // FargoRate rating (100-850). NULL = not set.
   organization_id: string | null; // Placeholder-only: org the placeholder belongs to. NULL for registered members (they span orgs).
   archived_at: string | null; // Placeholder-only: when the LO archived this row. NULL means active.

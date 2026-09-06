@@ -11,9 +11,16 @@
  * `handleUpdate` for why the reload can't be left to the service worker alone.
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import {
+  getWhatsNewPreference,
+  requestWhatsNewAfterUpdate,
+  setWhatsNewPreference,
+} from '@/whatsNew/useShowWhatsNewAfterUpdate';
 import { logger } from '@/utils/logger';
 
 /**
@@ -60,6 +67,8 @@ export function PWAUpdatePrompt() {
   });
 
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showNotes, setShowNotes] = useState(getWhatsNewPreference);
+  const notesCheckboxId = useId();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // The reload usually tears this component down, but not on the paths where
@@ -89,6 +98,12 @@ export function PWAUpdatePrompt() {
    */
   const handleUpdate = async () => {
     setIsUpdating(true);
+
+    // Remember the answer so someone who doesn't care isn't asked every
+    // release, and hand the intent to sessionStorage — the reload below wipes
+    // React state, so this is the only way it survives.
+    setWhatsNewPreference(showNotes);
+    if (showNotes) requestWhatsNewAfterUpdate();
 
     // Whatever happens below, land on the new build. If the service worker
     // takes control normally it reloads first and this never runs.
@@ -125,6 +140,24 @@ export function PWAUpdatePrompt() {
           <p className="text-sm text-muted-foreground">
             A new version of Rackem Leagues is available. Reload to update.
           </p>
+        </div>
+        {/* Ticked by default: the notes are the point of updating, and most
+            people haven't formed an opinion. Unticking sticks, so anyone who
+            doesn't care is asked once rather than every release. */}
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id={notesCheckboxId}
+            checked={showNotes}
+            disabled={isUpdating}
+            onCheckedChange={(checked) => setShowNotes(checked === true)}
+            data-testid="show-whats-new"
+          />
+          <Label
+            htmlFor={notesCheckboxId}
+            className="cursor-pointer text-sm font-normal text-muted-foreground"
+          >
+            Show me what&apos;s new
+          </Label>
         </div>
         <div className="flex gap-2 justify-end">
           <Button variant="outline" size="sm" onClick={close} disabled={isUpdating}>
