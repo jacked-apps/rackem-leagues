@@ -289,9 +289,9 @@ export interface MatchGame {
   break_fouled: boolean;
   runout: boolean;
   win_by_forfeit: boolean;
-  // The game ended because the LOSER pocketed the 8 early. The odd one out
-  // among these flags: every other one describes something the WINNER did, so
-  // the player it refers to is the winner's opponent, not the winner.
+  // The game ended on an early 8. Like the flags above it, this describes HOW
+  // the game ended, not who deserves credit — the row already carries the
+  // winner and the loser, so it reads from either side.
   // 8-ball only (added by migration 20260905225925).
   early_eight: boolean;
   // Calculator-driven per-game input values (renamed from loser_balls_pocketed by

@@ -110,12 +110,14 @@ interface ScoringDialogProps {
   /** Runout state (role-conditional on winner = non-breaker). */
   runout?: boolean;
   /**
-   * Early-8 state: the game ended because the LOSER pocketed the 8 early.
+   * Early-8 state: the game ended on an early 8.
    *
-   * The odd one out among these flags. Break & Run, Golden Break and Runout
-   * all describe something the WINNER did well; this describes the loser's
-   * mistake, and the winner did nothing but watch. Labelled accordingly so a
-   * scorer can't read it as a credit to the player named above.
+   * Like Break & Run, Golden Break and Runout, this records HOW the game ended
+   * rather than crediting anyone. The row already knows who won and who lost,
+   * so the same flag reads from both chairs — "I won on an early 8" and "I lost
+   * on an early 8" are one record seen from either side. That symmetry is the
+   * point: it's what lets a player ask how often a break & run beat them, not
+   * just how often they managed one.
    *
    * 8-ball only — there is no early 8 in rotation games.
    */
@@ -295,11 +297,11 @@ export function ScoringDialog({
     onRunoutChange?.(checked);
     if (checked && earlyEight) onEarlyEightChange?.(false);
   };
-  // An early 8 means the loser ended the game — the winner cleared nothing, so
-  // every winner achievement is off the table. Mirrors the DB constraint
-  // match_games_early_eight_excludes_feats rather than relying on it: a
-  // constraint violation surfaces as a failed save, which is a poor way to
-  // learn the two are incompatible.
+  // A game can only end one way. An early 8 and a break & run are rival
+  // descriptions of the same game, so ticking one clears the others. Mirrors
+  // the DB constraint match_games_early_eight_excludes_feats rather than
+  // relying on it: a constraint violation surfaces as a failed save, which is a
+  // poor way to learn the two are incompatible.
   const handleEarlyEightCheck = (checked: boolean) => {
     onEarlyEightChange?.(checked);
     if (!checked) return;
@@ -412,9 +414,9 @@ export function ScoringDialog({
                 </Label>
               </div>
             )}
-            {/* 8-ball only, and phrased as the LOSER's mistake — every other
-                control in this row credits the winner named above, so an
-                unqualified "Early 8" here would read as something they did. */}
+            {/* 8-ball only. Named for the method, like its neighbours — the
+                row records how the game ended, not what either player deserves
+                credit or blame for. */}
             {isEightBall && (
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -423,7 +425,7 @@ export function ScoringDialog({
                   onCheckedChange={(c) => handleEarlyEightCheck(c === true)}
                 />
                 <Label htmlFor="earlyEight" className="text-sm font-normal cursor-pointer">
-                  Won on opponent&apos;s early 8
+                  Early 8
                 </Label>
               </div>
             )}

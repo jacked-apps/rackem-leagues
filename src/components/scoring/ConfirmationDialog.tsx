@@ -180,13 +180,8 @@ export function ConfirmationDialog({
                 {game.winByForfeit && (
                   <div className="text-foreground">Won by forfeit</div>
                 )}
-                {/* Stated as the opponent's action, because it is. Every other
-                    line here describes the winner; this one would be read as a
-                    credit to them if it just said "Early 8". */}
                 {game.earlyEight && (
-                  <div className="text-foreground">
-                    Opponent pocketed the 8 early
-                  </div>
+                  <div className="text-foreground">Early 8</div>
                 )}
                 {game.breakFouled && (
                   <div className="text-warning">

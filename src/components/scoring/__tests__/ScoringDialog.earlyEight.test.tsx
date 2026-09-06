@@ -1,12 +1,14 @@
 /**
  * @fileoverview The early-8 control in the scoring dialog.
  *
- * Early 8 is the odd one out among the per-game flags. Break & Run, Golden
- * Break and Runout all describe something the WINNER did; early 8 describes the
- * LOSER's mistake. That difference drives everything asserted here — it is
- * 8-ball only, it is phrased as the opponent's action, and it cannot coexist
- * with any achievement, because a game the loser ended is not one the winner
- * cleared.
+ * These flags describe how the game ENDED, not what either player deserves
+ * credit for. The row already carries the winner and the loser, so one flag
+ * reads from both sides — which is what lets a player ask how often a break &
+ * run beat them, not just how often they managed one.
+ *
+ * Two consequences are asserted here: the control is named for the method
+ * rather than for a player, and only one ending can be recorded, because a
+ * break & run and an early 8 are rival accounts of the same game.
  *
  * The exclusivity is enforced in two places on purpose: this UI, and the
  * `match_games_early_eight_excludes_feats` CHECK constraint. Relying on the
@@ -53,7 +55,7 @@ function renderDialog(overrides: Record<string, unknown> = {}) {
   return handlers;
 }
 
-const earlyEightBox = () => screen.getByLabelText(/opponent's early 8/i);
+const earlyEightBox = () => screen.getByLabelText(/early 8/i);
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -71,15 +73,16 @@ describe('ScoringDialog — early 8 availability', () => {
     }
   );
 
-  it('names it as the opponent\u2019s action, not the winner\u2019s', () => {
+  it('names it for the method, not for either player', () => {
     renderDialog();
-    // The winner is named directly above; an unqualified "Early 8" here would
-    // read as something THEY did.
-    expect(screen.getByText(/opponent's early 8/i)).toBeInTheDocument();
+    // Plain "Early 8", like its neighbours. An attribution ("won on opponent's
+    // early 8") would read from one chair only, and the same record has to
+    // serve the player who lost that way too.
+    expect(screen.getByText('Early 8')).toBeInTheDocument();
   });
 });
 
-describe('ScoringDialog — early 8 excludes the winner achievements', () => {
+describe('ScoringDialog — only one ending can be recorded', () => {
   it('clears Break & Run when early 8 is ticked', async () => {
     const user = userEvent.setup();
     const h = renderDialog({ breakAndRun: true });
