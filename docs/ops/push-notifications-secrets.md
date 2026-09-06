@@ -111,6 +111,52 @@ function's `DISPATCH_SHARED_SECRET` and the DB's `shared_secret` identical, and 
 `VITE_VAPID_PUBLIC_KEY` matched to `VAPID_PRIVATE_KEY`. After that, open the staging
 URL on a phone → (iOS) Add to Home Screen → open it → enable notifications → test.
 
+## Production setup (one-time) — do this BEFORE the un-gate reaches users
+
+Same three steps as staging, against the production project
+(`cibboozjixxyypzchtvr`). The production deploy workflow already runs migrations
+and deploys the edge function on every push to `main`; these three hold real
+secrets, so they cannot live in the repo.
+
+**Order matters.** Do all three BEFORE the un-gate lands in production. Once the
+UI is un-gated, members can turn notifications on — and if the secrets are not in
+place they get a switch that appears to work, saves a device, and then never
+delivers anything. Nothing errors: the trigger simply skips while
+`shared_secret` is empty. That is a far worse first impression than the feature
+not being there yet.
+
+1. **GitHub → `production` Environment secret** (for the client build):
+   - `VITE_VAPID_PUBLIC_KEY` = the VAPID **public** key.
+
+2. **Supabase function secrets** (for the dispatcher) — run once:
+   ```
+   supabase secrets set      VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=...      VAPID_SUBJECT=mailto:you@example.com DISPATCH_SHARED_SECRET=...      --project-ref cibboozjixxyypzchtvr
+   ```
+
+3. **Production DB** (Supabase SQL editor) — point the trigger at the production
+   function with the same secret:
+   ```sql
+   UPDATE public.push_dispatch_config
+      SET function_url  = 'https://cibboozjixxyypzchtvr.supabase.co/functions/v1/dispatch-push-notifications',
+          shared_secret = '<same DISPATCH_SHARED_SECRET as step 2>',
+          enabled       = true;
+   ```
+
+### Checking it actually works
+
+There is no error to watch for if a step is missed, so verify positively rather
+than waiting for a complaint:
+
+```sql
+-- Expect: enabled = true, a production function_url, has_secret = true.
+SELECT function_url, enabled, shared_secret <> '' AS has_secret
+  FROM public.push_dispatch_config;
+```
+
+Then send yourself a direct message from a second account and confirm the
+notification arrives on a phone. On iOS the app must be added to the Home Screen
+first — Safari does not deliver Web Push to a normal browser tab.
+
 ## Rotation runbook (VAPID keys)
 
 Rotating the VAPID keypair **invalidates every existing push subscription** (they
