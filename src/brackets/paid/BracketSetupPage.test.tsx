@@ -144,14 +144,16 @@ describe('BracketSetupPage', () => {
     await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(true));
   });
 
-  it('does not charge a tournament with no premium features', async () => {
-    setup([entry({ id: 'a' }), entry({ id: 'b' })], { premium_features: [] });
+  it('charges for every feature the tournament bought, not just sign-up', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })], {
+      premium_features: ['real_players', 'payment_tracker'],
+    });
     renderWithProviders(<BracketSetupPage />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Start tournament' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Start & pay $2.00' }));
 
-    await waitFor(() => expect(mocks.start).toHaveBeenCalled());
-    expect(mocks.charge).not.toHaveBeenCalled();
+    await waitFor(() => expect(mocks.charge).toHaveBeenCalled());
+    expect(mocks.charge).toHaveBeenCalledWith({ bracketId: 'b1', amountCents: 200 });
   });
 
   it('never charges when the start itself fails', async () => {
@@ -194,5 +196,20 @@ describe('BracketSetupPage', () => {
 
     expect(screen.getByLabelText('Also add the 1 still waiting, as unpaid')).toBeTruthy();
     expect(screen.getByText('Unpaid')).toBeTruthy();
+  });
+
+  it('shows no hopper for a tournament that never bought sign-up', () => {
+    setup([], { premium_features: ['payment_tracker'] });
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByText(/doesn't use player sign-up/i)).toBeTruthy();
+    expect(screen.queryByLabelText('Add a player')).toBeNull();
+  });
+
+  it('shows no hopper for a free tournament', () => {
+    setup([], { premium_features: [] });
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByText(/doesn't use player sign-up/i)).toBeTruthy();
   });
 });

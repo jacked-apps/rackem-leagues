@@ -8,6 +8,7 @@
  */
 
 import { Link } from 'react-router-dom';
+import { bracketDestination } from './paid/bracketDestination';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,7 +55,9 @@ export function BracketsIndexPage() {
 
 function BracketRowLink({ bracket }: { bracket: BracketRow }) {
   return (
-    <Link to={`/brackets/${bracket.id}`}>
+    // A sign-up tournament still in setup opens on its hopper, not on a
+    // bracket that has no matches yet.
+    <Link to={bracketDestination(bracket)}>
       <Card className="transition-colors hover:bg-accent">
         <CardHeader className="flex flex-row items-center justify-between py-4">
           <CardTitle className="text-base">{bracket.name}</CardTitle>

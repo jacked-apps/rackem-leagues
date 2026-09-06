@@ -49,6 +49,20 @@ export function BracketSetupPage() {
 
   const { bracket } = data;
 
+  // No sign-up feature = no hopper. The free tier and paid tournaments without
+  // it type their players in during creation and start immediately, so there is
+  // nothing for this screen to show even if someone reaches the URL directly.
+  if (!hasPremiumFeature(bracket.premium_features, 'real_players')) {
+    return (
+      <Centered>
+        <p>This tournament doesn't use player sign-up.</p>
+        <Link to={`/brackets/${bracket.id}`} className="underline">
+          Go to the bracket
+        </Link>
+      </Centered>
+    );
+  }
+
   // Already started — the setup screen is meaningless, send them to the bracket.
   if (bracket.status !== 'setup') {
     return (
