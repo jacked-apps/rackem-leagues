@@ -54,6 +54,27 @@ const SYSTEM_LABELS: Record<string, string> = {
   none: 'No handicap',
 };
 
+/**
+ * How many distinct values a dimension has across the WHOLE history.
+ *
+ * Decides whether a control is worth showing at all, which is a different
+ * question from what it should currently offer. A control that can never
+ * present a choice — one venue, one game type — is clutter. A control narrowed
+ * to one option BY the other filters must still be shown, or the bar reshuffles
+ * as you use it and controls appear to break.
+ */
+function distinctCount<T>(
+  rows: PlayerGameRow[],
+  pick: (row: PlayerGameRow) => T | null | undefined
+): number {
+  const seen = new Set<T>();
+  for (const row of rows) {
+    const value = pick(row);
+    if (value !== null && value !== undefined) seen.add(value);
+  }
+  return seen.size;
+}
+
 /** Count values, then turn them into sorted options. */
 function optionsFrom<T>(
   rows: PlayerGameRow[],
@@ -129,13 +150,17 @@ export function buildFilterOptions(
     return applyGameFilter(rows, relaxed);
   };
 
+  /** A dimension with one value across all of history can never be a filter. */
+  const useless = (pick: (row: PlayerGameRow) => unknown) =>
+    distinctCount(rows, pick as (r: PlayerGameRow) => unknown) < 2;
+
   return {
-    gameTypes: withSelected(
+    gameTypes: useless((r) => r.gameType) ? [] : withSelected(
       optionsFrom(without('gameType'), (r) => r.gameType, gameTypeLabel, byCountThenLabel),
       filter.gameType,
       gameTypeLabel
     ),
-    handicapSystems: withSelected(
+    handicapSystems: useless((r) => r.handicapSystem) ? [] : withSelected(
       optionsFrom(
         without('handicapSystem'),
         (r) => r.handicapSystem,
@@ -145,25 +170,25 @@ export function buildFilterOptions(
       filter.handicapSystem,
       systemLabel
     ),
-    opponents: withSelected(
+    opponents: useless((r) => r.opponentId) ? [] : withSelected(
       optionsFrom(without('opponentId'), (r) => r.opponentId, opponentLabel, byCountThenLabel),
       filter.opponentId,
       opponentLabel
     ),
     // Both ends relax together: the band is one control in two halves, and
     // counting "from" against the current "to" would hide half the scale.
-    handicaps: optionsFrom(
+    handicaps: useless((r) => r.opponentHandicap) ? [] : optionsFrom(
       without('opponentHandicapMin', 'opponentHandicapMax'),
       (r) => r.opponentHandicap,
       String,
       byValue
     ),
-    venues: withSelected(
+    venues: useless((r) => r.venueName) ? [] : withSelected(
       optionsFrom(without('venueName'), (r) => r.venueName, (v) => v, byCountThenLabel),
       filter.venueName,
       (v) => v
     ),
-    tables: withSelected(
+    tables: useless((r) => r.tableNumber) ? [] : withSelected(
       optionsFrom(without('tableNumber'), (r) => r.tableNumber, tableLabel, byValue),
       filter.tableNumber,
       tableLabel

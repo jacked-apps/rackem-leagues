@@ -59,7 +59,15 @@ describe('buildFilterOptions - unfiltered', () => {
 
   it('derives options from the data, never a fixed list', () => {
     const options = buildFilterOptions(HISTORY, NO_FILTER);
-    expect(options.gameTypes.map((o) => o.value)).toEqual(['eight_ball']);
+    // Only the systems this player has actually played under — no menu of
+    // every system the app supports.
+    expect(options.handicapSystems.map((o) => o.value).sort()).toEqual([
+      'fargo',
+      'points',
+    ]);
+    // And nothing at all for game type, since every game here is 8-ball: a
+    // dimension with one value is a fact, not a choice.
+    expect(options.gameTypes).toEqual([]);
   });
 });
 
@@ -152,5 +160,33 @@ describe('buildFilterOptions - the handicap band', () => {
     ];
     const options = buildFilterOptions(history, { ...NO_FILTER, handicapSystem: 'fargo' });
     expect(options.handicaps.map((o) => o.value)).toEqual([600]);
+  });
+});
+
+describe('buildFilterOptions - controls that could never help are omitted', () => {
+  it('offers nothing for a dimension with a single value across all history', () => {
+    // One venue is a fact about this player, not a choice they can make.
+    const history = [row({ venueName: 'Hall A' }), row({ venueName: 'Hall A' })];
+    expect(buildFilterOptions(history, NO_FILTER).venues).toEqual([]);
+  });
+
+  it('still offers a dimension narrowed to one option BY another filter', () => {
+    // Two game types exist overall, but only 9-ball is played under fargo.
+    // The control must stay available, or it appears to break as you filter —
+    // and there would be no way to widen back from it.
+    const history = [
+      row({ gameType: 'eight_ball', handicapSystem: 'points' }),
+      row({ gameType: 'nine_ball', handicapSystem: 'fargo' }),
+    ];
+    const options = buildFilterOptions(history, {
+      ...NO_FILTER,
+      handicapSystem: 'fargo',
+    });
+    expect(options.gameTypes.map((o) => o.value)).toEqual(['nine_ball']);
+  });
+
+  it('keeps a dimension available once it has two values anywhere in history', () => {
+    const history = [row({ tableNumber: 1 }), row({ tableNumber: 2 })];
+    expect(buildFilterOptions(history, NO_FILTER).tables).toHaveLength(2);
   });
 });

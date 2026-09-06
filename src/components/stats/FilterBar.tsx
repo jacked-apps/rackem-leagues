@@ -54,8 +54,11 @@ function FilterControl<T extends string | number>({
   onChange,
   parse,
 }: FilterControlProps<T>) {
-  // Nothing to choose between: one option is not a filter, it is a fact.
-  if (options.length < 2) return null;
+  // Hidden only when this dimension can never offer a choice — the option
+  // builder returns nothing at all in that case. A control narrowed to ONE
+  // option by the other filters stays visible: controls that appear and vanish
+  // as you filter read as broken, and you would lose the way to widen again.
+  if (options.length === 0 && value === null) return null;
 
   return (
     <div className="min-w-[10rem] flex-1">
