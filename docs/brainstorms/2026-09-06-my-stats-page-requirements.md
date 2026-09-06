@@ -66,13 +66,17 @@ to ask questions:
 - What's my record against 2-handicaps?
 - What's my record against handicaps 50% and over?
 - What's my record on table 2 at Butera's Billiards?
+- What's my record against Joe Smith?
 - How do my last 50 games compare with the 50 before that?
 
 The filters drive the summary as well as the list — "my record on table 2"
 means the counts recompute, not just the rows filter.
 
-**Not in scope for now:** looking up another player's stats. Same data would
-serve it, but this is a tool for examining your own game.
+**Head-to-head is in scope; other people's stats are not.** "What's my record
+against Joe Smith?" is still my record — my games, filtered by who was across
+the table, showing that list. What stays out is opening a page *about* Joe and
+reading his numbers. The line is whose record is being reported, not whose name
+appears on it.
 
 ## What the data already supports
 
@@ -91,11 +95,17 @@ Checked against the live schema on 2026-09-06.
 
 Two things worth noting rather than discovering later:
 
-**Handicap is stored per match, not looked up live.** `match_lineups` captures
-each player's handicap as it was on the night. That is the correct number for
-"my record against 2s" — a player who was a 2 last year and is a 4 now should
-count as a 2 in the games they played as one. Using their current handicap
-would quietly rewrite history.
+**Handicap is stored per match, not looked up live — and this is settled.**
+`match_lineups` captures each player's handicap as it was on the night, and
+that is the number the page uses. Ed, confirming it:
+
+> I may have been a 1 a month ago and am now a 2, but if I ask about me vs 2s
+> in the past it should just show what they were when I played them.
+
+So an opponent who was a 2 that night counts as a 2 forever, even after they
+move to a 1. Reading anyone's *current* handicap would silently rewrite the
+past every time a rating changed — the sort of wrong that never announces
+itself.
 
 **Table and venue live on the match, not the game.** So "table 2" filters whole
 nights, not individual racks. That is almost certainly what's wanted, but it
@@ -120,10 +130,23 @@ expecting rather than mistaking for a bug.
 3. **How far back does "my record" reach?** Everything I have ever played, or
    the current season by default with a way to widen it?
 
-4. **What does a player do with the answer?** If the page should land a
-   conclusion — "you are better than your record suggests" — that is a very
-   different page from one that lays out numbers and leaves the reading to
-   them. Worth deciding before layout.
+4. ~~**What does a player do with the answer?**~~ **Settled: the page reports,
+   it does not conclude.** "For now we go solely off of the records." No
+   "you're better than your record suggests" verdicts — show what happened and
+   let the player read it. Cheaper to build, and it cannot be wrong.
+
+## Working assumptions (say so if either is wrong)
+
+**"Games" means racks, not match nights.** The endings live on individual
+racks, so that is the unit the stats are made of, and "last 50 vs the previous
+50" reads as 50 racks — roughly four nights, which is a form check rather than
+a career arc. The game list still shows each rack in its context (opponent,
+venue, table, date).
+
+**"My record" reaches back over everything by default.** "How many games I have
+played, how many teams I have been on" is a career question, so the page starts
+wide and filters narrow it. A season filter is one of the filters, not the
+default frame.
 
 ## Not decided yet
 
