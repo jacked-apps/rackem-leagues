@@ -295,6 +295,9 @@ export const queryKeys = {
     playerView: (joinToken: string) =>
       [...queryKeys.brackets.all, 'player', joinToken] as const,
 
+    /** Tournaments the signed-in member is playing in */
+    mine: () => [...queryKeys.brackets.all, 'mine'] as const,
+
     /** The current organizer's list of brackets */
     byCreator: (memberId: string) =>
       [...queryKeys.brackets.all, 'creator', memberId] as const,

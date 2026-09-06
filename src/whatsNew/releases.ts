@@ -125,6 +125,10 @@ export const RELEASES: Release[] = [
         forOperators: true,
       },
       {
+        text: 'Tournaments you\u2019ve joined now show up on your Tournaments page, so you can get back to one without hunting down the QR code again.',
+        kind: 'fix',
+      },
+      {
         text: 'The paid tournament extras are switched on but nobody is being charged for them yet. Cards aren\u2019t checked and no money is taken \u2014 the price you see is a placeholder while we finish the payment side. Use them free in the meantime.',
         kind: 'improvement',
       },

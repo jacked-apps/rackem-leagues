@@ -185,6 +185,35 @@ export async function getBracketsByCreator(memberId: string): Promise<BracketRow
   return data ?? [];
 }
 
+/**
+ * A tournament the current member is PLAYING in (not running).
+ *
+ * Carries the join token because a player's home for a tournament is the join
+ * page — the live list of who's in, the rules, and the bracket once it exists.
+ */
+export interface MyTournament {
+  id: string;
+  name: string;
+  status: string;
+  join_token: string;
+  created_at: string;
+  /** 'hopper' = still waiting to be added; 'official' = in the tournament. */
+  entry_status: 'hopper' | 'official';
+}
+
+/**
+ * Tournaments the signed-in member is playing in, newest first.
+ *
+ * Excludes tournaments they created — the page lists those separately — and
+ * closed ones. Returns an empty list rather than throwing when nobody is signed
+ * in, so the page can render its own signed-out state.
+ */
+export async function getMyTournaments(): Promise<MyTournament[]> {
+  const { data, error } = await supabase.rpc('get_my_tournaments');
+  if (error) throw new Error(`Failed to load your tournaments: ${error.message}`);
+  return (data as MyTournament[] | null) ?? [];
+}
+
 /** One participant in the public share payload (names only — no member_id). */
 export interface BracketShareParticipant {
   id: string;

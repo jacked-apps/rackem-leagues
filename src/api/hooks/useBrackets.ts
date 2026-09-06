@@ -16,6 +16,7 @@ import {
   getBracketHopper,
   getBracketRoster,
   getBracketPlayerView,
+  getMyTournaments,
 } from '../queries/brackets';
 import {
   createBracket,
@@ -70,6 +71,21 @@ export function useBracketShare(shareToken: string | undefined) {
     staleTime: 0,
     refetchInterval: (query) =>
       query.state.data?.bracket?.status === 'live' ? 15_000 : false,
+  });
+}
+
+/**
+ * Tournaments the signed-in member is PLAYING in.
+ *
+ * Enabled only once we know who they are: the RPC returns an empty list for an
+ * anonymous caller, and fetching that would just cache an empty answer against
+ * the moment before the session resolved.
+ */
+export function useMyTournaments(memberId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.brackets.mine(),
+    queryFn: () => getMyTournaments(),
+    enabled: !!memberId,
   });
 }
 
