@@ -19,6 +19,7 @@ import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useOrganizations } from '@/api/hooks/useOrganizations';
 import { useUnreadMessageCount } from '@/api/hooks/useMessages';
 import { usePendingJoinRequestCount } from '@/api/hooks/usePendingJoinRequestCount';
+import { useHasUnseenWhatsNew } from '@/whatsNew/useWhatsNewSeen';
 import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
 import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
@@ -152,6 +153,7 @@ function SidebarPlayerSection({
   const messagesLabel = unreadCount > 0 ? `Messages (${unreadCount})` : 'Messages';
   // Doorbell: pending join requests for teams this user can approve.
   const joinRequestCount = usePendingJoinRequestCount();
+  const hasUnseenWhatsNew = useHasUnseenWhatsNew();
   return (
     <ul className="space-y-1">
       <SidebarLink to="/my-teams" label="My Teams" />
@@ -161,6 +163,12 @@ function SidebarPlayerSection({
       <SidebarLink to="/stats" label="Stats" />
       <SidebarLink to="/rules" label="Rules" />
       <SidebarLink to="/learn" label="Learn" />
+      {/* Marker is the WORD "New", not a coloured dot — it has to read without
+          relying on colour. */}
+      <SidebarLink
+        to="/whats-new"
+        label={hasUnseenWhatsNew ? "What's New (New)" : "What's New"}
+      />
       <SidebarLink to="/messages" label={messagesLabel} />
       {/* No "Profile" link — the name/avatar above already opens /profile.
           The reclaimed slot holds the Tournaments side tool. */}

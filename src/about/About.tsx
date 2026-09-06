@@ -95,20 +95,36 @@ export const About: React.FC = () => {
               <span className="mr-2">•</span>
               <span><strong>Season Roll-Forward &amp; Captain Re-Up:</strong> Launch a new season from a previous one in a few clicks—rosters and settings carry forward, and captains can re-up their own teams</span>
             </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Push Notifications:</strong> Get a message on your phone even when the app is closed, with controls that respect your evening—quiet hours, a per-conversation-type default, and a per-chat setting. Busy group chats notify once and then hold off for a set stretch, so a lively team chat doesn&apos;t become a buzzing phone</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Tournament Brackets:</strong> Run a single or double elimination bracket for a bar night or side event—add names, tap winners, and share a live read-only link so anyone can follow along. Free to use, no league required</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>House Rules:</strong> Add your own rules on top of the official rulesets—pick from a common list or write your own, at the organization or league level, so &ldquo;scratch on the 8 is a loss&rdquo; is written down instead of argued about</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>League Finances:</strong> Track annual dues across your roster at a glance, and work out prize distribution with a payout calculator—you stay in control of fees, expenses, and how the pot is split</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>Operator Scoring &amp; Corrections:</strong> Enter a match that was played on paper, and reopen and correct a finished match when something was recorded wrong—with the same handicaps and scoring the live flow uses</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">•</span>
+              <span><strong>CSI / FargoRate Results Sheet:</strong> Print a match laid out the way LMS wants it, and tick off which matches you&apos;ve already entered—so a few weeks&apos; backlog doesn&apos;t turn into guesswork about where you left off</span>
+            </li>
           </ul>
         </section>
 
         <section>
           <h2 className="text-2xl font-semibold mb-3">Coming Soon</h2>
           <ul className="space-y-2 text-foreground">
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>House Rules Management:</strong> Add custom house rules to official rulesets—choose from our list or create your own (scratch on 8 is a loss, magic rack usage, golden break only counts in specific pockets, etc.)</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Payout Calculator:</strong> Assists in determining prize pool income and distribution—you control payouts, fees, expenses, and all financial settings</span>
-            </li>
             <li className="flex items-start">
               <span className="mr-2">•</span>
               <span><strong>Fully Customizable Systems:</strong> Tailor handicaps, scoring, and point distribution down to the detail—choose from time-tested systems or build your own to your exact specifications</span>

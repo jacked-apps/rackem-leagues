@@ -39,20 +39,26 @@ export const PASSWORDLESS_SIGN_IN_ENABLED =
  */
 export const EMAIL_INVITES_ENABLED = import.meta.env.VITE_EMAIL_INVITES === 'true';
 
-/**
- * Message push notifications (Web Push).
- *
- * LAUNCH GATE: enabled by default in local dev (`import.meta.env.DEV`); OFF in a
- * production build unless `VITE_PUSH_NOTIFICATIONS === 'true'`. The client side
- * (subscribe flow + UI) is complete, but nothing SENDS a push until the
- * dispatcher edge function + trigger ship (Units 7–8). Until then the two
- * user-facing entry points — the first-run onboarding prompt and the Settings
- * toggle — are hidden in production so users can't subscribe to a channel that
- * can't deliver. Set `VITE_PUSH_NOTIFICATIONS=true` on staging to review it, and
- * flip production on once end-to-end delivery is verified. See LIST_FOR_ED.md.
- */
-export const PUSH_NOTIFICATIONS_ENABLED =
-  import.meta.env.VITE_PUSH_NOTIFICATIONS === 'true' || import.meta.env.DEV;
+// Message push notifications shipped un-gated on 2026-09-05. The old
+// `PUSH_NOTIFICATIONS_ENABLED` flag existed because the client could subscribe
+// before anything could SEND — subscribing to a dead channel. That's no longer
+// true: dispatcher, trigger, suppress-if-viewing, quiet hours, per-type defaults
+// and per-chat controls are all in place and verified on staging.
+//
+// Removed rather than left permanently true: a flag that must be ON in every
+// environment is only a way to lose the feature when someone forgets an env var
+// (which is exactly how push stayed invisible on staging for 8 days).
+//
+// What push DOES still depend on, per environment — see
+// docs/ops/push-notifications-secrets.md:
+//   - VITE_VAPID_PUBLIC_KEY at BUILD time (missing ⇒ subscribe fails silently)
+//   - VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT /
+//     DISPATCH_SHARED_SECRET as Supabase function secrets
+//   - a `push_dispatch_config` row pointing at that env's dispatcher URL, with
+//     a matching shared secret (empty secret ⇒ the trigger skips, silently)
+//
+// And `push_type_policy` still decides WHICH conversation kinds push at all.
+// That's a deliberate per-environment switch, not a gate on the feature.
 
 // The tournament bracket tool (Free Tier v1) shipped un-gated: it's the free
 // product, complete and tested, so it's live in every environment. Its old
