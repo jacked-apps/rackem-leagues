@@ -173,26 +173,6 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
-- **Message Push Notifications (client side, Units 1–6)** — branch
-  `feat/message-push-notifications`. The subscribe flow + UI are done, but nothing
-  SENDS a push yet (the dispatcher edge function + DB trigger are Units 7–8, a
-  separate follow-up PR). Gated by the `PUSH_NOTIFICATIONS_ENABLED` flag in
-  `src/config/featureFlags.ts` (on in dev, OFF in production unless
-  `VITE_PUSH_NOTIFICATIONS=true`). Both user-facing entry points are gated with it:
-  the first-run onboarding prompt (`src/pages/Messages.tsx` → `showPushOnboarding`)
-  AND the Settings toggle (`src/components/messages/MessageSettingsModal.tsx` →
-  Notifications section; falls back to "Coming soon" when off).
-  Units 7–8 (dispatcher + trigger) are done too — PR #255, stacked on this one.
-  **Staging is auto-enabled on merge:** `deploy-staging.yml` now sets
-  `VITE_PUSH_NOTIFICATIONS=true`, bakes in the public key, and deploys the edge
-  function. The only manual staging step is the **one-time secret setup** (GitHub
-  `staging` env `VITE_VAPID_PUBLIC_KEY`; Supabase function secrets; one
-  `push_dispatch_config` SQL UPDATE) — see the "Staging setup (one-time)" section
-  in `docs/ops/push-notifications-secrets.md`. After that, test on a phone via the
-  staging HTTPS URL (iOS: Add to Home Screen first).
-  **Do NOT un-gate production** until a real end-to-end push is verified on staging —
-  then set `VITE_PUSH_NOTIFICATIONS=true` for the production build + the prod Supabase
-  secrets + `push_dispatch_config`, and remove this entry.
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
 commit. The half-gated bug that prompted it: the "Score a Match" button +
