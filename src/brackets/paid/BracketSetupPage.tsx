@@ -33,6 +33,7 @@ import { HopperView } from './HopperView';
 import { StartTournamentPanel } from './StartTournamentPanel';
 import { formatPrice, hasPremiumFeature, totalPriceCents } from './premiumFeatures';
 import { joinUrl } from './joinUrl';
+import { copyText } from '@/utils/clipboard';
 
 export function BracketSetupPage() {
   const { bracketId } = useParams<{ bracketId: string }>();
@@ -175,13 +176,13 @@ async function copyJoinLink(joinToken: string | null): Promise<void> {
     toast.error('This tournament has no join link.');
     return;
   }
-  const url = joinUrl(joinToken);
-  try {
-    await navigator.clipboard.writeText(url);
+  if (await copyText(joinUrl(joinToken))) {
     toast.success('Join link copied — players who open it are added to the waiting room.');
-  } catch {
-    toast.error('Could not copy — link: ' + url);
+    return;
   }
+  // Every copy route failed. A URL in a toast can't be selected, so send them
+  // to the QR page, which prints the link as text they can read out or type.
+  toast.error('Could not copy — open the QR code page to read the link.');
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

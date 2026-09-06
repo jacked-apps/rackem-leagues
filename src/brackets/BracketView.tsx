@@ -35,6 +35,7 @@ import { buildBracketView, championName } from './bracketViewModel';
 import { BracketTree } from './BracketTree';
 import { EntryFeePanel } from './paid/EntryFeePanel';
 import { hasPremiumFeature } from './paid/premiumFeatures';
+import { copyText } from '@/utils/clipboard';
 import { usesHopperSetup } from './paid/bracketDestination';
 import { BracketLegend } from './BracketLegend';
 import { useBracketRealtime } from './useBracketRealtime';
@@ -252,12 +253,11 @@ export function BracketView() {
 /** Copy the public share link for this bracket to the clipboard. */
 async function copyShareLink(shareToken: string): Promise<void> {
   const url = `${window.location.origin}/brackets/share/${shareToken}`;
-  try {
-    await navigator.clipboard.writeText(url);
+  if (await copyText(url)) {
     toast.success('Share link copied.');
-  } catch {
-    toast.error('Could not copy — link: ' + url);
+    return;
   }
+  toast.error('Could not copy the share link.');
 }
 
 /** Look up the tapped participant's display name across all sides. */
