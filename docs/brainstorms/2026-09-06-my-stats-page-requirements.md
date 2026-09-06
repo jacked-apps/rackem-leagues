@@ -78,6 +78,54 @@ the table, showing that list. What stays out is opening a page *about* Joe and
 reading his numbers. The line is whose record is being reported, not whose name
 appears on it.
 
+## Three handicap systems, and why the number alone isn't enough
+
+There are three today, all stored as plain numbers in the same column:
+
+| `handicap_type` | Range | Used by |
+|---|---|---|
+| `points` | −2 to +2 | BCA 3v3 |
+| `percentage` | 0–100 (win %) | BCA 5v5 |
+| `fargo` | ~100–850 | Fargo 5v5 |
+
+They *look* separable by magnitude — a 2% win rate and a Fargo of 100 are both
+so bad as to be practically impossible, so a "2" is obviously a points handicap.
+**We are not doing that.** Ed's requirement:
+
+> There should be somehow in the record to see what handicaps those games are
+> using... this is important as we may add more handicap systems and again
+> these stats should be distinguishable.
+
+Guessing the system from the number's range is the kind of rule that works
+right up until a fourth system overlaps an existing one, and then it is wrong
+silently and retroactively across every stat on the page. The system has to be
+read, not inferred.
+
+**It already is recorded.** `matches.system_snapshot` is a frozen copy of the
+league's resolved configuration, written when the match starts, and it carries
+`handicap_type`. So every match says which system it was played under, and it
+says so as of that night — the same freeze-at-the-time principle as the
+handicap values themselves, which is exactly right: a league that switches from
+percentage to Fargo does not retroactively reinterpret its old seasons.
+
+This also satisfies the extensibility requirement for free. A fourth system is
+a new `handicap_type` string; nothing on the stats page needs teaching about
+its number range.
+
+**Two consequences for the page:**
+
+- **Handicap filters are scoped to a system.** "Against 2s" is only meaningful
+  once you know you mean points-handicap 2s. If a player has games under more
+  than one system, the page needs a system filter — which is Ed's "a way to
+  filter for which handicap I play if there are more than one."
+- **Legacy matches may have no snapshot.** The column is NULL for matches that
+  predate it. There is a `populateMatchSnapshotIfNeeded` backfill used
+  elsewhere, but it fills from CURRENT league config — safe for a match being
+  played now, wrong for an old one if the league has changed system since. For
+  the stats page the honest treatment is to show those games as system-unknown
+  rather than assume; how many are affected in production is worth checking
+  before deciding.
+
 ## What the data already supports
 
 Checked against the live schema on 2026-09-06.
@@ -91,6 +139,8 @@ Checked against the live schema on 2026-09-06.
 | What table | Yes | `matches.assigned_table_number` |
 | Teams I've been on | Yes | `team_players` (team + season) |
 | Opponent's handicap **at the time** | Yes | `match_lineups.player{1..5}_handicap`, joined via `match_games.home_position` / `away_position` |
+| Which handicap **system** that match used | Yes | `matches.system_snapshot ->> 'handicap_type'` (frozen at match start; NULL on legacy matches) |
+| Head-to-head vs one opponent | Yes | the other player id on the game row |
 | Recent form vs earlier | Yes | order games by match date |
 
 Two things worth noting rather than discovering later:
@@ -118,10 +168,8 @@ expecting rather than mistaking for a bug.
 
 ## Open questions
 
-1. **"Handicaps 50% and over" — what does 50% mean here?** Handicaps are stored
-   as plain numbers (2, 3, 4…), so a percentage is something else: the top half
-   of the handicap range? A percentile against the league? A different system
-   entirely? This one changes the filter design and I'd rather not guess.
+1. ~~**"Handicaps 50% and over" — what does 50% mean?**~~ **Answered: it is a
+   different handicap SYSTEM.** See "Three handicap systems" below.
 
 2. **Does "game" mean a rack or a match night?** It matters a lot for "last 50
    vs the 50 before": 50 racks is about four nights, 50 match nights is a
