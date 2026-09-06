@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useLocation, useParams, Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +32,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 export function JoinHopperPage() {
   const { joinToken } = useParams<{ joinToken: string }>();
+  const location = useLocation();
   const { data: member, isLoading: memberLoading } = useCurrentMember();
   const join = useJoinHopper();
   const attempted = useRef(false);
@@ -67,7 +68,15 @@ export function JoinHopperPage() {
             Sign in (or create a free account) to add yourself to this tournament.
           </p>
           <Button asChild loadingText="none">
-            <Link to="/login">Sign in</Link>
+            {/*
+              Carry the join intent through sign-in. Without this the scanner
+              signs in, lands on the dashboard, and never joins — they'd have to
+              find and scan the code a second time. Login validates the value
+              with getSafeRedirectPath, so only a same-origin path is honored.
+            */}
+            <Link to={`/login?redirect=${encodeURIComponent(location.pathname)}`}>
+              Sign in
+            </Link>
           </Button>
         </CardContent>
       </Shell>
