@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import pkg from './package.json';
 
 /**
  * Vitest config.
@@ -19,6 +20,13 @@ import path from 'path';
  * sequential-vs-parallel scheduling per project transparently.
  */
 export default defineConfig({
+  // Mirrors the `define` in vite.config.ts. Without it `__APP_VERSION__` is
+  // simply undefined under vitest, so ANY test that renders a component
+  // referencing it dies with "__APP_VERSION__ is not defined" — which is why
+  // WhatsNewPage had no render test until now. Kept in step with vite.config.ts.
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   plugins: [react()],
   test: {
     coverage: {

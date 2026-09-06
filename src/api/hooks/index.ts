@@ -255,6 +255,12 @@ export {
   useUpdateMatch,
 } from './useMatchMutations';
 
+// LMS results-entry tracking
+export {
+  useSetMatchLmsEntered,
+  type SetMatchLmsEnteredParams,
+} from './useLmsEntryMutations';
+
 // Member mutations
 export {
   useUpdateProfanityFilter,

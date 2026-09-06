@@ -25,7 +25,12 @@ import { toast } from 'sonner';
 
 interface NewMessageModalProps {
   onClose: () => void;
-  onCreateConversation: (userIds: string[], groupName?: string) => void;
+  /**
+   * Create the conversation. RETURN the promise if async — the Button reads it
+   * to disable itself while the request is in flight, which is what stops a
+   * double-tap creating two conversations.
+   */
+  onCreateConversation: (userIds: string[], groupName?: string) => unknown;
   currentUserId: string;
 }
 
@@ -94,15 +99,16 @@ export function NewMessageModal({
     if (selectedUserIds.length === 0) return;
 
     if (selectedUserIds.length === 1) {
-      // Direct message - no group name needed
-      onCreateConversation(selectedUserIds);
+      // Direct message - no group name needed. Returned so the Button can
+      // track it and block a second click.
+      return onCreateConversation(selectedUserIds);
     } else {
       // Group conversation - group name required
       if (!groupName.trim()) {
         toast.error('Please enter a group name');
         return;
       }
-      onCreateConversation(selectedUserIds, groupName);
+      return onCreateConversation(selectedUserIds, groupName);
     }
   };
 

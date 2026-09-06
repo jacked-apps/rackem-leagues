@@ -33,6 +33,8 @@ import { ForgotPassword } from '../login/ForgotPassword';
 import { ResetPassword } from '../login/ResetPassword';
 import { EmailConfirmation } from '../login/EmailConfirmation';
 import { About } from '../about/About';
+import WhatsNewPage from '../whatsNew/WhatsNewPage';
+import { useShowWhatsNewAfterUpdate } from '../whatsNew/useShowWhatsNewAfterUpdate';
 import { Pricing } from '../about/Pricing';
 import { PrivacyPolicy } from '../about/PrivacyPolicy';
 import { NewPlayerForm } from '../newPlayer/NewPlayerForm';
@@ -164,6 +166,10 @@ function withDeveloper(element: React.ReactNode) {
  * This is needed for createBrowserRouter to work with our provider structure
  */
 export function RootLayout() {
+  // If the user ticked "Take me to What's New" before applying an update, this
+  // is where that lands after the reload — inside the router, so it can
+  // navigate. See src/whatsNew/useShowWhatsNewAfterUpdate.ts
+  useShowWhatsNewAfterUpdate();
   return <Outlet />;
 }
 
@@ -179,6 +185,11 @@ export const router = createBrowserRouter([
       // === Public Routes ===
       { index: true, element: <Home /> },
       { path: 'about', element: <About /> },
+      // What's New — public, so someone deciding whether to sign up can see a
+      // record of steady work. One component serves both: bare shows the
+      // newest, /:version shows that one.
+      { path: 'whats-new', element: <WhatsNewPage /> },
+      { path: 'whats-new/:version', element: <WhatsNewPage /> },
       { path: 'pricing', element: <Pricing /> },
       { path: 'privacy', element: <PrivacyPolicy /> },
       { path: 'login', element: <Login /> },

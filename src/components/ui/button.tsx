@@ -61,11 +61,30 @@ const buttonVariants = cva(
 );
 
 /** Base props shared by all button variants */
-type ButtonBaseProps = React.ComponentProps<'button'> & {
+type ButtonBaseProps = Omit<React.ComponentProps<'button'>, 'onClick'> & {
   asChild?: boolean;
   message?: string;
-  /** Whether the button is currently in loading state */
+  /**
+   * Force the loading state.
+   *
+   * Usually unnecessary: if `onClick` returns a promise the button tracks it
+   * automatically. Pass this only when the pending state lives somewhere else —
+   * a TanStack `isPending`, or a parent coordinating several controls.
+   *
+   * When provided it WINS, so existing call sites behave exactly as before.
+   */
   isLoading?: boolean;
+  /**
+   * Click handler. May be async — if it returns a promise, the button shows
+   * `loadingText`, disables itself, and ignores further clicks until it
+   * settles.
+   *
+   * Returns `unknown` rather than `void | Promise<unknown>` deliberately. Plenty
+   * of existing handlers are expressions like `() => cond && doThing()`, which
+   * return `false | void`; a narrower type rejects them for no benefit, since
+   * what actually matters is the runtime check for a thenable.
+   */
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => unknown;
 };
 
 /** Props for action variants (default, destructive, warning) - loadingText is REQUIRED */
@@ -98,8 +117,28 @@ type ButtonProps = ActionButtonProps | NonActionButtonProps;
  * @param message - Optional error/info message to display below the button.
  * @param asChild - If true, renders as a Slot for composition.
  */
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant, size, asChild = false, message, loadingText, isLoading = false, disabled, children, ...props }, ref) => {
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant, size, asChild = false, message, loadingText, isLoading, disabled, children, onClick, ...props }, ref) => {
   const Comp = asChild ? Slot : 'button';
+
+  // Tracks an async onClick that hasn't settled yet.
+  //
+  // This exists because `loadingText` alone did nothing — the button only
+  // spun and disabled when a caller ALSO passed `isLoading`, and across 200+
+  // call sites plenty didn't. Those buttons stayed live for the whole request,
+  // so a double-tap fired the action twice. That produced two duplicate team
+  // chats and a PWA update button that looked dead, both found by a user rather
+  // than a test (2026-09-05).
+  //
+  // Making the button track its own promise fixes every call site at once and
+  // means a new one can't reintroduce it by forgetting a prop.
+  const [isPending, setIsPending] = React.useState(false);
+  const mounted = React.useRef(true);
+  React.useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   // Action variants (default, destructive, warning) require explicit loadingText
   // Other variants (outline, secondary, ghost, link) default to "none"
@@ -118,11 +157,43 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, va
     );
   }
 
-  // Determine if loading behavior is enabled
+  // Determine if loading behavior is enabled. `loadingText="none"` is a COMPLETE
+  // opt-out: no spinner, no disabling, and no promise tracking either — a Cancel
+  // or Close button shouldn't change behaviour just because its handler happens
+  // to be async.
   const hasLoadingBehavior = effectiveLoadingText !== 'none' && effectiveLoadingText !== undefined;
 
-  // Show loading state only if loading behavior is enabled AND isLoading is true
-  const showLoading = hasLoadingBehavior && isLoading;
+  // An explicit isLoading wins, so existing call sites are untouched.
+  const busy = isLoading ?? isPending;
+  const showLoading = hasLoadingBehavior && busy;
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    // Re-entry guard. `disabled` already blocks the pointer, but a keyboard
+    // Enter-repeat or a programmatic click can still arrive.
+    if (showLoading) return;
+    const result = onClick?.(event);
+    if (!hasLoadingBehavior) return;
+    if (typeof (result as Promise<unknown>)?.then !== 'function') return;
+
+    setIsPending(true);
+    // The handler may navigate or unmount this button; don't set state on a
+    // component that's gone.
+    const settle = () => {
+      if (mounted.current) setIsPending(false);
+    };
+    // Both branches handled explicitly rather than `.finally()`, which returns a
+    // promise that re-rejects — that produced an unhandled rejection for every
+    // failing handler, i.e. this wrapper added console noise that the call site
+    // never asked for.
+    //
+    // Reaching the rejection branch means the CALLER didn't catch it, so log
+    // rather than swallow: a silently-failed action that just re-enables its
+    // button is indistinguishable from one that did nothing.
+    (result as Promise<unknown>).then(settle, (error: unknown) => {
+      settle();
+      console.error('Button: onClick handler rejected', error);
+    });
+  };
 
   // Disable button when loading
   const isDisabled = disabled || showLoading;
@@ -134,6 +205,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, va
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         disabled={isDisabled}
+        onClick={handleClick}
         {...props}
       >
         {showLoading ? (
