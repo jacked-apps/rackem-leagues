@@ -284,6 +284,7 @@ function ScoreMatchBody() {
   const [breakFouled, setBreakFouled] = useState(false);
   const [winByForfeit, setWinByForfeit] = useState(false);
   const [runout, setRunout] = useState(false);
+  const [earlyEight, setEarlyEight] = useState(false);
   const [loserValue, setLoserValue] = useState<number | null>(null);
   const [winnerValue, setWinnerValue] = useState<number | null>(null);
 
@@ -296,6 +297,7 @@ function ScoreMatchBody() {
     breakFouled: boolean;
     runout: boolean;
     winByForfeit: boolean;
+    earlyEight: boolean;
     winnerValue: number | null;
     loserValue: number | null;
     isVacateRequest?: boolean; // True if this is a request to vacate (undo) the game
@@ -629,6 +631,7 @@ function ScoreMatchBody() {
         break_fouled: g.break_fouled,
         runout: g.runout,
         win_by_forfeit: g.win_by_forfeit,
+        early_eight: g.early_eight,
         winner_value: g.winner_value,
         loser_value: g.loser_value,
       })
@@ -1160,6 +1163,7 @@ function ScoreMatchBody() {
                 break_fouled: false,
                 runout: false,
                 win_by_forfeit: false,
+                early_eight: false,
                 winner_value: null,
                 loser_value: null,
               }}
@@ -1183,6 +1187,7 @@ function ScoreMatchBody() {
               break_fouled: peekGame.break_fouled,
               runout: peekGame.runout,
               win_by_forfeit: peekGame.win_by_forfeit,
+              early_eight: peekGame.early_eight,
               winner_value: peekGame.winner_value,
               loser_value: peekGame.loser_value,
             }}
@@ -1226,6 +1231,7 @@ function ScoreMatchBody() {
                   break_fouled: official.break_fouled,
                   runout: official.runout,
                   win_by_forfeit: official.win_by_forfeit,
+                  early_eight: official.early_eight,
                   winner_value: official.winner_value,
                   loser_value: official.loser_value,
                 }}
@@ -1270,6 +1276,7 @@ function ScoreMatchBody() {
               breakFouled: game.break_fouled,
               runout: game.runout,
               winByForfeit: game.win_by_forfeit,
+              earlyEight: game.early_eight,
               winnerValue: game.winner_value,
               loserValue: game.loser_value,
               isVacateRequest: true,
@@ -1298,6 +1305,7 @@ function ScoreMatchBody() {
         breakFouled={breakFouled}
         winByForfeit={winByForfeit}
         runout={runout}
+        earlyEight={earlyEight}
         loserValue={loserValue}
         winnerValue={winnerValue}
         loserPlayerName={loserPlayerName}
@@ -1312,6 +1320,7 @@ function ScoreMatchBody() {
         onBreakFouledChange={setBreakFouled}
         onWinByForfeitChange={setWinByForfeit}
         onRunoutChange={setRunout}
+        onEarlyEightChange={setEarlyEight}
         onLoserValueChange={setLoserValue}
         onWinnerValueChange={setWinnerValue}
         onCancel={() => {
@@ -1321,6 +1330,7 @@ function ScoreMatchBody() {
           setBreakFouled(false);
           setWinByForfeit(false);
           setRunout(false);
+          setEarlyEight(false);
           setLoserValue(null);
           setWinnerValue(null);
         }}
@@ -1347,10 +1357,11 @@ function ScoreMatchBody() {
                 setBreakFouled(false);
                 setWinByForfeit(false);
                 setRunout(false);
+                setEarlyEight(false);
                 setLoserValue(null);
                 setWinnerValue(null);
               },
-              { breakFouled, runout, winByForfeit, winnerValue, loserValue }
+              { breakFouled, runout, winByForfeit, earlyEight, winnerValue, loserValue }
             );
           }
         }}

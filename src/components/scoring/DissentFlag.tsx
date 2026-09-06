@@ -54,6 +54,7 @@ function formatExtras(r: ResultLike): string {
   if (r.break_fouled) parts.push('Break Fouled');
   if (r.runout) parts.push('Runout');
   if (r.win_by_forfeit) parts.push('Forfeit');
+  if (r.early_eight) parts.push('Early 8');
   return parts.join(', ');
 }
 

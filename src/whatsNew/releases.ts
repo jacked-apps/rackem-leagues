@@ -104,6 +104,17 @@ export const RELEASES: Release[] = [
   {
     version: UNRELEASED,
     date: null,
+    summary: 'Early 8s are now recorded on the scoring page',
+    entries: [
+      {
+        text: 'Scoring an 8-ball game now has an "Early 8" box. Tick it when the game ended because someone put the 8 down early. It goes on the record like a break and run does, so it can be counted later instead of just being remembered.',
+        kind: 'feature',
+      },
+    ],
+  },
+  {
+    version: '1.9.0',
+    date: '2026-09-06',
     summary:
       'Message notifications on your phone, tournament brackets, and an update button that works',
     entries: [

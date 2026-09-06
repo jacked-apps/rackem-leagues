@@ -280,6 +280,8 @@ export interface LoGameResult {
   breakFouled?: boolean;
   runout?: boolean;
   winByForfeit?: boolean;
+  /** The loser pocketed the 8 early. 8-ball only; see match_games.early_eight. */
+  earlyEight?: boolean;
   winnerValue?: number | null;
   loserValue?: number | null;
 }
@@ -353,6 +355,7 @@ export async function loScoreGame(params: LoScoreGameParams): Promise<void> {
       break_fouled: result.breakFouled ?? false,
       runout: result.runout ?? false,
       win_by_forfeit: result.winByForfeit ?? false,
+      early_eight: result.earlyEight ?? false,
       winner_value: result.winnerValue ?? null,
       loser_value: result.loserValue ?? null,
       // LO is both parties — fill both slots so the game counts.
@@ -578,6 +581,7 @@ function toConfirmationResult(r: LoGameResult): ConfirmationResult {
     breakFouled: r.breakFouled ?? false,
     runout: r.runout ?? false,
     winByForfeit: r.winByForfeit ?? false,
+    earlyEight: r.earlyEight ?? false,
     winnerValue: r.winnerValue ?? null,
     loserValue: r.loserValue ?? null,
   };
@@ -612,7 +616,7 @@ export async function loVacateGame(params: LoVacateGameParams): Promise<void> {
     .from('match_games')
     .select(
       'game_number, home_player_id, winner_team_id, winner_player_id, break_and_run, ' +
-        'golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+        'golden_break, break_fouled, runout, win_by_forfeit, early_eight, winner_value, loser_value'
     )
     .eq('id', gameId)
     .single();
@@ -630,6 +634,7 @@ export async function loVacateGame(params: LoVacateGameParams): Promise<void> {
     breakFouled: !!g.break_fouled,
     runout: !!g.runout,
     winByForfeit: !!g.win_by_forfeit,
+    earlyEight: !!g.early_eight,
     winnerValue: (g.winner_value as number | null) ?? null,
     loserValue: (g.loser_value as number | null) ?? null,
   };
@@ -662,6 +667,7 @@ export async function loVacateGame(params: LoVacateGameParams): Promise<void> {
       break_fouled: false,
       runout: false,
       win_by_forfeit: false,
+      early_eight: false,
       winner_value: null,
       loser_value: null,
       confirmed_by_home: null,
@@ -755,6 +761,7 @@ export async function loRestoreGame(params: LoRestoreGameParams): Promise<void> 
       break_fouled: snapshot.breakFouled ?? false,
       runout: snapshot.runout ?? false,
       win_by_forfeit: snapshot.winByForfeit ?? false,
+      early_eight: snapshot.earlyEight ?? false,
       winner_value: snapshot.winnerValue ?? null,
       loser_value: snapshot.loserValue ?? null,
       confirmed_by_home: loMemberId,

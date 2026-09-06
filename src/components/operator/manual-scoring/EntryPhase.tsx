@@ -64,6 +64,7 @@ const NO_EXTRAS = {
   goldenBreak: false,
   breakFouled: false,
   runout: false,
+  earlyEight: false,
   winnerValue: null as number | null,
   loserValue: null as number | null,
 };
@@ -131,6 +132,7 @@ export function EntryPhase(props: EntryPhaseProps) {
       goldenBreak: !!game.golden_break,
       breakFouled: !!game.break_fouled,
       runout: !!game.runout,
+      earlyEight: !!game.early_eight,
       winnerValue: game.winner_value ?? null,
       loserValue: game.loser_value ?? null,
     });
@@ -150,6 +152,7 @@ export function EntryPhase(props: EntryPhaseProps) {
           goldenBreak: extras.goldenBreak,
           breakFouled: extras.breakFouled,
           runout: extras.runout,
+          earlyEight: extras.earlyEight,
           winByForfeit: false,
           winnerValue: extras.winnerValue,
           loserValue: extras.loserValue,
@@ -232,6 +235,7 @@ export function EntryPhase(props: EntryPhaseProps) {
         pointsCalculatorParams={pointsCalculatorParams}
         breakFouled={extras.breakFouled}
         runout={extras.runout}
+        earlyEight={extras.earlyEight}
         winnerValue={extras.winnerValue}
         loserValue={extras.loserValue}
         loserPlayerName={pending?.loserPlayerName ?? null}
@@ -240,6 +244,17 @@ export function EntryPhase(props: EntryPhaseProps) {
         onGoldenBreakChange={(c) => setExtras((e) => ({ ...e, goldenBreak: c, breakAndRun: c ? false : e.breakAndRun }))}
         onBreakFouledChange={(c) => setExtras((e) => ({ ...e, breakFouled: c }))}
         onRunoutChange={(c) => setExtras((e) => ({ ...e, runout: c }))}
+        onEarlyEightChange={(c) =>
+          setExtras((e) => ({
+            ...e,
+            earlyEight: c,
+            // An early 8 is the loser ending the game, so nothing the winner
+            // did survives it. Same rule the live dialog enforces.
+            ...(c
+              ? { breakAndRun: false, goldenBreak: false, runout: false }
+              : {}),
+          }))
+        }
         onWinnerValueChange={(v) => setExtras((e) => ({ ...e, winnerValue: v }))}
         onLoserValueChange={(v) => setExtras((e) => ({ ...e, loserValue: v }))}
         onCancel={() => {

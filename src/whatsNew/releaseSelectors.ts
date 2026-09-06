@@ -93,7 +93,7 @@ function hasContent(release: Release): boolean {
  *
  * Skipping empty blocks matters immediately after a release: stamping opens a
  * fresh empty `unreleased` at the top of the list, so defaulting to "the first
- * entry" would greet everyone with a blank "In progress" page on exactly the
+ * entry" would greet everyone with a blank "Latest changes" page on exactly the
  * day they were told to come and look. The unreleased block IS shown once it
  * has entries, which is the normal state on dev and staging.
  *
