@@ -112,6 +112,32 @@ export const RELEASES: Release[] = [
         kind: 'feature',
       },
       {
+        text: 'Players can put themselves in your tournament. Print the QR code, stick it on the wall, and anyone who scans it is added to a waiting list you approve from. No account needed \u2014 they can just type a name.',
+        kind: 'feature',
+      },
+      {
+        text: 'Scan the code and you get the tournament\u2019s own page: who\u2019s in, who\u2019s still waiting, and what you\u2019re playing. It updates itself while you stand there, and the bracket appears on it once the organiser starts.',
+        kind: 'feature',
+      },
+      {
+        text: 'Everyone you\u2019ve run a tournament with is remembered, so next time they\u2019re one tap away instead of retyped \u2014 including the regulars who don\u2019t use the app. You can drop anyone from that list whenever you like.',
+        kind: 'feature',
+        forOperators: true,
+      },
+      {
+        text: 'Running a tournament, you can now search for a player by name or player number and add them, instead of retyping a name you know we already have.',
+        kind: 'feature',
+        forOperators: true,
+      },
+      {
+        text: 'Tournaments you\u2019ve joined now show up on your Tournaments page, so you can get back to one without hunting down the QR code again.',
+        kind: 'fix',
+      },
+      {
+        text: 'The paid tournament extras are switched on but nobody is being charged for them yet. Cards aren\u2019t checked and no money is taken \u2014 the price you see is a placeholder while we finish the payment side. Use them free in the meantime.',
+        kind: 'improvement',
+      },
+      {
         text: 'Messages can now reach your phone even when the app is closed. Tap the notification and it opens straight to that conversation.',
         kind: 'feature',
       },

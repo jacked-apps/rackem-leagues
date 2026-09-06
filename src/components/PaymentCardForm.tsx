@@ -3,6 +3,9 @@
  * Reusable payment card form with secure tokenization and validation
  */
 import React, { useState } from 'react';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Button } from './ui/button';
 import {
   formatCardNumber,
   formatExpiryDate,
@@ -13,7 +16,7 @@ import {
 /**
  * Payment card information interface
  */
-interface PaymentCardData {
+export interface PaymentCardData {
   paymentToken: string;
   cardLast4: string;
   cardBrand: string;
@@ -141,7 +144,7 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
       };
 
       onVerificationSuccess(cardData);
-    } catch (error) {
+    } catch {
       onVerificationError?.('Card verification failed. Please try again.');
     } finally {
       setIsVerifying(false);
@@ -191,80 +194,75 @@ export const PaymentCardForm: React.FC<PaymentCardFormProps> = ({
       {/* Payment Form */}
       <div className="bg-muted p-6 rounded-lg border">
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Card Number
-            </label>
+          <div className="space-y-1.5">
+            <Label htmlFor="pcf-card-number">Card Number</Label>
             <div className="relative">
-              <input
+              <Input
+                id="pcf-card-number"
                 type="text"
                 placeholder="1234 5678 9012 3456"
                 value={formData.cardNumber}
                 onChange={handleCardNumberChange}
-                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
                 maxLength={19}
                 disabled={loading || isVerifying}
               />
-              <div className="absolute right-3 top-2">
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
                 <span className="text-xs text-muted-foreground">VISA/MC/AMEX</span>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Expiry Date
-              </label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="pcf-expiry">Expiry Date</Label>
+              <Input
+                id="pcf-expiry"
                 type="text"
                 placeholder="MM/YY"
                 value={formData.expiryDate}
                 onChange={handleExpiryChange}
-                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
                 maxLength={5}
                 disabled={loading || isVerifying}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                CVV
-              </label>
-              <input
+            <div className="space-y-1.5">
+              <Label htmlFor="pcf-cvv">CVV</Label>
+              <Input
+                id="pcf-cvv"
                 type="text"
                 placeholder="123"
                 value={formData.cvv}
                 onChange={handleCvvChange}
-                className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
                 maxLength={4}
                 disabled={loading || isVerifying}
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1">
-              Billing ZIP Code
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="pcf-zip">Billing ZIP Code</Label>
+            <Input
+              id="pcf-zip"
               type="text"
               placeholder="12345"
               value={formData.billingZip}
               onChange={handleBillingZipChange}
-              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
               maxLength={10}
               disabled={loading || isVerifying}
             />
           </div>
 
           {/* Verify Button */}
-          <button
+          <Button
+            type="button"
+            className="w-full"
             onClick={handleVerifyCard}
             disabled={loading || isVerifying}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            isLoading={isVerifying}
+            loadingText="Verifying…"
           >
-            {isVerifying ? 'Verifying...' : verifyButtonText}
-          </button>
+            {verifyButtonText}
+          </Button>
         </div>
       </div>
     </div>

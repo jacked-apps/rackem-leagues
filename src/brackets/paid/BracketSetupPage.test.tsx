@@ -1,0 +1,365 @@
+/**
+ * @fileoverview Tests for BracketSetupPage — the paid tournament's setup screen.
+ *
+ * The behaviour that matters here is the Start hand-off: convert the hopper,
+ * start the bracket, and only THEN record the charge, so a failed start can
+ * never leave a charged-but-not-started tournament.
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderWithProviders, screen, fireEvent, waitFor, userEvent } from '@/test/utils';
+import type { HopperEntry } from '@/api/queries/brackets';
+
+const mocks = vi.hoisted(() => ({
+  navigate: vi.fn(),
+  bracket: vi.fn(),
+  hopper: vi.fn(),
+  finalize: vi.fn(),
+  start: vi.fn(),
+  charge: vi.fn(),
+  toastError: vi.fn(),
+}));
+
+vi.mock('react-router-dom', async (orig) => ({
+  ...(await orig<typeof import('react-router-dom')>()),
+  useNavigate: () => mocks.navigate,
+  useParams: () => ({ bracketId: 'b1' }),
+}));
+
+vi.mock('@/api/hooks/useBrackets', () => {
+  // Inline: a vi.mock factory is hoisted above any top-level const it would use.
+  const noopMutation = () => ({ mutateAsync: vi.fn(), isPending: false });
+  return {
+    useBracket: () => mocks.bracket(),
+    useBracketHopper: () => mocks.hopper(),
+    useBracketRoster: () => ({ data: [], isLoading: false, isError: false }),
+    useFinalizeHopper: () => ({ mutateAsync: mocks.finalize, isPending: false }),
+    useStartBracket: () => ({ mutateAsync: mocks.start, isPending: false }),
+    useChargeForStart: () => ({ mutateAsync: mocks.charge, isPending: false }),
+    useAdmitHopperEntry: noopMutation,
+    useSetHopperPaidStatus: noopMutation,
+    useEjectHopperEntry: noopMutation,
+    useAddRegisteredToHopper: noopMutation,
+    useAddWalkupToHopper: noopMutation,
+    useForgetRosterEntry: noopMutation,
+    useUpdateBracketSettings: noopMutation,
+  };
+});
+
+// A component test must not open a real websocket; the hook's own behavior is
+// covered where it matters (JoinHopperPage asserts it watches the hopper).
+vi.mock('../useBracketRealtime', () => ({ useBracketRealtime: vi.fn() }));
+
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: mocks.toastError, info: vi.fn() },
+}));
+
+import { BracketSetupPage } from './BracketSetupPage';
+
+function entry(over: Partial<HopperEntry>): HopperEntry {
+  return {
+    id: 'h1',
+    member_id: null,
+    display_name: 'Someone',
+    status: 'official',
+    paid_status: 'unpaid',
+    added_via: 'search',
+    seed: null,
+    created_at: '2026-09-06T00:00:00Z',
+    nickname: null,
+    first_name: null,
+    last_name: null,
+    system_player_number: null,
+    city: null,
+    state: null,
+    ...over,
+  };
+}
+
+/** A paid tournament sitting in setup; `over` tweaks the bracket row. */
+function setup(entries: HopperEntry[], over: Record<string, unknown> = {}) {
+  mocks.bracket.mockReturnValue({
+    data: {
+      bracket: {
+        id: 'b1',
+        name: 'Friday 9-Ball',
+        status: 'setup',
+        format: 'single_elimination',
+        grand_final_reset: true,
+        join_token: 'jt-1',
+        premium_features: ['real_players'],
+        ...over,
+      },
+      participants: [],
+      matches: [],
+    },
+    isLoading: false,
+    isError: false,
+  });
+  mocks.hopper.mockReturnValue({ data: entries, isLoading: false, isError: false });
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.finalize.mockResolvedValue(4);
+  mocks.start.mockResolvedValue(undefined);
+  mocks.charge.mockResolvedValue(undefined);
+});
+
+describe('BracketSetupPage', () => {
+  it('converts, starts, then charges — in that order — and goes to the bracket', async () => {
+    const order: string[] = [];
+    mocks.finalize.mockImplementation(async () => {
+      order.push('finalize');
+      return 4;
+    });
+    mocks.start.mockImplementation(async () => {
+      order.push('start');
+    });
+    mocks.charge.mockImplementation(async () => {
+      order.push('charge');
+    });
+
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay .* and start/i }));
+
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/brackets/b1'));
+    expect(order).toEqual(['finalize', 'start', 'charge']);
+    expect(mocks.finalize).toHaveBeenCalledWith(false);
+    expect(mocks.start).toHaveBeenCalledWith(
+      expect.objectContaining({ bracketId: 'b1', participantCount: 4 })
+    );
+  });
+
+  it('warns rather than silently leaving waiting players out', async () => {
+    setup([
+      entry({ id: 'a' }),
+      entry({ id: 'b' }),
+      entry({ id: 'c', status: 'hopper', paid_status: null }),
+    ]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+
+    // Nothing is committed until the organizer picks.
+    expect(await screen.findByRole('alertdialog')).toBeTruthy();
+    expect(screen.getByText(/1 player is still waiting/i)).toBeTruthy();
+    expect(mocks.finalize).not.toHaveBeenCalled();
+  });
+
+  it('sweeps the waiting players in when the warning says to', async () => {
+    setup([
+      entry({ id: 'a' }),
+      entry({ id: 'b' }),
+      entry({ id: 'c', status: 'hopper', paid_status: null }),
+    ]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Add them$/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay .* and start/i }));
+
+    await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(true));
+  });
+
+  it('starts without them when the warning says to', async () => {
+    setup([
+      entry({ id: 'a' }),
+      entry({ id: 'b' }),
+      entry({ id: 'c', status: 'hopper', paid_status: null }),
+    ]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Start without them/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay .* and start/i }));
+
+    await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(false));
+  });
+
+  it('does not warn when nobody is waiting', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+
+    // Straight to the final confirm — no waiting-list question to ask. Match the
+    // warning's own title, since the waiting-list checkbox label also contains
+    // the words "still waiting".
+    expect(await screen.findByRole('alertdialog')).toBeTruthy();
+    expect(screen.queryByText(/player(s)? (is|are) still waiting/i)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Pay .* and start/i }));
+    await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(false));
+  });
+
+  it('charges for every feature the tournament bought, not just sign-up', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })], {
+      premium_features: ['real_players', 'payment_tracker'],
+    });
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start & pay $2.00' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay \$2\.00 and start/i }));
+
+    await waitFor(() => expect(mocks.charge).toHaveBeenCalled());
+    expect(mocks.charge).toHaveBeenCalledWith({ bracketId: 'b1', amountCents: 200 });
+  });
+
+  it('never charges when the start itself fails', async () => {
+    mocks.start.mockRejectedValue(new Error('Add at least 2 players before starting'));
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay .* and start/i }));
+
+    await waitFor(() =>
+      expect(mocks.toastError).toHaveBeenCalledWith('Add at least 2 players before starting')
+    );
+    expect(mocks.charge).not.toHaveBeenCalled();
+    expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+
+  it('sends an already-started tournament to its bracket instead of the setup screen', () => {
+    setup([], { status: 'live' });
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByText(/already started/i)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Start/ })).toBeNull();
+  });
+
+  it('keeps the entry-fee tracker out of a tournament that did not buy it', () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b', status: 'hopper', paid_status: null })], {
+      premium_features: ['real_players'],
+    });
+    renderWithProviders(<BracketSetupPage />);
+    expect(screen.queryByText('Unpaid')).toBeNull();
+  });
+
+  it('brings it in when the tournament did buy it', () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b', status: 'hopper', paid_status: null })], {
+      premium_features: ['real_players', 'payment_tracker'],
+    });
+    renderWithProviders(<BracketSetupPage />);
+    expect(screen.getByText('Unpaid')).toBeTruthy();
+  });
+
+  it('shows no hopper for a tournament that never bought sign-up', () => {
+    setup([], { premium_features: ['payment_tracker'] });
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByText(/doesn't use player sign-up/i)).toBeTruthy();
+    expect(screen.queryByLabelText('Add a player')).toBeNull();
+  });
+
+  it('shows no hopper for a free tournament', () => {
+    setup([], { premium_features: [] });
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByText(/doesn't use player sign-up/i)).toBeTruthy();
+  });
+
+  it('offers both tabs', () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByRole('tab', { name: 'Info' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Players' })).toBeTruthy();
+  });
+
+  it('keeps Start reachable from every tab, not buried inside one', async () => {
+    const user = userEvent.setup();
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByRole('button', { name: /Start & pay/ })).toBeTruthy();
+
+    // Still there after switching tabs — it lives outside them.
+    await user.click(screen.getByRole('tab', { name: 'Info' }));
+    expect(await screen.findByLabelText('Tournament name')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Start & pay/ })).toBeTruthy();
+  });
+
+  it('lets the organizer edit the tournament from the Info tab', async () => {
+    const user = userEvent.setup();
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    await user.click(screen.getByRole('tab', { name: 'Info' }));
+    expect(await screen.findByLabelText('Tournament name')).toHaveValue('Friday 9-Ball');
+    expect(screen.getByLabelText('Game')).toBeTruthy();
+    expect(screen.getByLabelText('Format')).toBeTruthy();
+  });
+
+  it('asks for a final confirmation before drawing the bracket or charging', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+
+    // Nothing is committed until the last tap.
+    expect(await screen.findByText(/start with 2 players\?/i)).toBeTruthy();
+    expect(mocks.finalize).not.toHaveBeenCalled();
+    expect(mocks.charge).not.toHaveBeenCalled();
+  });
+
+  it('names the amount on the confirming button, not a bare "Confirm"', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })], {
+      premium_features: ['real_players', 'payment_tracker'],
+    });
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    expect(
+      await screen.findByRole('button', { name: 'Pay $2.00 and start' })
+    ).toBeTruthy();
+  });
+
+  it('confirms the FINAL count, after the waiting-list decision', async () => {
+    setup([
+      entry({ id: 'a' }),
+      entry({ id: 'b' }),
+      entry({ id: 'c', status: 'hopper', paid_status: null }),
+    ]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^Add them$/i }));
+
+    // 2 official + the 1 just swept in — not the 2 shown a moment ago.
+    expect(await screen.findByText(/start with 3 players\?/i)).toBeTruthy();
+  });
+
+  it('backing out of the confirm starts nothing', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Go back/i }));
+
+    expect(mocks.finalize).not.toHaveBeenCalled();
+    expect(mocks.charge).not.toHaveBeenCalled();
+  });
+
+  it('flags starting without waiting players as the cautionary choice', async () => {
+    setup([
+      entry({ id: 'a' }),
+      entry({ id: 'b' }),
+      entry({ id: 'c', status: 'hopper', paid_status: null }),
+    ]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+
+    // Warning, not destructive: it's allowed, it just has a consequence. And
+    // adding them keeps the ordinary primary colour.
+    const without = await screen.findByRole('button', { name: /Start without them/i });
+    expect(without.className).toContain('bg-warning');
+    expect(
+      screen.getByRole('button', { name: /^Add them$/i }).className
+    ).toContain('bg-primary');
+  });
+});

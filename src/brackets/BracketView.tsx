@@ -33,6 +33,10 @@ import {
 } from '@/api/hooks/useBrackets';
 import { buildBracketView, championName } from './bracketViewModel';
 import { BracketTree } from './BracketTree';
+import { EntryFeePanel } from './paid/EntryFeePanel';
+import { hasPremiumFeature } from './paid/premiumFeatures';
+import { copyText } from '@/utils/clipboard';
+import { usesHopperSetup } from './paid/bracketDestination';
 import { BracketLegend } from './BracketLegend';
 import { useBracketRealtime } from './useBracketRealtime';
 
@@ -67,6 +71,19 @@ export function BracketView() {
   if (isError || !data || !view) return <Centered>Tournament not found.</Centered>;
 
   const { bracket } = data;
+
+  // Reached by an old link or a back button: this tournament hasn't started and
+  // its players are still gathering, so the bracket here would be empty.
+  if (usesHopperSetup(bracket)) {
+    return (
+      <Centered>
+        <p>This tournament hasn't started yet — players are still being added.</p>
+        <Link to={`/brackets/${bracket.id}/setup`} className="underline">
+          Go to the player list
+        </Link>
+      </Centered>
+    );
+  }
 
   /** Record the confirmed pick. */
   const confirmPick = async () => {
@@ -170,6 +187,15 @@ export function BracketView() {
               setInProgress.mutate({ matchId, inProgress })
             }
           />
+
+          {/* Entry-fee tracker — only when the tournament bought that feature. */}
+          {hasPremiumFeature(bracket.premium_features, 'payment_tracker') && (
+            <EntryFeePanel
+              bracketId={bracket.id}
+              participants={data.participants}
+              readOnly={bracket.status === 'closed'}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -227,12 +253,11 @@ export function BracketView() {
 /** Copy the public share link for this bracket to the clipboard. */
 async function copyShareLink(shareToken: string): Promise<void> {
   const url = `${window.location.origin}/brackets/share/${shareToken}`;
-  try {
-    await navigator.clipboard.writeText(url);
+  if (await copyText(url)) {
     toast.success('Share link copied.');
-  } catch {
-    toast.error('Could not copy — link: ' + url);
+    return;
   }
+  toast.error('Could not copy the share link.');
 }
 
 /** Look up the tapped participant's display name across all sides. */

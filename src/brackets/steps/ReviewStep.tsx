@@ -8,7 +8,7 @@
 
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { SeedingMode } from '@/types/bracket';
 import { buildPairingPreview } from './pairingPreview';
 
@@ -18,10 +18,14 @@ interface ReviewStepProps {
   onSeedingModeChange: (mode: SeedingMode) => void;
 }
 
-const SEEDING_LABELS: Record<SeedingMode, string> = {
-  seeded: 'Seeded — your list order is the seed; top players are kept apart',
-  random: 'Random — pairings drawn when you start',
-};
+const SEEDING_MODES: { value: SeedingMode; label: string; desc: string }[] = [
+  {
+    value: 'seeded',
+    label: 'Seeded',
+    desc: 'Your list order is the seed — top players are kept apart.',
+  },
+  { value: 'random', label: 'Random', desc: 'Pairings are drawn when you start.' },
+];
 
 export function ReviewStep({
   participants,
@@ -38,12 +42,23 @@ export function ReviewStep({
         <RadioGroup
           value={seedingMode}
           onValueChange={(v) => onSeedingModeChange(v as SeedingMode)}
+          className="grid gap-2"
         >
-          {(Object.keys(SEEDING_LABELS) as SeedingMode[]).map((mode) => (
-            <div key={mode} className="flex items-center space-x-2">
-              <RadioGroupItem value={mode} id={`seed-${mode}`} />
-              <Label htmlFor={`seed-${mode}`}>{SEEDING_LABELS[mode]}</Label>
-            </div>
+          {SEEDING_MODES.map((m) => (
+            <Label
+              key={m.value}
+              htmlFor={`seed-${m.value}`}
+              className={cn(
+                'flex cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors',
+                seedingMode === m.value ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+              )}
+            >
+              <RadioGroupItem value={m.value} id={`seed-${m.value}`} className="mt-0.5" />
+              <div className="space-y-0.5">
+                <div className="font-medium">{m.label}</div>
+                <p className="text-sm text-muted-foreground">{m.desc}</p>
+              </div>
+            </Label>
           ))}
         </RadioGroup>
       </div>
@@ -51,21 +66,24 @@ export function ReviewStep({
       <div className="space-y-2">
         <Label>Round 1</Label>
         {preview === null ? (
-          <p className="text-sm text-muted-foreground">
-            Matchups are drawn randomly when you start the bracket.
+          <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+            Matchups are drawn randomly when you start the tournament.
           </p>
         ) : (
-          <Card>
-            <CardContent className="space-y-1 p-4">
-              {preview.map((m, i) => (
-                <div key={i} className="text-sm">
+          <ul className="divide-y rounded-md border">
+            {preview.map((m, i) => (
+              <li key={i} className="flex items-center gap-3 p-3 text-sm">
+                <span className="w-5 shrink-0 text-xs text-muted-foreground">{i + 1}</span>
+                <span className="flex-1">
                   {m.home ?? <em className="text-muted-foreground">bye</em>}
-                  {' vs '}
+                </span>
+                <span className="text-xs text-muted-foreground">vs</span>
+                <span className="flex-1 text-right">
                   {m.away ?? <em className="text-muted-foreground">bye</em>}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>

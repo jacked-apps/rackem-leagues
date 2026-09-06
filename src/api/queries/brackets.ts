@@ -16,6 +16,125 @@ export type BracketRow = Tables<'brackets'>;
 export type BracketParticipantRow = Tables<'bracket_participants'>;
 export type BracketMatchRow = Tables<'bracket_matches'>;
 
+/**
+ * A hopper entry as returned by the `get_bracket_hopper` RPC — the hopper row
+ * plus (for registered players) the joined member fields for display +
+ * same-name disambiguation. Walk-ups have `member_id` NULL and null member fields.
+ */
+export interface HopperEntry {
+  id: string;
+  member_id: string | null;
+  display_name: string;
+  status: 'hopper' | 'official';
+  paid_status: 'paid' | 'unpaid' | null;
+  added_via: 'search' | 'link' | 'qr' | null;
+  seed: number | null;
+  created_at: string;
+  nickname: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  system_player_number: number | null;
+  city: string | null;
+  state: string | null;
+}
+
+/** The organizer's read of a bracket's hopper (via the projected SECURITY DEFINER RPC). */
+export async function getBracketHopper(bracketId: string): Promise<HopperEntry[]> {
+  const { data, error } = await supabase.rpc('get_bracket_hopper', {
+    p_bracket_id: bracketId,
+  });
+  if (error) throw new Error(`Failed to load hopper: ${error.message}`);
+  return (data as HopperEntry[] | null) ?? [];
+}
+
+/**
+ * A past player from the organizer's sticky roster — either a registered member
+ * (`bracket_roster`, joined to their member record for display) or a remembered
+ * walk-up name (`bracket_walkup_roster`).
+ *
+ * The two kinds are told apart the same way as everywhere else in this feature:
+ * `member_id` set = registered; `member_id` NULL = walk-up, whose entire
+ * identity is `display_name`.
+ */
+export interface RosterPlayer {
+  member_id: string | null;
+  /** The walk-up's typed name; null for a registered player (use their member fields). */
+  display_name: string | null;
+  /**
+   * RESERVED for the handicap_races feature — nothing writes it yet, so expect
+   * null on every row. Free text: the handicap system is that feature's call.
+   */
+  handicap: string | null;
+  nickname: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  system_player_number: number | null;
+  city: string | null;
+  state: string | null;
+  first_seen_at: string;
+}
+
+/**
+ * The organizer's past players for this bracket — registered members and
+ * remembered walk-ups in one list — EXCLUDING anyone already in its hopper. The
+ * RPC does that filtering, which is what keeps the hopper screen's three groups
+ * free of duplicates (a past player who links in leaves this list and shows up
+ * as a candidate instead). Walk-ups are matched by trimmed, case-insensitive
+ * name, since that is the only identity they have.
+ */
+export async function getBracketRoster(bracketId: string): Promise<RosterPlayer[]> {
+  const { data, error } = await supabase.rpc('get_bracket_roster', {
+    p_bracket_id: bracketId,
+  });
+  if (error) throw new Error(`Failed to load past players: ${error.message}`);
+  return (data as RosterPlayer[] | null) ?? [];
+}
+
+/**
+ * A player's view of a tournament, from its join token — what someone sees
+ * after scanning the code.
+ *
+ * Names only: this is reachable from a link printed on a poster, so it carries
+ * no player numbers, home cities, or member ids. `me` is the ONE place a paid
+ * flag appears, and only for the signed-in caller's own row — a public list of
+ * who still owes money would be a debt board.
+ */
+export interface BracketPlayerView {
+  found: boolean;
+  bracket: {
+    id: string;
+    name: string;
+    status: string;
+    format: string;
+    grand_final_reset: boolean;
+    game_type: string | null;
+    premium_features: string[] | null;
+  } | null;
+  /** Display names of players still waiting to be added, in arrival order. */
+  waiting: string[];
+  /** Display names of players in the tournament, in seed order once seeded. */
+  official: string[];
+  /** The caller's own entry, or null if they are anonymous / not on the list. */
+  me: {
+    display_name: string;
+    status: 'hopper' | 'official';
+    paid_status: 'paid' | 'unpaid' | null;
+  } | null;
+  /** Empty until the tournament starts. Names + seeds only, no member ids. */
+  participants: BracketParticipantRow[];
+  /** Empty until the tournament starts. */
+  matches: BracketMatchRow[];
+}
+
+/** Fetch the player-facing view of a tournament by its join token. */
+export async function getBracketPlayerView(joinToken: string): Promise<BracketPlayerView> {
+  const { data, error } = await supabase.rpc('get_bracket_player_view', {
+    p_join_token: joinToken,
+  });
+  if (error) throw new Error(`Failed to load tournament: ${error.message}`);
+  return data as BracketPlayerView;
+}
+
 /** The organizer's full bracket view: the bracket + its participants + matches. */
 export interface BracketDetail {
   bracket: BracketRow;
@@ -64,6 +183,35 @@ export async function getBracketsByCreator(memberId: string): Promise<BracketRow
 
   if (error) throw error;
   return data ?? [];
+}
+
+/**
+ * A tournament the current member is PLAYING in (not running).
+ *
+ * Carries the join token because a player's home for a tournament is the join
+ * page — the live list of who's in, the rules, and the bracket once it exists.
+ */
+export interface MyTournament {
+  id: string;
+  name: string;
+  status: string;
+  join_token: string;
+  created_at: string;
+  /** 'hopper' = still waiting to be added; 'official' = in the tournament. */
+  entry_status: 'hopper' | 'official';
+}
+
+/**
+ * Tournaments the signed-in member is playing in, newest first.
+ *
+ * Excludes tournaments they created — the page lists those separately — and
+ * closed ones. Returns an empty list rather than throwing when nobody is signed
+ * in, so the page can render its own signed-out state.
+ */
+export async function getMyTournaments(): Promise<MyTournament[]> {
+  const { data, error } = await supabase.rpc('get_my_tournaments');
+  if (error) throw new Error(`Failed to load your tournaments: ${error.message}`);
+  return (data as MyTournament[] | null) ?? [];
 }
 
 /** One participant in the public share payload (names only — no member_id). */

@@ -1,0 +1,86 @@
+/**
+ * @fileoverview Tests for ChargeBreakdownPanel — what the organizer is paying for.
+ */
+
+import { describe, it, expect } from 'vitest';
+import { renderWithProviders, screen, userEvent } from '@/test/utils';
+import { ChargeBreakdownPanel } from './ChargeBreakdownPanel';
+import { PREMIUM_FEATURES } from './premiumFeatures';
+
+describe('ChargeBreakdownPanel', () => {
+  it('summarises the charge without being opened', () => {
+    renderWithProviders(
+      <ChargeBreakdownPanel featureKeys={['real_players', 'payment_tracker']} />
+    );
+    expect(screen.getByText(/2 features · \$2\.00/)).toBeTruthy();
+  });
+
+  it('itemises the features when opened', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <ChargeBreakdownPanel featureKeys={['real_players', 'payment_tracker']} />
+    );
+
+    await user.click(screen.getByRole('button', { name: /2 features/ }));
+
+    expect(await screen.findByText('Real players & sign-up')).toBeTruthy();
+    expect(screen.getByText('Entry-fee tracker')).toBeTruthy();
+    // A receipt's total, not another line item.
+    expect(screen.getByText('Total')).toBeTruthy();
+    expect(screen.getByText(/charged when you start/i)).toBeTruthy();
+  });
+
+  it('shows the cap as its own line so the items add up to the total', async () => {
+    const user = userEvent.setup();
+    // Everything bought: the items come to more than the capped price, and a
+    // list that doesn't reconcile reads like a bug.
+    renderWithProviders(
+      <ChargeBreakdownPanel featureKeys={PREMIUM_FEATURES.map((f) => f.key)} />
+    );
+
+    await user.click(screen.getByRole('button', { name: /features/ }));
+
+    expect(await screen.findByText(/everything-included discount/i)).toBeTruthy();
+    // The subtotal is shown so the arithmetic reconciles on the page.
+    expect(screen.getByText('Subtotal')).toBeTruthy();
+    expect(screen.getByText('−$1.00')).toBeTruthy();
+  });
+
+  it('says nothing about a discount that did not happen', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ChargeBreakdownPanel featureKeys={['real_players']} />);
+
+    await user.click(screen.getByRole('button', { name: /1 feature/ }));
+    expect(screen.queryByText(/discount/i)).toBeNull();
+  });
+
+  it('renders nothing for a tournament that bought nothing', () => {
+    const { container } = renderWithProviders(<ChargeBreakdownPanel featureKeys={[]} />);
+    expect(container.textContent).toBe('');
+  });
+
+  it('shows a subtotal only when there is a discount to reconcile', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <ChargeBreakdownPanel featureKeys={['real_players', 'payment_tracker']} />
+    );
+
+    await user.click(screen.getByRole('button', { name: /2 features/ }));
+    // Uncapped, a subtotal identical to the total is just noise.
+    expect(screen.queryByText('Subtotal')).toBeNull();
+    expect(screen.getByText('Total')).toBeTruthy();
+  });
+
+  it('sets the total apart from the items it sums', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ChargeBreakdownPanel featureKeys={['real_players']} />);
+
+    await user.click(screen.getByRole('button', { name: /1 feature/ }));
+
+    // Larger and bolder than the line items — weight alone is a weak signal at
+    // this size, and this is the one number that must be unmistakable.
+    const total = (await screen.findByText('Total')).closest('div');
+    expect(total?.className).toContain('text-base');
+    expect(total?.className).toContain('font-semibold');
+  });
+});

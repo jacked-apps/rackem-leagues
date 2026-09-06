@@ -13,6 +13,15 @@ import type { BracketFormat, SeedingMode } from '@/types/bracket';
 /** The three linear steps of the create flow. */
 export type CreateStep = 'details' | 'participants' | 'review';
 
+/** The card the organizer has verified for this tournament (display only). */
+export interface CardOnFile {
+  paymentMethodId: string;
+  last4: string;
+  brand: string;
+  /** Optional player-given label (e.g. "Personal Visa"). */
+  nickname?: string | null;
+}
+
 export interface CreateBracketFormState {
   step: CreateStep;
   name: string;
@@ -21,6 +30,13 @@ export interface CreateBracketFormState {
   seedingMode: SeedingMode;
   /** Ordered participant display names (order = seed order for seeded mode). */
   participants: string[];
+  // ── Paid tier ──────────────────────────────────────────────────────────────
+  /** The tournament's game type (e.g. 'eight_ball'), or null. */
+  gameType: string | null;
+  /** Checked premium-feature keys (non-empty ⇒ paid). */
+  premiumFeatures: string[];
+  /** The player's verified card on file for this tournament, or null. */
+  cardOnFile: CardOnFile | null;
 }
 
 /** Free-tier v1 field cap (see plan): bounds the bracket + layout. */
@@ -36,6 +52,9 @@ const INITIAL: CreateBracketFormState = {
   grandFinalReset: true,
   seedingMode: 'seeded',
   participants: [],
+  gameType: null,
+  premiumFeatures: [],
+  cardOnFile: null,
 };
 
 export function useCreateBracketForm() {
@@ -75,6 +94,25 @@ export function useCreateBracketForm() {
     });
   }, []);
 
+  /** Toggle a premium feature on/off (add/remove its key). */
+  const togglePremiumFeature = useCallback((key: string) => {
+    setState((s) => ({
+      ...s,
+      premiumFeatures: s.premiumFeatures.includes(key)
+        ? s.premiumFeatures.filter((k) => k !== key)
+        : [...s.premiumFeatures, key],
+    }));
+  }, []);
+
+  /** Replace the whole premium-feature selection (used by "All for $5" select/clear-all). */
+  const setPremiumFeatures = useCallback(
+    (keys: string[]) => set('premiumFeatures', keys),
+    [set]
+  );
+
+  /** Record the verified card on file (after PaymentCardForm succeeds / a saved card is reused). */
+  const setCardOnFile = useCallback((card: CardOnFile | null) => set('cardOnFile', card), [set]);
+
   const goTo = useCallback((step: CreateStep) => set('step', step), [set]);
 
   /** Whether the current step is complete enough to advance / submit. */
@@ -96,6 +134,9 @@ export function useCreateBracketForm() {
     addParticipant,
     removeParticipant,
     moveParticipant,
+    togglePremiumFeature,
+    setPremiumFeatures,
+    setCardOnFile,
     goTo,
     validation,
   };
