@@ -211,8 +211,10 @@ describe('HopperView', () => {
     renderWithProviders(<HopperView bracketId="b1" />);
 
     expect(screen.getByText(/nobody added yet/i)).toBeTruthy();
-    expect(screen.getByText(/scan your qr code/i)).toBeTruthy();
+    expect(screen.getByText(/nobody waiting yet/i)).toBeTruthy();
     expect(screen.getByText(/past tournaments/i)).toBeTruthy();
+    // Where waiting players come from is said once, on the always-visible form.
+    expect(screen.getAllByText(/scan your qr code/i)).toHaveLength(1);
   });
 
   it('takes no actions once the tournament has started', () => {
@@ -251,5 +253,22 @@ describe('HopperView', () => {
     expect(screen.getByText('Past players (2)')).toBeTruthy();
     expect(screen.getByText('Kenny')).toBeTruthy();
     expect(screen.getByText('Rocket')).toBeTruthy();
+  });
+
+  it('adds a typed name as a walk-up', async () => {
+    const user = userEvent.setup();
+    loaded([]);
+    renderWithProviders(<HopperView bracketId="b1" />);
+
+    await user.type(screen.getByLabelText('Add a player'), 'Rocket');
+    await user.click(screen.getByRole('button', { name: 'Add' }));
+
+    expect(mocks.addWalkup).toHaveBeenCalledWith('Rocket');
+  });
+
+  it('offers no way to add players once the tournament has started', () => {
+    loaded([]);
+    renderWithProviders(<HopperView bracketId="b1" readOnly />);
+    expect(screen.getByLabelText('Add a player')).toBeDisabled();
   });
 });

@@ -32,6 +32,7 @@ import {
   useForgetRosterEntry,
 } from '@/api/hooks/useBrackets';
 import { buildHopperGroups, type HopperRow } from './hopperGroups';
+import { AddWalkupForm } from './AddWalkupForm';
 import { HopperEntryMenu } from './HopperEntryMenu';
 import { HopperGroup } from './HopperGroup';
 import { PastPlayerMenu } from './PastPlayerMenu';
@@ -95,6 +96,17 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
         <span className="text-muted-foreground">Past {counts.past}</span>
       </div>
 
+      <AddWalkupForm
+        // Rethrown after reporting, so the form knows to keep the typed name.
+        onAdd={(n) =>
+          addWalkup.mutateAsync(n).catch((err: unknown) => {
+            reportError(err);
+            throw err;
+          })
+        }
+        disabled={locked}
+      />
+
       <HopperGroup
         title="In the tournament"
         count={counts.official}
@@ -106,7 +118,8 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
       <HopperGroup
         title="Waiting to be added"
         count={counts.waiting}
-        empty="Nobody waiting. Players who scan your QR code or open your link land here."
+        // The add form above already says where waiting players come from.
+        empty="Nobody waiting yet."
       >
         {groups.waiting.map(entryRow)}
       </HopperGroup>
@@ -156,9 +169,12 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
  * already re-renders the lists, so there's nothing to do on the happy path.
  */
 function run(promise: Promise<unknown>): void {
-  promise.catch((err: unknown) => {
-    toast.error(err instanceof Error ? err.message : 'That didn’t go through.');
-  });
+  promise.catch(reportError);
+}
+
+/** Show a failed write as the organizer-facing sentence it usually already is. */
+function reportError(err: unknown): void {
+  toast.error(err instanceof Error ? err.message : 'That didn’t go through.');
 }
 
 function Note({ children }: { children: React.ReactNode }) {
