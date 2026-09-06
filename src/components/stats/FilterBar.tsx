@@ -136,8 +136,7 @@ export function FilterBar({
           onChange={(opponentId) => set({ opponentId })}
           parse={(raw) => raw}
         />
-        {/* Typed, not a dropdown: handicaps span three systems with different
-            scales, so a menu of every value faced runs to hundreds of entries.
+        {/* Pick-one by default, typed only for ranges — see HandicapFilter.
             Hidden entirely when no handicaps were recorded at all. */}
         {options.handicaps.length > 0 && (
           <HandicapFilter
@@ -146,8 +145,7 @@ export function FilterBar({
             onChange={({ min, max }) =>
               set({ opponentHandicapMin: min, opponentHandicapMax: max })
             }
-            lowest={options.handicaps[0]?.value ?? null}
-            highest={options.handicaps[options.handicaps.length - 1]?.value ?? null}
+            options={options.handicaps}
           />
         )}
         <FilterControl

@@ -1,16 +1,15 @@
 /**
- * @fileoverview Opponent-handicap filter: a typed number, or a range.
+ * @fileoverview Opponent-handicap filter: pick one, or type a range.
  *
- * Not a dropdown. Handicaps span three systems with wildly different scales —
- * points runs −2 to +2, percentage 0 to 100, Fargo into the hundreds — so a
- * menu of every value a player has faced is hundreds of entries long and
- * useless to scroll. Typing the number you have in mind is faster than finding
- * it in a list, and it stays fast no matter how many distinct values exist.
+ * Two modes, because the two questions want different controls.
  *
- * One number by default, because "what's my record against 2s" is the common
- * question. The Range checkbox opens a second box for "50 and over" and the
- * like, which is the less common one and shouldn't cost anything until asked
- * for.
+ * "What's my record against 2s" is a pick from what exists, so it is a
+ * dropdown — the list is already narrowed by the other filters, so choosing
+ * Fargo first leaves a sane number of entries, and seeing the real values
+ * beats guessing at them.
+ *
+ * "50 and over" is not a pick at all; the number wanted may be one nobody has,
+ * and an open upper end is not in any list. So Range swaps to two typed boxes.
  *
  * @see src/stats/gameFilters.ts
  */
@@ -19,6 +18,17 @@ import { useId, useState } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { FilterOption } from '@/stats/filterOptions';
+
+/** Sentinel for "no handicap filter" — a SelectItem cannot hold an empty value. */
+const ANY = '__any__';
 
 interface HandicapFilterProps {
   /** Lower end, inclusive. Null means unset. */
@@ -26,10 +36,8 @@ interface HandicapFilterProps {
   /** Upper end, inclusive. Null means unset. */
   max: number | null;
   onChange: (next: { min: number | null; max: number | null }) => void;
-  /** Lowest handicap present in the games currently in view, for the hint. */
-  lowest: number | null;
-  /** Highest handicap present in the games currently in view, for the hint. */
-  highest: number | null;
+  /** Handicaps present under the other filters, ascending, with counts. */
+  options: FilterOption<number>[];
 }
 
 /** "" and nonsense both mean "no constraint" rather than zero. */
@@ -51,36 +59,23 @@ function display(value: number | null): string {
  * @param min - Current lower end.
  * @param max - Current upper end.
  * @param onChange - Receives both ends together; they are one filter.
- * @param lowest - Lowest handicap in view, shown as a hint.
- * @param highest - Highest handicap in view, shown as a hint.
+ * @param options - Handicaps available given the other filters.
  */
-export function HandicapFilter({
-  min,
-  max,
-  onChange,
-  lowest,
-  highest,
-}: HandicapFilterProps) {
-  // A saved exact value is one where both ends match, which is how an exact
-  // match is expressed. Anything else already IS a range.
+export function HandicapFilter({ min, max, onChange, options }: HandicapFilterProps) {
+  // Both ends equal is how an exact match is expressed; anything else already
+  // IS a range, so reopen in the mode that matches the saved filter.
   const [isRange, setIsRange] = useState(
     () => min !== null && max !== null && min !== max
   );
   const rangeId = useId();
 
-  /** Exact mode: one number pins both ends. */
-  const setExact = (raw: string) => {
-    const value = parse(raw);
-    onChange({ min: value, max: value });
-  };
-
   /**
-   * Turning the range on keeps the number already typed as the lower end and
-   * leaves the upper end open — so ticking it next to "50" reads immediately as
-   * "50 and over", which is the reason someone reaches for it.
+   * Turning the range on keeps the number already chosen as the lower end and
+   * leaves the top open — so switching to Range with "50" selected reads at
+   * once as "50 and over", which is why someone reaches for it.
    *
-   * Turning it off collapses to the lower end, since that is the number they
-   * chose first. Silently clearing both would throw away their work.
+   * Turning it off collapses to the lower end, since that is the number chosen
+   * first. Clearing both would throw away their work.
    */
   const toggleRange = (on: boolean) => {
     setIsRange(on);
@@ -88,6 +83,8 @@ export function HandicapFilter({
     else onChange({ min, max: min });
   };
 
+  const lowest = options[0]?.value ?? null;
+  const highest = options[options.length - 1]?.value ?? null;
   const hint =
     lowest !== null && highest !== null && lowest !== highest
       ? `In view: ${lowest} to ${highest}`
@@ -118,14 +115,26 @@ export function HandicapFilter({
           />
         </div>
       ) : (
-        <Input
-          type="number"
-          inputMode="numeric"
-          placeholder="Any"
-          aria-label="Opponent handicap"
-          value={display(min)}
-          onChange={(e) => setExact(e.target.value)}
-        />
+        <Select
+          value={min === null ? ANY : String(min)}
+          onValueChange={(raw) => {
+            // One pick sets both ends — that is what "exactly this" means.
+            const value = raw === ANY ? null : Number(raw);
+            onChange({ min: value, max: value });
+          }}
+        >
+          <SelectTrigger aria-label="Opponent handicap">
+            <SelectValue placeholder="Any" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ANY}>Any</SelectItem>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={String(option.value)}>
+                {option.label} ({option.count})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
 
       <div className="mt-1 flex items-center gap-2">
@@ -140,10 +149,10 @@ export function HandicapFilter({
         >
           Range
         </Label>
-        {/* Typing loses the discoverability a list gave, so say what is
-            actually there — otherwise "against 2s" in a Fargo league returns
-            nothing and looks broken rather than empty. */}
-        {hint && <span className="text-xs text-muted-foreground">· {hint}</span>}
+        {/* Only useful while typing — the dropdown already shows what exists. */}
+        {isRange && hint && (
+          <span className="text-xs text-muted-foreground">· {hint}</span>
+        )}
       </div>
     </div>
   );
