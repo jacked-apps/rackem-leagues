@@ -29,6 +29,7 @@ export interface RawGame {
   runout: boolean | null;
   early_eight: boolean | null;
   win_by_forfeit: boolean | null;
+  game_type: string | null;
   match: {
     id: string;
     season_id: string | null;
@@ -134,6 +135,7 @@ export function toPlayerGameRows(
       // to be explained: unscored games are excluded upstream.
       won: !!game.winner_player_id && game.winner_player_id === memberId,
       ending: endingOf(game),
+      gameType: game.game_type ?? null,
       opponentId,
       opponentName: (opponentId && ctx.playerNames.get(opponentId)) || 'Unknown player',
       opponentHandicap: handicapForPlayer(opponentLineup, opponentId),

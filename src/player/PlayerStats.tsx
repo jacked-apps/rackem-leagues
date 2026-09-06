@@ -17,13 +17,16 @@
  * @see docs/plans/2026-09-06-001-feat-my-stats-page-plan.md (Unit 3)
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { PageHeader } from '@/components/PageHeader';
 import { usePlayerGameHistory } from '@/api/hooks/usePlayerGameHistory';
 import { summarizeGames } from '@/stats/summarizeGames';
+import { applyGameFilter, NO_FILTER, type GameFilter } from '@/stats/gameFilters';
+import { buildFilterOptions } from '@/stats/filterOptions';
 import { StatsSummary } from '@/components/stats/StatsSummary';
 import { GameLogTable } from '@/components/stats/GameLogTable';
+import { FilterBar } from '@/components/stats/FilterBar';
 
 /** A one-line message in the page's normal frame. */
 function Notice({ title, body }: { title: string; body: string }) {
@@ -42,11 +45,20 @@ function Notice({ title, body }: { title: string; body: string }) {
  */
 export function PlayerStats() {
   const { data: rows, isLoading, isError, error } = usePlayerGameHistory();
+  const [filter, setFilter] = useState<GameFilter>(NO_FILTER);
 
-  // Recomputed only when the rows change. Once filters arrive this same call
-  // runs over the filtered set, which is what makes the counts respond rather
-  // than merely hiding table rows.
-  const summary = useMemo(() => summarizeGames(rows ?? []), [rows]);
+  const all = useMemo(() => rows ?? [], [rows]);
+
+  // Built from the UNFILTERED history: options that vanished as you narrowed
+  // would leave no way to widen again from the control itself.
+  const options = useMemo(() => buildFilterOptions(all), [all]);
+
+  const filtered = useMemo(() => applyGameFilter(all, filter), [all, filter]);
+
+  // Summarised from the FILTERED rows, which is what makes "my record on table
+  // 2" an actual record rather than the same totals with fewer rows beneath.
+  // Pure array work, so changing a filter costs no request and no spinner.
+  const summary = useMemo(() => summarizeGames(filtered), [filtered]);
 
   return (
     <div className="min-h-screen bg-muted">
@@ -84,8 +96,27 @@ export function PlayerStats() {
 
         {!isLoading && !isError && !!rows?.length && (
           <>
-            <StatsSummary summary={summary} />
-            <GameLogTable rows={rows} />
+            <FilterBar
+              filter={filter}
+              options={options}
+              onChange={setFilter}
+              onReset={() => setFilter(NO_FILTER)}
+              matchCount={filtered.length}
+            />
+            {/* Filtering to nothing is a normal thing to do by accident — say so
+                rather than showing a summary of zero games, which reads as a
+                broken page rather than as an over-narrow filter. */}
+            {filtered.length === 0 ? (
+              <Notice
+                title="No games match these filters"
+                body="Try widening one of them, or clear them to see everything again."
+              />
+            ) : (
+              <>
+                <StatsSummary summary={summary} />
+                <GameLogTable rows={filtered} />
+              </>
+            )}
           </>
         )}
       </div>

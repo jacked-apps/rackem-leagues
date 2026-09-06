@@ -49,6 +49,7 @@ const GAME_SELECT = `
   runout,
   early_eight,
   win_by_forfeit,
+  game_type,
   match:matches!inner (
     id,
     status,

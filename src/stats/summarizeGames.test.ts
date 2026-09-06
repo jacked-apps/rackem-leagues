@@ -23,6 +23,7 @@ function row(overrides: Partial<PlayerGameRow> = {}): PlayerGameRow {
     seasonId: 'season-1',
     won: true,
     ending: 'plain',
+    gameType: 'eight_ball',
     opponentId: 'opp-1',
     opponentName: 'Joe Smith',
     opponentHandicap: 3,

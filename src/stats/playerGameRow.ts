@@ -37,6 +37,14 @@ export interface PlayerGameRow {
   /** Whether THIS player won. The row is always from their side. */
   won: boolean;
   ending: GameEnding;
+  /**
+   * What was being played: 'eight_ball', 'nine_ball', 'ten_ball'.
+   *
+   * Filtering on this is what makes a generic ending label unambiguous — narrow
+   * to 9-ball and every golden break shown is a 9 on the break. Null when the
+   * game predates the column or never recorded one.
+   */
+  gameType: string | null;
 
   opponentId: string | null;
   opponentName: string;
