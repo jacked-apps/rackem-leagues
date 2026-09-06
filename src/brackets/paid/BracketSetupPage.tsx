@@ -30,6 +30,7 @@ import type { BracketFormat } from '@/types/bracket';
 import { HopperView } from './HopperView';
 import { StartTournamentPanel } from './StartTournamentPanel';
 import { formatPrice, hasPremiumFeature, totalPriceCents } from './premiumFeatures';
+import { joinUrl } from './joinUrl';
 
 export function BracketSetupPage() {
   const { bracketId } = useParams<{ bracketId: string }>();
@@ -125,13 +126,19 @@ export function BracketSetupPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle>{bracket.name}</CardTitle>
-          <Button
-            variant="outline"
-            loadingText="none"
-            onClick={() => copyJoinLink(bracket.join_token)}
-          >
-            Copy join link
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              loadingText="none"
+              onClick={() => copyJoinLink(bracket.join_token)}
+            >
+              Copy join link
+            </Button>
+            {/* Signs for the wall / the big screen behind the bar. */}
+            <Button variant="outline" asChild>
+              <Link to={`/brackets/${bracket.id}/qr`}>QR code</Link>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-5">
           <HopperView bracketId={bracket.id} trackEntryFees={trackEntryFees} />
@@ -161,7 +168,7 @@ async function copyJoinLink(joinToken: string | null): Promise<void> {
     toast.error('This tournament has no join link.');
     return;
   }
-  const url = `${window.location.origin}/brackets/join/${joinToken}`;
+  const url = joinUrl(joinToken);
   try {
     await navigator.clipboard.writeText(url);
     toast.success('Join link copied — players who open it are added to the waiting room.');
