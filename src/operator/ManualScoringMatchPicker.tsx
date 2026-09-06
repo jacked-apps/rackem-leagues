@@ -21,6 +21,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
+import { LmsEnteredCheckbox } from '@/components/operator/LmsEnteredCheckbox';
 import {
   Accordion,
   AccordionItem,
@@ -87,27 +88,37 @@ function MatchRow({
 
   if (isMatchEligibleForReview(match)) {
     return (
-      <div className="flex w-full items-center gap-2">
-        <Button
-          variant="outline"
-          className="flex-1 justify-between"
-          onClick={onReview}
-          data-testid="review-match"
-        >
-          <span>{label}</span>
-          <Badge variant="outline">Review · {manualScoringStatusLabel(match.status)}</Badge>
-        </Button>
-        <Button asChild variant="ghost" size="sm" className="shrink-0">
-          <a
-            href={lmsSheetHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Print results for CSI / FargoRate LMS (opens in a new tab)"
-            data-testid="lms-sheet"
+      <div className="w-full space-y-1">
+        <div className="flex w-full items-center gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 justify-between"
+            onClick={onReview}
+            data-testid="review-match"
           >
-            <Printer className="h-4 w-4" />
-          </a>
-        </Button>
+            <span>{label}</span>
+            <Badge variant="outline">Review · {manualScoringStatusLabel(match.status)}</Badge>
+          </Button>
+          <Button asChild variant="ghost" size="sm" className="shrink-0">
+            <a
+              href={lmsSheetHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Print results for CSI / FargoRate LMS (opens in a new tab)"
+              data-testid="lms-sheet"
+            >
+              <Printer className="h-4 w-4" />
+            </a>
+          </Button>
+        </div>
+        {/* Backlog marker — operators enter LMS results weeks at a time, so the
+            picker doubles as the "what's left to do" list. */}
+        <LmsEnteredCheckbox
+          matchId={match.id}
+          enteredAt={match.lms_entered_at}
+          seasonId={match.season_id}
+          className="pl-1"
+        />
       </div>
     );
   }
