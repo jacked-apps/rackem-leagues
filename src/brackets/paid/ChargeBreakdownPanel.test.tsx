@@ -70,4 +70,17 @@ describe('ChargeBreakdownPanel', () => {
     expect(screen.queryByText('Subtotal')).toBeNull();
     expect(screen.getByText('Total')).toBeTruthy();
   });
+
+  it('sets the total apart from the items it sums', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<ChargeBreakdownPanel featureKeys={['real_players']} />);
+
+    await user.click(screen.getByRole('button', { name: /1 feature/ }));
+
+    // Larger and bolder than the line items — weight alone is a weak signal at
+    // this size, and this is the one number that must be unmistakable.
+    const total = (await screen.findByText('Total')).closest('div');
+    expect(total?.className).toContain('text-base');
+    expect(total?.className).toContain('font-semibold');
+  });
 });

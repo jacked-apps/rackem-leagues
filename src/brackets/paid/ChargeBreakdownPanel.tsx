@@ -15,7 +15,9 @@
  * like a bug even when the cheaper number is the honest one.
  *
  * Amounts use tabular figures so the digits line up in a column; proportional
- * numerals make a short list of prices look ragged.
+ * numerals make a short list of prices look ragged. The total is set a step
+ * larger than the items as well as bolder — weight alone is a weak signal at
+ * this size, and it is the one number that has to be unmistakable.
  */
 
 import {
@@ -68,7 +70,7 @@ export function ChargeBreakdownPanel({ featureKeys }: ChargeBreakdownPanelProps)
             )}
 
             {/* The total sits with its amount, away from the item column. */}
-            <div className="mt-1 flex justify-end gap-6 border-t pt-1.5 font-semibold">
+            <div className="mt-1 flex justify-end gap-6 border-t pt-1.5 text-base font-semibold">
               <dt>Total</dt>
               <dd>{formatPrice(totalCents)}</dd>
             </div>
