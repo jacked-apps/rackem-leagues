@@ -19,6 +19,7 @@ import { BracketsIndexPage } from '../brackets/BracketsIndexPage';
 import { CreateBracketFlow } from '../brackets/CreateBracketFlow';
 import { BracketView } from '../brackets/BracketView';
 import { PublicBracketPage } from '../brackets/PublicBracketPage';
+import { JoinHopperPage } from '../brackets/paid/JoinHopperPage';
 import { Home } from '../home/Home';
 import { RulesSkeleton } from '../rules/RulesSkeleton';
 import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
@@ -185,6 +186,9 @@ export const router = createBrowserRouter([
       // Public, read-only bracket share (names only via the get_bracket_share
       // RPC) — the anon boundary is the RPC itself, not the route.
       { path: 'brackets/share/:shareToken', element: <PublicBracketPage /> },
+      // Self-add join (paid): a scanned QR / opened link. Public route — auth is
+      // handled inside (a cold scanner is prompted to sign in first).
+      { path: 'brackets/join/:joinToken', element: <JoinHopperPage /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
       { path: 'confirm', element: <EmailConfirmation /> },

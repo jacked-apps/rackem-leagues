@@ -211,6 +211,32 @@ export async function setEntryFeePaid(
 
 // ── Hopper management (Phase C) ──────────────────────────────────────────────
 
+/** Result of a self-add join (join_bracket_hopper RPC). */
+export interface JoinHopperResult {
+  ok: boolean;
+  reason?: 'not_found' | 'not_accepting' | 'not_signed_in';
+  status?: string;
+  bracket_id?: string;
+  bracket_name?: string;
+}
+
+/**
+ * Self-add: the signed-in caller adds THEMSELVES to a tournament's hopper via its
+ * join_token (from a scanned QR / opened link). Records only the caller's own
+ * identity; a repeat join is a no-op.
+ */
+export async function joinHopper(
+  joinToken: string,
+  via: 'link' | 'qr' = 'link'
+): Promise<JoinHopperResult> {
+  const { data, error } = await supabase.rpc('join_bracket_hopper', {
+    p_join_token: joinToken,
+    p_via: via,
+  });
+  if (error) throw new Error(`Failed to join: ${error.message}`);
+  return data as JoinHopperResult;
+}
+
 /** Add a WALK-UP to the hopper (member_id NULL — a disposable tournament entrant). */
 export async function addWalkupToHopper(
   bracketId: string,

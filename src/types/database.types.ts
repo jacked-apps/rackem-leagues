@@ -399,6 +399,7 @@ export type Database = {
           game_type: string | null
           grand_final_reset: boolean
           id: string
+          join_token: string
           last_activity_at: string
           name: string
           payment_method_id: string | null
@@ -417,6 +418,7 @@ export type Database = {
           game_type?: string | null
           grand_final_reset?: boolean
           id?: string
+          join_token?: string
           last_activity_at?: string
           name: string
           payment_method_id?: string | null
@@ -435,6 +437,7 @@ export type Database = {
           game_type?: string | null
           grand_final_reset?: boolean
           id?: string
+          join_token?: string
           last_activity_at?: string
           name?: string
           payment_method_id?: string | null
@@ -3763,6 +3766,10 @@ export type Database = {
       is_in_quiet_hours: {
         Args: { p_end: string; p_start: string; p_tz: string }
         Returns: boolean
+      }
+      join_bracket_hopper: {
+        Args: { p_join_token: string; p_via?: string }
+        Returns: Json
       }
       league_display_name: { Args: { p_league_id: string }; Returns: string }
       lookup_placeholder_by_system_number: {

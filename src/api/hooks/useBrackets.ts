@@ -16,6 +16,7 @@ import {
   startBracket,
   chargeForStart,
   setEntryFeePaid,
+  joinHopper,
   advanceWinner,
   setMatchInProgress,
   reopenMatch,
@@ -108,6 +109,14 @@ export function useStartBracket() {
 }
 
 /** Record a match winner (guarded advance). */
+/** Self-add: the caller joins a tournament's hopper via its join_token (QR/link). */
+export function useJoinHopper() {
+  return useMutation({
+    mutationFn: (vars: { joinToken: string; via?: 'link' | 'qr' }) =>
+      joinHopper(vars.joinToken, vars.via),
+  });
+}
+
 /** Charge-at-checkout seam (A3): record the paid tournament's ($0 mock) charge at Start. */
 export function useChargeForStart() {
   const qc = useQueryClient();
