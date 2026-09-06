@@ -114,21 +114,12 @@ export function FilterBar({
 
   return (
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex flex-wrap gap-3">
-        <FilterControl
-          label="Game"
-          value={filter.gameType}
-          options={options.gameTypes}
-          onChange={(gameType) => set({ gameType })}
-          parse={(raw) => raw}
-        />
-        <FilterControl
-          label="Handicap system"
-          value={filter.handicapSystem}
-          options={options.handicapSystems}
-          onChange={(handicapSystem) => set({ handicapSystem })}
-          parse={(raw) => raw}
-        />
+      {/* Grouped by the question each answers — who, what, how they are rated,
+          where. The groups wrap as units, so a narrow screen never splits a
+          pair across two lines and leaves a control stranded from its partner. */}
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-3">
+        {/* Who. Kept to one end rather than sitting between the two handicap
+            controls, which belong side by side. */}
         <FilterControl
           label="Opponent"
           value={filter.opponentId}
@@ -136,32 +127,56 @@ export function FilterBar({
           onChange={(opponentId) => set({ opponentId })}
           parse={(raw) => raw}
         />
-        {/* Pick-one by default, typed only for ranges — see HandicapFilter.
-            Hidden entirely when no handicaps were recorded at all. */}
-        {options.handicaps.length > 0 && (
-          <HandicapFilter
-            min={filter.opponentHandicapMin}
-            max={filter.opponentHandicapMax}
-            onChange={({ min, max }) =>
-              set({ opponentHandicapMin: min, opponentHandicapMax: max })
-            }
-            options={options.handicaps}
-          />
-        )}
+
         <FilterControl
-          label="Venue"
-          value={filter.venueName}
-          options={options.venues}
-          onChange={(venueName) => set({ venueName })}
+          label="Game"
+          value={filter.gameType}
+          options={options.gameTypes}
+          onChange={(gameType) => set({ gameType })}
           parse={(raw) => raw}
         />
-        <FilterControl
-          label="Table"
-          value={filter.tableNumber}
-          options={options.tables}
-          onChange={(tableNumber) => set({ tableNumber })}
-          parse={Number}
-        />
+
+        {/* The handicap pair. A handicap number means nothing without the
+            system it is measured in, so the two travel together. */}
+        <div className="flex min-w-[18rem] flex-[2] flex-wrap items-start gap-3">
+          <FilterControl
+            label="Handicap system"
+            value={filter.handicapSystem}
+            options={options.handicapSystems}
+            onChange={(handicapSystem) => set({ handicapSystem })}
+            parse={(raw) => raw}
+          />
+          {/* Pick-one by default, typed only for ranges — see HandicapFilter.
+              Hidden entirely when no handicaps were recorded at all. */}
+          {options.handicaps.length > 0 && (
+            <HandicapFilter
+              min={filter.opponentHandicapMin}
+              max={filter.opponentHandicapMax}
+              onChange={({ min, max }) =>
+                set({ opponentHandicapMin: min, opponentHandicapMax: max })
+              }
+              options={options.handicaps}
+            />
+          )}
+        </div>
+
+        {/* Where. Venue and table are one question in two parts. */}
+        <div className="flex min-w-[16rem] flex-1 flex-wrap items-start gap-3">
+          <FilterControl
+            label="Venue"
+            value={filter.venueName}
+            options={options.venues}
+            onChange={(venueName) => set({ venueName })}
+            parse={(raw) => raw}
+          />
+          <FilterControl
+            label="Table"
+            value={filter.tableNumber}
+            options={options.tables}
+            onChange={(tableNumber) => set({ tableNumber })}
+            parse={Number}
+          />
+        </div>
       </div>
 
       {!isUnfiltered(filter) && (

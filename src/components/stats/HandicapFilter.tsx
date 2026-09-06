@@ -94,20 +94,25 @@ export function HandicapFilter({ min, max, onChange, options }: HandicapFilterPr
     <div className="min-w-[14rem] flex-1">
       <Label className="text-xs text-muted-foreground">Opponent handicap</Label>
 
+      {/* Range mode uses flex-nowrap with min-w-0 boxes: the two ends of one
+          range must stay on a single line and shrink together. Stacked, they
+          read as two unrelated fields rather than one span. */}
       {isRange ? (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-nowrap items-center gap-2">
           <Input
             type="number"
             inputMode="numeric"
+            className="min-w-0 flex-1"
             placeholder="From"
             aria-label="Opponent handicap from"
             value={display(min)}
             onChange={(e) => onChange({ min: parse(e.target.value), max })}
           />
-          <span className="text-sm text-muted-foreground">to</span>
+          <span className="shrink-0 text-sm text-muted-foreground">to</span>
           <Input
             type="number"
             inputMode="numeric"
+            className="min-w-0 flex-1"
             placeholder="To"
             aria-label="Opponent handicap to"
             value={display(max)}
