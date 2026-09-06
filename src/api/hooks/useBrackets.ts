@@ -28,6 +28,7 @@ import {
   admitHopperEntry,
   setHopperPaidStatus,
   ejectHopperEntry,
+  finalizeHopper,
   advanceWinner,
   setMatchInProgress,
   reopenMatch,
@@ -220,6 +221,21 @@ export function useEjectHopperEntry(bracketId: string) {
   return useMutation({
     mutationFn: (entryId: string) => ejectHopperEntry(entryId, bracketId),
     onSuccess: invalidate,
+  });
+}
+
+/**
+ * Convert the official hopper list into seeded participants at Start. Returns
+ * the player count, which the caller feeds to the bracket generator.
+ *
+ * No cache invalidation here: this is always immediately followed by
+ * startBracket, and the caller invalidates once the bracket is actually live —
+ * refreshing in between would briefly render a setup screen against
+ * half-converted state.
+ */
+export function useFinalizeHopper(bracketId: string) {
+  return useMutation({
+    mutationFn: (includeWaiting: boolean) => finalizeHopper(bracketId, includeWaiting),
   });
 }
 

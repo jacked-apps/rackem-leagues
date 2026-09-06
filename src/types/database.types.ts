@@ -3638,6 +3638,10 @@ export type Database = {
         Args: { p_season_id: string; p_team_id: string }
         Returns: string
       }
+      finalize_bracket_hopper: {
+        Args: { p_bracket_id: string; p_include_waiting?: boolean }
+        Returns: number
+      }
       get_bracket_hopper: { Args: { p_bracket_id: string }; Returns: Json }
       get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
       get_bracket_share: { Args: { p_share_token: string }; Returns: Json }

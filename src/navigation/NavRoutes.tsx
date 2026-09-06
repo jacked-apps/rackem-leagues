@@ -20,6 +20,7 @@ import { CreateBracketFlow } from '../brackets/CreateBracketFlow';
 import { BracketView } from '../brackets/BracketView';
 import { PublicBracketPage } from '../brackets/PublicBracketPage';
 import { JoinHopperPage } from '../brackets/paid/JoinHopperPage';
+import { BracketSetupPage } from '../brackets/paid/BracketSetupPage';
 import { Home } from '../home/Home';
 import { RulesSkeleton } from '../rules/RulesSkeleton';
 import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
@@ -229,6 +230,9 @@ export const router = createBrowserRouter([
           // environment; the nav entries in AppDrawer/AppSidebar are the doors.
           { path: 'brackets', element: withMember(<BracketsIndexPage />) },
           { path: 'brackets/new', element: withMember(<CreateBracketFlow />) },
+          // Paid setup screen — a "Real players & sign-up" tournament sits here
+          // in `setup` while its hopper fills, then starts from this page.
+          { path: 'brackets/:bracketId/setup', element: withMember(<BracketSetupPage />) },
           { path: 'brackets/:bracketId', element: withMember(<BracketView />) },
           // Rules pages — public (no auth wrapper) but rendered inside
           // MemberLayout so logged-in users keep their sidebar/tab bar.

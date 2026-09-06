@@ -6,6 +6,13 @@
  * participants (seed order resolved by mode), and starts it (generates + saves
  * the match tree), then routes to the live bracket view. Ephemeral — no
  * persistence/resume, unlike the league wizard.
+ *
+ * ONE FORK (paid, Unit C3): with "Real players & sign-up" checked, players join
+ * themselves by QR/link over the course of an evening rather than being typed in
+ * up front. There is nothing to type here and nothing to start yet, so the flow
+ * stops after Details, creates the tournament in `setup`, and hands off to
+ * BracketSetupPage — which owns the hopper AND the Start button (including the
+ * checkout charge, which therefore does not happen on this page for that fork).
  */
 
 import { useEffect, useState } from 'react';
@@ -25,7 +32,7 @@ import {
   useSaveDefaultPaymentMethod,
 } from '@/api/hooks/usePaymentMethods';
 import type { PaymentCardData } from '@/components/PaymentCardForm';
-import { useCreateBracketForm } from './useCreateBracketForm';
+import { useCreateBracketForm, type CreateStep } from './useCreateBracketForm';
 import { DetailsStep } from './steps/DetailsStep';
 import { ParticipantsStep } from './steps/ParticipantsStep';
 import { ReviewStep } from './steps/ReviewStep';
@@ -59,6 +66,16 @@ export function CreateBracketFlow() {
   // Paid = any premium feature checked; its price is charged at Start (checkout).
   const isPaid = state.premiumFeatures.length > 0;
   const chargeCents = totalPriceCents(state.premiumFeatures);
+
+  // "Real players & sign-up" replaces the typed player list with the hopper, so
+  // this flow has nothing to ask after Details.
+  const usesHopper = state.premiumFeatures.includes('real_players');
+  const steps: CreateStep[] = usesHopper
+    ? ['details']
+    : ['details', 'participants', 'review'];
+  const isLastStep = state.step === steps[steps.length - 1];
+  // The hopper fork has no player list to validate — the name is all it needs.
+  const canSubmit = usesHopper ? validation.nameOk : validation.canSubmit;
 
   // The player's card on file (reusable across tournaments/dues). If they already
   // have one, seed it so turning on a premium feature just confirms — no re-entry.
@@ -123,7 +140,7 @@ export function CreateBracketFlow() {
 
   /** Create → set participants → start, then go to the live view. */
   const handleSubmit = async () => {
-    if (!member?.id || !validation.canSubmit) return;
+    if (!member?.id || !canSubmit) return;
     // A paid tournament must have a card on file (normally set up when a feature
     // was enabled) — belt-and-suspenders before checkout.
     if (isPaid && !state.cardOnFile) {
@@ -143,6 +160,13 @@ export function CreateBracketFlow() {
         gameType: state.gameType,
         paymentMethodId: state.cardOnFile?.paymentMethodId ?? null,
       });
+      // Hopper fork: nothing to seed yet. The tournament stays in `setup` and
+      // the setup page takes it from here (players, then Start, then checkout).
+      if (usesHopper) {
+        navigate(`/brackets/${bracket.id}/setup`);
+        return;
+      }
+
       await setParticipants.mutateAsync({
         bracketId: bracket.id,
         participants: state.participants.map((displayName) => ({ displayName })),
@@ -169,7 +193,7 @@ export function CreateBracketFlow() {
 
   return (
     <div className="container mx-auto max-w-2xl space-y-5 px-4 py-8">
-      <CreateStepper current={state.step} />
+      {steps.length > 1 && <CreateStepper current={state.step} />}
       <Card>
         <CardHeader>
           <CardTitle>{STEP_TITLES[state.step]}</CardTitle>
@@ -226,11 +250,19 @@ export function CreateBracketFlow() {
 
           <FlowNav
             step={state.step}
+            isLastStep={isLastStep}
             canAdvance={
               state.step === 'details' ? validation.nameOk : validation.countOk
             }
-            canSubmit={validation.canSubmit}
-            submitLabel={isPaid ? `Start & pay ${formatPrice(chargeCents)}` : 'Start tournament'}
+            canSubmit={canSubmit}
+            submitLabel={
+              usesHopper
+                ? 'Create & add players'
+                : isPaid
+                  ? `Start & pay ${formatPrice(chargeCents)}`
+                  : 'Start tournament'
+            }
+            submittingLabel={usesHopper ? 'Creating…' : 'Starting…'}
             submitting={submitting}
             onBack={() =>
               // On the first step there's no prior step — leave the flow back to
@@ -253,18 +285,24 @@ export function CreateBracketFlow() {
 /** Back / Next / Start controls for the current step. */
 function FlowNav({
   step,
+  isLastStep,
   canAdvance,
   canSubmit,
   submitLabel,
+  submittingLabel,
   submitting,
   onBack,
   onNext,
   onSubmit,
 }: {
   step: 'details' | 'participants' | 'review';
+  /** The submit button replaces Next here (which step that is depends on the fork). */
+  isLastStep: boolean;
   canAdvance: boolean;
   canSubmit: boolean;
   submitLabel: string;
+  /** In-flight text — the hopper fork is creating, the others are starting. */
+  submittingLabel: string;
   submitting: boolean;
   onBack: () => void;
   onNext: () => void;
@@ -275,10 +313,10 @@ function FlowNav({
       <Button type="button" variant="outline" onClick={onBack}>
         {step === 'details' ? 'Cancel' : 'Back'}
       </Button>
-      {step === 'review' ? (
+      {isLastStep ? (
         <Button
           type="button"
-          loadingText="Starting…"
+          loadingText={submittingLabel}
           isLoading={submitting}
           disabled={!canSubmit}
           onClick={onSubmit}

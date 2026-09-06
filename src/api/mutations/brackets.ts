@@ -301,6 +301,29 @@ export async function setHopperPaidStatus(
   await touchBracket(bracketId);
 }
 
+/**
+ * Convert a paid tournament's official hopper list into seeded participants,
+ * ready for the tree generator. Returns the player count.
+ *
+ * @param includeWaiting - Also admit everyone still in the waiting room, as
+ *   unpaid. The organizer opts into this at Start; it is never automatic,
+ *   because a QR on a flyer means the waiting room can hold someone who
+ *   scanned out of curiosity and left.
+ */
+export async function finalizeHopper(
+  bracketId: string,
+  includeWaiting: boolean
+): Promise<number> {
+  const { data, error } = await supabase.rpc('finalize_bracket_hopper', {
+    p_bracket_id: bracketId,
+    p_include_waiting: includeWaiting,
+  });
+  // The RPC's exceptions are written as organizer-facing sentences
+  // ("Add at least 2 players before starting"), so surface them as-is.
+  if (error) throw new Error(error.message);
+  return (data as number | null) ?? 0;
+}
+
 /** Eject an entry from the hopper (delete). The roster (sticky) is untouched. */
 export async function ejectHopperEntry(entryId: string, bracketId: string): Promise<void> {
   const { error } = await supabase.from('bracket_hopper').delete().eq('id', entryId);
