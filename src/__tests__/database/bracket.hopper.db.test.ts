@@ -41,6 +41,15 @@ describe('bracket hopper + roster (Unit C1)', () => {
     }
     organizerId = members[0].id;
     playerId = members[1].id;
+
+    // The roster is NOT bracket-scoped, so it survives other files' brackets.
+    // This suite asserts a starting count of zero for the pair, so it must
+    // establish that itself rather than assume whatever ran before left it
+    // clean — the `db` project shares one Postgres.
+    await executeSql(
+      `DELETE FROM public.bracket_roster WHERE organizer_member_id = $1 AND player_member_id = $2`,
+      [organizerId, playerId]
+    );
   });
 
   afterAll(async () => {

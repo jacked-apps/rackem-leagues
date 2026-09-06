@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen } from '@/test/utils';
+import { renderWithProviders, screen, userEvent } from '@/test/utils';
 import type { BracketPlayerView } from '@/api/queries/brackets';
 
 const mocks = vi.hoisted(() => ({
@@ -65,8 +65,8 @@ function playerView(over: Partial<BracketPlayerView> = {}): BracketPlayerView {
   };
 }
 
-function loaded(over: Partial<BracketPlayerView> = {}) {
-  mocks.view.mockReturnValue({ data: playerView(over), isLoading: false });
+function loaded(over: Partial<BracketPlayerView> = {}, isFetching = false) {
+  mocks.view.mockReturnValue({ data: playerView(over), isLoading: false, isFetching });
 }
 
 beforeEach(() => {
@@ -122,7 +122,7 @@ describe('JoinHopperPage', () => {
     // Anon can watch — the read is names-only.
     expect(screen.getByText('In the tournament (1)')).toBeTruthy();
     expect(mocks.join).not.toHaveBeenCalled();
-    expect(screen.getByLabelText('Add my name')).toBeTruthy();
+    expect(screen.getByLabelText(/play as a guest/i)).toBeTruthy();
     expect(
       screen.getByRole('link', { name: /sign in/i }).getAttribute('href')
     ).toBe('/login?redirect=%2Fbrackets%2Fjoin%2Fjt-1');
@@ -194,7 +194,7 @@ describe('JoinHopperPage', () => {
       renderWithProviders(<JoinHopperPage />);
 
       expect(screen.getByText(/you're on the waiting list as rocket/i)).toBeTruthy();
-      expect(screen.queryByLabelText('Add my name')).toBeNull();
+      expect(screen.queryByLabelText(/play as a guest/i)).toBeNull();
     });
 
     it('does not carry the name to a different tournament', () => {
@@ -204,7 +204,7 @@ describe('JoinHopperPage', () => {
       loaded({ waiting: ['Rocket'] });
       renderWithProviders(<JoinHopperPage />);
 
-      expect(screen.getByLabelText('Add my name')).toBeTruthy();
+      expect(screen.getByLabelText(/play as a guest/i)).toBeTruthy();
     });
 
     it('drops a remembered name the organizer has removed', () => {
@@ -214,8 +214,38 @@ describe('JoinHopperPage', () => {
       loaded({ waiting: ['Slim'], official: ['Mike'] });
       renderWithProviders(<JoinHopperPage />);
 
-      expect(screen.getByLabelText('Add my name')).toBeTruthy();
+      expect(screen.getByLabelText(/play as a guest/i)).toBeTruthy();
       expect(localStorage.getItem('bracket-walkup:jt-1')).toBeNull();
+    });
+
+    it('replaces the box with their standing the moment the name is added', async () => {
+      const user = userEvent.setup();
+      mocks.member.mockReturnValue({ data: null, isLoading: false });
+      loaded();
+      // The refetched list now contains them, as it would after invalidation.
+      addSelf.mockImplementation(async () => {
+        loaded({ waiting: ['Rocket'] });
+        return { ok: true, name: 'Rocket' };
+      });
+      renderWithProviders(<JoinHopperPage />);
+
+      await user.type(screen.getByLabelText(/play as a guest/i), 'Rocket');
+      await user.click(screen.getByRole('button', { name: 'Add' }));
+
+      // Storage writes don't re-render on their own — the name is held in state.
+      expect(await screen.findByText(/you're on the waiting list as rocket/i)).toBeTruthy();
+      expect(screen.queryByLabelText(/play as a guest/i)).toBeNull();
+    });
+
+    it('keeps the remembered name while the list is still refetching', () => {
+      mocks.member.mockReturnValue({ data: null, isLoading: false });
+      localStorage.setItem('bracket-walkup:jt-1', 'Rocket');
+      // Mid-refetch the list is stale and does NOT yet contain them. Treating
+      // that as "removed" erased a name that had just been added successfully.
+      loaded({ waiting: ['Slim'], official: [] }, true);
+      renderWithProviders(<JoinHopperPage />);
+
+      expect(localStorage.getItem('bracket-walkup:jt-1')).toBe('Rocket');
     });
   });
 });

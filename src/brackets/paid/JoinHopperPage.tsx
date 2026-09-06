@@ -19,7 +19,7 @@
  * nothing about the actual tournament.
  */
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useParams, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -48,7 +48,7 @@ export function JoinHopperPage() {
   const join = useJoinHopper();
   const attempted = useRef(false);
 
-  const { data: view, isLoading: viewLoading } = useBracketPlayerView(joinToken);
+  const { data: view, isLoading: viewLoading, isFetching } = useBracketPlayerView(joinToken);
   const addSelf = useAddSelfAsWalkup(joinToken ?? '');
 
   // Watch the hopper, not just the matches — the whole point before the start
@@ -77,12 +77,17 @@ export function JoinHopperPage() {
   }, [joinToken, member?.id, memberLoading, viewLoading, alreadyListed, join]);
 
   /**
-   * Who the viewer is when they have no account: the name this browser noted,
-   * but only if it is still on the live list. If the organizer removed them the
-   * note is stale, so it is dropped rather than showing them as on a list they
-   * are not on.
+   * Who the viewer is when they have no account: the name this browser noted.
+   *
+   * Held in STATE, not read from storage during render — writing to
+   * localStorage doesn't tell React anything, so reading it inline left the
+   * "add my name" box on screen after a successful add.
    */
-  const localName = joinToken ? recallWalkupName(joinToken) : null;
+  const [localName, setLocalName] = useState<string | null>(() =>
+    joinToken ? recallWalkupName(joinToken) : null
+  );
+
+  /** The remembered name, but only if the live list still backs it up. */
   const localEntry = useMemo(() => {
     if (!localName || !view?.found) return null;
     const inOfficial = view.official.includes(localName);
@@ -98,10 +103,20 @@ export function JoinHopperPage() {
     };
   }, [localName, view?.found, view?.official, view?.waiting]);
 
-  // Drop a note the list no longer backs up.
+  /**
+   * Drop a note the list no longer backs up — the organizer removed them.
+   *
+   * Gated on the fetch being SETTLED. A refetch in flight still holds the old
+   * list, so running this mid-flight deleted the note of a name that had just
+   * been added successfully — the player came back to an empty box.
+   */
   useEffect(() => {
-    if (joinToken && localName && view?.found && !localEntry) forgetWalkupName(joinToken);
-  }, [joinToken, localName, view?.found, localEntry]);
+    if (isFetching) return;
+    if (joinToken && localName && view?.found && !localEntry) {
+      forgetWalkupName(joinToken);
+      setLocalName(null);
+    }
+  }, [isFetching, joinToken, localName, view?.found, localEntry]);
 
   const tree = useMemo(
     () =>
@@ -155,7 +170,10 @@ export function JoinHopperPage() {
             onAdd={async (name) => {
               const result = await addSelf.mutateAsync(name);
               if (result.ok) {
-                if (joinToken) rememberWalkupName(joinToken, result.name ?? name);
+                const saved = result.name ?? name;
+                if (joinToken) rememberWalkupName(joinToken, saved);
+                // State, so the box gives way to "you're on the list" at once.
+                setLocalName(saved);
                 toast.success("You're on the list.");
                 return null;
               }

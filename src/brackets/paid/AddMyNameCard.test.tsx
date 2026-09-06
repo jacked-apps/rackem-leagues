@@ -12,7 +12,7 @@ describe('AddMyNameCard', () => {
     const onAdd = vi.fn().mockResolvedValue(null);
     renderWithProviders(<AddMyNameCard onAdd={onAdd} redirectPath="/brackets/join/jt-1" />);
 
-    await user.type(screen.getByLabelText('Add my name'), '  Rocket  ');
+    await user.type(screen.getByLabelText(/play as a guest/i), '  Rocket  ');
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
     expect(onAdd).toHaveBeenCalledWith('Rocket');
@@ -23,19 +23,19 @@ describe('AddMyNameCard', () => {
     const onAdd = vi.fn().mockResolvedValue('Rocket is already on this list — try another name.');
     renderWithProviders(<AddMyNameCard onAdd={onAdd} redirectPath="/brackets/join/jt-1" />);
 
-    await user.type(screen.getByLabelText('Add my name'), 'Rocket');
+    await user.type(screen.getByLabelText(/play as a guest/i), 'Rocket');
     await user.click(screen.getByRole('button', { name: 'Add' }));
 
     // They have to retype here, so the reason belongs here.
     expect(await screen.findByText(/already on this list/i)).toBeTruthy();
-    expect(screen.getByLabelText('Add my name')).toHaveValue('Rocket');
+    expect(screen.getByLabelText(/play as a guest/i)).toHaveValue('Rocket');
   });
 
   it('caps the name at 12 characters in the box as well as the database', async () => {
     const user = userEvent.setup();
     renderWithProviders(<AddMyNameCard onAdd={vi.fn()} redirectPath="/x" />);
 
-    const input = screen.getByLabelText('Add my name');
+    const input = screen.getByLabelText(/play as a guest/i);
     await user.type(input, 'ThisNameIsFarTooLong');
     expect((input as HTMLInputElement).value).toHaveLength(12);
   });
@@ -45,13 +45,29 @@ describe('AddMyNameCard', () => {
     expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
   });
 
-  it('offers sign-in as the other door, returning to this tournament', () => {
+  it('leads with sign-in, returning to this tournament', () => {
     renderWithProviders(
       <AddMyNameCard onAdd={vi.fn()} redirectPath="/brackets/join/jt-1" />
     );
 
+    expect(screen.getByText(/you're not signed in/i)).toBeTruthy();
     expect(
       screen.getByRole('link', { name: /sign in/i }).getAttribute('href')
     ).toBe('/login?redirect=%2Fbrackets%2Fjoin%2Fjt-1');
+  });
+
+  it('makes the case for registering without promising a trip back', () => {
+    renderWithProviders(<AddMyNameCard onAdd={vi.fn()} redirectPath="/brackets/join/jt-1" />);
+
+    expect(screen.getByText(/takes a minute/i)).toBeTruthy();
+    // Register can't return the player here yet, so it must not claim to.
+    expect(
+      screen.getByRole('link', { name: /create an account/i }).getAttribute('href')
+    ).toBe('/register');
+  });
+
+  it('still offers guest entry, plainly', () => {
+    renderWithProviders(<AddMyNameCard onAdd={vi.fn()} redirectPath="/x" />);
+    expect(screen.getByLabelText(/play as a guest/i)).toBeTruthy();
   });
 });
