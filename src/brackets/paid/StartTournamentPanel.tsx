@@ -5,7 +5,8 @@
  *
  *  1. Say plainly who is about to be in the bracket, since the official list is
  *     what gets seeded and everything else is discarded.
- *  2. Offer the waiting room as one tap. In practice the waiting room is people
+ *  2. Offer the waiting room as one tap. It only mentions payment when the
+ *     tournament actually bought the entry-fee tracker. In practice the waiting room is people
  *     standing in the room wanting to play, so making the organizer admit twenty
  *     of them one at a time is busywork — but the checkbox is OFF by default and
  *     names its count, because a QR code on a flyer also collects the curious,
@@ -25,6 +26,11 @@ interface StartTournamentPanelProps {
   starting: boolean;
   /** e.g. "$5" when premium features are being charged at start; null if free. */
   priceLabel: string | null;
+  /**
+   * This tournament bought the entry-fee tracker. Only then does the sweep-in
+   * checkbox say anything about payment — otherwise it is just "add them".
+   */
+  trackEntryFees?: boolean;
 }
 
 export function StartTournamentPanel({
@@ -35,6 +41,7 @@ export function StartTournamentPanel({
   onStart,
   starting,
   priceLabel,
+  trackEntryFees = false,
 }: StartTournamentPanelProps) {
   // What the bracket will actually be built from, live as the checkbox flips.
   const total = officialCount + (includeWaiting ? waitingCount : 0);
@@ -51,7 +58,9 @@ export function StartTournamentPanel({
             onCheckedChange={(c) => onIncludeWaitingChange(c === true)}
           />
           <Label htmlFor="include-waiting" className="cursor-pointer font-normal">
-            Also add the {waitingCount} still waiting, as unpaid
+            {trackEntryFees
+              ? `Also add the ${waitingCount} still waiting, as unpaid`
+              : `Also add the ${waitingCount} still waiting`}
           </Label>
         </div>
       )}

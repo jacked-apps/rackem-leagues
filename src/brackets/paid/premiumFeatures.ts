@@ -94,6 +94,28 @@ export function getPremiumFeature(key: string): PremiumFeature | undefined {
 }
 
 /**
+ * Whether a tournament bought a given premium feature.
+ *
+ * Every feature is sold and priced on its own, so each one must also GATE on
+ * its own — a tournament that bought sign-up links but not the entry-fee
+ * tracker must see no paid/unpaid anything, and vice versa. Read through this
+ * helper rather than reaching into the array, so the null/undefined case (a
+ * free tournament) can't be forgotten at a call site.
+ *
+ * @param features - `brackets.premium_features`, which is nullable.
+ * @param key - The feature key, e.g. 'payment_tracker'.
+ *
+ * @example
+ * hasPremiumFeature(bracket.premium_features, 'payment_tracker')
+ */
+export function hasPremiumFeature(
+  features: readonly string[] | null | undefined,
+  key: string
+): boolean {
+  return features?.includes(key) ?? false;
+}
+
+/**
  * Total price for the selected features — $1 each, capped at $5 (PRICE_CAP_CENTS).
  * So turning everything on never costs more than five bucks.
  */

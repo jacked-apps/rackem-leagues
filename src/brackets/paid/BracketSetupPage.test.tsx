@@ -136,7 +136,9 @@ describe('BracketSetupPage', () => {
     ]);
     renderWithProviders(<BracketSetupPage />);
 
-    fireEvent.click(screen.getByLabelText('Also add the 1 still waiting, as unpaid'));
+    // This tournament bought sign-up links only, so the label says nothing
+    // about payment — see the entry-fee-tracker case below.
+    fireEvent.click(screen.getByLabelText('Also add the 1 still waiting'));
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
 
     await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(true));
@@ -172,5 +174,25 @@ describe('BracketSetupPage', () => {
 
     expect(screen.getByText(/already started/i)).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Start/ })).toBeNull();
+  });
+
+  it('keeps the entry-fee tracker out of a tournament that did not buy it', () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b', status: 'hopper', paid_status: null })], {
+      premium_features: ['real_players'],
+    });
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByLabelText('Also add the 1 still waiting')).toBeTruthy();
+    expect(screen.queryByText('Unpaid')).toBeNull();
+  });
+
+  it('brings it in when the tournament did buy it', () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b', status: 'hopper', paid_status: null })], {
+      premium_features: ['real_players', 'payment_tracker'],
+    });
+    renderWithProviders(<BracketSetupPage />);
+
+    expect(screen.getByLabelText('Also add the 1 still waiting, as unpaid')).toBeTruthy();
+    expect(screen.getByText('Unpaid')).toBeTruthy();
   });
 });

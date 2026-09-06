@@ -133,7 +133,7 @@ describe('HopperView', () => {
       entry({ id: 'b', status: 'hopper', display_name: 'Slim', added_via: 'qr' }),
       entry({ id: 'c', status: 'hopper', display_name: 'Doc', added_via: 'link' }),
     ]);
-    renderWithProviders(<HopperView bracketId="b1" />);
+    renderWithProviders(<HopperView bracketId="b1" trackEntryFees />);
 
     expect(screen.getByText('Unpaid')).toBeTruthy();
     expect(screen.getByText('Scanned in')).toBeTruthy();
@@ -270,5 +270,65 @@ describe('HopperView', () => {
     loaded([]);
     renderWithProviders(<HopperView bracketId="b1" readOnly />);
     expect(screen.getByLabelText('Add a player')).toBeDisabled();
+  });
+
+  describe('without the entry-fee tracker (a separately sold feature)', () => {
+    it('shows no paid/unpaid labels on the official list', () => {
+      loaded([
+        entry({ id: 'a', status: 'official', display_name: 'Mike', paid_status: 'unpaid' }),
+      ]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      expect(screen.queryByText('Unpaid')).toBeNull();
+      expect(screen.queryByText('Paid')).toBeNull();
+    });
+
+    it('admits with one plain action instead of a paid/unpaid choice', async () => {
+      const user = userEvent.setup();
+      loaded([entry({ id: 'a', status: 'hopper', display_name: 'Slim' })]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      await user.click(screen.getByRole('button', { name: /Slim/ }));
+      expect(screen.queryByText('Add as paid')).toBeNull();
+      expect(screen.queryByText('Add as unpaid')).toBeNull();
+
+      await user.click(await screen.findByText('Add to tournament'));
+      expect(mocks.admit).toHaveBeenCalledWith({ entryId: 'a', paidStatus: 'unpaid' });
+    });
+
+    it('offers no way to flip an admitted player\'s paid flag', async () => {
+      const user = userEvent.setup();
+      loaded([entry({ id: 'a', status: 'official', paid_status: 'unpaid' })]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      await user.click(screen.getByRole('button', { name: /Someone/ }));
+      expect(screen.queryByText(/mark as/i)).toBeNull();
+      // Removal is still available — it isn't a money action.
+      expect(await screen.findByText('Remove')).toBeTruthy();
+    });
+  });
+
+  describe('with the entry-fee tracker', () => {
+    it('offers the paid and unpaid admit choices', async () => {
+      const user = userEvent.setup();
+      loaded([entry({ id: 'a', status: 'hopper', display_name: 'Slim' })]);
+      renderWithProviders(<HopperView bracketId="b1" trackEntryFees />);
+
+      await user.click(screen.getByRole('button', { name: /Slim/ }));
+      await user.click(await screen.findByText('Add as paid'));
+
+      expect(mocks.admit).toHaveBeenCalledWith({ entryId: 'a', paidStatus: 'paid' });
+    });
+
+    it('flips an admitted player\'s paid flag', async () => {
+      const user = userEvent.setup();
+      loaded([entry({ id: 'a', status: 'official', paid_status: 'unpaid' })]);
+      renderWithProviders(<HopperView bracketId="b1" trackEntryFees />);
+
+      await user.click(screen.getByRole('button', { name: /Someone/ }));
+      await user.click(await screen.findByText('Mark as paid'));
+
+      expect(mocks.setPaid).toHaveBeenCalledWith({ entryId: 'a', paidStatus: 'paid' });
+    });
   });
 });

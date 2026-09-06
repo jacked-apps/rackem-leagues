@@ -10,6 +10,7 @@ import {
   getPremiumFeature,
   totalPriceCents,
   formatPrice,
+  hasPremiumFeature,
 } from './premiumFeatures';
 
 describe('premiumFeatures helpers', () => {
@@ -46,5 +47,19 @@ describe('premiumFeatures helpers', () => {
     expect(formatPrice(0)).toBe('$0.00');
     expect(formatPrice(500)).toBe('$5.00');
     expect(formatPrice(1300)).toBe('$13.00');
+  });
+});
+
+describe('hasPremiumFeature', () => {
+  it('is true only for a feature the tournament actually bought', () => {
+    expect(hasPremiumFeature(['real_players'], 'real_players')).toBe(true);
+    // The point of the helper: sign-up links must NOT imply the fee tracker.
+    expect(hasPremiumFeature(['real_players'], 'payment_tracker')).toBe(false);
+  });
+
+  it('treats a free tournament (no features) as having none', () => {
+    expect(hasPremiumFeature(null, 'payment_tracker')).toBe(false);
+    expect(hasPremiumFeature(undefined, 'payment_tracker')).toBe(false);
+    expect(hasPremiumFeature([], 'payment_tracker')).toBe(false);
   });
 });

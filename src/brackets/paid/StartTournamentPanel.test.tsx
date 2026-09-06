@@ -17,6 +17,7 @@ function props(over: Record<string, unknown> = {}) {
     onStart: vi.fn(),
     starting: false,
     priceLabel: null,
+    trackEntryFees: true,
     ...over,
   };
 }
@@ -80,5 +81,12 @@ describe('StartTournamentPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Start tournament' }));
     expect(onStart).toHaveBeenCalled();
+  });
+
+  it('says nothing about payment without the entry-fee tracker', () => {
+    renderWithProviders(<StartTournamentPanel {...props({ trackEntryFees: false })} />);
+
+    expect(screen.getByLabelText('Also add the 2 still waiting')).toBeTruthy();
+    expect(screen.queryByText(/unpaid/i)).toBeNull();
   });
 });

@@ -4,8 +4,15 @@
  * The whole row is the trigger — the organizer taps a name and gets the menu for
  * that person. Which actions appear depends on where the row sits:
  *
- *   • WAITING  → "Add as paid" / "Add as unpaid" (admit to the tournament), Remove.
- *   • IN THE TOURNAMENT → flip the paid flag, Remove.
+ *   • WAITING  → add them to the tournament, Remove.
+ *   • IN THE TOURNAMENT → Remove.
+ *
+ * Every mention of money is gated on `trackEntryFees` (the payment_tracker
+ * feature). The features are sold separately, so a tournament that bought
+ * sign-up links but not the entry-fee tracker must never see "Add as paid" —
+ * that would both give the tracker away and clutter the menu of an organizer
+ * who collects nothing at the door. With it off, admitting is one item and the
+ * stored paid flag simply defaults to unpaid, unseen.
  *
  * Admitting and flipping paid are non-destructive, so they fire on the tap.
  * Remove deletes the entry, so it takes a second confirming tap (project
@@ -42,6 +49,8 @@ interface HopperEntryMenuProps {
   onAdmit: (paidStatus: 'paid' | 'unpaid') => void;
   /** Flip an already-official entry's paid flag. */
   onSetPaid: (paidStatus: 'paid' | 'unpaid') => void;
+  /** This tournament bought the entry-fee tracker — show the money actions. */
+  trackEntryFees?: boolean;
   /** Delete the entry from this tournament. */
   onEject: () => void;
   /** Setup is over (or a write is in flight) — show the row, take no actions. */
@@ -53,6 +62,7 @@ export function HopperEntryMenu({
   onAdmit,
   onSetPaid,
   onEject,
+  trackEntryFees = false,
   disabled = false,
 }: HopperEntryMenuProps) {
   const [confirmingEject, setConfirmingEject] = useState(false);
@@ -68,13 +78,15 @@ export function HopperEntryMenu({
         >
           <HopperIdentityLine identity={identity} duplicateName={row.duplicateName} />
           {isOfficial ? (
-            <span
-              className={`shrink-0 text-xs font-medium ${
-                entry.paid_status === 'paid' ? 'text-success' : 'text-muted-foreground'
-              }`}
-            >
-              {entry.paid_status === 'paid' ? 'Paid' : 'Unpaid'}
-            </span>
+            trackEntryFees && (
+              <span
+                className={`shrink-0 text-xs font-medium ${
+                  entry.paid_status === 'paid' ? 'text-success' : 'text-muted-foreground'
+                }`}
+              >
+                {entry.paid_status === 'paid' ? 'Paid' : 'Unpaid'}
+              </span>
+            )
           ) : (
             <span className="shrink-0 text-xs text-muted-foreground">
               {arrivalLabel(entry.added_via)}
@@ -83,22 +95,30 @@ export function HopperEntryMenu({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end">
-          {isOfficial ? (
-            <DropdownMenuItem
-              onSelect={() => onSetPaid(entry.paid_status === 'paid' ? 'unpaid' : 'paid')}
-            >
-              {entry.paid_status === 'paid' ? 'Mark as unpaid' : 'Mark as paid'}
-            </DropdownMenuItem>
-          ) : (
-            <>
-              <DropdownMenuItem onSelect={() => onAdmit('paid')}>
-                Add as paid
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => onAdmit('unpaid')}>
-                Add as unpaid
-              </DropdownMenuItem>
-            </>
-          )}
+          {isOfficial
+            ? trackEntryFees && (
+                <DropdownMenuItem
+                  onSelect={() => onSetPaid(entry.paid_status === 'paid' ? 'unpaid' : 'paid')}
+                >
+                  {entry.paid_status === 'paid' ? 'Mark as unpaid' : 'Mark as paid'}
+                </DropdownMenuItem>
+              )
+            : trackEntryFees ? (
+                <>
+                  <DropdownMenuItem onSelect={() => onAdmit('paid')}>
+                    Add as paid
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => onAdmit('unpaid')}>
+                    Add as unpaid
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                // No tracker: admitting is one plain action. The stored flag
+                // defaults to unpaid and is never shown.
+                <DropdownMenuItem onSelect={() => onAdmit('unpaid')}>
+                  Add to tournament
+                </DropdownMenuItem>
+              )}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"

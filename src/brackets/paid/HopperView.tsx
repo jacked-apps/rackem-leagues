@@ -39,11 +39,20 @@ import { PastPlayerMenu } from './PastPlayerMenu';
 
 interface HopperViewProps {
   bracketId: string;
+  /**
+   * This tournament bought the entry-fee tracker. Sold separately from sign-up
+   * links, so without it the screen shows no paid/unpaid anything.
+   */
+  trackEntryFees?: boolean;
   /** Once the tournament starts the lists are a record, not a workspace. */
   readOnly?: boolean;
 }
 
-export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
+export function HopperView({
+  bracketId,
+  trackEntryFees = false,
+  readOnly = false,
+}: HopperViewProps) {
   const hopper = useBracketHopper(bracketId);
   const roster = useBracketRoster(bracketId);
 
@@ -80,6 +89,7 @@ export function HopperView({ bracketId, readOnly = false }: HopperViewProps) {
     <li key={row.id}>
       <HopperEntryMenu
         row={row}
+        trackEntryFees={trackEntryFees}
         disabled={locked}
         onAdmit={(paidStatus) => run(admit.mutateAsync({ entryId: row.id, paidStatus }))}
         onSetPaid={(paidStatus) => run(setPaid.mutateAsync({ entryId: row.id, paidStatus }))}

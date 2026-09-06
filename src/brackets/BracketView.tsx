@@ -34,6 +34,7 @@ import {
 import { buildBracketView, championName } from './bracketViewModel';
 import { BracketTree } from './BracketTree';
 import { EntryFeePanel } from './paid/EntryFeePanel';
+import { hasPremiumFeature } from './paid/premiumFeatures';
 import { BracketLegend } from './BracketLegend';
 import { useBracketRealtime } from './useBracketRealtime';
 
@@ -173,7 +174,7 @@ export function BracketView() {
           />
 
           {/* Entry-fee tracker — only when the tournament bought that feature. */}
-          {bracket.premium_features?.includes('payment_tracker') && (
+          {hasPremiumFeature(bracket.premium_features, 'payment_tracker') && (
             <EntryFeePanel
               bracketId={bracket.id}
               participants={data.participants}

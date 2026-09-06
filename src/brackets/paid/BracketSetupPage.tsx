@@ -29,7 +29,7 @@ import {
 import type { BracketFormat } from '@/types/bracket';
 import { HopperView } from './HopperView';
 import { StartTournamentPanel } from './StartTournamentPanel';
-import { formatPrice, totalPriceCents } from './premiumFeatures';
+import { formatPrice, hasPremiumFeature, totalPriceCents } from './premiumFeatures';
 
 export function BracketSetupPage() {
   const { bracketId } = useParams<{ bracketId: string }>();
@@ -66,6 +66,9 @@ export function BracketSetupPage() {
   const waitingCount = entries.length - officialCount;
 
   const chargeCents = totalPriceCents(bracket.premium_features ?? []);
+  // Sold separately from sign-up links, so the hopper only talks about money
+  // when this tournament actually bought the tracker.
+  const trackEntryFees = hasPremiumFeature(bracket.premium_features, 'payment_tracker');
 
   const handleStart = async () => {
     if (!bracketId) return;
@@ -117,7 +120,7 @@ export function BracketSetupPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-5">
-          <HopperView bracketId={bracket.id} />
+          <HopperView bracketId={bracket.id} trackEntryFees={trackEntryFees} />
           <StartTournamentPanel
             officialCount={officialCount}
             waitingCount={waitingCount}
@@ -126,6 +129,7 @@ export function BracketSetupPage() {
             onStart={handleStart}
             starting={starting}
             priceLabel={chargeCents > 0 ? formatPrice(chargeCents) : null}
+            trackEntryFees={trackEntryFees}
           />
         </CardContent>
       </Card>
