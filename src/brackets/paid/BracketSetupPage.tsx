@@ -19,7 +19,7 @@
  *      be swept in, ask. Leaving someone out is not recoverable — the bracket
  *      is drawn and they simply aren't in it.
  *   2. A final confirm showing the FINAL player count and the exact charge.
- *      Both irreversible things happen on one tap, so the last tap is a
+ *      One tap draws the bracket AND charges a card, so the last tap is a
  *      deliberate one.
  *
  * The order matters: the waiting decision changes the player count, so the
@@ -166,9 +166,9 @@ export function BracketSetupPage() {
   };
 
   /**
-   * The Start button. Anyone left in the waiting room is about to be shut out of
-   * a bracket that can't be redrawn, so if the organizer hasn't already said to
-   * include them, ask before going any further.
+   * The Start button. Anyone left in the waiting room may not get another way
+   * in — late entry is a future feature and will have its own limits — so if the
+   * organizer hasn't already said to include them, ask before going any further.
    */
   const handleStart = () => {
     if (!includeWaiting && waitingCount > 0) {
@@ -291,8 +291,8 @@ export function BracketSetupPage() {
               waiting
             </AlertDialogTitle>
             <AlertDialogDescription>
-              They aren't in the tournament yet. Once you start, the bracket is
-              drawn and they can't be added to it.
+              They aren't in the tournament yet. Once you start, you may not be
+              able to add them.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">

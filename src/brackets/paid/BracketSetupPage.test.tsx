@@ -144,7 +144,7 @@ describe('BracketSetupPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
 
-    // Nothing irreversible happens until the organizer picks.
+    // Nothing is committed until the organizer picks.
     expect(await screen.findByRole('alertdialog')).toBeTruthy();
     expect(screen.getByText(/1 player is still waiting/i)).toBeTruthy();
     expect(mocks.finalize).not.toHaveBeenCalled();
@@ -300,7 +300,7 @@ describe('BracketSetupPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
 
-    // Nothing irreversible until the last tap.
+    // Nothing is committed until the last tap.
     expect(await screen.findByText(/start with 2 players\?/i)).toBeTruthy();
     expect(mocks.finalize).not.toHaveBeenCalled();
     expect(mocks.charge).not.toHaveBeenCalled();

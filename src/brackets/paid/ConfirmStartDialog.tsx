@@ -1,10 +1,14 @@
 /**
  * @fileoverview The final look before money moves (Unit C3).
  *
- * Start does two irreversible things at once — it draws a bracket that can't be
- * redrawn, and it charges a card. So the last tap before both is a deliberate
- * one, showing the two facts the organizer would want to check: how many
- * players are actually going in, and exactly what they are being charged.
+ * Start commits two things at once — it draws the bracket, and it charges a
+ * card. So the last tap before both is a deliberate one, showing the two facts
+ * the organizer would want to check: how many players are actually going in,
+ * and exactly what they are being charged.
+ *
+ * The copy says changing the field afterwards "may not be possible" rather than
+ * "can't be done": late entry into an unplayed slot is a real planned feature,
+ * and an absolute here would quietly become false the day it ships.
  *
  * The player count here is the FINAL one, after any waiting-list decision, so
  * it can differ from what the card behind the dialog said a moment ago. That's
@@ -50,8 +54,8 @@ export function ConfirmStartDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Start with {playerCount} players?</AlertDialogTitle>
           <AlertDialogDescription>
-            This draws the bracket{priceLabel ? ' and charges your card' : ''}. The
-            bracket can't be redrawn afterwards.
+            This draws the bracket{priceLabel ? ' and charges your card' : ''}.
+            Changing who's in it afterwards may not be possible.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
