@@ -124,6 +124,7 @@ describe('BracketSetupPage', () => {
     renderWithProviders(<BracketSetupPage />);
 
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay .* and start/i }));
 
     await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/brackets/b1'));
     expect(order).toEqual(['finalize', 'start', 'charge']);
@@ -159,6 +160,7 @@ describe('BracketSetupPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
     fireEvent.click(await screen.findByRole('button', { name: /Add them and start/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay .* and start/i }));
 
     await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(true));
   });
@@ -173,6 +175,7 @@ describe('BracketSetupPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
     fireEvent.click(await screen.findByRole('button', { name: /Start without them/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay .* and start/i }));
 
     await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(false));
   });
@@ -183,10 +186,13 @@ describe('BracketSetupPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
 
+    // Straight to the final confirm — no waiting-list question to ask. Match the
+    // warning's own title, since the waiting-list checkbox label also contains
+    // the words "still waiting".
+    expect(await screen.findByRole('alertdialog')).toBeTruthy();
+    expect(screen.queryByText(/player(s)? (is|are) still waiting/i)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Pay .* and start/i }));
     await waitFor(() => expect(mocks.finalize).toHaveBeenCalledWith(false));
-    // Query the dialog, not the text — the waiting-list checkbox label also
-    // contains "still waiting".
-    expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
   it('charges for every feature the tournament bought, not just sign-up', async () => {
@@ -196,6 +202,7 @@ describe('BracketSetupPage', () => {
     renderWithProviders(<BracketSetupPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Start & pay $2.00' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay \$2\.00 and start/i }));
 
     await waitFor(() => expect(mocks.charge).toHaveBeenCalled());
     expect(mocks.charge).toHaveBeenCalledWith({ bracketId: 'b1', amountCents: 200 });
@@ -207,6 +214,7 @@ describe('BracketSetupPage', () => {
     renderWithProviders(<BracketSetupPage />);
 
     fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Pay .* and start/i }));
 
     await waitFor(() =>
       expect(mocks.toastError).toHaveBeenCalledWith('Add at least 2 players before starting')
@@ -284,5 +292,55 @@ describe('BracketSetupPage', () => {
     expect(await screen.findByLabelText('Tournament name')).toHaveValue('Friday 9-Ball');
     expect(screen.getByLabelText('Game')).toBeTruthy();
     expect(screen.getByLabelText('Format')).toBeTruthy();
+  });
+
+  it('asks for a final confirmation before drawing the bracket or charging', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+
+    // Nothing irreversible until the last tap.
+    expect(await screen.findByText(/start with 2 players\?/i)).toBeTruthy();
+    expect(mocks.finalize).not.toHaveBeenCalled();
+    expect(mocks.charge).not.toHaveBeenCalled();
+  });
+
+  it('names the amount on the confirming button, not a bare "Confirm"', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })], {
+      premium_features: ['real_players', 'payment_tracker'],
+    });
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    expect(
+      await screen.findByRole('button', { name: 'Pay $2.00 and start' })
+    ).toBeTruthy();
+  });
+
+  it('confirms the FINAL count, after the waiting-list decision', async () => {
+    setup([
+      entry({ id: 'a' }),
+      entry({ id: 'b' }),
+      entry({ id: 'c', status: 'hopper', paid_status: null }),
+    ]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Add them and start/i }));
+
+    // 2 official + the 1 just swept in — not the 2 shown a moment ago.
+    expect(await screen.findByText(/start with 3 players\?/i)).toBeTruthy();
+  });
+
+  it('backing out of the confirm starts nothing', async () => {
+    setup([entry({ id: 'a' }), entry({ id: 'b' })]);
+    renderWithProviders(<BracketSetupPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Start & pay/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Go back/i }));
+
+    expect(mocks.finalize).not.toHaveBeenCalled();
+    expect(mocks.charge).not.toHaveBeenCalled();
   });
 });

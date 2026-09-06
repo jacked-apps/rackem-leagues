@@ -3,21 +3,8 @@
  *
  * Collapsed by default — the headline is the price on the button, and the
  * itemisation is there for the moment someone wonders "what am I actually
- * buying?" rather than something they must read every time.
- *
- * Laid out like a receipt: items on the left with amounts in a right-hand
- * column, a rule, then the total pushed over to sit BESIDE its amount. A total
- * styled as just another full-width row reads as one more thing being charged —
- * the reason the first version looked like a second dollar.
- *
- * The $5 cap gets its own line when it bites. Six features at $1 each add to $6
- * while the button says $5, and a list that doesn't add up to the total reads
- * like a bug even when the cheaper number is the honest one.
- *
- * Amounts use tabular figures so the digits line up in a column; proportional
- * numerals make a short list of prices look ragged. The total is set a step
- * larger than the items as well as bolder — weight alone is a weak signal at
- * this size, and it is the one number that has to be unmistakable.
+ * buying?" rather than something they must read every time. The final confirm
+ * shows the same receipt expanded, from the same component.
  */
 
 import {
@@ -26,6 +13,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { ChargeReceipt } from './ChargeReceipt';
 import { chargeBreakdown, formatPrice } from './premiumFeatures';
 
 interface ChargeBreakdownPanelProps {
@@ -34,8 +22,7 @@ interface ChargeBreakdownPanelProps {
 }
 
 export function ChargeBreakdownPanel({ featureKeys }: ChargeBreakdownPanelProps) {
-  const { lines, subtotalCents, capDiscountCents, totalCents } =
-    chargeBreakdown(featureKeys);
+  const { lines, totalCents } = chargeBreakdown(featureKeys);
 
   if (lines.length === 0) return null;
 
@@ -47,38 +34,7 @@ export function ChargeBreakdownPanel({ featureKeys }: ChargeBreakdownPanelProps)
           {formatPrice(totalCents)}
         </AccordionTrigger>
         <AccordionContent>
-          <dl className="text-sm tabular-nums">
-            {lines.map((line) => (
-              <div key={line.key} className="flex justify-between gap-4 py-0.5">
-                <dt className="text-muted-foreground">{line.label}</dt>
-                <dd>{formatPrice(line.cents)}</dd>
-              </div>
-            ))}
-
-            {/* Only when the cap actually reduced the bill. */}
-            {capDiscountCents > 0 && (
-              <>
-                <div className="flex justify-between gap-4 py-0.5 text-muted-foreground">
-                  <dt>Subtotal</dt>
-                  <dd>{formatPrice(subtotalCents)}</dd>
-                </div>
-                <div className="flex justify-between gap-4 py-0.5 text-success">
-                  <dt>Everything-included discount</dt>
-                  <dd>−{formatPrice(capDiscountCents)}</dd>
-                </div>
-              </>
-            )}
-
-            {/* The total sits with its amount, away from the item column. */}
-            <div className="mt-1 flex justify-end gap-6 border-t pt-1.5 text-base font-semibold">
-              <dt>Total</dt>
-              <dd>{formatPrice(totalCents)}</dd>
-            </div>
-          </dl>
-
-          <p className="mt-1 text-right text-xs text-muted-foreground">
-            Charged when you start the tournament.
-          </p>
+          <ChargeReceipt featureKeys={featureKeys} />
         </AccordionContent>
       </AccordionItem>
     </Accordion>

@@ -13,10 +13,17 @@
  * charge. The charge runs LAST so a failed start can never leave a
  * charged-but-not-started tournament.
  *
- * One guard sits in front of all that: if people are still waiting and the
- * organizer hasn't asked for them to be swept in, starting asks first. Leaving
- * someone out is not recoverable — the bracket is drawn and they are simply not
- * in the tournament — so it must be a decision rather than an omission.
+ * Two guards sit in front of all that, in order:
+ *
+ *   1. If people are still waiting and the organizer hasn't asked for them to
+ *      be swept in, ask. Leaving someone out is not recoverable — the bracket
+ *      is drawn and they simply aren't in it.
+ *   2. A final confirm showing the FINAL player count and the exact charge.
+ *      Both irreversible things happen on one tap, so the last tap is a
+ *      deliberate one.
+ *
+ * The order matters: the waiting decision changes the player count, so the
+ * confirm has to come second to show a number that is actually true.
  */
 
 import { useState } from 'react';
@@ -47,6 +54,7 @@ import type { BracketFormat } from '@/types/bracket';
 import { queryKeys } from '@/api/queryKeys';
 import { useBracketRealtime } from '../useBracketRealtime';
 import { BracketInfoTab } from './BracketInfoTab';
+import { ConfirmStartDialog } from './ConfirmStartDialog';
 import { HopperView } from './HopperView';
 import { StartTournamentPanel } from './StartTournamentPanel';
 import { formatPrice, hasPremiumFeature, totalPriceCents } from './premiumFeatures';
@@ -72,6 +80,12 @@ export function BracketSetupPage() {
   const [includeWaiting, setIncludeWaiting] = useState(false);
   const [starting, setStarting] = useState(false);
   const [confirmingWaiting, setConfirmingWaiting] = useState(false);
+  /**
+   * The sweep decision, carried between the two dialogs. Null means the confirm
+   * isn't open; a boolean is the answer the first dialog produced (or the
+   * standing checkbox, when the first dialog never had to appear).
+   */
+  const [pendingSweep, setPendingSweep] = useState<boolean | null>(null);
 
   if (isLoading) return <Centered>Loading tournament…</Centered>;
   if (isError || !data) return <Centered>Tournament not found.</Centered>;
@@ -122,7 +136,7 @@ export function BracketSetupPage() {
    */
   const runStart = async (sweepInWaiting: boolean) => {
     if (!bracketId) return;
-    setConfirmingWaiting(false);
+    setPendingSweep(null);
     setStarting(true);
     try {
       // 1. Official list → seeded participants (optionally sweeping in the
@@ -154,15 +168,25 @@ export function BracketSetupPage() {
   /**
    * The Start button. Anyone left in the waiting room is about to be shut out of
    * a bracket that can't be redrawn, so if the organizer hasn't already said to
-   * include them, ask before doing anything irreversible.
+   * include them, ask before going any further.
    */
   const handleStart = () => {
     if (!includeWaiting && waitingCount > 0) {
       setConfirmingWaiting(true);
       return;
     }
-    void runStart(includeWaiting);
+    setPendingSweep(includeWaiting);
   };
+
+  /** The waiting dialog's answer hands off to the final confirm. */
+  const answerWaiting = (sweepInWaiting: boolean) => {
+    setConfirmingWaiting(false);
+    setPendingSweep(sweepInWaiting);
+  };
+
+  // What the bracket will actually contain, once the sweep answer is known.
+  const finalPlayerCount =
+    officialCount + (pendingSweep ? waitingCount : 0);
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-3 px-3 py-4">
@@ -274,15 +298,24 @@ export function BracketSetupPage() {
           <AlertDialogFooter className="gap-2 sm:flex-col-reverse sm:space-x-0">
             {/* Go back is the escape hatch, so it reads first on a phone. */}
             <AlertDialogCancel className="mt-0">Go back</AlertDialogCancel>
-            <Button variant="outline" loadingText="none" onClick={() => void runStart(false)}>
+            <Button variant="outline" loadingText="none" onClick={() => answerWaiting(false)}>
               Start without them
             </Button>
-            <AlertDialogAction onClick={() => void runStart(true)}>
+            <AlertDialogAction onClick={() => answerWaiting(true)}>
               Add {waitingCount === 1 ? 'them' : 'all ' + waitingCount} and start
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ConfirmStartDialog
+        open={pendingSweep !== null}
+        onOpenChange={(open) => !open && setPendingSweep(null)}
+        playerCount={finalPlayerCount}
+        featureKeys={bracket.premium_features ?? []}
+        priceLabel={chargeCents > 0 ? formatPrice(chargeCents) : null}
+        onConfirm={() => void runStart(pendingSweep === true)}
+      />
     </div>
   );
 }
