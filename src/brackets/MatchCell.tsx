@@ -12,7 +12,7 @@
  * decided match shows "Reset" to undo a mis-tap.
  */
 
-import { Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw, UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { MatchView, SlotView } from './bracketViewModel';
@@ -29,6 +29,11 @@ interface MatchCellProps {
   onToggleInProgress?: (matchId: string, inProgress: boolean) => void;
   /** Undo a decided match (organizer mode). */
   onReopen?: (matchId: string) => void;
+  /**
+   * Seat a latecomer in this bye (paid tournaments). Offered only on a bye,
+   * because it is the only match with a seat nobody is going to arrive in.
+   */
+  onLateEntry?: (matchId: string) => void;
 }
 
 export function MatchCell({
@@ -37,6 +42,7 @@ export function MatchCell({
   onPick,
   onToggleInProgress,
   onReopen,
+  onLateEntry,
 }: MatchCellProps) {
   const isReady = match.status === 'ready';
   const isComplete = match.status === 'complete';
@@ -73,7 +79,16 @@ export function MatchCell({
         </FooterButton>
       )}
 
-      {!readOnly && isComplete && onReopen && (
+      {/* A bye's action is "fill it", not "undo it" — Reset would just leave a
+          match with one player and nobody coming. */}
+      {!readOnly && match.isBye && onLateEntry && (
+        <FooterButton onClick={() => onLateEntry(match.id)}>
+          <UserPlus className="h-3 w-3" />
+          Add player
+        </FooterButton>
+      )}
+
+      {!readOnly && isComplete && !match.isBye && onReopen && (
         <FooterButton onClick={() => onReopen(match.id)}>
           <RotateCcw className="h-3 w-3" />
           Reset

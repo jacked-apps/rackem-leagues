@@ -125,6 +125,11 @@ export const RELEASES: Release[] = [
         forOperators: true,
       },
       {
+        text: 'Someone turn up after you started? If a bye hasn\u2019t been used yet, you can put them in it \u2014 the player with the bye then plays that round instead of sitting it out. Included with any paid tournament.',
+        kind: 'feature',
+        forOperators: true,
+      },
+      {
         text: 'Byes now show on the bracket. If you get a bye in the first round it says so, instead of your name quietly appearing in round two with no explanation.',
         kind: 'improvement',
       },

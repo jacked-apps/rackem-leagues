@@ -24,16 +24,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { queryKeys } from '@/api/queryKeys';
+import type { LateEntryResult } from '@/api/mutations/brackets';
 import {
   useBracket,
   useAdvanceWinner,
   useSetMatchInProgress,
   useReopenMatch,
   useCloseBracket,
+  useAddLateEntry,
 } from '@/api/hooks/useBrackets';
 import { buildBracketView, championName } from './bracketViewModel';
 import { BracketTree } from './BracketTree';
 import { EntryFeePanel } from './paid/EntryFeePanel';
+import { LateEntryDialog } from './paid/LateEntryDialog';
 import { hasPremiumFeature } from './paid/premiumFeatures';
 import { copyText } from '@/utils/clipboard';
 import { usesHopperSetup } from './paid/bracketDestination';
@@ -55,9 +58,12 @@ export function BracketView() {
   const setInProgress = useSetMatchInProgress(bracketId ?? '');
   const reopen = useReopenMatch(bracketId ?? '');
   const closeBracket = useCloseBracket();
+  const lateEntry = useAddLateEntry(bracketId ?? '');
   const [pending, setPending] = useState<PendingPick | null>(null);
   const [reopenId, setReopenId] = useState<string | null>(null);
   const [confirmingClose, setConfirmingClose] = useState(false);
+  /** The bye an organizer is seating a latecomer into. */
+  const [lateEntryMatchId, setLateEntryMatchId] = useState<string | null>(null);
 
   useBracketRealtime(bracketId, queryKeys.brackets.detail(bracketId ?? ''));
 
@@ -183,6 +189,11 @@ export function BracketView() {
               })
             }
             onReopen={(matchId) => setReopenId(matchId)}
+            // Paid tournaments only — a quality-of-life extra for paying at
+            // all, so the gate is the tier rather than any one feature.
+            onLateEntry={
+              bracket.tier === 'paid' ? (matchId) => setLateEntryMatchId(matchId) : undefined
+            }
             onToggleInProgress={(matchId, inProgress) =>
               setInProgress.mutate({ matchId, inProgress })
             }
@@ -231,6 +242,24 @@ export function BracketView() {
         </AlertDialogContent>
       </AlertDialog>
 
+      <LateEntryDialog
+        open={lateEntryMatchId !== null}
+        onOpenChange={(o) => !o && setLateEntryMatchId(null)}
+        byeHolderName={byeHolderName(view, lateEntryMatchId) ?? 'This player'}
+        onAdd={async (displayName) => {
+          if (!lateEntryMatchId) return null;
+          const result = await lateEntry.mutateAsync({
+            matchId: lateEntryMatchId,
+            displayName,
+          });
+          if (result.ok) {
+            toast.success(`${result.name} is in.`);
+            return null;
+          }
+          return lateEntryProblem(result);
+        }}
+      />
+
       <AlertDialog open={confirmingClose} onOpenChange={setConfirmingClose}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -258,6 +287,44 @@ async function copyShareLink(shareToken: string): Promise<void> {
     return;
   }
   toast.error('Could not copy the share link.');
+}
+
+/**
+ * Turn a refused late entry into a sentence that says what happened. All of
+ * these are ordinary outcomes at a busy tournament, not faults.
+ */
+function lateEntryProblem(result: LateEntryResult): string {
+  switch (result.reason) {
+    case 'already_played':
+      return 'That bye has been used — the player has already played their next match.';
+    case 'already_started':
+      return 'Their next match has already started, so the bye is locked in.';
+    case 'name_taken':
+      return `${result.name} is already in this tournament — use a different name.`;
+    case 'name_required':
+      return 'Enter a name.';
+    case 'name_too_long':
+      return `Keep it to ${result.max ?? 24} characters.`;
+    case 'not_live':
+      return 'This tournament is not running.';
+    case 'not_a_bye':
+      return 'That match is not a bye.';
+    case 'not_premium':
+      return 'Late entry is a premium feature.';
+    default:
+      return "That didn't go through — try again.";
+  }
+}
+
+/** The player currently holding a bye, for the confirm's wording. */
+function byeHolderName(
+  view: ReturnType<typeof buildBracketView>,
+  matchId: string | null
+): string | null {
+  if (!matchId) return null;
+  const all = [...view.winners.flat(), ...view.losers.flat(), ...view.grandFinal];
+  const match = all.find((m) => m.id === matchId);
+  return match?.home.name ?? match?.away.name ?? null;
 }
 
 /** Look up the tapped participant's display name across all sides. */

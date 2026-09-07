@@ -463,6 +463,47 @@ export async function ejectHopperEntry(entryId: string, bracketId: string): Prom
   await touchBracket(bracketId);
 }
 
+export interface LateEntryResult {
+  ok: boolean;
+  reason?:
+    | 'not_found'
+    | 'not_premium'
+    | 'not_live'
+    | 'not_a_bye'
+    | 'already_played'
+    | 'already_started'
+    | 'no_such_player'
+    | 'not_registered'
+    | 'already_in'
+    | 'name_required'
+    | 'name_too_long'
+    | 'name_taken';
+  name?: string;
+  max?: number;
+  status?: string;
+  participant_id?: string;
+}
+
+/**
+ * Seat a latecomer in an unused bye (paid tournaments only).
+ *
+ * Every refusal is an ordinary outcome — the bye was taken, the match started,
+ * the name clashes — so they come back as a `reason` rather than a thrown
+ * error, for the caller to phrase.
+ */
+export async function addLateEntry(
+  matchId: string,
+  entrant: { memberId?: string | null; displayName?: string | null }
+): Promise<LateEntryResult> {
+  const { data, error } = await supabase.rpc('add_late_entry', {
+    p_match_id: matchId,
+    p_member_id: entrant.memberId ?? undefined,
+    p_display_name: entrant.displayName ?? undefined,
+  });
+  if (error) throw new Error(`Could not add the player: ${error.message}`);
+  return data as LateEntryResult;
+}
+
 /**
  * Reopen a decided match (undo a mis-tapped winner). Clears the winner and
  * pulls the advanced player/loser back out of the next matches. Throws with a

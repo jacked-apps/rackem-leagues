@@ -37,6 +37,7 @@ import {
   advanceWinner,
   setMatchInProgress,
   reopenMatch,
+  addLateEntry,
   closeBracket,
   type BracketSettings,
   type CreateBracketParams,
@@ -361,6 +362,21 @@ export function useSetMatchInProgress(bracketId: string) {
   return useMutation({
     mutationFn: (vars: { matchId: string; inProgress: boolean }) =>
       setMatchInProgress(vars.matchId, vars.inProgress),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+    },
+  });
+}
+
+/** Seat a latecomer in an unused bye. Refreshes the bracket so the tree redraws. */
+export function useAddLateEntry(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: {
+      matchId: string;
+      memberId?: string | null;
+      displayName?: string | null;
+    }) => addLateEntry(vars.matchId, vars),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
     },

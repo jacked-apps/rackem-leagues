@@ -20,6 +20,8 @@ interface BracketTreeProps {
   readOnly: boolean;
   onPick?: (matchId: string, participantId: string) => void;
   onReopen?: (matchId: string) => void;
+  /** Seat a latecomer in a bye (paid tournaments, organizer only). */
+  onLateEntry?: (matchId: string) => void;
   onToggleInProgress?: (matchId: string, inProgress: boolean) => void;
 }
 
@@ -28,9 +30,10 @@ export function BracketTree({
   readOnly,
   onPick,
   onReopen,
+  onLateEntry,
   onToggleInProgress,
 }: BracketTreeProps) {
-  const shared = { readOnly, onPick, onReopen, onToggleInProgress };
+  const shared = { readOnly, onPick, onReopen, onLateEntry, onToggleInProgress };
 
   // Single elimination: one tree, no section headings.
   if (!view.hasLosers && view.grandFinal.length === 0) {
@@ -73,12 +76,15 @@ function RoundColumns({
   readOnly,
   onPick,
   onReopen,
+  onLateEntry,
   onToggleInProgress,
 }: {
   rounds: MatchView[][];
   readOnly: boolean;
   onPick?: (matchId: string, participantId: string) => void;
   onReopen?: (matchId: string) => void;
+  /** Seat a latecomer in a bye (paid tournaments, organizer only). */
+  onLateEntry?: (matchId: string) => void;
   onToggleInProgress?: (matchId: string, inProgress: boolean) => void;
 }) {
   const [showFinished, setShowFinished] = useState(false);
@@ -126,7 +132,7 @@ function RoundColumns({
               )}
             </div>
             {matches.map((m) => (
-              <MatchCell key={m.id} match={m} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onToggleInProgress={onToggleInProgress} />
+              <MatchCell key={m.id} match={m} readOnly={readOnly} onPick={onPick} onReopen={onReopen} onLateEntry={onLateEntry} onToggleInProgress={onToggleInProgress} />
             ))}
           </div>
         );
