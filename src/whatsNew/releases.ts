@@ -125,6 +125,10 @@ export const RELEASES: Release[] = [
         forOperators: true,
       },
       {
+        text: 'Byes now show on the bracket. If you get a bye in the first round it says so, instead of your name quietly appearing in round two with no explanation.',
+        kind: 'improvement',
+      },
+      {
         text: 'Running a tournament, you can now search for a player by name or player number and add them, instead of retyping a name you know we already have.',
         kind: 'feature',
         forOperators: true,

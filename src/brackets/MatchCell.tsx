@@ -52,12 +52,14 @@ export function MatchCell({
         slot={match.home}
         pickable={!readOnly && isSlotPickable(match, 'home')}
         dimmed={isComplete && !match.home.isWinner}
+        isBye={match.isBye}
         onPick={() => pick('home')}
       />
       <SlotRow
         slot={match.away}
         pickable={!readOnly && isSlotPickable(match, 'away')}
         dimmed={isComplete && !match.away.isWinner}
+        isBye={match.isBye}
         onPick={() => pick('away')}
       />
 
@@ -114,14 +116,19 @@ function SlotRow({
   slot,
   pickable,
   dimmed,
+  isBye,
   onPick,
 }: {
   slot: SlotView;
   pickable: boolean;
   dimmed: boolean;
+  /** This match is a bye, so an empty seat means "nobody entered". */
+  isBye: boolean;
   onPick: () => void;
 }) {
-  const label = slot.name ?? '—';
+  // An empty seat in a BYE is not "to be decided" — nobody is coming. Say so,
+  // rather than leaving a dash the organizer has to interpret.
+  const label = slot.name ?? (isBye ? 'Bye' : '—');
   const base = 'flex items-center px-3 py-2';
 
   if (pickable) {
