@@ -146,6 +146,7 @@ export function useStartBracket() {
 /** Self-add: the caller joins a tournament's hopper via its join_token (QR/link). */
 export function useJoinHopper() {
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (vars: { joinToken: string; via?: 'link' | 'qr' }) =>
       joinHopper(vars.joinToken, vars.via),
   });
@@ -189,6 +190,7 @@ export function useBracketRoster(bracketId: string | undefined) {
 export function useAddSelfAsWalkup(joinToken: string) {
   const qc = useQueryClient();
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (displayName: string) => addSelfAsWalkup(joinToken, displayName),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.brackets.playerView(joinToken) });
@@ -210,6 +212,17 @@ export function useBracketPlayerView(joinToken: string | undefined) {
     staleTime: 0,
   });
 }
+
+/**
+ * Writes here are NOT retried, overriding the app-wide `mutations: { retry: 1 }`.
+ *
+ * Two reasons. Their failures are deterministic — a duplicate name, a guard
+ * refusing a started tournament — so a second attempt fails identically, just
+ * later and with the console noise doubled. And they are non-idempotent
+ * INSERTs: if the first attempt actually succeeded and only its response was
+ * lost, a retry adds a second row.
+ */
+const NO_RETRY = { retry: false } as const;
 
 /**
  * Shared invalidation for every hopper write.
@@ -235,6 +248,7 @@ function useHopperInvalidation(bracketId: string) {
 export function useAddWalkupToHopper(bracketId: string) {
   const invalidate = useHopperInvalidation(bracketId);
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (vars: {
       displayName: string;
       admit?: boolean;
@@ -253,6 +267,7 @@ export function useAddWalkupToHopper(bracketId: string) {
 export function useAddRegisteredToHopper(bracketId: string) {
   const invalidate = useHopperInvalidation(bracketId);
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (memberId: string) => addRegisteredToHopper(bracketId, memberId),
     onSuccess: invalidate,
   });
@@ -262,6 +277,7 @@ export function useAddRegisteredToHopper(bracketId: string) {
 export function useAdmitHopperEntry(bracketId: string) {
   const invalidate = useHopperInvalidation(bracketId);
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (vars: { entryId: string; paidStatus: 'paid' | 'unpaid' }) =>
       admitHopperEntry(vars.entryId, bracketId, vars.paidStatus),
     onSuccess: invalidate,
@@ -272,6 +288,7 @@ export function useAdmitHopperEntry(bracketId: string) {
 export function useSetHopperPaidStatus(bracketId: string) {
   const invalidate = useHopperInvalidation(bracketId);
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (vars: { entryId: string; paidStatus: 'paid' | 'unpaid' }) =>
       setHopperPaidStatus(vars.entryId, bracketId, vars.paidStatus),
     onSuccess: invalidate,
@@ -282,6 +299,7 @@ export function useSetHopperPaidStatus(bracketId: string) {
 export function useEjectHopperEntry(bracketId: string) {
   const invalidate = useHopperInvalidation(bracketId);
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (entryId: string) => ejectHopperEntry(entryId, bracketId),
     onSuccess: invalidate,
   });
@@ -295,6 +313,7 @@ export function useEjectHopperEntry(bracketId: string) {
 export function useForgetRosterEntry(bracketId: string) {
   const invalidate = useHopperInvalidation(bracketId);
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (target: { memberId?: string | null; displayName?: string | null }) =>
       forgetRosterEntry(target),
     onSuccess: invalidate,
@@ -324,6 +343,7 @@ export function useUpdateBracketSettings(bracketId: string) {
  */
 export function useFinalizeHopper(bracketId: string) {
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (includeWaiting: boolean) => finalizeHopper(bracketId, includeWaiting),
   });
 }
@@ -379,6 +399,7 @@ export function useSetMatchInProgress(bracketId: string) {
 export function useAddLateEntry(bracketId: string) {
   const qc = useQueryClient();
   return useMutation({
+    ...NO_RETRY,
     mutationFn: (vars: {
       matchId: string;
       memberId?: string | null;
