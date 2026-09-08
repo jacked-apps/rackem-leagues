@@ -433,6 +433,37 @@ export async function addPremiumFeature(
   return data as AddFeatureResult;
 }
 
+export interface RemoveFeatureResult {
+  ok: boolean;
+  reason?: 'bad_feature' | 'not_found' | 'not_setup' | 'in_use';
+  feature?: string;
+  already_off?: boolean;
+  /** For `in_use`: how many players have been marked paid. */
+  used?: number;
+  free_uses?: number;
+  status?: string;
+}
+
+/**
+ * Take a premium feature back off a tournament still in setup.
+ *
+ * Refused once the feature has been USED beyond a small free allowance —
+ * otherwise it could be used all night and dropped before the bill. The
+ * allowance exists because a handful of players is trivial to track by hand and
+ * not worth charging for; the feature earns its dollar at 32 or 64.
+ */
+export async function removePremiumFeature(
+  bracketId: string,
+  feature: string
+): Promise<RemoveFeatureResult> {
+  const { data, error } = await supabase.rpc('remove_premium_feature', {
+    p_bracket_id: bracketId,
+    p_feature: feature,
+  });
+  if (error) throw new Error(`Could not remove that feature: ${error.message}`);
+  return data as RemoveFeatureResult;
+}
+
 /** The settings an organizer can change before a tournament starts. */
 export interface BracketSettings {
   name: string;

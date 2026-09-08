@@ -44,6 +44,7 @@ vi.mock('@/api/hooks/useBrackets', () => {
     useForgetRosterEntry: noopMutation,
     useUpdateBracketSettings: noopMutation,
     useAddPremiumFeature: noopMutation,
+    useRemovePremiumFeature: noopMutation,
   };
 });
 
@@ -362,5 +363,20 @@ describe('BracketSetupPage', () => {
     expect(
       screen.getByRole('button', { name: /^Add them$/i }).className
     ).toContain('bg-primary');
+  });
+
+  it('manages premium features on the Info tab, not on the add-player form', async () => {
+    const user = userEvent.setup();
+    setup([entry({ id: 'a' }), entry({ id: 'b' })], {
+      premium_features: ['real_players', 'payment_tracker'],
+    });
+    renderWithProviders(<BracketSetupPage />);
+
+    await user.click(screen.getByRole('tab', { name: 'Info' }));
+
+    // A feature belongs to the tournament, so it lives with its settings.
+    expect(await screen.findByText('Premium features')).toBeTruthy();
+    expect(screen.getByText('Entry-fee tracking')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Remove' })).toHaveLength(2);
   });
 });

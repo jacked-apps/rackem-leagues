@@ -49,11 +49,13 @@ import {
   useStartBracket,
   useChargeForStart,
   useUpdateBracketSettings,
+  useRemovePremiumFeature,
 } from '@/api/hooks/useBrackets';
 import type { BracketFormat } from '@/types/bracket';
 import { queryKeys } from '@/api/queryKeys';
 import { useBracketRealtime } from '../useBracketRealtime';
 import { BracketInfoTab } from './BracketInfoTab';
+import { TournamentFeaturesPanel } from './TournamentFeaturesPanel';
 import { ConfirmStartDialog } from './ConfirmStartDialog';
 import { HopperView } from './HopperView';
 import { StartTournamentPanel } from './StartTournamentPanel';
@@ -71,6 +73,7 @@ export function BracketSetupPage() {
   const startBracket = useStartBracket();
   const chargeForStart = useChargeForStart();
   const updateSettings = useUpdateBracketSettings(bracketId ?? '');
+  const removeFeature = useRemovePremiumFeature(bracketId ?? '');
 
   // Watch the hopper live: players scan in while the organizer is looking at
   // this screen, and a list that only refreshes on reload is worse than useless
@@ -254,6 +257,30 @@ export function BracketSetupPage() {
                   }
                 }}
               />
+
+              {/* A feature belongs to the TOURNAMENT, so it is managed here
+                  rather than on the form that happens to reveal it. */}
+              <div className="mt-6 border-t pt-4">
+                <TournamentFeaturesPanel
+                  featureKeys={bracket.premium_features ?? []}
+                  disabled={updateSettings.isPending || removeFeature.isPending}
+                  onRemove={async (feature) => {
+                    try {
+                      const result = await removeFeature.mutateAsync(feature);
+                      if (result.ok) {
+                        toast.success('Feature removed.');
+                        return null;
+                      }
+                      if (result.reason === 'in_use') {
+                        return `You've already marked ${result.used} players paid, so this stays on the bill.`;
+                      }
+                      return 'Could not remove it — try again.';
+                    } catch (err) {
+                      return err instanceof Error ? err.message : 'Could not remove it.';
+                    }
+                  }}
+                />
+              </div>
             </TabsContent>
           </CardContent>
 

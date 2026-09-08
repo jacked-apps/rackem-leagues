@@ -34,6 +34,7 @@ import {
   finalizeHopper,
   updateBracketSettings,
   addPremiumFeature,
+  removePremiumFeature,
   forgetRosterEntry,
   advanceWinner,
   setMatchInProgress,
@@ -333,6 +334,19 @@ export function useAddPremiumFeature(bracketId: string) {
   return useMutation({
     ...NO_RETRY,
     mutationFn: (feature: string) => addPremiumFeature(bracketId, feature),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.hopper(bracketId) });
+    },
+  });
+}
+
+/** Take a premium feature back off, while it is still within its free allowance. */
+export function useRemovePremiumFeature(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (feature: string) => removePremiumFeature(bracketId, feature),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
       qc.invalidateQueries({ queryKey: queryKeys.brackets.hopper(bracketId) });

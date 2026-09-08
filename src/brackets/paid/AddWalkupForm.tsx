@@ -103,12 +103,13 @@ export function AddWalkupForm({
    * curious tap costs nothing.
    */
   const handleFeeToggle = async (next: boolean) => {
-    if (trackEntryFees || !next) {
-      setPaid(next);
+    if (!trackEntryFees) {
+      // No tracker: the tick is a question, not a setting.
+      if (!next || !onRequestEntryFees) return;
+      if (await onRequestEntryFees()) setPaid(true);
       return;
     }
-    if (!onRequestEntryFees) return;
-    if (await onRequestEntryFees()) setPaid(true);
+    setPaid(next);
   };
 
   const handleSubmit = async (e: FormEvent) => {

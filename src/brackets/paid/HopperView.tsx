@@ -166,6 +166,9 @@ export function HopperView({
       <AddWalkupForm
         trackEntryFees={trackEntryFees}
         onRequestEntryFees={() => new Promise<boolean>((resolve) => setFeeOffer(() => resolve))}
+        // Unticking gives the feature back, while it is still within its
+        // allowance. A refusal is reported and the box stays ticked, because
+        // the feature really is still on.
         // Rethrown after reporting, so the form knows to keep the typed name.
         onAdd={(entry) =>
           addWalkup.mutateAsync(entry).catch((err: unknown) => {
@@ -282,9 +285,17 @@ export function HopperView({
               delete/restart lockout Ed wants is NOT built, and warning about a
               rule nothing enforces just teaches people to skip warnings.
             */}
+            {/*
+              States the rule that is actually enforced by
+              remove_premium_feature: removable inside a small allowance, locked
+              once genuinely used. Deliberately NOT the 24-hour delete/restart
+              lockout — nothing enforces that, and a warning people discover is
+              a bluff teaches them to ignore the real ones.
+            */}
             <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning-foreground">
-              <span className="font-semibold">Heads up:</span> once you add this
-              it stays on this tournament — there is no removing it later.
+              <span className="font-semibold">Heads up:</span> you can take this
+              back off while you're still setting up. Once you've marked more
+              than 5 players paid, it stays on the bill.
             </p>
           </div>
           <AlertDialogFooter className="gap-2">

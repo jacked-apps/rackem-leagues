@@ -436,13 +436,17 @@ describe('HopperView', () => {
       expect(await screen.findByText(/running total of what should be in the pot/i)).toBeTruthy();
     });
 
-    it('warns that it cannot be removed, which is what we actually enforce', async () => {
+    it('states the allowance rule that is actually enforced', async () => {
       const user = userEvent.setup();
       loaded([]);
       renderWithProviders(<HopperView bracketId="b1" />);
 
       await user.click(screen.getByLabelText(/entry fee paid/i));
-      expect(await screen.findByText(/no removing it later/i)).toBeTruthy();
+
+      // Matches remove_premium_feature: removable while setting up, locked past
+      // the allowance. Not the 24-hour lockout, which nothing enforces.
+      expect(await screen.findByText(/take this back off while you're still setting up/i)).toBeTruthy();
+      expect(screen.getByText(/more than 5 players paid/i)).toBeTruthy();
     });
 
     it('buys it on confirm', async () => {

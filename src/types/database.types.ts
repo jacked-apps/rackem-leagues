@@ -3650,6 +3650,10 @@ export type Database = {
       get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
       get_bracket_player_view: { Args: { p_join_token: string }; Returns: Json }
       get_my_tournaments: { Args: never; Returns: Json }
+      remove_premium_feature: {
+        Args: { p_bracket_id: string; p_feature: string }
+        Returns: Json
+      }
       add_premium_feature: {
         Args: { p_bracket_id: string; p_feature: string }
         Returns: Json
