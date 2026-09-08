@@ -180,6 +180,7 @@ export function HopperView({
       />
 
       <HopperGroup
+        tone="in"
         title="In the tournament"
         count={counts.official}
         empty="Nobody added yet. Tap a waiting player below to add them."
@@ -188,6 +189,7 @@ export function HopperView({
       </HopperGroup>
 
       <HopperGroup
+        tone="waiting"
         title="Waiting to be added"
         count={counts.waiting}
         // The add form above already says where waiting players come from.
@@ -214,6 +216,7 @@ export function HopperView({
       )}
 
       <HopperGroup
+        tone="aside"
         title="Past players"
         count={counts.past}
         empty="Players from your past tournaments show up here for one-tap adding."

@@ -125,9 +125,11 @@ describe('HopperView', () => {
     expect(screen.getByText('Waiting 1')).toBeTruthy();
     expect(screen.getByText('Past 1')).toBeTruthy();
 
-    expect(screen.getByText('In the tournament (1)')).toBeTruthy();
-    expect(screen.getByText('Waiting to be added (1)')).toBeTruthy();
-    expect(screen.getByText('Past players (1)')).toBeTruthy();
+    // Each group is its own room: a heading, and the count beside it.
+    for (const room of ['In the tournament', 'Waiting to be added', 'Past players']) {
+      const heading = screen.getByRole('heading', { name: room });
+      expect(heading.parentElement?.textContent).toContain('1');
+    }
   });
 
   it('labels an official entry paid/unpaid and a candidate by how they arrived', () => {
@@ -255,7 +257,9 @@ describe('HopperView', () => {
     loaded([], [rosterPlayer(), rememberedWalkup('Rocket')]);
     renderWithProviders(<HopperView bracketId="b1" />);
 
-    expect(screen.getByText('Past players (2)')).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: 'Past players' }).parentElement?.textContent
+    ).toContain('2');
     expect(screen.getByText('Kenny')).toBeTruthy();
     expect(screen.getByText('Rocket')).toBeTruthy();
   });
