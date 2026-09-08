@@ -292,7 +292,15 @@ export function HopperView({
               lockout — nothing enforces that, and a warning people discover is
               a bluff teaches them to ignore the real ones.
             */}
-            <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning-foreground">
+            {/*
+              text-warning, NOT text-warning-foreground. The -foreground token is
+              near-black for BOTH themes because it is meant to sit on a SOLID
+              amber fill; on a 10% tint it vanishes into a dark background. The
+              documented pairing for a tinted callout is the tinted background,
+              a 40% border and the plain colour token as text (see the status
+              tokens in index.css).
+            */}
+            <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
               <span className="font-semibold">Heads up:</span> you can take this
               back off while you're still setting up. Once you've marked more
               than 5 players paid, it stays on the bill.
