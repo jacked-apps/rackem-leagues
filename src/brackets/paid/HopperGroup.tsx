@@ -9,12 +9,21 @@
  * So each is drawn as a room you can be in: its own border, its own ground, and
  * a header bar carrying the name and the count.
  *
- * Each header carries a colour so the rooms are told apart at a glance, but the
- * colours are IDENTITY, not judgement — `primary` for the tournament (the brand
- * accent, "this is the main thing") and `info` for waiting (neutral, blue).
- * Green-for-in and amber-for-waiting were rejected: they read as good-versus-bad,
- * and waiting is simply where everyone starts. Past players stays grey, because
- * it is a shelf rather than a room.
+ * COLOUR IS NEVER THE ONLY DIFFERENCE. Ed is colour blind, and teal and blue are
+ * adjacent hues that several kinds of colour blindness cannot separate at all —
+ * an earlier version distinguished the rooms by hue alone and was, to him, three
+ * identical grey boxes. The free tier's match states already solved this with
+ * dashed/dotted/solid/filled rather than colour; this follows the same rule.
+ *
+ * So each room differs on THREE independent channels:
+ *   - border weight and style: 2px solid, 1px solid, dashed
+ *   - tint STRENGTH: a lightness ramp that survives being seen in greyscale
+ *   - hue, last — a bonus for those who see it, never the carrier
+ *
+ * The hues themselves are identity, not judgement: `primary` for the tournament
+ * (the brand accent, "this is the main thing") and `info` for waiting.
+ * Green-for-in and amber-for-waiting were rejected because they read as
+ * good-versus-bad, and waiting is simply where everyone starts.
  *
  * PROMINENCE COMES FROM THE BORDER, NOT THE BACKGROUND, because these rooms sit
  * INSIDE a card and `--card` is identical to `--background` in the light theme.
@@ -29,21 +38,22 @@ import { cn } from '@/lib/utils';
 export type RoomTone = 'in' | 'waiting' | 'aside';
 
 const ROOM: Record<RoomTone, { box: string; header: string }> = {
-  // The destination. Heaviest border, brand accent — the room that decides the
-  // bracket.
+  // Strongest on every channel: 2px border, deepest tint. The room that decides
+  // the bracket.
   in: {
-    box: 'border-2 border-primary/40',
-    header: 'bg-primary/15 text-primary',
+    box: 'border-2 border-primary/50 bg-primary/[0.07]',
+    header: 'bg-primary/25 text-primary',
   },
-  // Blue: distinct, and deliberately not a warning colour.
+  // Middle of the ramp: 1px border, lighter tint.
   waiting: {
-    box: 'border-info/30 bg-info/[0.04]',
+    box: 'border-info/40 bg-info/[0.04]',
     header: 'bg-info/15 text-info',
   },
-  // Dashed and grey: a shelf to draw from, not part of this tournament.
+  // Faintest, and DASHED — the one cue that reads at any vision. A shelf to
+  // draw from, not part of this tournament.
   aside: {
-    box: 'border-dashed border-border',
-    header: 'bg-muted text-muted-foreground',
+    box: 'border-dashed border-border bg-muted/20',
+    header: 'bg-muted/60 text-muted-foreground',
   },
 };
 
