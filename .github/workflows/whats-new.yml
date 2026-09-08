@@ -1,0 +1,45 @@
+# Its own workflow, separate from checks.yml, for one reason: it needs to re-run
+# when a PR DESCRIPTION changes.
+#
+# The whole point of this check is that you either add a What's New entry or
+# declare `[no-changelog]` in the description. But `on: pull_request` defaults to
+# [opened, synchronize, reopened] — editing the description fires `edited`, which
+# is not in that list. So adding the opt-out never cleared the check, and the
+# only way past it was to push a commit purely to re-trigger CI. The escape
+# hatch could not actually be used.
+#
+# Adding `edited` to checks.yml would fix it, but would also re-run the full
+# test suite and build every time somebody fixes a typo in a description. So the
+# cheap check that needs `edited` lives here, and the expensive ones stay put.
+
+name: What's New
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  whats-new:
+    name: What's New entry or opt-out
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Need the base commit to diff against; a shallow clone has neither.
+          fetch-depth: 0
+
+      # Written to files rather than passed as arguments: a PR description is
+      # arbitrary user text, and interpolating it into a shell command is a
+      # script-injection waiting to happen.
+      - name: Collect changed files and PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/changed-files.txt
+          printf '%s' "$PR_BODY" > /tmp/pr-body.txt
+
+      - name: Check for a What's New entry
+        run: node scripts/check-whats-new.mjs /tmp/changed-files.txt /tmp/pr-body.txt

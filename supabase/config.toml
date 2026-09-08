@@ -57,11 +57,12 @@ schema_paths = []
 
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
-# Disabled: We restore from data dumps instead of seed.sql
+# Disabled deliberately: dev data is restored from database/dev_starting_point.sql,
+# not from an auto-loaded seed file.
 enabled = false
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+sql_paths = []
 
 [db.network_restrictions]
 # Enable management of network restrictions.
