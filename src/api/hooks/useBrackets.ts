@@ -33,6 +33,7 @@ import {
   ejectHopperEntry,
   finalizeHopper,
   updateBracketSettings,
+  addPremiumFeature,
   forgetRosterEntry,
   advanceWinner,
   setMatchInProgress,
@@ -317,6 +318,25 @@ export function useForgetRosterEntry(bracketId: string) {
     mutationFn: (target: { memberId?: string | null; displayName?: string | null }) =>
       forgetRosterEntry(target),
     onSuccess: invalidate,
+  });
+}
+
+/**
+ * Buy a premium feature for a tournament already in setup.
+ *
+ * Invalidates the bracket AND the hopper: the gate those screens read comes
+ * from the bracket row, so the newly-bought controls only appear once it is
+ * refetched.
+ */
+export function useAddPremiumFeature(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (feature: string) => addPremiumFeature(bracketId, feature),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.hopper(bracketId) });
+    },
   });
 }
 

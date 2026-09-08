@@ -19,7 +19,7 @@
  * Tap any name for its action menu. Rendered inside the tournament's setup view.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   useBracketHopper,
@@ -30,11 +30,23 @@ import {
   useAddRegisteredToHopper,
   useAddWalkupToHopper,
   useForgetRosterEntry,
+  useAddPremiumFeature,
 } from '@/api/hooks/useBrackets';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { buildHopperGroups, type HopperRow } from './hopperGroups';
 import type { AddRegisteredResult } from '@/api/mutations/brackets';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { getPremiumFeature, formatPrice } from './premiumFeatures';
 import { AddRegisteredPlayer } from './AddRegisteredPlayer';
 import { AddWalkupForm } from './AddWalkupForm';
 import { HopperEntryMenu } from './HopperEntryMenu';
@@ -76,6 +88,15 @@ export function HopperView({
   const addRegistered = useAddRegisteredToHopper(bracketId);
   const addWalkup = useAddWalkupToHopper(bracketId);
   const forget = useForgetRosterEntry(bracketId);
+  const addFeature = useAddPremiumFeature(bracketId);
+
+  /**
+   * The upsell, held open while the organizer decides.
+   *
+   * A promise resolver rather than a callback: the checkbox awaits the answer,
+   * so a "no" leaves the box exactly as it was instead of ticking and undoing.
+   */
+  const [feeOffer, setFeeOffer] = useState<((bought: boolean) => void) | null>(null);
 
   const groups = useMemo(
     () => buildHopperGroups(hopper.data ?? [], roster.data ?? []),
@@ -144,6 +165,7 @@ export function HopperView({
 
       <AddWalkupForm
         trackEntryFees={trackEntryFees}
+        onRequestEntryFees={() => new Promise<boolean>((resolve) => setFeeOffer(() => resolve))}
         // Rethrown after reporting, so the form knows to keep the typed name.
         onAdd={(entry) =>
           addWalkup.mutateAsync(entry).catch((err: unknown) => {
@@ -220,6 +242,52 @@ export function HopperView({
           </li>
         ))}
       </HopperGroup>
+
+      <AlertDialog
+        open={feeOffer !== null}
+        onOpenChange={(open) => {
+          // Dismissing any other way is a "no", so the box never ticks itself.
+          if (!open && feeOffer) {
+            feeOffer(false);
+            setFeeOffer(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add the entry-fee tracker?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {getPremiumFeature('payment_tracker')?.blurb} It costs{' '}
+              {formatPrice(getPremiumFeature('payment_tracker')?.priceCents ?? 0)},
+              added to what you pay when you start this tournament — nothing is
+              charged now.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="mt-0">Not now</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const resolve = feeOffer;
+                setFeeOffer(null);
+                try {
+                  const result = await addFeature.mutateAsync('payment_tracker');
+                  if (result.ok) {
+                    toast.success('Entry-fee tracker added.');
+                    resolve?.(true);
+                    return;
+                  }
+                  reportError(new Error('Could not add it — try again.'));
+                } catch (err) {
+                  reportError(err);
+                }
+                resolve?.(false);
+              }}
+            >
+              Add it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

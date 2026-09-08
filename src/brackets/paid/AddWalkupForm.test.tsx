@@ -156,9 +156,52 @@ describe('AddWalkupForm', () => {
       });
     });
 
-    it('hides the fee box when the tournament does not track fees', () => {
+    it('SHOWS the fee box even without the tracker — a hidden feature sells nothing', () => {
       renderWithProviders(<AddWalkupForm onAdd={vi.fn()} />);
-      expect(screen.queryByLabelText(/entry fee paid/i)).toBeNull();
+      expect(screen.getByLabelText(/entry fee paid/i)).toBeTruthy();
+      expect(screen.getByText(/add-on/i)).toBeTruthy();
+    });
+
+    it('offers the feature instead of ticking, and ticks once bought', async () => {
+      const user = userEvent.setup();
+      const onRequestEntryFees = vi.fn().mockResolvedValue(true);
+      renderWithProviders(
+        <AddWalkupForm onAdd={vi.fn()} onRequestEntryFees={onRequestEntryFees} />
+      );
+
+      const box = screen.getByLabelText(/entry fee paid/i);
+      await user.click(box);
+
+      expect(onRequestEntryFees).toHaveBeenCalled();
+      await waitFor(() => expect(box.getAttribute('data-state')).toBe('checked'));
+    });
+
+    it('leaves the box alone when the offer is declined', async () => {
+      // A curious tap must cost nothing.
+      const user = userEvent.setup();
+      const onRequestEntryFees = vi.fn().mockResolvedValue(false);
+      renderWithProviders(
+        <AddWalkupForm onAdd={vi.fn()} onRequestEntryFees={onRequestEntryFees} />
+      );
+
+      const box = screen.getByLabelText(/entry fee paid/i);
+      await user.click(box);
+
+      await waitFor(() => expect(onRequestEntryFees).toHaveBeenCalled());
+      expect(box.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('does not offer the feature to a tournament that already has it', async () => {
+      const user = userEvent.setup();
+      const onRequestEntryFees = vi.fn();
+      renderWithProviders(
+        <AddWalkupForm onAdd={vi.fn()} trackEntryFees onRequestEntryFees={onRequestEntryFees} />
+      );
+
+      await user.click(screen.getByLabelText(/tournament entry|waiting room/i));
+      await user.click(screen.getByLabelText(/entry fee paid/i));
+
+      expect(onRequestEntryFees).not.toHaveBeenCalled();
     });
 
     it('names the state it is in, not what ticking it would do', async () => {

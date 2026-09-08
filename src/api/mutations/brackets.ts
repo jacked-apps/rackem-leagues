@@ -405,6 +405,34 @@ export async function forgetRosterEntry(target: {
   return data === true;
 }
 
+export interface AddFeatureResult {
+  ok: boolean;
+  reason?: 'bad_feature' | 'not_found' | 'not_setup';
+  feature?: string;
+  already_had?: boolean;
+  status?: string;
+}
+
+/**
+ * Buy a premium feature for a tournament that already exists.
+ *
+ * Setup-only, enforced in the RPC: the charge is computed from the feature list
+ * at start, so adding one afterwards would change a settled bill. Nothing is
+ * charged here — the price simply goes up on the Start button, against the card
+ * already on file.
+ */
+export async function addPremiumFeature(
+  bracketId: string,
+  feature: string
+): Promise<AddFeatureResult> {
+  const { data, error } = await supabase.rpc('add_premium_feature', {
+    p_bracket_id: bracketId,
+    p_feature: feature,
+  });
+  if (error) throw new Error(`Could not add that feature: ${error.message}`);
+  return data as AddFeatureResult;
+}
+
 /** The settings an organizer can change before a tournament starts. */
 export interface BracketSettings {
   name: string;

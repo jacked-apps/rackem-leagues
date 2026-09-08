@@ -43,6 +43,7 @@ vi.mock('@/api/hooks/useBrackets', () => {
     useAddWalkupToHopper: noopMutation,
     useForgetRosterEntry: noopMutation,
     useUpdateBracketSettings: noopMutation,
+    useAddPremiumFeature: noopMutation,
   };
 });
 

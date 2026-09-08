@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, fireEvent, userEvent } from '@/test/utils';
+import { renderWithProviders, screen, fireEvent, userEvent, waitFor } from '@/test/utils';
 import type { HopperEntry, RosterPlayer } from '@/api/queries/brackets';
 
 const mocks = vi.hoisted(() => ({
@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   addRegistered: vi.fn(),
   addWalkup: vi.fn(),
   forget: vi.fn(),
+  addFeature: vi.fn(),
 }));
 
 /** A mutation hook's return shape — only what HopperView reads. */
@@ -36,6 +37,7 @@ vi.mock('@/api/hooks/useBrackets', () => ({
   useAddRegisteredToHopper: () => mutation(mocks.addRegistered),
   useAddWalkupToHopper: () => mutation(mocks.addWalkup),
   useForgetRosterEntry: () => mutation(mocks.forget),
+  useAddPremiumFeature: () => mutation(mocks.addFeature),
 }));
 
 import { HopperView } from './HopperView';
@@ -104,6 +106,7 @@ beforeEach(() => {
   mocks.addRegistered.mockResolvedValue({ ok: true });
   mocks.addWalkup.mockResolvedValue(undefined);
   mocks.forget.mockResolvedValue(true);
+  mocks.addFeature.mockResolvedValue({ ok: true });
   loaded([]);
 });
 
@@ -397,6 +400,62 @@ describe('HopperView', () => {
       loaded([]);
       renderWithProviders(<HopperView bracketId="b1" readOnly />);
       expect(screen.getByLabelText(/search players/i)).toBeDisabled();
+    });
+  });
+
+  describe('the entry-fee upsell', () => {
+    it('offers the tracker when the fee box is ticked without it', async () => {
+      const user = userEvent.setup();
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      await user.click(screen.getByLabelText(/entry fee paid/i));
+
+      expect(await screen.findByText(/add the entry-fee tracker\?/i)).toBeTruthy();
+      // Nothing is bought by asking.
+      expect(mocks.addFeature).not.toHaveBeenCalled();
+    });
+
+    it('says plainly that nothing is charged now', async () => {
+      const user = userEvent.setup();
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      await user.click(screen.getByLabelText(/entry fee paid/i));
+      expect(await screen.findByText(/nothing is charged now/i)).toBeTruthy();
+    });
+
+    it('buys it on confirm', async () => {
+      const user = userEvent.setup();
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      await user.click(screen.getByLabelText(/entry fee paid/i));
+      await user.click(await screen.findByRole('button', { name: /add it/i }));
+
+      await waitFor(() => expect(mocks.addFeature).toHaveBeenCalledWith('payment_tracker'));
+    });
+
+    it('buys nothing when declined', async () => {
+      const user = userEvent.setup();
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      await user.click(screen.getByLabelText(/entry fee paid/i));
+      await user.click(await screen.findByRole('button', { name: /not now/i }));
+
+      expect(mocks.addFeature).not.toHaveBeenCalled();
+    });
+
+    it('does not offer it to a tournament that already has it', async () => {
+      const user = userEvent.setup();
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" trackEntryFees />);
+
+      await user.click(screen.getByLabelText(/tournament entry|waiting room/i));
+      await user.click(screen.getByLabelText(/entry fee paid/i));
+
+      expect(screen.queryByText(/add the entry-fee tracker\?/i)).toBeNull();
     });
   });
 });

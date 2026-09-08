@@ -21,8 +21,14 @@
  * "Waiting room" or "Tournament entry" — with an info button carrying the
  * explanation instead of a paragraph under the form. Both settings STICK between adds: an organizer typing in the
  * people standing in front of them is making the same call every time, and
- * re-ticking per name would undo the point of the fast path. The paid box only
- * appears when the tournament actually bought the entry-fee tracker.
+ * re-ticking per name would undo the point of the fast path.
+ *
+ * The entry-fee box is ALWAYS shown, even when the tournament hasn't bought the
+ * tracker — a feature nobody can see is a feature nobody buys. Clicking it then
+ * offers the upsell instead of toggling. This is not the gating leak we fixed
+ * elsewhere: the gate still holds, since nothing can be marked paid until the
+ * feature is actually bought. A visible control is an advertisement; a working
+ * one would be the giveaway.
  */
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -39,14 +45,20 @@ interface AddWalkupFormProps {
     admit: boolean;
     paidStatus: 'paid' | 'unpaid';
   }) => Promise<unknown>;
-  /** This tournament bought the entry-fee tracker, so the paid switch applies. */
+  /** This tournament bought the entry-fee tracker, so the box actually works. */
   trackEntryFees?: boolean;
+  /**
+   * Clicking the fee box WITHOUT the tracker. The parent offers to add it;
+   * resolves true once bought, so the click can complete as a tick.
+   */
+  onRequestEntryFees?: () => Promise<boolean>;
   disabled?: boolean;
 }
 
 export function AddWalkupForm({
   onAdd,
   trackEntryFees = false,
+  onRequestEntryFees,
   disabled = false,
 }: AddWalkupFormProps) {
   const [name, setName] = useState('');
@@ -81,6 +93,23 @@ export function AddWalkupForm({
   }, [wantsFocus, disabled]);
 
   const trimmed = name.trim();
+
+  /**
+   * Ticking the fee box.
+   *
+   * With the tracker it is an ordinary toggle. Without it, the tick becomes a
+   * question — the parent offers to add the feature, and the box only ends up
+   * ticked if the answer was yes. Declining leaves it exactly as it was, so a
+   * curious tap costs nothing.
+   */
+  const handleFeeToggle = async (next: boolean) => {
+    if (trackEntryFees || !next) {
+      setPaid(next);
+      return;
+    }
+    if (!onRequestEntryFees) return;
+    if (await onRequestEntryFees()) setPaid(true);
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -160,29 +189,37 @@ export function AddWalkupForm({
           </InfoButton>
         </div>
 
-        {/* Only where the tournament tracks fees; otherwise it means nothing. */}
-        {trackEntryFees && (
-          <div className="flex items-center gap-1.5">
-            <Checkbox
-              id="add-paid"
-              checked={paid}
-              // Nothing to have paid for until they are actually in.
-              disabled={disabled || !admit}
-              onCheckedChange={(c) => setPaid(c === true)}
-            />
-            {/* Static, unlike the destination: the player rows below carry
-                "Paid"/"Unpaid" status badges, and a setting reading the same
-                words would be two different meanings on one screen. */}
-            <Label
-              htmlFor="add-paid"
-              className={`cursor-pointer text-sm font-normal ${
-                admit ? '' : 'text-muted-foreground'
-              }`}
-            >
-              Entry fee paid
-            </Label>
-          </div>
-        )}
+        {/*
+          Always shown — see the header. Without the tracker the box is an
+          offer, not a control: ticking it asks whether to buy the feature, and
+          only becomes a real tick once it has been.
+        */}
+        <div className="flex items-center gap-1.5">
+          <Checkbox
+            id="add-paid"
+            checked={paid}
+            // Nothing to have paid for until they are actually in. The upsell
+            // stays reachable regardless — that is the whole point of showing it.
+            disabled={disabled || (!admit && trackEntryFees)}
+            onCheckedChange={(c) => void handleFeeToggle(c === true)}
+          />
+          {/* Static, unlike the destination: the player rows below carry
+              "Paid"/"Unpaid" status badges, and a setting reading the same
+              words would be two different meanings on one screen. */}
+          <Label
+            htmlFor="add-paid"
+            className={`cursor-pointer text-sm font-normal ${
+              admit || !trackEntryFees ? '' : 'text-muted-foreground'
+            }`}
+          >
+            Entry fee paid
+          </Label>
+          {!trackEntryFees && (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+              Add-on
+            </span>
+          )}
+        </div>
       </div>
     </form>
   );
