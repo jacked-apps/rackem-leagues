@@ -399,6 +399,47 @@ so the idea isn't lost. Fold into
 `docs/brainstorms/2026-08-26-tournament-bracket-requirements.md`'s Paid Feature
 Roadmap when that branch is next touched.
 
+## Pricing reality check (Ed, 2026-09-08)
+
+Captured because it shapes what "worth paying for" means, and none of it is
+derivable from the code.
+
+**The competition is free, and good.** Plenty of free bracket tools exist; some
+already save a player list, so returning organizers find their regulars waiting.
+That is the baseline this has to beat — the paid tier is not competing with
+nothing.
+
+**People already work around the missing features by MANGLING NAMES.** In the
+free tool Ed actually used, entries were typed as `stuart 2$` and `michael -1` —
+encoding handicap AND paid status into the display name, because there was
+nowhere else to put them. Two consequences worth designing around:
+
+- The entry-fee tracker's real product is **not having to wreck your player
+  list**, not the checkbox itself.
+- **Handicap-beside-the-name is demand people are already hacking around**, which
+  is a strong signal for the handicap feature when it is built.
+
+**Value scales with field size.** Tracking 5 players is trivial and not worth a
+dollar; 16 is marginal; at 32–64 the tracker becomes genuinely worth paying for.
+So a small free allowance is MARKETING, not leakage — it lets an organizer see
+it work at a size where they'd never have paid, and the bill arrives at the size
+where they would.
+
+**Hence first-run-free and the $5 cap:** most people will use the free bracket,
+so the paid tier has to be well worth the money rather than mildly convenient.
+
+### Consequence for removing a feature
+
+Removing a premium feature is **NOT built** — `add_premium_feature` has no
+counterpart — so today there is no way to add the tracker, use it, and drop it
+before the bill.
+
+If removal is ever added, the agreed rule is a **usage allowance, not
+used-once-bought**: free while fewer than ~5 players have been marked, locked in
+after that. Claude argued that any threshold grants that many free uses; Ed's
+answer is that those uses are worth granting, because five is not worth charging
+for and seeing it work is what sells the feature at 64.
+
 ## Future Idea — Tournament game records + history (NOT this foundation)
 
 **Captured 2026-09-06 (Ed). TABLED for a proper brainstorm + plan when the
