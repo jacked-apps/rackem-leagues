@@ -17,16 +17,18 @@
  * type-enter-type-enter rather than type-enter-reach-for-the-box. Adding names
  * one after another is the normal case, not the exception.
  *
- * Two switches ride along, and they STICK between adds for the same reason: an
- * organizer typing in the people standing in front of them is making the same
- * call every time, and re-ticking a box per name would undo the point of the
- * fast path. The entry-fee switch only appears when the tournament actually
- * bought the tracker.
+ * The destination is ONE checkbox whose label names the state it is in —
+ * "Waiting room" or "Tournament entry" — with an info button carrying the
+ * explanation instead of a paragraph under the form. Both settings STICK between adds: an organizer typing in the
+ * people standing in front of them is making the same call every time, and
+ * re-ticking per name would undo the point of the fast path. The paid box only
+ * appears when the tournament actually bought the entry-fee tracker.
  */
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { InfoButton } from '@/components/InfoButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -126,30 +128,51 @@ export function AddWalkupForm({
           Add
         </Button>
       </div>
-      <div className="space-y-1.5 pt-1">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1">
+        {/*
+          One box, and the label says which state you are in rather than what
+          ticking it would do. "Waiting room" / "Tournament entry" reads as the
+          answer at a glance; the explanation of both lives behind the (?) so
+          the form itself stays one line.
+        */}
+        <div className="flex items-center gap-1.5">
           <Checkbox
-            id="add-straight-in"
+            id="add-destination"
             checked={admit}
             disabled={disabled}
             onCheckedChange={(c) => setAdmit(c === true)}
           />
-          <Label htmlFor="add-straight-in" className="cursor-pointer text-sm font-normal">
-            Put them straight in the tournament
+          <Label htmlFor="add-destination" className="cursor-pointer text-sm font-normal">
+            {admit ? 'Tournament entry' : 'Waiting room'}
           </Label>
+          <InfoButton title="Where does this player go?" size="sm">
+            <p className="mb-2">
+              <strong>Tournament entry</strong> puts them straight in — they're
+              playing, and they'll be in the bracket when you start.
+            </p>
+            <p className="mb-2">
+              <strong>Waiting room</strong> holds them until you add them. This
+              is where players land when they scan your QR code or open your
+              join link, so you can see who has turned up before committing
+              them.
+            </p>
+            <p>Either way you can move them later, right up until you start.</p>
+          </InfoButton>
         </div>
 
         {/* Only where the tournament tracks fees; otherwise it means nothing. */}
         {trackEntryFees && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Checkbox
               id="add-paid"
               checked={paid}
-              // An entry fee is only recorded for someone actually IN the
-              // tournament — there is nothing yet for a waiting player to pay for.
+              // Nothing to have paid for until they are actually in.
               disabled={disabled || !admit}
               onCheckedChange={(c) => setPaid(c === true)}
             />
+            {/* Static, unlike the destination: the player rows below carry
+                "Paid"/"Unpaid" status badges, and a setting reading the same
+                words would be two different meanings on one screen. */}
             <Label
               htmlFor="add-paid"
               className={`cursor-pointer text-sm font-normal ${
@@ -161,12 +184,6 @@ export function AddWalkupForm({
           </div>
         )}
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        {admit
-          ? 'They go straight into the tournament.'
-          : 'They go to the waiting room. Players who scan your QR code or open your join link land there too.'}
-      </p>
     </form>
   );
 }

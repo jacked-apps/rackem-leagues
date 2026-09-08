@@ -212,8 +212,9 @@ describe('HopperView', () => {
     expect(screen.getByText(/nobody added yet/i)).toBeTruthy();
     expect(screen.getByText(/nobody waiting yet/i)).toBeTruthy();
     expect(screen.getByText(/past tournaments/i)).toBeTruthy();
-    // Where waiting players come from is said once, on the always-visible form.
-    expect(screen.getAllByText(/scan your qr code/i)).toHaveLength(1);
+    // How players reach the waiting room is explained behind the add form's
+    // info button now, rather than repeated in prose under the form.
+    expect(screen.queryByText(/scan your qr code/i)).toBeNull();
   });
 
   it('takes no actions once the tournament has started', () => {

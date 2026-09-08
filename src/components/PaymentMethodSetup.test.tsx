@@ -42,7 +42,7 @@ describe('PaymentMethodSetup', () => {
   it('explains card safety in plain language via an info button', async () => {
     const user = userEvent.setup();
     render(<PaymentMethodSetup onVerified={vi.fn()} />);
-    await user.click(screen.getByRole('button', { name: '?' }));
+    await user.click(screen.getByRole('button', { name: /^more information:/i }));
     expect(screen.getByText(/never saved on our site/i)).toBeTruthy();
   });
 });

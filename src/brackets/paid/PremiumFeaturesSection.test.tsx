@@ -105,7 +105,7 @@ describe('PremiumFeaturesSection', () => {
     expect(flags.length).toBeGreaterThanOrEqual(2);
     // One info "?" button per flagged feature (its panel explains the setup;
     // InfoButton open-behavior is covered in PaymentMethodSetup.test).
-    expect(screen.getAllByRole('button', { name: '?' }).length).toBe(flags.length);
+    expect(screen.getAllByRole('button', { name: /^more information:/i }).length).toBe(flags.length);
   });
 
   it('offers an "Everything for $5" option that enables all features (card on file)', async () => {

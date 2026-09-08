@@ -132,7 +132,7 @@ describe('AddWalkupForm', () => {
       const onAdd = vi.fn().mockResolvedValue(undefined);
       renderWithProviders(<AddWalkupForm onAdd={onAdd} />);
 
-      await user.click(screen.getByLabelText(/straight in the tournament/i));
+      await user.click(screen.getByLabelText(/tournament entry|waiting room/i));
       await user.type(screen.getByLabelText('Add a player'), 'Rocket{Enter}');
 
       expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ admit: true }));
@@ -144,7 +144,7 @@ describe('AddWalkupForm', () => {
       const onAdd = vi.fn().mockResolvedValue(undefined);
       renderWithProviders(<AddWalkupForm onAdd={onAdd} trackEntryFees />);
 
-      await user.click(screen.getByLabelText(/straight in the tournament/i));
+      await user.click(screen.getByLabelText(/tournament entry|waiting room/i));
       await user.click(screen.getByLabelText(/entry fee paid/i));
       await user.type(screen.getByLabelText('Add a player'), 'Rocket{Enter}');
       await user.type(screen.getByLabelText('Add a player'), 'Slim{Enter}');
@@ -156,9 +156,26 @@ describe('AddWalkupForm', () => {
       });
     });
 
-    it('hides the fee switch when the tournament does not track fees', () => {
+    it('hides the fee box when the tournament does not track fees', () => {
       renderWithProviders(<AddWalkupForm onAdd={vi.fn()} />);
       expect(screen.queryByLabelText(/entry fee paid/i)).toBeNull();
+    });
+
+    it('names the state it is in, not what ticking it would do', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<AddWalkupForm onAdd={vi.fn()} />);
+
+      // Reads as the answer at a glance, rather than an instruction.
+      expect(screen.getByLabelText('Waiting room')).toBeTruthy();
+      await user.click(screen.getByLabelText('Waiting room'));
+      expect(screen.getByLabelText('Tournament entry')).toBeTruthy();
+    });
+
+    it('explains both destinations behind the info button, not in the form', () => {
+      renderWithProviders(<AddWalkupForm onAdd={vi.fn()} />);
+      // The long explanation lives in the popup; the form itself stays short.
+      expect(screen.queryByText(/holds them until you add them/i)).toBeNull();
+      expect(screen.getByRole('button', { name: /more information: where does this player go/i })).toBeTruthy();
     });
 
     it('will not mark a waiting player paid — there is nothing to pay for yet', async () => {
@@ -166,7 +183,7 @@ describe('AddWalkupForm', () => {
       renderWithProviders(<AddWalkupForm onAdd={vi.fn()} trackEntryFees />);
 
       expect(screen.getByLabelText(/entry fee paid/i)).toBeDisabled();
-      await user.click(screen.getByLabelText(/straight in the tournament/i));
+      await user.click(screen.getByLabelText(/tournament entry|waiting room/i));
       expect(screen.getByLabelText(/entry fee paid/i)).not.toBeDisabled();
     });
   });

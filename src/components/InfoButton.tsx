@@ -151,6 +151,10 @@ export const InfoButton: React.FC<InfoButtonProps> = ({
           className={`rounded-full bg-info/15 text-info hover:bg-info/25 flex items-center justify-center font-bold transition-colors ${
             size === 'sm' ? 'w-4 h-4 text-xs' : 'w-6 h-6 text-sm'
           }`}
+          // Named after what it explains. A bare "?" announces identically for
+          // every info button on a page, so a screen-reader user hears the same
+          // control several times with no way to tell them apart.
+          aria-label={`More information: ${title}`}
           title="More information"
         >
           ?
