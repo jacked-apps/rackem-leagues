@@ -288,13 +288,25 @@ export async function addSelfAsWalkup(
 export async function addWalkupToHopper(
   bracketId: string,
   displayName: string,
-  addedVia: 'search' | 'link' | 'qr' = 'search'
+  options: {
+    /** Put them straight in the tournament rather than the waiting room. */
+    admit?: boolean;
+    /** The organizer's entry-fee call. Only meaningful when admitting. */
+    paidStatus?: 'paid' | 'unpaid';
+    addedVia?: 'search' | 'link' | 'qr';
+  } = {}
 ): Promise<void> {
+  const { admit = false, paidStatus = 'unpaid', addedVia = 'search' } = options;
   const name = displayName.trim();
   const { error } = await supabase.from('bracket_hopper').insert({
     bracket_id: bracketId,
     display_name: name,
     added_via: addedVia,
+    // Admitting on the way in saves a second tap for someone standing right
+    // there. The roster trigger fires on an insert-as-official too, so a
+    // remembered walk-up is recorded exactly as it would be by admitting later.
+    status: admit ? 'official' : 'hopper',
+    paid_status: admit ? paidStatus : null,
   });
   if (error) {
     if (error.code === UNIQUE_VIOLATION) {

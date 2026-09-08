@@ -228,11 +228,18 @@ function useHopperInvalidation(bracketId: string) {
   };
 }
 
-/** Organizer adds a walk-up (a typed name, no account) to the hopper. */
+/**
+ * Organizer adds a walk-up (a typed name, no account), optionally straight into
+ * the tournament with their entry fee already marked.
+ */
 export function useAddWalkupToHopper(bracketId: string) {
   const invalidate = useHopperInvalidation(bracketId);
   return useMutation({
-    mutationFn: (displayName: string) => addWalkupToHopper(bracketId, displayName),
+    mutationFn: (vars: {
+      displayName: string;
+      admit?: boolean;
+      paidStatus?: 'paid' | 'unpaid';
+    }) => addWalkupToHopper(bracketId, vars.displayName, vars),
     onSuccess: invalidate,
   });
 }

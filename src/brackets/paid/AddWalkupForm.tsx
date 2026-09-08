@@ -16,22 +16,43 @@
  * Focus RETURNS to the box after each successful add, so entering a group is
  * type-enter-type-enter rather than type-enter-reach-for-the-box. Adding names
  * one after another is the normal case, not the exception.
+ *
+ * Two switches ride along, and they STICK between adds for the same reason: an
+ * organizer typing in the people standing in front of them is making the same
+ * call every time, and re-ticking a box per name would undo the point of the
+ * fast path. The entry-fee switch only appears when the tournament actually
+ * bought the tracker.
  */
 
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface AddWalkupFormProps {
-  /** Add this name to the waiting room. Rejected names stay in the box. */
-  onAdd: (displayName: string) => Promise<unknown>;
+  /** Add this name. Rejected names stay in the box. */
+  onAdd: (entry: {
+    displayName: string;
+    admit: boolean;
+    paidStatus: 'paid' | 'unpaid';
+  }) => Promise<unknown>;
+  /** This tournament bought the entry-fee tracker, so the paid switch applies. */
+  trackEntryFees?: boolean;
   disabled?: boolean;
 }
 
-export function AddWalkupForm({ onAdd, disabled = false }: AddWalkupFormProps) {
+export function AddWalkupForm({
+  onAdd,
+  trackEntryFees = false,
+  disabled = false,
+}: AddWalkupFormProps) {
   const [name, setName] = useState('');
   const [adding, setAdding] = useState(false);
+  // Sticky across adds — see the header. Both default OFF: waiting-then-admit is
+  // the deliberate path, and nobody is marked paid without being told to.
+  const [admit, setAdmit] = useState(false);
+  const [paid, setPaid] = useState(false);
   // Scoped to this form rather than a document-wide lookup, and not a ref on
   // <Input> — that is a plain function component, so React 18 would not pass one.
   const formRef = useRef<HTMLFormElement>(null);
@@ -64,7 +85,11 @@ export function AddWalkupForm({ onAdd, disabled = false }: AddWalkupFormProps) {
     if (!trimmed || adding) return;
     setAdding(true);
     try {
-      await onAdd(trimmed);
+      await onAdd({
+        displayName: trimmed,
+        admit,
+        paidStatus: paid ? 'paid' : 'unpaid',
+      });
       // Only clear on success — a failed add would otherwise lose what they typed.
       setName('');
       // Ask for the cursor back; the effect grants it once the box can take it.
@@ -101,9 +126,46 @@ export function AddWalkupForm({ onAdd, disabled = false }: AddWalkupFormProps) {
           Add
         </Button>
       </div>
+      <div className="space-y-1.5 pt-1">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="add-straight-in"
+            checked={admit}
+            disabled={disabled}
+            onCheckedChange={(c) => setAdmit(c === true)}
+          />
+          <Label htmlFor="add-straight-in" className="cursor-pointer text-sm font-normal">
+            Put them straight in the tournament
+          </Label>
+        </div>
+
+        {/* Only where the tournament tracks fees; otherwise it means nothing. */}
+        {trackEntryFees && (
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="add-paid"
+              checked={paid}
+              // An entry fee is only recorded for someone actually IN the
+              // tournament — there is nothing yet for a waiting player to pay for.
+              disabled={disabled || !admit}
+              onCheckedChange={(c) => setPaid(c === true)}
+            />
+            <Label
+              htmlFor="add-paid"
+              className={`cursor-pointer text-sm font-normal ${
+                admit ? '' : 'text-muted-foreground'
+              }`}
+            >
+              Entry fee paid
+            </Label>
+          </div>
+        )}
+      </div>
+
       <p className="text-xs text-muted-foreground">
-        They go to the waiting room. Players who scan your QR code or open your
-        join link land there too.
+        {admit
+          ? 'They go straight into the tournament.'
+          : 'They go to the waiting room. Players who scan your QR code or open your join link land there too.'}
       </p>
     </form>
   );

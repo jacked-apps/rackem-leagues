@@ -16,7 +16,9 @@ describe('AddWalkupForm', () => {
     await user.type(input, '  Rocket  ');
     await user.click(screen.getByRole('button', { name: /add this name/i }));
 
-    expect(onAdd).toHaveBeenCalledWith('Rocket');
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({ displayName: 'Rocket' })
+    );
     await waitFor(() => expect(input).toHaveValue(''));
   });
 
@@ -111,5 +113,61 @@ describe('AddWalkupForm', () => {
 
     await waitFor(() => expect(onAdd).toHaveBeenCalled());
     expect(input).toHaveValue('Rocket');
+  });
+
+  describe('the two switches', () => {
+    it('sends them to the waiting room by default', async () => {
+      const user = userEvent.setup();
+      const onAdd = vi.fn().mockResolvedValue(undefined);
+      renderWithProviders(<AddWalkupForm onAdd={onAdd} />);
+
+      await user.type(screen.getByLabelText('Add a player'), 'Rocket{Enter}');
+      expect(onAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ admit: false })
+      );
+    });
+
+    it('puts them straight in when asked', async () => {
+      const user = userEvent.setup();
+      const onAdd = vi.fn().mockResolvedValue(undefined);
+      renderWithProviders(<AddWalkupForm onAdd={onAdd} />);
+
+      await user.click(screen.getByLabelText(/straight in the tournament/i));
+      await user.type(screen.getByLabelText('Add a player'), 'Rocket{Enter}');
+
+      expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ admit: true }));
+    });
+
+    it('keeps the switches set between adds', async () => {
+      // A list of people is one decision, not one per name.
+      const user = userEvent.setup();
+      const onAdd = vi.fn().mockResolvedValue(undefined);
+      renderWithProviders(<AddWalkupForm onAdd={onAdd} trackEntryFees />);
+
+      await user.click(screen.getByLabelText(/straight in the tournament/i));
+      await user.click(screen.getByLabelText(/entry fee paid/i));
+      await user.type(screen.getByLabelText('Add a player'), 'Rocket{Enter}');
+      await user.type(screen.getByLabelText('Add a player'), 'Slim{Enter}');
+
+      expect(onAdd).toHaveBeenNthCalledWith(2, {
+        displayName: 'Slim',
+        admit: true,
+        paidStatus: 'paid',
+      });
+    });
+
+    it('hides the fee switch when the tournament does not track fees', () => {
+      renderWithProviders(<AddWalkupForm onAdd={vi.fn()} />);
+      expect(screen.queryByLabelText(/entry fee paid/i)).toBeNull();
+    });
+
+    it('will not mark a waiting player paid — there is nothing to pay for yet', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<AddWalkupForm onAdd={vi.fn()} trackEntryFees />);
+
+      expect(screen.getByLabelText(/entry fee paid/i)).toBeDisabled();
+      await user.click(screen.getByLabelText(/straight in the tournament/i));
+      expect(screen.getByLabelText(/entry fee paid/i)).not.toBeDisabled();
+    });
   });
 });

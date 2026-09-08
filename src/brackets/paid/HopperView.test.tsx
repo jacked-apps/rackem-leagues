@@ -241,7 +241,9 @@ describe('HopperView', () => {
     await user.click(screen.getByRole('button', { name: /Rocket/ }));
     await user.click(await screen.findByText('Add to this tournament'));
 
-    expect(mocks.addWalkup).toHaveBeenCalledWith('Rocket');
+    expect(mocks.addWalkup).toHaveBeenCalledWith(
+      expect.objectContaining({ displayName: 'Rocket' })
+    );
     expect(mocks.addRegistered).not.toHaveBeenCalled();
   });
 
@@ -262,7 +264,9 @@ describe('HopperView', () => {
     await user.type(screen.getByLabelText('Add a player'), 'Rocket');
     await user.click(screen.getByRole('button', { name: /add this name/i }));
 
-    expect(mocks.addWalkup).toHaveBeenCalledWith('Rocket');
+    expect(mocks.addWalkup).toHaveBeenCalledWith(
+      expect.objectContaining({ displayName: 'Rocket' })
+    );
   });
 
   it('offers no way to add players once the tournament has started', () => {

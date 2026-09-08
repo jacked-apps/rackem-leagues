@@ -143,9 +143,10 @@ export function HopperView({
       />
 
       <AddWalkupForm
+        trackEntryFees={trackEntryFees}
         // Rethrown after reporting, so the form knows to keep the typed name.
-        onAdd={(n) =>
-          addWalkup.mutateAsync(n).catch((err: unknown) => {
+        onAdd={(entry) =>
+          addWalkup.mutateAsync(entry).catch((err: unknown) => {
             reportError(err);
             throw err;
           })
@@ -203,7 +204,7 @@ export function HopperView({
                   // them just re-types the name we saved on their behalf.
                   row.player.member_id
                     ? addRegistered.mutateAsync(row.player.member_id)
-                    : addWalkup.mutateAsync(row.identity.displayName)
+                    : addWalkup.mutateAsync({ displayName: row.identity.displayName })
                 )
               }
               onForget={() =>
