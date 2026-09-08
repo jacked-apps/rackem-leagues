@@ -18,7 +18,7 @@
  * one after another is the normal case, not the exception.
  */
 
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +35,27 @@ export function AddWalkupForm({ onAdd, disabled = false }: AddWalkupFormProps) {
   // Scoped to this form rather than a document-wide lookup, and not a ref on
   // <Input> — that is a plain function component, so React 18 would not pass one.
   const formRef = useRef<HTMLFormElement>(null);
+  /**
+   * A successful add asked for the cursor back. STATE, not a ref: a ref change
+   * schedules no render, so the effect below would never run for a save quick
+   * enough that `disabled` never visibly flipped.
+   */
+  const [wantsFocus, setWantsFocus] = useState(false);
+
+  /**
+   * Return the cursor once the box can actually take it.
+   *
+   * The parent disables this form while an add is in flight, and a disabled
+   * input silently refuses focus() — so calling it the instant the save
+   * resolved did nothing at all. This runs when the request is made AND
+   * whenever `disabled` clears, so the cursor lands either way, and whether the
+   * add came from Enter or from the button.
+   */
+  useEffect(() => {
+    if (!wantsFocus || disabled) return;
+    setWantsFocus(false);
+    formRef.current?.querySelector('input')?.focus();
+  }, [wantsFocus, disabled]);
 
   const trimmed = name.trim();
 
@@ -46,8 +67,8 @@ export function AddWalkupForm({ onAdd, disabled = false }: AddWalkupFormProps) {
       await onAdd(trimmed);
       // Only clear on success — a failed add would otherwise lose what they typed.
       setName('');
-      // Straight back to the box, ready for the next name.
-      formRef.current?.querySelector('input')?.focus();
+      // Ask for the cursor back; the effect grants it once the box can take it.
+      setWantsFocus(true);
     } catch {
       // Swallowed on purpose: the caller reports the failure (it owns the toast),
       // and an uncaught rejection here would just be an unhandled promise. The
