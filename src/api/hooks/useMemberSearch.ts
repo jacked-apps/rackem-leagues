@@ -19,6 +19,9 @@ import { STALE_TIME } from '../client';
  * @param organizationId - Current user's organization (for 'my_org' filter)
  * @param userState - Current user's state (for 'state' filter)
  * @param enabled - Whether to run the query (default: true)
+ * @param registeredOnly - Only members with a real account. Part of the cache
+ *   key, so a caller that wants registered players can't be served a cached
+ *   result that includes placeholders.
  * @returns TanStack Query result with array of members
  *
  * @example
@@ -30,11 +33,20 @@ export function useMemberSearch(
   filter: MemberSearchFilter,
   organizationId: string | null,
   userState: string | null,
-  enabled: boolean = true
+  enabled: boolean = true,
+  registeredOnly: boolean = false
 ) {
   return useQuery({
-    queryKey: ['memberSearch', searchQuery, filter, organizationId, userState],
-    queryFn: () => searchMembers(searchQuery, filter, organizationId, userState),
+    queryKey: [
+      'memberSearch',
+      searchQuery,
+      filter,
+      organizationId,
+      userState,
+      registeredOnly,
+    ],
+    queryFn: () =>
+      searchMembers(searchQuery, filter, organizationId, userState, 50, registeredOnly),
     enabled: enabled, // Run even without search query - will return first 50
     staleTime: STALE_TIME.MEMBER, // 30 minutes
     retry: 1,

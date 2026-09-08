@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Copy, Share2, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { copyText } from '@/utils/clipboard';
 
 interface ShareAppCardProps {
   /**
@@ -38,29 +39,6 @@ interface ShareAppCardProps {
   url?: string;
 }
 
-/**
- * Copies a string to the clipboard. Falls back to a throwaway <textarea>
- * when the Clipboard API is unavailable (older browsers, insecure context).
- */
-const copyToClipboard = async (text: string): Promise<boolean> => {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    return true;
-  } catch {
-    return false;
-  }
-};
 
 export const ShareAppCard: React.FC<ShareAppCardProps> = ({
   title = 'Share the App',
@@ -71,7 +49,7 @@ export const ShareAppCard: React.FC<ShareAppCardProps> = ({
   const [justCopied, setJustCopied] = useState(false);
 
   const handleCopy = async () => {
-    const ok = await copyToClipboard(shareUrl);
+    const ok = await copyText(shareUrl);
     if (ok) {
       setJustCopied(true);
       toast.success('Link copied to clipboard');

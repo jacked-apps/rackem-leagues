@@ -29,6 +29,13 @@ export interface CreateBracketParams {
   grandFinalReset?: boolean;
   /** The creating member's id (from useCurrentMember) → brackets.created_by. */
   createdBy: string;
+  // ── Paid tier (all optional; omitted = a free tournament) ──────────────────
+  /** Checked premium features. Non-empty ⇒ the DB forces tier='paid'. */
+  premiumFeatures?: string[];
+  /** The tournament's game type (e.g. 'eight_ball'), or null. */
+  gameType?: string | null;
+  /** The player card-on-file (payment_methods.id) charged at Start, or null. */
+  paymentMethodId?: string | null;
 }
 
 /**
@@ -54,6 +61,7 @@ export async function sweepStaleBrackets(): Promise<void> {
 export async function createBracket(params: CreateBracketParams): Promise<BracketRow> {
   await sweepStaleBrackets();
 
+  const premiumFeatures = params.premiumFeatures ?? [];
   const { data, error } = await supabase
     .from('brackets')
     .insert({
@@ -62,6 +70,11 @@ export async function createBracket(params: CreateBracketParams): Promise<Bracke
       seeding_mode: params.seedingMode,
       grand_final_reset: params.grandFinalReset ?? false,
       created_by: params.createdBy,
+      // Paid tier: any premium feature checked ⇒ paid (the DB CHECK also enforces this).
+      tier: premiumFeatures.length > 0 ? 'paid' : 'free',
+      premium_features: premiumFeatures,
+      game_type: params.gameType ?? null,
+      payment_method_id: params.paymentMethodId ?? null,
     })
     .select()
     .single();
@@ -126,6 +139,27 @@ export async function startBracket(
 }
 
 /**
+ * Charge-at-checkout seam (A3). Records the (currently $0) charge for a paid
+ * tournament at Start — sets `charged_at` + `charge_amount_cents`.
+ *
+ * THIS is the single spot Jack swaps for a real charge: charge
+ * `brackets.payment_method_id` for `amountCents` via Stripe, then record it. $0
+ * mock today — no money moves, we just record that checkout happened. Called
+ * AFTER a successful start, so a failed start can never leave a
+ * charged-but-not-started bracket (real-money ordering; harmless at $0).
+ */
+export async function chargeForStart(bracketId: string, amountCents: number): Promise<void> {
+  // TODO(payments): real charge of brackets.payment_method_id for amountCents (Stripe).
+  //   Beta comp: if the card's token is a MOCK (tok_mock_%), SKIP the charge and
+  //   mark paid — beta users grandfather in free. See LIST_FOR_ED.md.
+  const { error } = await supabase
+    .from('brackets')
+    .update({ charged_at: new Date().toISOString(), charge_amount_cents: amountCents })
+    .eq('id', bracketId);
+  if (error) throw new Error(`Failed to record charge: ${error.message}`);
+}
+
+/**
  * Record a match winner (the guarded advance). Returns true if it advanced,
  * false if it was a no-op (already decided / not ready — the concurrency +
  * idempotency guard in advance_bracket_winner).
@@ -155,6 +189,390 @@ export async function setMatchInProgress(
     .update({ in_progress: inProgress })
     .eq('id', matchId);
   if (error) throw new Error(`Failed to update match: ${error.message}`);
+}
+
+/**
+ * Entry-fee tracker (the `payment_tracker` feature): flip a player's
+ * organizer-asserted paid/unpaid flag. Cash is collected outside the app — this
+ * is just the checklist. Bumps the bracket's activity so it isn't swept mid-use.
+ */
+export async function setEntryFeePaid(
+  participantId: string,
+  bracketId: string,
+  paid: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from('bracket_participants')
+    .update({ entry_fee_paid: paid })
+    .eq('id', participantId);
+  if (error) throw new Error(`Failed to update entry-fee status: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
+// ── Hopper management (Phase C) ──────────────────────────────────────────────
+
+/** Result of a self-add join (join_bracket_hopper RPC). */
+export interface JoinHopperResult {
+  ok: boolean;
+  reason?: 'not_found' | 'not_accepting' | 'not_signed_in' | 'name_taken';
+  status?: string;
+  /** For `name_taken`: the name the caller tried to join under. */
+  name?: string;
+  /** True when the caller was already in this hopper — a silent no-op. */
+  already_in?: boolean;
+  bracket_id?: string;
+  bracket_name?: string;
+}
+
+/**
+ * Postgres unique-violation code. A name collision in the hopper surfaces as a
+ * raw constraint error, which is useless to an organizer, so callers translate
+ * it into the sentence that says what to do about it.
+ */
+const UNIQUE_VIOLATION = '23505';
+
+/**
+ * Self-add: the signed-in caller adds THEMSELVES to a tournament's hopper via its
+ * join_token (from a scanned QR / opened link). Records only the caller's own
+ * identity; a repeat join is a no-op.
+ */
+export async function joinHopper(
+  joinToken: string,
+  via: 'link' | 'qr' = 'link'
+): Promise<JoinHopperResult> {
+  const { data, error } = await supabase.rpc('join_bracket_hopper', {
+    p_join_token: joinToken,
+    p_via: via,
+  });
+  if (error) throw new Error(`Failed to join: ${error.message}`);
+  return data as JoinHopperResult;
+}
+
+export interface SelfWalkupResult {
+  ok: boolean;
+  reason?: 'name_required' | 'name_too_long' | 'not_found' | 'not_accepting' | 'full' | 'name_taken';
+  name?: string;
+  max?: number;
+  status?: string;
+  bracket_name?: string;
+}
+
+/**
+ * Anonymous self-add: someone with no account types their name on the
+ * tournament page and lands in the waiting room.
+ *
+ * Every rule (setup only, entry cap, name length, one name per tournament) is
+ * enforced by the RPC, not here — an input box is trivially bypassed. Failures
+ * come back as a `reason` for the page to phrase, never as a thrown error,
+ * because losing a name race is an ordinary outcome rather than a fault.
+ */
+export async function addSelfAsWalkup(
+  joinToken: string,
+  displayName: string
+): Promise<SelfWalkupResult> {
+  const { data, error } = await supabase.rpc('add_self_as_walkup', {
+    p_join_token: joinToken,
+    p_display_name: displayName,
+  });
+  if (error) throw new Error(`Could not add your name: ${error.message}`);
+  return data as SelfWalkupResult;
+}
+
+/**
+ * Add a WALK-UP to the hopper (member_id NULL — a disposable tournament entrant).
+ *
+ * A name can only appear once per tournament (first come, first served), so a
+ * collision is an expected outcome here rather than a fault — it gets the
+ * plain-language message instead of a constraint error.
+ */
+export async function addWalkupToHopper(
+  bracketId: string,
+  displayName: string,
+  options: {
+    /** Put them straight in the tournament rather than the waiting room. */
+    admit?: boolean;
+    /** The organizer's entry-fee call. Only meaningful when admitting. */
+    paidStatus?: 'paid' | 'unpaid';
+    addedVia?: 'search' | 'link' | 'qr';
+  } = {}
+): Promise<void> {
+  const { admit = false, paidStatus = 'unpaid', addedVia = 'search' } = options;
+  const name = displayName.trim();
+  const { error } = await supabase.from('bracket_hopper').insert({
+    bracket_id: bracketId,
+    display_name: name,
+    added_via: addedVia,
+    // Admitting on the way in saves a second tap for someone standing right
+    // there. The roster trigger fires on an insert-as-official too, so a
+    // remembered walk-up is recorded exactly as it would be by admitting later.
+    status: admit ? 'official' : 'hopper',
+    paid_status: admit ? paidStatus : null,
+  });
+  if (error) {
+    if (error.code === UNIQUE_VIOLATION) {
+      throw new Error(`${name} is already on this list — use a different name.`);
+    }
+    throw new Error(`Failed to add walk-up: ${error.message}`);
+  }
+  await touchBracket(bracketId);
+}
+
+export interface AddRegisteredResult {
+  ok: boolean;
+  reason?:
+    | 'not_found'
+    | 'not_accepting'
+    | 'no_such_player'
+    | 'not_registered'
+    | 'name_taken';
+  name?: string;
+  already_in?: boolean;
+  status?: string;
+}
+
+/**
+ * Organizer search-add: put a REGISTERED player in the waiting room.
+ *
+ * Goes through an RPC rather than inserting directly so the display name is
+ * derived server-side, exactly as the self-join path derives it. A name picked
+ * in the browser could differ from the one the same player gets by scanning the
+ * code — and since a name may appear only once per tournament, that would
+ * surface as a collision nobody could account for.
+ */
+export async function addRegisteredToHopper(
+  bracketId: string,
+  memberId: string
+): Promise<AddRegisteredResult> {
+  const { data, error } = await supabase.rpc('add_registered_to_hopper', {
+    p_bracket_id: bracketId,
+    p_member_id: memberId,
+  });
+  if (error) throw new Error(`Could not add that player: ${error.message}`);
+  await touchBracket(bracketId);
+  return data as AddRegisteredResult;
+}
+
+/**
+ * Admit a hopper entry to the official list (status → 'official'), with the
+ * organizer-asserted paid/unpaid flag. The roster trigger records a registered
+ * player automatically.
+ */
+export async function admitHopperEntry(
+  entryId: string,
+  bracketId: string,
+  paidStatus: 'paid' | 'unpaid'
+): Promise<void> {
+  const { error } = await supabase
+    .from('bracket_hopper')
+    .update({ status: 'official', paid_status: paidStatus })
+    .eq('id', entryId);
+  if (error) throw new Error(`Failed to admit entry: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
+/** Update just the paid/unpaid flag on a hopper entry. */
+export async function setHopperPaidStatus(
+  entryId: string,
+  bracketId: string,
+  paidStatus: 'paid' | 'unpaid'
+): Promise<void> {
+  const { error } = await supabase
+    .from('bracket_hopper')
+    .update({ paid_status: paidStatus })
+    .eq('id', entryId);
+  if (error) throw new Error(`Failed to update paid status: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
+/**
+ * Housekeeping: drop ONE person from the organizer's remembered past players.
+ *
+ * @param target - A registered player (`memberId`) or a remembered walk-up
+ *   (`displayName`). The RPC resolves the organizer from the session, so this
+ *   can only ever touch the caller's own list.
+ * @returns true if a row was removed; false if there was nothing there (a
+ *   double tap is a no-op, not an error).
+ */
+export async function forgetRosterEntry(target: {
+  memberId?: string | null;
+  displayName?: string | null;
+}): Promise<boolean> {
+  const { data, error } = await supabase.rpc('forget_bracket_roster_entry', {
+    p_member_id: target.memberId ?? undefined,
+    p_display_name: target.displayName ?? undefined,
+  });
+  if (error) throw new Error(`Could not update your past players: ${error.message}`);
+  return data === true;
+}
+
+export interface AddFeatureResult {
+  ok: boolean;
+  reason?: 'bad_feature' | 'not_found' | 'not_setup';
+  feature?: string;
+  already_had?: boolean;
+  status?: string;
+}
+
+/**
+ * Buy a premium feature for a tournament that already exists.
+ *
+ * Setup-only, enforced in the RPC: the charge is computed from the feature list
+ * at start, so adding one afterwards would change a settled bill. Nothing is
+ * charged here — the price simply goes up on the Start button, against the card
+ * already on file.
+ */
+export async function addPremiumFeature(
+  bracketId: string,
+  feature: string
+): Promise<AddFeatureResult> {
+  const { data, error } = await supabase.rpc('add_premium_feature', {
+    p_bracket_id: bracketId,
+    p_feature: feature,
+  });
+  if (error) throw new Error(`Could not add that feature: ${error.message}`);
+  return data as AddFeatureResult;
+}
+
+export interface RemoveFeatureResult {
+  ok: boolean;
+  reason?: 'bad_feature' | 'not_found' | 'not_setup' | 'in_use';
+  feature?: string;
+  already_off?: boolean;
+  /** For `in_use`: how many players have been marked paid. */
+  used?: number;
+  free_uses?: number;
+  status?: string;
+}
+
+/**
+ * Take a premium feature back off a tournament still in setup.
+ *
+ * Refused once the feature has been USED beyond a small free allowance —
+ * otherwise it could be used all night and dropped before the bill. The
+ * allowance exists because a handful of players is trivial to track by hand and
+ * not worth charging for; the feature earns its dollar at 32 or 64.
+ */
+export async function removePremiumFeature(
+  bracketId: string,
+  feature: string
+): Promise<RemoveFeatureResult> {
+  const { data, error } = await supabase.rpc('remove_premium_feature', {
+    p_bracket_id: bracketId,
+    p_feature: feature,
+  });
+  if (error) throw new Error(`Could not remove that feature: ${error.message}`);
+  return data as RemoveFeatureResult;
+}
+
+/** The settings an organizer can change before a tournament starts. */
+export interface BracketSettings {
+  name: string;
+  format: BracketFormat;
+  grandFinalReset: boolean;
+  gameType: string | null;
+}
+
+/**
+ * Update a tournament's settings.
+ *
+ * Guarded to `status = 'setup'` in the WHERE clause, not just the UI: the match
+ * tree is generated FROM the format, so changing it after the bracket exists
+ * would leave the stored tree describing a tournament that no longer matches
+ * its own rules. The guard makes that impossible rather than unlikely.
+ */
+export async function updateBracketSettings(
+  bracketId: string,
+  settings: BracketSettings
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('brackets')
+    .update({
+      name: settings.name.trim(),
+      format: settings.format,
+      grand_final_reset: settings.grandFinalReset,
+      game_type: settings.gameType,
+    })
+    .eq('id', bracketId)
+    .eq('status', 'setup')
+    .select('id');
+
+  if (error) throw new Error(`Could not save the tournament: ${error.message}`);
+  // No row matched: the status guard rejected it, i.e. it already started.
+  if (!data || data.length === 0) {
+    throw new Error('This tournament has already started, so its settings are locked.');
+  }
+  await touchBracket(bracketId);
+}
+
+/**
+ * Convert a paid tournament's official hopper list into seeded participants,
+ * ready for the tree generator. Returns the player count.
+ *
+ * @param includeWaiting - Also admit everyone still in the waiting room, as
+ *   unpaid. The organizer opts into this at Start; it is never automatic,
+ *   because a QR on a flyer means the waiting room can hold someone who
+ *   scanned out of curiosity and left.
+ */
+export async function finalizeHopper(
+  bracketId: string,
+  includeWaiting: boolean
+): Promise<number> {
+  const { data, error } = await supabase.rpc('finalize_bracket_hopper', {
+    p_bracket_id: bracketId,
+    p_include_waiting: includeWaiting,
+  });
+  // The RPC's exceptions are written as organizer-facing sentences
+  // ("Add at least 2 players before starting"), so surface them as-is.
+  if (error) throw new Error(error.message);
+  return (data as number | null) ?? 0;
+}
+
+/** Eject an entry from the hopper (delete). The roster (sticky) is untouched. */
+export async function ejectHopperEntry(entryId: string, bracketId: string): Promise<void> {
+  const { error } = await supabase.from('bracket_hopper').delete().eq('id', entryId);
+  if (error) throw new Error(`Failed to eject entry: ${error.message}`);
+  await touchBracket(bracketId);
+}
+
+export interface LateEntryResult {
+  ok: boolean;
+  reason?:
+    | 'not_found'
+    | 'not_premium'
+    | 'not_live'
+    | 'not_a_bye'
+    | 'already_played'
+    | 'already_started'
+    | 'no_such_player'
+    | 'not_registered'
+    | 'already_in'
+    | 'name_required'
+    | 'name_too_long'
+    | 'name_taken';
+  name?: string;
+  max?: number;
+  status?: string;
+  participant_id?: string;
+}
+
+/**
+ * Seat a latecomer in an unused bye (paid tournaments only).
+ *
+ * Every refusal is an ordinary outcome — the bye was taken, the match started,
+ * the name clashes — so they come back as a `reason` rather than a thrown
+ * error, for the caller to phrase.
+ */
+export async function addLateEntry(
+  matchId: string,
+  entrant: { memberId?: string | null; displayName?: string | null }
+): Promise<LateEntryResult> {
+  const { data, error } = await supabase.rpc('add_late_entry', {
+    p_match_id: matchId,
+    p_member_id: entrant.memberId ?? undefined,
+    p_display_name: entrant.displayName ?? undefined,
+  });
+  if (error) throw new Error(`Could not add the player: ${error.message}`);
+  return data as LateEntryResult;
 }
 
 /**

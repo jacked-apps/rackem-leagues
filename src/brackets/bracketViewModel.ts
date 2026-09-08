@@ -49,6 +49,14 @@ export interface MatchView {
   status: MatchStatus;
   /** Organizer marked this ready match as being played now (vs. on deck). */
   inProgress: boolean;
+  /**
+   * A BYE: settled with only one player, because the other never entered.
+   *
+   * Rendered as "Bye" rather than an empty slot — tournament practice is
+   * explicit that byes belong on the bracket, labelled. It is also the only
+   * place a late entrant can be seated.
+   */
+  isBye: boolean;
   isResetMatch: boolean;
   home: SlotView;
   away: SlotView;
@@ -89,6 +97,10 @@ export function toMatchView(m: ViewMatch, names: Map<string, string>): MatchView
     slot: m.slot,
     status: m.status as MatchStatus,
     inProgress: m.in_progress,
+    // Exactly one player and already decided — nobody was there to play.
+    isBye:
+      m.status === 'complete' &&
+      (m.home_participant_id === null) !== (m.away_participant_id === null),
     isResetMatch: m.is_reset_match,
     home: slot(m.home_participant_id, m.winner_participant_id, names),
     away: slot(m.away_participant_id, m.winner_participant_id, names),
