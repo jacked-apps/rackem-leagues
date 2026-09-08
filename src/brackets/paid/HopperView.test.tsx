@@ -411,7 +411,8 @@ describe('HopperView', () => {
 
       await user.click(screen.getByLabelText(/entry fee paid/i));
 
-      expect(await screen.findByText(/add the entry-fee tracker\?/i)).toBeTruthy();
+      expect(await screen.findByText(/premium feature/i)).toBeTruthy();
+      expect(screen.getByText('Entry-fee tracking')).toBeTruthy();
       // Nothing is bought by asking.
       expect(mocks.addFeature).not.toHaveBeenCalled();
     });
@@ -423,6 +424,25 @@ describe('HopperView', () => {
 
       await user.click(screen.getByLabelText(/entry fee paid/i));
       expect(await screen.findByText(/nothing is charged now/i)).toBeTruthy();
+    });
+
+    it('explains what the tracker actually gives you', async () => {
+      const user = userEvent.setup();
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      await user.click(screen.getByLabelText(/entry fee paid/i));
+      // The value is the pot total to check against the cash, not the checkbox.
+      expect(await screen.findByText(/running total of what should be in the pot/i)).toBeTruthy();
+    });
+
+    it('warns that it cannot be removed, which is what we actually enforce', async () => {
+      const user = userEvent.setup();
+      loaded([]);
+      renderWithProviders(<HopperView bracketId="b1" />);
+
+      await user.click(screen.getByLabelText(/entry fee paid/i));
+      expect(await screen.findByText(/no removing it later/i)).toBeTruthy();
     });
 
     it('buys it on confirm', async () => {
@@ -455,7 +475,7 @@ describe('HopperView', () => {
       await user.click(screen.getByLabelText(/tournament entry|waiting room/i));
       await user.click(screen.getByLabelText(/entry fee paid/i));
 
-      expect(screen.queryByText(/add the entry-fee tracker\?/i)).toBeNull();
+      expect(screen.queryByText(/premium feature/i)).toBeNull();
     });
   });
 });

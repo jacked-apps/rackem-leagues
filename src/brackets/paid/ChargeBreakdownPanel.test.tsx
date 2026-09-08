@@ -24,7 +24,7 @@ describe('ChargeBreakdownPanel', () => {
     await user.click(screen.getByRole('button', { name: /2 features/ }));
 
     expect(await screen.findByText('Real players & sign-up')).toBeTruthy();
-    expect(screen.getByText('Entry-fee tracker')).toBeTruthy();
+    expect(screen.getByText('Entry-fee tracking')).toBeTruthy();
     // A receipt's total, not another line item.
     expect(screen.getByText('Total')).toBeTruthy();
     expect(screen.getByText(/charged when you start/i)).toBeTruthy();

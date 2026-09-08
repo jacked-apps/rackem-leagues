@@ -51,9 +51,9 @@ export const PREMIUM_FEATURES: readonly PremiumFeature[] = [
   },
   {
     key: 'payment_tracker',
-    label: 'Entry-fee tracker',
+    label: 'Entry-fee tracking',
     blurb:
-      'Keep a running list of who’s paid their entry fee and who hasn’t. You collect the cash — we just track it, no money runs through the app.',
+      'Tick people off as they pay, and we keep a running total of what should be in the pot — so you can check it against the cash in your hand. You collect the money; none of it runs through the app.',
     priceCents: FEATURE_PRICE_CENTS,
   },
   {

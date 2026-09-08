@@ -255,14 +255,38 @@ export function HopperView({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Add the entry-fee tracker?</AlertDialogTitle>
+            {/* Eyebrow, so it is unmistakably an offer rather than a setting. */}
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Premium feature
+            </p>
+            <AlertDialogTitle>
+              {getPremiumFeature('payment_tracker')?.label}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {getPremiumFeature('payment_tracker')?.blurb} It costs{' '}
-              {formatPrice(getPremiumFeature('payment_tracker')?.priceCents ?? 0)},
-              added to what you pay when you start this tournament — nothing is
-              charged now.
+              {getPremiumFeature('payment_tracker')?.blurb}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          <div className="space-y-3 text-sm">
+            <p>
+              <span className="font-medium">
+                {formatPrice(getPremiumFeature('payment_tracker')?.priceCents ?? 0)}
+              </span>
+              , added to what you pay when you start this tournament — nothing is
+              charged now.
+            </p>
+
+            {/*
+              Only states what is actually enforced. There is no way to remove a
+              feature once added, so this is true today. The 24-hour
+              delete/restart lockout Ed wants is NOT built, and warning about a
+              rule nothing enforces just teaches people to skip warnings.
+            */}
+            <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-warning-foreground">
+              <span className="font-semibold">Heads up:</span> once you add this
+              it stays on this tournament — there is no removing it later.
+            </p>
+          </div>
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel className="mt-0">Not now</AlertDialogCancel>
             <AlertDialogAction
