@@ -486,4 +486,18 @@ describe('HopperView', () => {
       expect(screen.queryByText(/premium feature/i)).toBeNull();
     });
   });
+
+  it('keeps the sweep setting inside the waiting room it governs', () => {
+    loaded([entry({ id: 'a', status: 'hopper' })]);
+    renderWithProviders(<HopperView bracketId="b1" onIncludeWaitingChange={vi.fn()} />);
+
+    // Below the lists it was adrift — easy to miss, and ambiguous about which
+    // list it applied to.
+    const room = screen
+      .getByRole('heading', { name: 'Waiting to be added' })
+      .closest('section');
+    expect(room).toContainElement(
+      screen.getByLabelText(/add anyone still waiting when i start/i)
+    );
+  });
 });

@@ -192,28 +192,32 @@ export function HopperView({
         tone="waiting"
         title="Waiting to be added"
         count={counts.waiting}
+        // A rule about THIS room, so it lives in it. Below the lists it was
+        // adrift — easy to miss, and unclear which list it governed.
+        action={
+          onIncludeWaitingChange && (
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="auto-add-waiting"
+                checked={includeWaiting}
+                disabled={locked}
+                onCheckedChange={(c) => onIncludeWaitingChange(c === true)}
+              />
+              <Label htmlFor="auto-add-waiting" className="cursor-pointer font-normal">
+                <span className="text-sm">Add anyone still waiting when I start</span>
+                <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                  {trackEntryFees ? 'They go in as unpaid.' : 'Off by default.'}
+                </span>
+              </Label>
+            </div>
+          )
+        }
         // The add form above already says where waiting players come from.
         empty="Nobody waiting yet."
       >
         {groups.waiting.map(entryRow)}
       </HopperGroup>
 
-      {onIncludeWaitingChange && (
-        <div className="flex items-start gap-2 px-2">
-          <Checkbox
-            id="auto-add-waiting"
-            checked={includeWaiting}
-            disabled={locked}
-            onCheckedChange={(c) => onIncludeWaitingChange(c === true)}
-          />
-          <Label htmlFor="auto-add-waiting" className="cursor-pointer font-normal">
-            <span className="text-sm">Add anyone still waiting when I start</span>
-            <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-              {trackEntryFees ? 'They go in as unpaid.' : 'Off by default.'}
-            </span>
-          </Label>
-        </div>
-      )}
 
       <HopperGroup
         tone="aside"
