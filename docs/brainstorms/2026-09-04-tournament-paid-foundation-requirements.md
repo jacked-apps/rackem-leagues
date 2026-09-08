@@ -399,6 +399,58 @@ so the idea isn't lost. Fold into
 `docs/brainstorms/2026-08-26-tournament-bracket-requirements.md`'s Paid Feature
 Roadmap when that branch is next touched.
 
+## Future Idea — One reusable checkout, not one per system (Ed, 2026-09-08)
+
+**Own brainstorm when checkout becomes real. Do not grow it feature by feature.**
+
+Ed: "we will really want a true reusable component for checkouts and not just
+build one for each specific system."
+
+### Why this is now due
+
+The original plan deliberately kept things un-abstracted "until there's a second
+dimension to generalize over." There are now **three** payment surfaces, each
+built on its own:
+
+- **Tournaments** — `PaymentMethodSetup` + a per-player card on file
+  (`payment_methods`), charged at Start via the `chargeForStart` seam.
+- **The LO application** — wires `PaymentCardForm` + the application reducer
+  INLINE in `src/leagueOperator/questionDefinitions.tsx`. A note already exists
+  in `LIST_FOR_ED.md` to move it onto `PaymentMethodSetup`.
+- **Dues** — `RecordDuesModal` and the dues roster, a separate flow again.
+
+Three implementations of "take money for a thing" is the point at which the
+fourth should not be written by hand.
+
+### What the shared piece has to carry
+
+- **Coupons / discount codes.** Already banked as a future item, and load-bearing
+  for the **beta-tester comp** mechanism: grandfathering testers with free
+  tournaments AND free leagues. Coupons therefore span both sides and cannot
+  live inside the tournament flow.
+- **A line-itemised receipt with a cap.** The tournament side already has this
+  (`chargeBreakdown` + `ChargeReceipt`: items, the $5 cap shown as its own
+  discount line, a total pinned by test to equal what is charged). That shape is
+  reusable and its lesson is not: two places computing money independently is
+  how a checkout ends up showing two different numbers.
+- **Charge-at-commit, not at setup.** Tournaments charge at Start, AFTER a
+  successful start, so a failure cannot leave a charged-but-not-started
+  tournament. Whatever replaces it must keep that ordering.
+- **A usage allowance for reversibility.** `remove_premium_feature` encodes
+  "removable while barely used, locked once genuinely used". Any checkout that
+  lets someone drop a line item needs an equivalent, or the item is free.
+- **Enforcement against work-arounds — DEFERRED ON PURPOSE.** Ed wanted a
+  24-hour delete/restart lockout so an organizer cannot set up, use everything,
+  delete and repeat. Not built: it guards a $0 charge today. Build it with real
+  payments, and only once there is evidence people actually do this.
+
+### The current state to build from
+
+Everything charges **$0 through a mock processor**; `chargeForStart` is the
+single seam Jack swaps for a real Stripe charge. Beta cards carry a
+`tok_mock_%` token, which is also the proposed comp mechanism (see
+`LIST_FOR_ED.md`).
+
 ## Pricing reality check (Ed, 2026-09-08)
 
 Captured because it shapes what "worth paying for" means, and none of it is
