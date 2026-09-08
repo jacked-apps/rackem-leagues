@@ -12,9 +12,13 @@
  * Deliberately permissive about duplicates: two people really can both be
  * called Slim, and the organizer is the one who knows. The screen flags a shared
  * name rather than refusing it.
+ *
+ * Focus RETURNS to the box after each successful add, so entering a group is
+ * type-enter-type-enter rather than type-enter-reach-for-the-box. Adding names
+ * one after another is the normal case, not the exception.
  */
 
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +32,9 @@ interface AddWalkupFormProps {
 export function AddWalkupForm({ onAdd, disabled = false }: AddWalkupFormProps) {
   const [name, setName] = useState('');
   const [adding, setAdding] = useState(false);
+  // Scoped to this form rather than a document-wide lookup, and not a ref on
+  // <Input> — that is a plain function component, so React 18 would not pass one.
+  const formRef = useRef<HTMLFormElement>(null);
 
   const trimmed = name.trim();
 
@@ -39,6 +46,8 @@ export function AddWalkupForm({ onAdd, disabled = false }: AddWalkupFormProps) {
       await onAdd(trimmed);
       // Only clear on success — a failed add would otherwise lose what they typed.
       setName('');
+      // Straight back to the box, ready for the next name.
+      formRef.current?.querySelector('input')?.focus();
     } catch {
       // Swallowed on purpose: the caller reports the failure (it owns the toast),
       // and an uncaught rejection here would just be an unhandled promise. The
@@ -49,7 +58,7 @@ export function AddWalkupForm({ onAdd, disabled = false }: AddWalkupFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-2">
       <Label htmlFor="add-walkup">Add a player</Label>
       <div className="flex gap-2">
         <Input

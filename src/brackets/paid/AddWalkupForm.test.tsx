@@ -48,4 +48,29 @@ describe('AddWalkupForm', () => {
     renderWithProviders(<AddWalkupForm onAdd={vi.fn()} disabled />);
     expect(screen.getByLabelText('Add a player')).toBeDisabled();
   });
+
+  it('puts focus back in the box so a list can be typed straight through', async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn().mockResolvedValue(undefined);
+    renderWithProviders(<AddWalkupForm onAdd={onAdd} />);
+
+    const input = screen.getByLabelText('Add a player');
+    await user.type(input, 'Rocket{Enter}');
+
+    // type-enter-type-enter, not type-enter-reach-for-the-box.
+    await waitFor(() => expect(input).toHaveValue(''));
+    expect(input).toHaveFocus();
+  });
+
+  it('leaves focus alone when the add failed, next to the reason', async () => {
+    const user = userEvent.setup();
+    const onAdd = vi.fn().mockRejectedValue(new Error('nope'));
+    renderWithProviders(<AddWalkupForm onAdd={onAdd} />);
+
+    const input = screen.getByLabelText('Add a player');
+    await user.type(input, 'Rocket{Enter}');
+
+    await waitFor(() => expect(onAdd).toHaveBeenCalled());
+    expect(input).toHaveValue('Rocket');
+  });
 });
