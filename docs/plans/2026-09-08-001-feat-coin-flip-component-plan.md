@@ -14,6 +14,10 @@ A self-contained coin flip: two participants in, one winner out. It knows
 nothing about matches, leagues, breaks, or ties — callers bring two names and
 receive a result. No schema change, no persistence, no realtime.
 
+Two modes, one component. In a **called** flip a human picks heads or tails. In
+a **quick** flip the app assigns the faces, shows the assignment, and flips —
+no back-and-forth. They differ in exactly one step and share everything else.
+
 ## Problem Frame
 
 The app has no way to produce a 50/50 decision between two sides. Deciding who
@@ -34,6 +38,8 @@ See origin: `docs/brainstorms/2026-09-08-coin-flip-component-requirements.md`
 - R6. Accepts externally supplied state, including a supplied result
 - R7. Announces the winner by name, not by coin face alone
 - R8. Result is legible without color carrying meaning
+- R9. Offers a quick flip with no back-and-forth — the app makes the call
+- R10. A quick flip shows its face assignment before the coin is in the air
 
 ## Scope Boundaries
 
@@ -97,6 +103,21 @@ See origin: `docs/brainstorms/2026-09-08-coin-flip-component-requirements.md`
   caller could violate.
 - **Participants stay generic.** No `playerId` or `teamId` anywhere in the
   component. `{ id, name }` is the whole contract.
+- **Quick flip is a mode, not a sibling component.** It replaces one step — the
+  human call — with an app-made one. Sharing the state machine, the coin, and
+  the result display means a change to any of those lands in both modes at once.
+- **One randomization is load-bearing; the rest are cosmetic.** A random face
+  assignment followed by a coin toss is exactly as fair as the toss alone —
+  combining two fair 50/50s gives one fair 50/50, so no additional fairness is
+  available to buy. The assignment is randomized to remove the *appearance* that
+  entry order decides the outcome, which is a real concern for a feature whose
+  only job is to be accepted by both sides. Display order is shuffled because it
+  is free. Neither is described as making the flip "more random", because it
+  does not.
+- **The assignment is a visible beat, not a label on the result.** Quick mode
+  renders the assignment, pauses, then flips. Announcing a winner without having
+  shown the assignment first turns the flip into a claim rather than an event
+  the players watched.
 
 ## Open Questions
 
@@ -137,11 +158,18 @@ State machine inside the component:
 ```mermaid
 stateDiagram-v2
     [*] --> idle
-    idle --> calling: "Flip for it"
+    idle --> calling: "Flip for it" (called mode)
+    idle --> assigned: "Quick flip" (quick mode)
     calling --> flipping: caller picks heads or tails
+    assigned --> flipping: assignment shown, then coin launches
     flipping --> result: coin settles
     result --> idle: "Flip again" (only if caller allows)
 ```
+
+The two modes differ in one state. `calling` waits for a human; `assigned`
+shows an app-made assignment and moves on. Both arrive at the same `flipping`
+state and resolve through the same rules, so neither mode has its own notion of
+who won.
 
 A supplied result (R6) enters at `flipping`, replacing the local toss. Every
 other transition is identical, so the controlled and uncontrolled paths share
@@ -334,14 +362,75 @@ asserted.
 
 ---
 
-- [ ] **Unit 5: Catalog and documentation**
+- [ ] **Unit 5: Quick flip mode**
+
+**Goal:** A flip with no back-and-forth — the app assigns the faces, shows the
+assignment, and flips.
+
+**Requirements:** R9, R10
+
+**Dependencies:** Units 1–3
+
+**Files:**
+- Modify: `src/components/coinflip/flipCoin.ts`
+- Modify: `src/components/coinflip/CoinFlip.tsx`
+- Test: `src/components/coinflip/flipCoin.test.ts`
+- Test: `src/components/coinflip/CoinFlip.test.tsx`
+
+**Approach:**
+- Add an assignment picker to the logic module: given two participants and the
+  injected random source, decide which one holds heads. This is the single
+  load-bearing randomization; it feeds `resolveFlip` unchanged.
+- Add a mode prop to the component. In quick mode the `calling` state is
+  replaced by `assigned`, which renders "Heads → *name*, Tails → *name*" and
+  then launches the coin. Everything downstream is shared.
+- Shuffle which participant is displayed first. Purely cosmetic, so it must not
+  feed the winner calculation — the test below pins that.
+- The assignment must be on screen before the flipping state begins (R10). It is
+  a beat in the sequence, not a caption on the result.
+- Comment the assignment picker with *why* it exists — that it buys perceived
+  neutrality rather than fairness — so a later reader does not "optimize" it
+  away as a redundant coin toss, and equally does not add a fourth
+  randomization believing it helps.
+
+**Patterns to follow:**
+- Units 1–2; this adds one function and one branch, not a parallel path
+
+**Test scenarios:**
+- Happy path: quick mode renders the face assignment naming both participants
+- Happy path: quick mode reaches a result and announces a winner by name
+- Happy path: `onResult` carries the same winner the UI displays, as in called mode
+- Edge case: quick mode never enters the calling state — no heads/tails buttons
+  are ever offered to the user
+- Edge case: the assignment is rendered before the flipping state is entered,
+  not alongside the result
+- Edge case: with a stubbed random source pinned to each boundary, the
+  assignment goes to a specific participant — proves the assignment is actually
+  driven by the source and not fixed
+- Edge case: across many quick flips with a real source, each participant holds
+  heads at least once and each wins at least once. Assert occurrence, not ratio,
+  so the test cannot flake
+- Edge case: display order shuffling does not change who wins — with the
+  assignment held fixed and only the order source varied, the winner is stable
+- Integration: a supplied face (Unit 4) still determines the outcome in quick
+  mode, so the control seam is not bypassed by the new path
+- Integration: under reduced motion, quick mode still shows the assignment
+  before announcing the winner
+
+**Verification:**
+- A quick flip is watchable start to finish: assignment, then coin, then winner
+- Called mode is unchanged — its tests pass untouched
+
+---
+
+- [ ] **Unit 6: Catalog and documentation**
 
 **Goal:** Make the component discoverable so the next feature reuses it instead
 of rebuilding it.
 
 **Requirements:** R5
 
-**Dependencies:** Units 1–4
+**Dependencies:** Units 1–5
 
 **Files:**
 - Modify: `src/components/COMPONENTS_INDEX.md`
@@ -381,6 +470,8 @@ of rebuilding it.
 | A one-sided coin ships unnoticed because "random" is hard to assert | Unit 1 pins both boundary values of the injected source and asserts both faces occur across many tosses — a `<` / `<=` slip fails the test. |
 | A future caller reaches for this to decide breaks and wires it straight into game rows | Scope boundaries name the Pairings Generator as the owner, and the component exposes no way to write anything. |
 | Result readable only by color | R8 is a stated requirement with a test-visible consequence: the winner is announced by name. |
+| Quick mode's extra randomizations get mistaken for extra fairness, and a later change adds more of them — or removes the useful one as redundant | The reason is written down where the code lives, not only in this plan: the assignment picker carries a comment stating it buys perceived neutrality, not fairness. Tests pin that display order cannot change the winner, so a shuffle can never quietly become load-bearing. |
+| Quick mode announces a winner without the player having seen the assignment | R10 is enforced by the state machine — `assigned` is a distinct state that must be entered before `flipping` — and by a test asserting the assignment renders before the flipping state, not alongside the result. |
 
 ## Documentation / Operational Notes
 

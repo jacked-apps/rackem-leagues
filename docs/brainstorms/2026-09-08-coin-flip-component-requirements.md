@@ -44,6 +44,12 @@ many devices. It flips a coin and reports who won.
 - **R7.** Announces the outcome by name — "Ed wins the flip" — not by face
   alone. The face is trivia; the winner is the answer.
 - **R8.** The result is legible without relying on color to carry meaning.
+- **R9.** Offers a **quick flip** with no back-and-forth: the app assigns the
+  faces itself, shows the assignment, and flips. Same flip, same result — only
+  the caller changes, from a human to the app.
+- **R10.** In a quick flip, the assignment is shown **before** the coin is in
+  the air. A result announced without a visible prior assignment asks to be
+  believed rather than watched.
 
 ## Design shape
 
@@ -74,6 +80,16 @@ reuse everything above it.
 - **Animation is part of the point, and stays cheap.** A coin that visibly
   travels makes the result feel decided rather than asserted. CSS only — no
   animation library.
+- **Quick flip is a mode, not a second component.** It differs from the called
+  flip in exactly one step — who makes the call. Everything else is shared.
+- **Randomizing the face assignment is a perception decision, not a fairness
+  one.** Assigning heads at random and then flipping produces the same 50/50 as
+  flipping alone: combining two fair coins yields one fair coin, so the extra
+  step buys no additional fairness. It is worth doing anyway, because always
+  giving heads to whoever was entered first invites the belief that position
+  determines outcome. A coin flip only works if both sides accept it, so the
+  appearance of neutrality is the feature being bought. Randomizing display
+  order is cosmetic and kept only because it costs nothing.
 
 ## Scope boundaries
 
