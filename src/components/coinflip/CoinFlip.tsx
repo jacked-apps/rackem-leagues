@@ -65,15 +65,6 @@ interface CoinFlipProps {
   onResult?: (result: FlipResult) => void;
   /** Whether a "Flip again" control is offered after a result. Defaults to true. */
   allowReflip?: boolean;
-  /**
-   * Force the coin to land on a given face instead of tossing locally.
-   *
-   * This is the seam for callers who need the outcome decided somewhere other
-   * than this device — a server, or one device driving another. Unused by the
-   * standalone case, and deliberately the smallest thing that makes those
-   * possible: no transport, no async, no subscription.
-   */
-  face?: Face;
   /** Source of randomness. Injected so tests can pin an outcome. */
   random?: RandomSource;
 }
@@ -85,7 +76,6 @@ export function CoinFlip({
   callerId,
   onResult,
   allowReflip = true,
-  face: suppliedFace,
   random = Math.random,
 }: CoinFlipProps) {
   const [phase, setPhase] = useState<Phase>('idle');
@@ -105,10 +95,10 @@ export function CoinFlip({
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  /** Toss (or accept a supplied face), then settle after the coin lands. */
+  /** Toss the coin, then settle after it lands. */
   const launch = useCallback(
     (call: Call, caller: Participant, other: Participant) => {
-      const face = suppliedFace ?? tossCoin(random);
+      const face = tossCoin(random);
       setLandedFace(face);
       setPhase('flipping');
 
@@ -119,7 +109,7 @@ export function CoinFlip({
         onResult?.(settled);
       }, spinDuration);
     },
-    [suppliedFace, random, spinDuration, onResult]
+    [random, spinDuration, onResult]
   );
 
   /** Begin a flip. In quick mode this reveals the assignment first. */
@@ -190,9 +180,11 @@ export function CoinFlip({
           </p>
         )}
 
-        {(phase === 'flipping' || phase === 'result') && (
-          <Coin face={landedFace} spinning={phase === 'flipping'} durationMs={spinDuration} />
-        )}
+        {/* Always mounted, never conditional. A CSS transition animates a
+            CHANGE, so the coin has to be on screen at rest before it can be
+            seen to spin — mounting it at the moment the flip starts paints it
+            straight at its final rotation and nothing appears to move. */}
+        <Coin face={landedFace} spinning={phase === 'flipping'} durationMs={spinDuration} />
 
         {phase === 'result' && result && (
           <>

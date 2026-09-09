@@ -63,6 +63,37 @@ describe('CoinFlip — called mode', () => {
     expect(screen.getByRole('button', { name: 'Tails' })).toBeInTheDocument();
   });
 
+  // Regression: the coin used to be mounted only once the flip began, which
+  // meant it was created already at its final rotation. A CSS transition
+  // animates a change, so it painted there and nothing ever visibly moved —
+  // invisible to every state-machine test in this file. The coin must exist,
+  // at rest, before anything spins.
+  it('has the coin on screen at rest before any flip starts', async () => {
+    render(<CoinFlip participantA={john} participantB={mike} random={sequence(ORDER)} />);
+
+    const coin = screen.getByTestId('coin');
+    expect(coin).toBeInTheDocument();
+    expect(coin).toHaveAttribute('data-spinning', 'false');
+  });
+
+  it('spins the coin while it is in the air, then settles', async () => {
+    render(
+      <CoinFlip participantA={john} participantB={mike} random={sequence(ORDER, HEADS)} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+
+    // Airborne: spinning, and the face is deliberately not named yet.
+    expect(screen.getByTestId('coin')).toHaveAttribute('data-spinning', 'true');
+    expect(screen.queryByText('Heads', { selector: 'span' })).not.toBeInTheDocument();
+
+    settle();
+
+    expect(screen.getByTestId('coin')).toHaveAttribute('data-spinning', 'false');
+    expect(screen.getByTestId('coin')).toHaveAttribute('data-face', 'heads');
+  });
+
   it('gives the win to the caller when the coin agrees', async () => {
     render(
       <CoinFlip participantA={john} participantB={mike} random={sequence(ORDER, HEADS)} />
@@ -207,9 +238,10 @@ describe('CoinFlip — quick mode', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Quick flip' }));
 
     // The assignment is on screen and the coin has NOT launched yet. This is
-    // the beat that makes a quick flip watchable instead of asserted.
+    // the beat that makes a quick flip watchable instead of asserted. The coin
+    // is present but at rest — it has to be on screen before it can spin.
     expect(screen.getByText(/Heads → John/)).toBeInTheDocument();
-    expect(screen.queryByTestId('coin')).not.toBeInTheDocument();
+    expect(screen.getByTestId('coin')).toHaveAttribute('data-spinning', 'false');
   });
 
   it('reaches a winner named on screen', async () => {
@@ -263,60 +295,6 @@ describe('CoinFlip — quick mode', () => {
 
     expect(onResult).toHaveBeenCalledTimes(1);
     expect(screen.getByText(`${onResult.mock.calls[0][0].winner.name} wins the flip`)).toBeInTheDocument();
-  });
-});
-
-describe('CoinFlip — supplied face', () => {
-  it('uses the supplied face instead of tossing, in called mode', async () => {
-    render(
-      <CoinFlip
-        participantA={john}
-        participantB={mike}
-        face="tails"
-        // Source would give heads; the supplied face must win out.
-        random={sequence(ORDER, HEADS)}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
-    settle();
-
-    expect(screen.getByText('John wins the flip')).toBeInTheDocument();
-    expect(screen.getByText(/landed tails/)).toBeInTheDocument();
-  });
-
-  it('is not bypassed by quick mode', async () => {
-    render(
-      <CoinFlip
-        participantA={john}
-        participantB={mike}
-        mode="quick"
-        face="tails"
-        random={sequence(ORDER, HEADS, HEADS)}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Quick flip' }));
-    settle();
-
-    // John holds heads, supplied face is tails, so Mike wins.
-    expect(screen.getByText('Mike wins the flip')).toBeInTheDocument();
-  });
-
-  it('never consults the random source for the toss when a face is supplied', async () => {
-    const random = vi.fn(() => 0);
-    render(
-      <CoinFlip participantA={john} participantB={mike} face="heads" random={random} />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
-    const callsBeforeSettle = random.mock.calls.length;
-    settle();
-
-    // Only the display-order shuffle may consult it — never the toss.
-    expect(callsBeforeSettle).toBe(1);
-    expect(random).toHaveBeenCalledTimes(1);
   });
 });
 

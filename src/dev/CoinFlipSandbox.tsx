@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CoinFlip } from '@/components/coinflip/CoinFlip';
-import type { Face, FlipResult, Participant } from '@/components/coinflip/types';
+import type { FlipResult, Participant } from '@/components/coinflip/types';
 
 const ED: Participant = { id: 'p1', name: 'Ed' };
 const JACK: Participant = { id: 'p2', name: 'Jack' };
@@ -29,7 +29,6 @@ interface Scenario {
   mode?: 'call' | 'quick';
   callerId?: string;
   allowReflip?: boolean;
-  face?: Face;
 }
 
 const SCENARIOS: Scenario[] = [
@@ -56,12 +55,6 @@ const SCENARIOS: Scenario[] = [
     watchFor: 'No "Flip again" button in the result state.',
     mode: 'quick',
     allowReflip: false,
-  },
-  {
-    key: 'supplied-face',
-    title: 'Supplied face — always lands heads',
-    watchFor: 'The coin ignores its own toss. Call heads and you always win; call tails and you always lose.',
-    face: 'heads',
   },
 ];
 
@@ -97,7 +90,6 @@ export default function CoinFlipSandbox() {
               mode={s.mode}
               callerId={s.callerId}
               allowReflip={s.allowReflip}
-              face={s.face}
               onResult={record(s.title)}
             />
           </div>

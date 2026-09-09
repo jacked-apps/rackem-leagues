@@ -35,7 +35,7 @@ See origin: `docs/brainstorms/2026-09-08-coin-flip-component-requirements.md`
 - R3. Produces exactly one winner; a flip cannot tie
 - R4. Reports the result via callback; writes and persists nothing
 - R5. Runs standalone with no surrounding context
-- R6. Accepts externally supplied state, including a supplied result
+- R6. ~~Accepts externally supplied state, including a supplied result~~ — **CUT 2026-09-09** (see Unit 4)
 - R7. Announces the winner by name, not by coin face alone
 - R8. Result is legible without color carrying meaning
 - R9. Offers a quick flip with no back-and-forth — the app makes the call
@@ -58,8 +58,9 @@ See origin: `docs/brainstorms/2026-09-08-coin-flip-component-requirements.md`
 - **Tie resolution** — `docs/league-system/modules/tiebreak-system/coin-flip.md`
   (locked) specifies `coin_flip` as an atomic Tiebreak Mechanism. Blocked behind
   Win Calculator's metric precedence stack, which is not built.
-- **Tamper resistance** — a caller needing the outcome beyond one device's
-  influence supplies the result via R6. Not this component's problem.
+- **Tamper resistance** — not addressed. The toss runs client-side, so a
+  determined user can influence it. The fix is a server-decided result, which
+  needs the seam cut with Unit 4 plus transport neither of which exists.
 
 ## Context & Research
 
@@ -91,13 +92,12 @@ See origin: `docs/brainstorms/2026-09-08-coin-flip-component-requirements.md`
 
 - **Randomness is injected, not imported.** The coin-tossing function takes an
   optional random source. This makes tests deterministic without mocking
-  globals, and it is the same seam that lets a caller supply a result from
-  elsewhere (R6). One decision serves both needs.
+  globals. (It was also to be the seam for a supplied result — see Unit 4, cut.)
 - **Logic is separated from React.** The resolution rules live in a plain module
   so they can be tested without a DOM and reused by a non-visual caller.
-- **The component is uncontrolled by default.** The standalone case is the
-  common one and should require no wiring. External control is opt-in via a
-  supplied result.
+- **The component is uncontrolled, full stop.** The standalone case is the only
+  case and requires no wiring beyond two names. Opt-in external control was
+  built and then cut; see Unit 4.
 - **A four-state machine, not booleans.** `idle → calling → flipping → result`
   makes "the call precedes the flip" (R2) structural rather than a convention a
   caller could violate.
@@ -123,8 +123,8 @@ See origin: `docs/brainstorms/2026-09-08-coin-flip-component-requirements.md`
 
 ### Resolved During Planning
 
-- *Does the component sync across devices?* No. It exposes a controlled seam and
-  lets callers own transport.
+- *Does the component sync across devices?* No. The seam that would have made it
+  possible was cut (Unit 4); a cross-device flip needs it back.
 - *Does it persist the result?* No. Callers persist in their own shape.
 - *Who makes the call?* Configurable, defaulting to the second participant, on
   the reasoning that the side that did not initiate should call.
@@ -171,9 +171,8 @@ shows an app-made assignment and moves on. Both arrive at the same `flipping`
 state and resolve through the same rules, so neither mode has its own notion of
 who won.
 
-A supplied result (R6) enters at `flipping`, replacing the local toss. Every
-other transition is identical, so the controlled and uncontrolled paths share
-one code path rather than branching.
+*(A supplied result was to enter at `flipping`, replacing the local toss. Cut —
+see Unit 4.)*
 
 ## Implementation Units
 
@@ -181,7 +180,7 @@ one code path rather than branching.
 
 **Goal:** The rules of a coin flip, with no React and no randomness baked in.
 
-**Requirements:** R1, R2, R3, R6
+**Requirements:** R1, R2, R3
 
 **Dependencies:** None
 
@@ -327,11 +326,24 @@ asserted.
 
 ---
 
-- [ ] **Unit 4: External control seam**
+- [x] **Unit 4: External control seam** — **BUILT, THEN CUT 2026-09-09**
+
+> Ed reviewed it on the sandbox and cut it: a prop whose only demonstrable use
+> today was forcing the outcome. Removed from the component, its tests, and the
+> sandbox.
+>
+> **Keep the reasoning, because this comes back.** The seam is how an honest
+> cross-device flip works — one device or a server decides, and the other is told,
+> so two screens cannot disagree about who won. Without it a second device tosses
+> its own coin. Re-add it the day a flip has to span two devices.
+>
+> Removing it closed no hole. The toss runs client-side on `Math.random`, and the
+> `random` prop is the same lever; the flip is exactly as tamper-resistant as it
+> was. Server-side decision is the real fix.
 
 **Goal:** Let a caller supply the result instead of the component generating it.
 
-**Requirements:** R6
+**Requirements:** ~~R6~~ (cut)
 
 **Dependencies:** Unit 2
 
@@ -466,7 +478,7 @@ of rebuilding it.
 
 | Risk | Mitigation |
 |------|------------|
-| The seam in Unit 4 is speculative and never gets used | It is one optional prop reusing the same code path, not a parallel implementation. If no caller ever supplies a face, the carrying cost is a prop and a paragraph. |
+| The seam in Unit 4 is speculative and never gets used | **This is what happened.** Ed cut it on review 2026-09-09 — no caller had appeared, and its only demonstrable use was forcing an outcome. Reasoning preserved in Unit 4 so a cross-device flip can bring it back. |
 | A one-sided coin ships unnoticed because "random" is hard to assert | Unit 1 pins both boundary values of the injected source and asserts both faces occur across many tosses — a `<` / `<=` slip fails the test. |
 | A future caller reaches for this to decide breaks and wires it straight into game rows | Scope boundaries name the Pairings Generator as the owner, and the component exposes no way to write anything. |
 | Result readable only by color | R8 is a stated requirement with a test-visible consequence: the winner is announced by name. |

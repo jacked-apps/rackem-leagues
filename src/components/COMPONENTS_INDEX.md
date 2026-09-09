@@ -129,15 +129,24 @@ This document catalogs all reusable components in the application for easy disco
 - The call is recorded in state before the coin is tossed, so it cannot be made after the coin is in the air
 - Winner announced by NAME, with the face as supporting evidence — readable without color
 - CSS-only coin spin, honors `prefers-reduced-motion`
-- Injected random source, so a caller can pin or supply the outcome
+- Injected random source, so tests can pin an outcome without mocking globals
 - Writes nothing and persists nothing — reports through `onResult` and leaves storage to the caller
 
-**Props**: `participantA`, `participantB`, `mode?`, `callerId?`, `onResult?`, `allowReflip?`, `face?`, `random?`
+**Props**: `participantA`, `participantB`, `mode?`, `callerId?`, `onResult?`, `allowReflip?`, `random?`
 
 ### `flipCoin.ts`
 **Purpose**: The rules of a coin flip, with no React and no ambient randomness
 **Use Cases**: Any caller that wants the outcome without the ceremony; also the reason the winner-selection rule is provable without rendering
 **Exports**: `tossCoin`, `resolveFlip`, `assignFaces`, `shuffleOrder`
+
+> **No way to force a result.** There is deliberately no prop that hands the
+> component a predetermined face. Such a seam has a legitimate use — a server or
+> one device telling another what was decided, so two screens agree — and it will
+> need to come back the day a flip has to span two devices. It was removed because
+> nothing needed it yet and its only demonstrable use today was rigging the
+> outcome. Note this does NOT make the flip tamper-proof: the toss runs on the
+> client, so a determined user can still lean on it. Moving the decision to a
+> server is the actual fix, and that is when this seam returns.
 
 > **Note on `assignFaces`**: randomizing which side holds heads does **not** make the
 > flip fairer — chaining fair 50/50s still yields a fair 50/50. It exists so entry
