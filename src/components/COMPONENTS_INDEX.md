@@ -119,6 +119,31 @@ This document catalogs all reusable components in the application for easy disco
 - Customize button text and callbacks
 - Consistent security messaging
 
+## 🪙 Coin Flip (`/src/components/coinflip/`)
+
+### `CoinFlip.tsx`
+**Purpose**: Settle a 50/50 decision between two sides — two participants in, one winner out
+**Use Cases**: Who breaks first, who wins a tie, or any two-way decision that needs to feel decided rather than argued. Works for players and teams alike, because a participant is only `{ id, name }`
+**Key Features**:
+- Two modes on one state machine: `call` (a human picks heads or tails) and `quick` (the app assigns the faces, shows the assignment, then flips)
+- The call is recorded in state before the coin is tossed, so it cannot be made after the coin is in the air
+- Winner announced by NAME, with the face as supporting evidence — readable without color
+- CSS-only coin spin, honors `prefers-reduced-motion`
+- Injected random source, so a caller can pin or supply the outcome
+- Writes nothing and persists nothing — reports through `onResult` and leaves storage to the caller
+
+**Props**: `participantA`, `participantB`, `mode?`, `callerId?`, `onResult?`, `allowReflip?`, `face?`, `random?`
+
+### `flipCoin.ts`
+**Purpose**: The rules of a coin flip, with no React and no ambient randomness
+**Use Cases**: Any caller that wants the outcome without the ceremony; also the reason the winner-selection rule is provable without rendering
+**Exports**: `tossCoin`, `resolveFlip`, `assignFaces`, `shuffleOrder`
+
+> **Note on `assignFaces`**: randomizing which side holds heads does **not** make the
+> flip fairer — chaining fair 50/50s still yields a fair 50/50. It exists so entry
+> order never *appears* to decide the outcome. Don't remove it as redundant, and
+> don't add further randomization believing it compounds.
+
 ## 📝 Usage Guidelines
 
 1. **Always check this index first** before creating new components
