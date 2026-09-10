@@ -1,120 +1,101 @@
 ---
-title: 'Game Room — challenge another player to a game'
+title: 'Game Room — two players decide something between themselves'
 date: 2026-09-10
-status: awaiting-decision
+status: settled
 ---
 
-# Game Room — challenge another player to a game
+# Game Room — two players decide something between themselves
 
-A place reached from the profile page where a member picks another member and
-challenges them to a game. The coin flip is the first game; the room is built
-so a second and third can be added without reopening the plumbing.
+A room reached from the profile page where a member challenges another member
+to settle something. The first question it settles is **who breaks**, and the
+coin flip is how it settles it.
 
-## The one decision everything hangs on
+Two players, two devices, one outcome. Not a pass-the-phone toy.
 
-**Are the two players standing at the same table, or are they apart?**
+## The model: this is the scoring page's confirmation flow
 
-The two answers produce genuinely different products, and almost none of the
-work is shared:
+The app already has a proven answer for "two people must agree about a thing
+that just happened", and it is the live scoring page. The Game Room copies it
+rather than inventing a second vocabulary for the same idea.
 
-### Together — one screen, two people
+How scoring does it:
 
-The pool-hall case. Both players are at the table, one phone is held up, they
-both watch it. "Inviting" someone means naming who you're playing so the
-result says *"Mike wins"* rather than *"tails"*.
+| Scoring | Game Room |
+|---|---|
+| One side reports a game result | One side proposes a challenge |
+| It appears on the opponent's device and asks them to confirm | It appears on the opponent's device and asks them to accept |
+| `confirmed_by_home` / `confirmed_by_away` — a column per side | `accepted_by` / acknowledgement per side |
+| Official only when BOTH are filled | Settled only when BOTH have acknowledged |
+| `vacate_requested_by` — either side asks to undo, the other must agree | `redo_requested_by` — either side asks to re-flip, the other must agree |
+| `game_confirmations` — append-only record of every vouch | append-only record of every step |
+| Realtime pushes the ask to the other device | Realtime pushes the ask to the other device |
 
-This needs no table, no migration, no realtime, and no notification. It is
-the coin flip component that already exists, with an opponent picker in front
-of it. Buildable in an afternoon.
+Same shape, same guarantees, and a player who has scored a match already knows
+how to use it.
 
-The weakness: it isn't really an invitation. Nobody is invited — you pick a
-name off a list, the way the dev sandbox already does. If that is all this is,
-the phrase "challenge him to a game" is doing no work.
+## The flow
 
-### Apart — two screens, one outcome
+1. **Propose.** A picks B and proposes a coin flip for the break. Proposing is
+   A's half of the agreement — nobody has to confirm their own challenge.
+2. **The ask arrives.** B's device shows it, the way an opponent's score
+   arrives during scoring. Accept or decline.
+3. **The coin is thrown once.** On acceptance the **database** decides the
+   result and writes it. Both devices display what the row says.
+4. **Both acknowledge.** Each player taps to say they saw it. Only when both
+   have is it settled — the same "official when both sides are filled" rule
+   scoring uses.
+5. **Either side may ask for a re-flip**, and the other must agree, exactly as
+   a vacate works during scoring.
 
-Player A challenges Player B. B is told, opens it, and both watch the same
-flip resolve on their own phones. This is what "invite" and "challenge"
-normally mean, and it is the version worth building a room for.
+## Why the database throws the coin
 
-It needs real machinery, described below.
+The one thing that cannot be got wrong: **if each phone flips its own coin,
+the two phones disagree about who won.** The outcome is decided once, by the
+one participant neither player controls, and both devices are told.
 
-**Recommendation: build for apart.** It subsumes the together case — two
-people at one table can still both open it — and it is the only version where
-a Game Room is more than a launcher.
+This is the seam removed from `CoinFlip` on 2026-09-09 — a way to hand the
+component a predetermined result to display. It was cut because nothing used
+it and its only demonstrable use was rigging a flip. This is the caller that
+justifies it, and it comes back pointed at the server, which is the version a
+player cannot lean on. The component keeps knowing nothing: it is handed an
+outcome and animates it.
 
-## What "apart" requires
+## What already exists and is reused, not rebuilt
 
-### One authority decides the outcome
+- **The opponent picker.** `NewMessageModal` already searches every registered
+  member, excludes blocked users and yourself, and offers All / My Leagues /
+  My Teams. Challenging someone is that component with a different verb.
+- **Realtime.** `useMatchRealtime` — subscription lifecycle, reconnect
+  handling, and a `live | reconnecting | error` status the UI can show.
+  `brackets`, `messages` and `game_confirmations` are already on the
+  publication; the challenge table joins them.
+- **The confirmation UI.** `ConfirmationDialog` is deliberately dumb — it
+  renders what it is given and delegates every decision to its caller. A
+  challenge ask is another thing to hand it.
+- **The coin flip.** Finished and tested, and knows nothing about leagues or
+  matches, which is exactly why it drops in here unchanged apart from being
+  handed its result.
+- **Blocking.** `blocked_users` exists and the picker honours it. A blocked
+  member cannot challenge you.
 
-The important constraint, and the one that is easy to get wrong: if each phone
-flips its own coin, the two phones disagree about who won. The outcome has to
-be decided **once**, and both devices told.
+## Reaching someone who isn't looking
 
-The natural place is the database: when a challenge is accepted, a function
-generates the result and writes it to the row. Both phones then display what
-the row says rather than deciding anything.
+`push_type_policy` has only `direct` enabled in production. A challenge
+therefore rides on a direct message for now, which works today and costs
+nothing. Its own push kind is a later refinement, and a later thing for a
+member to have to mute.
 
-This is exactly the seam removed from `CoinFlip` on 2026-09-09 — a way to hand
-the component a predetermined outcome to display. It was cut because nothing
-used it and its only demonstrable use was rigging a flip. This is the caller
-that justifies it, and the reason the removal preserved its reasoning rather
-than deleting it. It comes back pointed at the server, which is the honest
-version: the player cannot influence a result their own device did not
-generate.
-
-### A challenge is a row with a lifecycle
-
-`pending → accepted → complete`, with `declined`, `cancelled` and `expired` as
-exits. Expiry matters: a challenge nobody answers should not sit in an inbox
-forever.
-
-### Both phones must see it change
-
-Realtime, the same way `brackets`, `game_confirmations` and `messages` already
-work — add the table to the `supabase_realtime` publication and subscribe to
-rows where you are either participant. `useMatchRealtime` is the pattern to
-follow, including its connection-health handling.
-
-## What already exists and should be reused
-
-- **Finding a person.** `NewMessageModal` already searches every registered
-  member, excludes blocked users and the current user, and offers All / My
-  Leagues / My Teams tabs. The opponent picker is that component's problem,
-  already solved. This also matches the messaging principle that you can reach
-  anyone in-league without storing their contact details.
-- **Realtime.** `src/realtime/useMatchRealtime.ts` — subscription lifecycle,
-  reconnect handling, and a coarse `live | reconnecting | error` status.
-- **The game itself.** `CoinFlip` is finished, tested, and deliberately knows
-  nothing about matches or leagues, which is exactly why it can be dropped in
-  here unchanged apart from the display seam.
-- **Blocking.** `blocked_users` already exists and the picker honours it. A
-  blocked member must not be able to challenge you.
-
-## Open question: does a challenge reach them when the app is closed?
-
-Push notifications ship, but `push_type_policy` has only `direct` enabled in
-production — team chat, captains chat, announcements and match chat are all
-off. So a challenge either:
-
-- rides on a direct message (works in production today, costs nothing), or
-- becomes its own push kind (more honest, more work, and a new thing for a
-  member to have to mute).
-
-Riding on direct messaging is the cheaper first answer and can be revisited.
-
-## Deliberately out of scope for a first cut
+## Deliberately out of scope
 
 - More than two players.
-- A game with turns. A coin flip resolves in one step; anything turn-based
-  (and most real games are) needs a move log and a whose-turn-is-it rule,
-  which is a different and much larger design.
-- Stakes, scores, history, rematches, or a leaderboard.
-- Spectators.
+- Anything turn-based. A coin flip resolves in one step; a game with turns
+  needs a move log and a whose-turn-is-it rule, which is a different and much
+  larger design. The room is built for one-step decisions first.
+- Stakes, scores, history, rematches, leaderboards, spectators.
 
-## Why this is worth building beyond the coin flip
+## Why it is worth more than the coin flip
 
 Two members settling something between themselves — who breaks, who racks, who
-buys — is the same shape as most of what a league argues about. A room that
-can host one two-player decision can host the next one, and the coin flip is
-the cheapest possible first tenant to prove the plumbing with.
+buys — is the shape of most of what a league argues about. A room that can
+host one two-player decision can host the next one. The coin flip is the
+cheapest possible first tenant to prove the plumbing.
