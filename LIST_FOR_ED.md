@@ -203,6 +203,19 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
+- **Individual races (the race room)** — two players, a goal each, scored one
+  game at a time with the existing scoring + confirmation dialogs. Gated by
+  `!isProduction` on the routes only (`src/navigation/NavRoutes.tsx` —
+  `race/new` and `race/:raceId`). **Nothing links to it yet**, so there is no
+  button or card to gate alongside it — when the game room adds one, that
+  entry point needs the same guard until this un-gates.
+  On staging, verify with two signed-in people on two devices: `/race/new` to
+  set it up (pick the opponent, a target EACH, alternate vs winner-breaks),
+  then score games one at a time and check that a result only counts once the
+  other person agrees, and that **Reverse only ever appears on the last game
+  played**. `/race/new` is disposable — the real entrance is the game room,
+  which calls the same `create_race`.
+
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
 commit. The half-gated bug that prompted it: the "Score a Match" button +
