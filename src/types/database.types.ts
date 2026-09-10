@@ -3895,6 +3895,10 @@ export type Database = {
           team_id: string
         }[]
       }
+      confirm_race_game: {
+        Args: { p_game_number: number; p_race_id: string }
+        Returns: Json
+      }
       create_announcement_conversation: {
         Args: { p_member_ids: string[]; p_season_id: string; p_title: string }
         Returns: string
@@ -4134,6 +4138,24 @@ export type Database = {
         Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
         Returns: undefined
       }
+      race_advance: { Args: { p_race_id: string }; Returns: undefined }
+      race_breaker_side: {
+        Args: { p_game_number: number; p_race_id: string }
+        Returns: string
+      }
+      race_side_of: {
+        Args: { p_member_id: string; p_race_id: string }
+        Returns: string
+      }
+      race_standing: {
+        Args: { p_race_id: string }
+        Returns: {
+          away_won: number
+          decided_at_game: number
+          home_won: number
+          winner_player_id: string
+        }[]
+      }
       recompute_member_rating: {
         Args: {
           p_member_id: string
@@ -4142,6 +4164,21 @@ export type Database = {
           p_source?: string
         }
         Returns: string
+      }
+      record_race_game: {
+        Args: {
+          p_break_and_run?: boolean
+          p_break_fouled?: boolean
+          p_game_number: number
+          p_golden_break?: boolean
+          p_loser_value?: number
+          p_race_id: string
+          p_runout?: boolean
+          p_win_by_forfeit?: boolean
+          p_winner_player_id: string
+          p_winner_value?: number
+        }
+        Returns: Json
       }
       remove_placeholder_from_team: {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
@@ -4258,6 +4295,10 @@ export type Database = {
         Args: { p_bracket_id: string; p_matches: Json }
         Returns: undefined
       }
+      start_race: {
+        Args: { p_first_breaker_side: string; p_race_id: string }
+        Returns: Json
+      }
       swap_player_in_lineup: {
         Args: { p_lineup_id: string; p_resolution: Json; p_thresholds: Json }
         Returns: undefined
@@ -4281,6 +4322,10 @@ export type Database = {
       vacate_and_rescore_audit_marker: {
         Args: { p_match_id: string; p_reason?: string }
         Returns: string
+      }
+      vacate_race_game: {
+        Args: { p_game_number: number; p_race_id: string }
+        Returns: Json
       }
     }
     Enums: {
