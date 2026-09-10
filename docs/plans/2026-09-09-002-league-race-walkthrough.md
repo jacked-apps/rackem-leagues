@@ -1,15 +1,24 @@
 # Unit 0 — a league night, walked against the designed race
 
-> **Status:** complete. Prose only, no code. This is the output of Unit 0 of
-> `2026-09-09-001-feat-self-scoring-individual-races-plan.md`, run **before** any
-> migration exists so that what it finds is still free to change.
+> **Status:** parked league reference. **Not an input to the tournament plan.**
 >
-> **Verdict up front:** the race survives the league night. The loop, the confirm
-> flow and the three tables need **no second implementation** — R32 passes. But the
-> walk found **one hard blocker outside the race** (the league cannot express a
-> five-race night at all today), **two schema additions** the plan does not have,
-> and **one place where an existing write path must widen**. All four are below,
-> with what they change.
+> **Read this first.** `2026-09-09-001` is *solely* a tournament plan. The league is not "the
+> race, five times" — its lineup sequencing, its scoring and its matchups (which are not
+> predetermined) are all far larger than a race, and they are their own effort with their own
+> brainstorm. Nothing in this document is scope, and no unit of the tournament plan depends on
+> any of it (Ed, 2026-09-10).
+>
+> **What it was for.** One narrow question: is the race primitive being built in a shape a
+> league could never reuse? **No — it passes.** The race carries its own participants, goals and
+> game list, points at no parent, and its confirm loop knows nothing about teams or tables. One
+> constraint came back and is now in Unit 9: the room must be addressable per race, with nothing
+> assuming a single race exists, because a league night is several at once.
+>
+> **What the rest of this is.** A written record of what a league night would actually demand,
+> found by walking one before any schema existed. It is here so the league effort starts from
+> evidence instead of a blank page — the blocker in §1.2 in particular is worth knowing early,
+> and it is not a race problem. Treat every "should" below as a note to a future brainstorm, not
+> a decision.
 
 ---
 
@@ -274,7 +283,9 @@ this makes R33 and R9 compatible rather than contradictory.
 
 ---
 
-## 3. What changes as a result
+## 3. What a league would demand
+
+*Notes for the future league effort. None of this is tournament scope.*
 
 Cheap now, expensive later — which is why this ran first.
 
@@ -309,7 +320,7 @@ Cheap now, expensive later — which is why this ran first.
 
 ---
 
-## 4. Handed back to Ed
+## 4. Worth knowing early
 
 Only one of these needs an answer before the build continues, and it is not urgent —
 none of it blocks Units 1 through 7.

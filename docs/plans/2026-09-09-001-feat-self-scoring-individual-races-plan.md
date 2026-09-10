@@ -183,19 +183,10 @@ codes go in a private schema with grants revoked from `anon` and `authenticated`
 only through `SECURITY DEFINER` functions. This is correct independently of the pre-launch
 RLS pass, and it does not depend on it.
 
-**A race carries an explicit status.** `created | in_play | finished | abandoned | forfeited`.
-Three separate requirements need it and none named it: R21's write guard ("live and not
+**A race carries an explicit status.** `created | in_play | finished | abandoned`. Three
+separate requirements need it and none named it: R21's write guard ("live and not
 complete"), R46's abandoned race, and R5's finished race being reopened by a vacate. Without
 a status field those are transitions between states that do not exist.
-
-**`forfeited` is the fifth status, added by Unit 0.** A tournament walkout is `abandoned` —
-gone, no result. A league forfeit is the opposite: *ended without play, **with** a result*
-that credits games and moves standings. It materialises no `race_games` rows for racks
-nobody played (R2 holds); the credited-games math stays where it already lives, on the
-pairing's `match_games` row with `win_by_forfeit`. Ship the value in Unit 2's CHECK
-constraint even though only leagues use it — adding an enum value to a live constraint later
-is a migration a column comment could have avoided. See
-`docs/plans/2026-09-09-002-league-race-walkthrough.md` §2.4.
 
 **The append is one serialized server-side operation.** `FOR UPDATE` on the race row, then
 re-check the gate, then write — all in the transaction that records the confirmation
@@ -403,31 +394,25 @@ tables without inventing a field.
 **Verification:** Either the design is confirmed against a league night, or Unit 2 starts from
 an amended schema.
 
-**Result (2026-09-10):** Both. `docs/plans/2026-09-09-002-league-race-walkthrough.md`.
-**R32 passes** — the loop, the confirm flow and the three tables serve a league night with no
-second implementation. Four things came back:
+**Result (2026-09-10):** `docs/plans/2026-09-09-002-league-race-walkthrough.md`.
 
-1. **Blocking, and outside this plan.** The league cannot express a five-race night at all:
-   `game_generation` is SRR/DRR only and `game_count = lineup_size²`, so 5v5 gives 25 races or
-   50, never 5. Needs a third variant in the **locked** Team Geometry doc — Ed's gate phrase,
-   its own change. Nothing in Units 1–11 depends on it; R32's end-to-end acceptance test does.
-2. **`match_games.race_id`** — nullable FK, the league's pointer at its race (R7), mirroring
-   `bracket_matches.race_id`. Null for every league running today. Lands with the league work,
-   not Unit 2.
-3. **The `forfeited` status** — folded into Unit 2 above.
-4. **`swap_player_in_lineup`'s cascade must widen** from "unplayed" (`winner_player_id IS
-   NULL`) to "unplayed **and** no started race": a race at `in_play` is *played* for swap
-   purposes. Today's cascade would rewrite the player id under a race sitting at 2–2 while R1
-   holds its participants immutable. One WHERE clause, one test, additive per R9.
+**What it was for, restated by Ed after the fact:** this plan is *solely* tournaments. The
+league is not "the race, five times" — lineup sequencing, league scoring and matchups that are
+not predetermined are all far bigger than a race, and they are their own effort. The only thing
+Unit 0 was ever meant to protect is that **the race primitive not be built in a shape a league
+could never reuse.**
 
-The load-bearing **fit**: `prep_match` pre-creates one `match_games` row per pairing, so a
-finished race fills in one pairing row and `updateMatchRunningTotals`, `allGamesComplete` and
-`MatchEndVerification` all work untouched. That is why R33 and R9 are compatible rather than
-contradictory — the race is a new *caller*, not a changed path — and why team standings need
-no change at all. Also settled: a league race's goals come from the locked Match Format
-`race_length` adjusted per pairing by the Handicap Mechanism, and the bracket's per-side race
-length is the tournament's **substitute** for Match Format, never a supplement. Write that
-into Unit 2's column comments.
+On that narrow question: **it passes.** The race carries its own participants, its own goals and
+its own game list, points at no parent, and its confirm loop knows nothing about teams or
+tables. Nothing in Units 1–11 blocks a league from creating several of them later.
+
+One forward-looking constraint came out of it and belongs in **Unit 9**: the room must be
+addressable per race, with nothing in it assuming a single race exists. A league night is
+several races at once; if this room is later reused there, it is reused N times or wrapped by a
+list. That costs nothing to honour now and is expensive to retrofit.
+
+Everything else the walkthrough turned up is **league work, parked in that document** — it is
+not scope here, and no unit of this plan depends on it.
 
 ---
 
@@ -1051,6 +1036,11 @@ read-only vs scoring (R37), or compute `mySide` without it, so it cannot wait fo
 **Approach:**
 - A small room, not a generalisation of `ScoreMatch.tsx` (1,485 lines, 87 lines mentioning teams,
   118 lineups, 34 positions — a race needs none of it). Target the repo's 100–230 line norm.
+- **One race per room instance, and nothing that assumes only one race exists.** The room takes a
+  race id and renders that race — no module-level "the current race," no route that can only ever
+  match one. Tournaments show one at a time; a league night is five at once, and whether that is
+  five instances or a list that opens into one is a later decision this room should not foreclose.
+  This is the single carry-forward from Unit 0 (Ed, 2026-09-10).
 - Reuse `ConfirmationDialog`, `ScoringDialog`, `DissentFlag`, `DisputeBanner`,
   `DisputeDetailModal`, `PeekConfirmDialog` as-is. Vacate uses `ConfirmationDialog`'s existing
   `isVacateRequest` mode — `VacateModal.tsx` is dead code with zero callers.

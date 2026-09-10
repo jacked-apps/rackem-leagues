@@ -118,22 +118,18 @@ unblocked.
 
 ## Unit 0 — done 2026-09-10
 
-`docs/plans/2026-09-09-002-league-race-walkthrough.md`. **R32 passes**: the loop,
-the confirm flow and the three tables serve a league night with no second
-implementation. Its findings are folded into Unit 0's and Unit 2's sections of
-the plan; the short version —
+`docs/plans/2026-09-09-002-league-race-walkthrough.md`, and **it is a parked league
+reference, not an input to this plan.**
 
-- **Blocking, and outside this plan:** the league cannot express a five-race
-  night. `game_generation` is SRR/DRR only and `game_count = lineup_size²`, so
-  5v5 gives 25 races, never 5. Needs a third variant in the **locked** Team
-  Geometry doc — Ed's gate phrase, its own change. Units 1–11 do not depend on
-  it; R32's end-to-end acceptance test does.
-- **The fit that made it work:** `prep_match` pre-creates one `match_games` row
-  per pairing. A finished race fills in one pairing row, and running totals,
-  `allGamesComplete` and MatchEndVerification are untouched. R33 and R9 are
-  compatible because the race is a new *caller*, not a changed path.
-- **Additions:** `match_games.race_id`; a fifth `forfeited` race status; a
-  widened `swap_player_in_lineup` cascade ("unplayed **and** no started race").
+**This plan is solely tournaments.** The league is not "the race, five times" —
+lineup sequencing, league scoring and matchups that are not predetermined are all
+far bigger than a race and are their own effort (Ed, 2026-09-10). Do not pull
+league schema into these units.
+
+Unit 0's one job was to check the race primitive is not being built in a shape a
+league could never reuse. **It passes.** One constraint carried forward, now in
+Unit 9: the room is addressable per race and assumes no single race exists,
+because a league night is several at once. Everything else stays parked.
 
 ## Next actions, in order
 
