@@ -108,6 +108,60 @@ describe('race engine', () => {
     await closePostgresPool();
   });
 
+  // --- setting a race up --------------------------------------------------
+
+  it('creates a race with the chosen break rule, game type and a goal each', async () => {
+    await inTx(async (c) => {
+      await login(c, homeUser);
+      const out = await rpc(c, `SELECT create_race($1, $2, 7, 4, 'winner_breaks', 'nine_ball')`, [
+        homeMember,
+        awayMember,
+      ]);
+      expect(out.ok).toBe(true);
+
+      const res = await c.query(
+        `SELECT goal_home, goal_away, break_rule, game_type, status FROM races WHERE id = $1`,
+        [out.race_id]
+      );
+      expect(res.rows[0]).toMatchObject({
+        goal_home: 7,
+        goal_away: 4,
+        break_rule: 'winner_breaks',
+        game_type: 'nine_ball',
+        status: 'created',
+      });
+    });
+  });
+
+  it.each([
+    ['a goal below 1', `create_race($1, $2, 0, 5, 'alternate', 'eight_ball')`, 'bad_goal'],
+    ['an unknown break rule', `create_race($1, $2, 5, 5, 'loser_breaks', 'eight_ball')`, 'bad_break_rule'],
+    ['an unknown game type', `create_race($1, $2, 5, 5, 'alternate', 'seven_ball')`, 'bad_game_type'],
+  ])('refuses %s', async (_label, call, reason) => {
+    await inTx(async (c) => {
+      await login(c, homeUser);
+      const out = await rpc(c, `SELECT ${call}`, [homeMember, awayMember]);
+      expect(out.ok).toBe(false);
+      expect(out.reason).toBe(reason);
+    });
+  });
+
+  it('refuses to set up a race between two other people', async () => {
+    await inTx(async (c) => {
+      const other = await c.query(
+        `SELECT id FROM members WHERE id <> $1 AND id <> $2 LIMIT 1`,
+        [homeMember, awayMember]
+      );
+      await login(c, homeUser);
+      const out = await rpc(c, `SELECT create_race($1, $2, 5, 5, 'alternate', 'eight_ball')`, [
+        other.rows[0].id,
+        awayMember,
+      ]);
+      expect(out.ok).toBe(false);
+      expect(out.reason).toBe('not_a_player');
+    });
+  });
+
   // --- starting -----------------------------------------------------------
 
   it('opens a race by naming who breaks, and writes game 1', async () => {
@@ -187,15 +241,32 @@ describe('race engine', () => {
     });
   });
 
-  it('gives the break to the previous winner under winner_breaks', async () => {
+  it('passes the break back and forth every game under alternate', async () => {
     await inTx(async (c) => {
-      const raceId = await makeRace(c, { breakRule: 'winner_breaks' });
+      const raceId = await makeRace(c, { goalHome: 9, goalAway: 9 });
       await login(c, homeUser);
       await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
-      await playGame(c, raceId, 1, awayMember); // away wins game 1
+      // Same player wins every game — under alternate that must not matter.
+      await playGame(c, raceId, 1, homeMember);
+      await playGame(c, raceId, 2, homeMember);
+      await playGame(c, raceId, 3, homeMember);
 
       const g = await games(c, raceId);
-      expect(g[1]).toMatchObject({ game_number: 2, away_action: 'breaks', home_action: 'racks' });
+      expect(g.map((r) => r.home_action)).toEqual(['breaks', 'racks', 'breaks', 'racks']);
+    });
+  });
+
+  it('gives the break to whoever won the previous game under winner_breaks', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c, { goalHome: 9, goalAway: 9, breakRule: 'winner_breaks' });
+      await login(c, homeUser);
+      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await playGame(c, raceId, 1, awayMember); // away wins -> away breaks 2
+      await playGame(c, raceId, 2, awayMember); // away again -> away breaks 3
+      await playGame(c, raceId, 3, homeMember); // home takes it -> home breaks 4
+
+      const g = await games(c, raceId);
+      expect(g.map((r) => r.home_action)).toEqual(['breaks', 'racks', 'racks', 'breaks']);
     });
   });
 

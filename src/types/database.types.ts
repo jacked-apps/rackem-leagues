@@ -3919,6 +3919,17 @@ export type Database = {
         }
         Returns: string
       }
+      create_race: {
+        Args: {
+          p_away_member_id: string
+          p_break_rule?: string
+          p_game_type?: string
+          p_goal_away: number
+          p_goal_home: number
+          p_home_member_id: string
+        }
+        Returns: Json
+      }
       daitch_mokotoff: { Args: { "": string }; Returns: string[] }
       delete_unused_placeholder: {
         Args: {

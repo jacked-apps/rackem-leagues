@@ -228,6 +228,70 @@ COMMENT ON FUNCTION "public"."race_advance"(uuid) IS
 
 
 -- ============================================================================
+-- 3. create_race — the settings a race is born with
+-- ============================================================================
+--
+-- Everything a race needs is chosen here and never asked again: the two
+-- players, a goal EACH, the break rule, and the game type.
+--
+-- The two goals are independent on purpose. Equal goals is the plain case;
+-- unequal goals is a handicap — the stronger player races to more. Nothing
+-- else about the race changes between them, which is why the goals are two
+-- ordinary columns rather than a handicap feature bolted on later.
+
+CREATE OR REPLACE FUNCTION "public"."create_race"(
+  p_home_member_id uuid,
+  p_away_member_id uuid,
+  p_goal_home      integer,
+  p_goal_away      integer,
+  p_break_rule     text DEFAULT 'alternate',
+  p_game_type      text DEFAULT 'eight_ball'
+)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $$
+DECLARE
+  v_member uuid := get_current_member_id();
+  v_race_id uuid;
+BEGIN
+  IF v_member IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'not_authenticated');
+  END IF;
+
+  -- You can set up your own race, not other people's.
+  IF v_member NOT IN (p_home_member_id, p_away_member_id) THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'not_a_player');
+  END IF;
+
+  IF p_home_member_id = p_away_member_id THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'same_player');
+  END IF;
+
+  IF coalesce(p_goal_home, 0) < 1 OR coalesce(p_goal_away, 0) < 1 THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'bad_goal');
+  END IF;
+
+  IF p_break_rule NOT IN ('alternate', 'winner_breaks') THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'bad_break_rule');
+  END IF;
+
+  IF p_game_type NOT IN ('eight_ball', 'nine_ball', 'ten_ball') THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'bad_game_type');
+  END IF;
+
+  INSERT INTO races (home_member_id, away_member_id, goal_home, goal_away, break_rule, game_type)
+  VALUES (p_home_member_id, p_away_member_id, p_goal_home, p_goal_away, p_break_rule, p_game_type)
+  RETURNING id INTO v_race_id;
+
+  RETURN jsonb_build_object('ok', true, 'race_id', v_race_id);
+END;
+$$;
+
+COMMENT ON FUNCTION "public"."create_race"(uuid, uuid, integer, integer, text, text) IS
+'Set up a race: the two players, a goal EACH (unequal goals are the handicapped case), the break rule (alternate | winner_breaks) and the game type. The caller must be one of the two players.';
+
+
+-- ============================================================================
 -- 3. start_race — a race opens by naming who breaks
 -- ============================================================================
 
@@ -565,6 +629,7 @@ REVOKE ALL ON FUNCTION "public"."race_breaker_side"(uuid, integer) FROM PUBLIC, 
 -- race_advance is internal: revoked from every client role. SECURITY DEFINER
 -- means the four functions above still reach it while running as the owner.
 REVOKE ALL ON FUNCTION "public"."race_advance"(uuid) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."create_race"(uuid, uuid, integer, integer, text, text) FROM PUBLIC, "anon";
 REVOKE ALL ON FUNCTION "public"."start_race"(uuid, text) FROM PUBLIC, "anon";
 REVOKE ALL ON FUNCTION "public"."record_race_game"(uuid, integer, uuid, boolean, boolean, boolean, boolean, boolean, integer, integer) FROM PUBLIC, "anon";
 REVOKE ALL ON FUNCTION "public"."confirm_race_game"(uuid, integer) FROM PUBLIC, "anon";
@@ -573,6 +638,7 @@ REVOKE ALL ON FUNCTION "public"."vacate_race_game"(uuid, integer) FROM PUBLIC, "
 GRANT EXECUTE ON FUNCTION "public"."race_side_of"(uuid, uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."race_standing"(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."race_breaker_side"(uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION "public"."create_race"(uuid, uuid, integer, integer, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."start_race"(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."record_race_game"(uuid, integer, uuid, boolean, boolean, boolean, boolean, boolean, integer, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."confirm_race_game"(uuid, integer) TO authenticated;
