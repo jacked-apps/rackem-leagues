@@ -183,10 +183,19 @@ codes go in a private schema with grants revoked from `anon` and `authenticated`
 only through `SECURITY DEFINER` functions. This is correct independently of the pre-launch
 RLS pass, and it does not depend on it.
 
-**A race carries an explicit status.** `created | in_play | finished | abandoned`. Three
-separate requirements need it and none named it: R21's write guard ("live and not
+**A race carries an explicit status.** `created | in_play | finished | abandoned | forfeited`.
+Three separate requirements need it and none named it: R21's write guard ("live and not
 complete"), R46's abandoned race, and R5's finished race being reopened by a vacate. Without
 a status field those are transitions between states that do not exist.
+
+**`forfeited` is the fifth status, added by Unit 0.** A tournament walkout is `abandoned` —
+gone, no result. A league forfeit is the opposite: *ended without play, **with** a result*
+that credits games and moves standings. It materialises no `race_games` rows for racks
+nobody played (R2 holds); the credited-games math stays where it already lives, on the
+pairing's `match_games` row with `win_by_forfeit`. Ship the value in Unit 2's CHECK
+constraint even though only leagues use it — adding an enum value to a live constraint later
+is a migration a column comment could have avoided. See
+`docs/plans/2026-09-09-002-league-race-walkthrough.md` §2.4.
 
 **The append is one serialized server-side operation.** `FOR UPDATE` on the race row, then
 re-check the gate, then write — all in the transaction that records the confirmation
@@ -344,7 +353,7 @@ paying organizer finding settings for a feature that does nothing is worse than 
 
 ### Phase 0 — check the design before pouring concrete
 
-- [ ] **Unit 0: Walk a league night against the designed race**
+- [x] **Unit 0: Walk a league night against the designed race** — DONE 2026-09-10
 
 **Goal:** Run R32's acceptance test **before** the schema exists, while its output can still
 change column shapes for free.
@@ -393,6 +402,32 @@ tables without inventing a field.
 
 **Verification:** Either the design is confirmed against a league night, or Unit 2 starts from
 an amended schema.
+
+**Result (2026-09-10):** Both. `docs/plans/2026-09-09-002-league-race-walkthrough.md`.
+**R32 passes** — the loop, the confirm flow and the three tables serve a league night with no
+second implementation. Four things came back:
+
+1. **Blocking, and outside this plan.** The league cannot express a five-race night at all:
+   `game_generation` is SRR/DRR only and `game_count = lineup_size²`, so 5v5 gives 25 races or
+   50, never 5. Needs a third variant in the **locked** Team Geometry doc — Ed's gate phrase,
+   its own change. Nothing in Units 1–11 depends on it; R32's end-to-end acceptance test does.
+2. **`match_games.race_id`** — nullable FK, the league's pointer at its race (R7), mirroring
+   `bracket_matches.race_id`. Null for every league running today. Lands with the league work,
+   not Unit 2.
+3. **The `forfeited` status** — folded into Unit 2 above.
+4. **`swap_player_in_lineup`'s cascade must widen** from "unplayed" (`winner_player_id IS
+   NULL`) to "unplayed **and** no started race": a race at `in_play` is *played* for swap
+   purposes. Today's cascade would rewrite the player id under a race sitting at 2–2 while R1
+   holds its participants immutable. One WHERE clause, one test, additive per R9.
+
+The load-bearing **fit**: `prep_match` pre-creates one `match_games` row per pairing, so a
+finished race fills in one pairing row and `updateMatchRunningTotals`, `allGamesComplete` and
+`MatchEndVerification` all work untouched. That is why R33 and R9 are compatible rather than
+contradictory — the race is a new *caller*, not a changed path — and why team standings need
+no change at all. Also settled: a league race's goals come from the locked Match Format
+`race_length` adjusted per pairing by the Handicap Mechanism, and the bracket's per-side race
+length is the tournament's **substitute** for Match Format, never a supplement. Write that
+into Unit 2's column comments.
 
 ---
 
@@ -942,7 +977,7 @@ under Confirm, and a reopened match can genuinely be re-played.
   `scoringSettings.ts`, per the repo's helper-plus-component split.
 - Settings: break rule; race length per side; game type per side; single-player scoring policy
   (allow / allow-but-confirm-with-me / manual, default manual); advance policy (automatic /
-  confirm / manual). Per-side values are **optional overrides** that fall back to
+  confirm / manual, **default automatic**). Per-side values are **optional overrides** that fall back to
   `brackets.game_type` and to the winners side for the grand final — never a rival source of truth.
 - **Build it with the format settings collapsed behind an "Advanced" disclosure**, leaving the
   single-player policy as the one visible choice. The catalog already promises buyers "You'll

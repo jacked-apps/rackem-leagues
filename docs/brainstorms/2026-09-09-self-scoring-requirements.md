@@ -274,6 +274,12 @@ The race announces. It does not act on the announcement — see R11.
   - **Manual** — nothing arrives; he goes to the bracket and taps the winner
     himself, with the race result sitting there as information.
 
+  **The default is Automatic** (Ed, 2026-09-10). It is the only setting that
+  delivers what the feature is sold for, and it fires only after both players
+  have already agreed on the deciding game. Confirm and Manual exist for the
+  organizer who wants more control; Manual is deliberately the free tier's
+  posture, with the players' scores arriving as information.
+
   Under **Automatic**, the advance executes **server-side inside the same
   ticket-guarded race-scoring function that recorded the goal-reaching
   confirmation**, in one transaction. It is not a client call:

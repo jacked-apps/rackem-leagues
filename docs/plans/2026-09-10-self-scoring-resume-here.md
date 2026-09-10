@@ -5,8 +5,8 @@
 
 ## Where we are in one line
 
-**Design is finished and reviewed. No code has been written.** The next action is
-Unit 0 of the plan — a written league-night walkthrough — before any migration.
+**Design is finished and reviewed. Unit 0 is done. No code has been written.**
+The next action is Unit 1 — the late-entry hopper fix — or Phase 1 proper.
 
 ## The three documents, in order
 
@@ -26,18 +26,18 @@ Unit 0 of the plan — a written league-night walkthrough — before any migrati
 PR #275 itself is untouched — the branch was cut so the docs would not land on a
 PR under review.
 
-## The one question still open
+## The open question — answered 2026-09-10
 
-**What is the default advance policy** — automatic, confirm, or manual?
+**Advance policy default: Automatic.** All three settings stay, and the choice
+is the organizer's dial:
 
-Ed has not answered. The recommendation on the table: **Automatic**, because it
-is the only setting that delivers what the feature is sold for (the organizer
-stops entering results), and it only fires after both players have already
-confirmed the deciding game. `reopen_bracket_match` is the way back if it is
-wrong. Ed's conservative default on *single-player* scoring is correct for a
-different reason — that case has one eye and nobody to object.
+- **Automatic** (default) — everything updates by itself.
+- **Confirm** — it pings the organizer with the result; he approves.
+- **Manual** — players score, then walk up and tell the organizer directly,
+  much like the free version.
 
-Do not start Unit 8 without this answer. Everything else can proceed.
+Recorded in R29 of the requirements and in Unit 8's settings list. Unit 8 is
+unblocked.
 
 ## Three things deferred to Ed, none blocking
 
@@ -116,18 +116,30 @@ Do not start Unit 8 without this answer. Everything else can proceed.
   runs `unit` only. Every RPC guard in this plan is verified only when someone
   runs `pnpm test:run --project db` by hand.
 
+## Unit 0 — done 2026-09-10
+
+`docs/plans/2026-09-09-002-league-race-walkthrough.md`. **R32 passes**: the loop,
+the confirm flow and the three tables serve a league night with no second
+implementation. Its findings are folded into Unit 0's and Unit 2's sections of
+the plan; the short version —
+
+- **Blocking, and outside this plan:** the league cannot express a five-race
+  night. `game_generation` is SRR/DRR only and `game_count = lineup_size²`, so
+  5v5 gives 25 races, never 5. Needs a third variant in the **locked** Team
+  Geometry doc — Ed's gate phrase, its own change. Units 1–11 do not depend on
+  it; R32's end-to-end acceptance test does.
+- **The fit that made it work:** `prep_match` pre-creates one `match_games` row
+  per pairing. A finished race fills in one pairing row, and running totals,
+  `allGamesComplete` and MatchEndVerification are untouched. R33 and R9 are
+  compatible because the race is a new *caller*, not a changed path.
+- **Additions:** `match_games.race_id`; a fifth `forfeited` race status; a
+  widened `swap_player_in_lineup` cascade ("unplayed **and** no started race").
+
 ## Next actions, in order
 
-1. Answer the advance-policy default.
-2. **Unit 0** — write the league-night walkthrough
-   (`docs/plans/2026-09-09-002-league-race-walkthrough.md`). Prose, no code, one
-   day. It runs first on purpose: R32 calls the league case the acceptance test
-   for the whole design, and running it after the migrations exist makes it an
-   autopsy rather than a test. If it finds a gap, Unit 2's schema changes for
-   free.
-3. **Unit 1** — the late-entry hopper fix. Ed may prefer this as its own small
+1. **Unit 1** — the late-entry hopper fix. Ed may prefer this as its own small
    PR ahead of the feature, since it corrects a flow that is broken today.
-4. Then Phase 1 proper (Units 2–4).
+2. Then Phase 1 proper (Units 2–4).
 
 ## Housekeeping done this session
 
