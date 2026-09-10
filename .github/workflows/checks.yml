@@ -11,7 +11,8 @@
 #
 # Jobs run in parallel and are independent:
 #   migration-versions : duplicate migration version guard
-#   unit-tests         : the vitest `unit` project (NOT `db`, which needs Postgres)
+#   unit-tests         : the vitest `unit` project (fast, no database)
+#   db-tests           : the vitest `db` project against a real local Supabase
 #   typecheck          : `pnpm run build` = tsc -b + vite build
 # =====================================================================
 name: Checks
@@ -96,10 +97,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # The `unit` project ONLY. `pnpm test:run` would also run the `db`
-      # project, which talks to a real local Postgres on 127.0.0.1:54322 —
-      # there isn't one here, so those belong to local runs (and, later, a job
-      # that stands up a database service).
+      # The `unit` project ONLY — it needs no database and should stay fast.
+      # The `db` project runs in its own job below, which stands up a real
+      # Supabase stack.
       - name: Run unit tests
         run: pnpm test:unit
         env:
@@ -114,6 +114,81 @@ jobs:
           # just needs a syntactically valid URL and a non-empty key to construct.
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: placeholder-anon-key-for-tests
+
+  db-tests:
+    name: Database tests
+    runs-on: ubuntu-latest
+    # Slower than the other jobs — it boots Postgres, PostgREST and Auth — but
+    # these tests were previously unrunnable in CI, which meant they only ever
+    # ran when somebody remembered to run them locally. They didn't get run for
+    # months, and drifted badly out from under the schema: a column changed
+    # meaning, triggers were added that made an assertion impossible, and
+    # fixtures the seed can no longer provide. None of it failed anything,
+    # because nothing was looking. This job is what makes that visible on the
+    # day it happens instead of a quarter later.
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          # Pinned rather than 'latest' so a CLI release can never turn this
+          # job red on a branch that changed nothing.
+          version: 2.117.0
+
+      # Only what the tests actually reach for: Postgres (direct pg queries),
+      # Kong + PostgREST (supabase-js), and Auth (authenticated clients).
+      # Studio, storage, realtime, edge functions and the log pipeline are all
+      # dead weight here — the two tests that mention realtime only read the
+      # pg_publication catalog over SQL.
+      - name: Start Supabase
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,mailpit,storage-api,realtime
+
+      # `supabase start` applies migrations but NOT the seed — config.toml has
+      # [db.seed] disabled, because local development restores from dumps
+      # instead. The db tests need real rows, so load it explicitly.
+      - name: Load seed data
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f supabase/seed.sql
+
+      # Idempotent (ON CONFLICT DO NOTHING). The seed above already carries
+      # these users, but several suites name them explicitly, so this makes the
+      # dependency self-healing rather than something that silently vanishes if
+      # the seed is ever regenerated from a database that lacks them.
+      - name: Ensure test users exist
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f supabase/seed_test_users.sql
+
+      - name: Run database tests
+        run: pnpm test:db
 
   typecheck:
     name: Typecheck + build
