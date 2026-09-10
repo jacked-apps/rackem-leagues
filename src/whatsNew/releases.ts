@@ -143,6 +143,10 @@ export const RELEASES: Release[] = [
         text: 'This "What’s New" page. From now on you can see what we’ve changed and when, and look back through earlier releases.',
         kind: 'feature',
       },
+      {
+        text: 'Editing a player’s email address could stop working. If you changed it, changed it back, then changed it again, the save would fail with an error. You can now edit an email as often as you like.',
+        kind: 'fix',
+      },
     ],
   },
 ];
