@@ -141,11 +141,20 @@ export function CoinFlip({
     [participantA, participantB, callerId, launch]
   );
 
-  const reset = useCallback(() => {
-    setPhase('idle');
-    setAssignment(null);
+  /**
+   * Flip again, straight back into the flip rather than out to idle.
+   *
+   * `Flip again` and the idle button are the same intent, so routing through
+   * idle asks the player to press the same thing twice — press it, then press
+   * `Quick flip` (or `Flip for it`) to get what they already asked for.
+   * Reusing `start` means each mode re-enters at its own first real beat: the
+   * call buttons in called mode, a freshly assigned pair of faces in quick.
+   */
+  const flipAgain = useCallback(() => {
     setResult(null);
-  }, []);
+    setAssignment(null);
+    start();
+  }, [start]);
 
   const caller = participantA.id === callerId ? participantA : participantB;
 
@@ -195,7 +204,7 @@ export function CoinFlip({
               Called {result.call} &middot; landed {result.face}
             </p>
             {allowReflip && (
-              <Button variant="outline" onClick={reset}>
+              <Button variant="outline" onClick={flipAgain}>
                 Flip again
               </Button>
             )}

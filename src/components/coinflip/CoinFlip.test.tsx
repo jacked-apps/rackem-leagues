@@ -193,6 +193,23 @@ describe('CoinFlip — called mode', () => {
     expect(screen.queryByRole('button', { name: 'Flip again' })).not.toBeInTheDocument();
   });
 
+  it('re-flips straight back to the call, not out to idle', async () => {
+    render(
+      <CoinFlip participantA={john} participantB={mike} random={sequence(ORDER, HEADS)} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    settle();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Flip again' }));
+
+    // Straight to the call. Sending the player back to 'Flip for it' would ask
+    // them to press the same intent twice.
+    expect(screen.getByRole('button', { name: 'Heads' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Flip for it' })).not.toBeInTheDocument();
+  });
+
   it('stays on the result rather than resetting itself', async () => {
     render(
       <CoinFlip participantA={john} participantB={mike} random={sequence(ORDER, HEADS)} />
@@ -259,6 +276,31 @@ describe('CoinFlip — quick mode', () => {
 
     // John holds heads; the coin landed tails, so Mike wins.
     expect(screen.getByText('Mike wins the flip')).toBeInTheDocument();
+  });
+
+  it('re-flips straight into a new flip, not back to the button', async () => {
+    render(
+      <CoinFlip
+        participantA={john}
+        participantB={mike}
+        mode="quick"
+        random={sequence(ORDER, HEADS, HEADS)}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quick flip' }));
+    settle();
+    fireEvent.click(screen.getByRole('button', { name: 'Flip again' }));
+
+    // A fresh assignment is already on screen and the coin has not launched —
+    // the same opening beat as the first flip, with no button in between.
+    expect(screen.getByText(/Heads → /)).toBeInTheDocument();
+    expect(screen.getByTestId('coin')).toHaveAttribute('data-spinning', 'false');
+    expect(screen.queryByRole('button', { name: 'Quick flip' })).not.toBeInTheDocument();
+
+    // And it still completes on its own.
+    settle();
+    expect(screen.getByText(/wins the flip/)).toBeInTheDocument();
   });
 
   it('drives the assignment from the injected source', async () => {

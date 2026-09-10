@@ -130,6 +130,7 @@ This document catalogs all reusable components in the application for easy disco
 - Winner announced by NAME, with the face as supporting evidence — readable without color
 - CSS-only coin spin, honors `prefers-reduced-motion`
 - Injected random source, so tests can pin an outcome without mocking globals
+- "Flip again" re-enters the flip at its first real beat — the call buttons in `call` mode, a fresh assignment in `quick` — rather than returning to the idle button, which would be the same intent pressed twice
 - Writes nothing and persists nothing — reports through `onResult` and leaves storage to the caller
 
 **Props**: `participantA`, `participantB`, `mode?`, `callerId?`, `onResult?`, `allowReflip?`, `random?`
