@@ -126,14 +126,16 @@ This document catalogs all reusable components in the application for easy disco
 **Use Cases**: Who breaks first, who wins a tie, or any two-way decision that needs to feel decided rather than argued. Works for players and teams alike, because a participant is only `{ id, name }`
 **Key Features**:
 - Two modes on one state machine: `call` (a human picks heads or tails) and `quick` (the app assigns the faces, shows the assignment, then flips)
-- The call is recorded in state before the coin is tossed, so it cannot be made after the coin is in the air
+- TWO ROLES: one player calls, the OTHER throws. A coin flip is fair because the person calling does not control the toss, so calling and throwing are separate acts by separate people — not one tap by whoever holds the phone
+- The call is recorded before the coin is tossed, so it cannot be made after the coin is in the air
+- `viewerId` names whose device it is: given, each screen offers only its own player's move and says what the other side is doing; omitted, both roles play out on one screen in turn
 - Winner announced by NAME, with the face as supporting evidence — readable without color
 - CSS-only coin spin, honors `prefers-reduced-motion`
 - Injected random source, so tests can pin an outcome without mocking globals
 - "Flip again" re-enters the flip at its first real beat — the call buttons in `call` mode, a fresh assignment in `quick` — rather than returning to the idle button, which would be the same intent pressed twice
 - Writes nothing and persists nothing — reports through `onResult` and leaves storage to the caller
 
-**Props**: `participantA`, `participantB`, `mode?`, `callerId?`, `onResult?`, `allowReflip?`, `random?`
+**Props**: `participantA`, `participantB`, `mode?`, `callerId?`, `flipperId?`, `viewerId?`, `onResult?`, `allowReflip?`, `random?`
 
 ### `flipCoin.ts`
 **Purpose**: The rules of a coin flip, with no React and no ambient randomness
@@ -150,6 +152,11 @@ This document catalogs all reusable components in the application for easy disco
 > assignment out of the silent path — that would quietly make them two different
 > flips, and an operator switching between the two options would change the odds
 > without anyone noticing.
+
+> **Keeping two devices in step is NOT this component's job.** It renders one
+> device's view of a flip. Two mounted copies share no state; syncing them —
+> and deciding the outcome somewhere neither player controls — belongs to
+> whatever hosts the flip. See `docs/brainstorms/2026-09-10-game-room-requirements.md`.
 
 > **No way to force a result.** There is deliberately no prop that hands the
 > component a predetermined face. Such a seam has a legitimate use — a server or

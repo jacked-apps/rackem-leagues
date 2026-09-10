@@ -84,6 +84,7 @@ describe('CoinFlip — called mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
     fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Throw the coin' }));
 
     // Airborne: spinning, and the face is deliberately not named yet.
     expect(screen.getByTestId('coin')).toHaveAttribute('data-spinning', 'true');
@@ -102,6 +103,7 @@ describe('CoinFlip — called mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
     fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Throw the coin' }));
     settle();
 
     // Mike calls by default (the side who did not start it).
@@ -115,6 +117,7 @@ describe('CoinFlip — called mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
     fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Throw the coin' }));
     settle();
 
     expect(screen.getByText('John wins the flip')).toBeInTheDocument();
@@ -133,6 +136,7 @@ describe('CoinFlip — called mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
     fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Throw the coin' }));
     settle();
 
     expect(onResult).toHaveBeenCalledTimes(1);
@@ -189,6 +193,7 @@ describe('CoinFlip — called mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
     fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Throw the coin' }));
     settle();
 
     expect(screen.queryByRole('button', { name: 'Flip again' })).not.toBeInTheDocument();
@@ -201,6 +206,7 @@ describe('CoinFlip — called mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
     fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Throw the coin' }));
     settle();
 
     fireEvent.click(screen.getByRole('button', { name: 'Flip again' }));
@@ -218,11 +224,121 @@ describe('CoinFlip — called mode', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
     fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Throw the coin' }));
     settle();
     settle();
 
     expect(screen.getByText('Mike wins the flip')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Flip for it' })).not.toBeInTheDocument();
+  });
+});
+
+describe('CoinFlip — two roles, two players', () => {
+  // A coin flip is fair because the person calling is not the person who
+  // controls the toss. Those are two roles, and before this they were one tap
+  // performed by whoever held the phone — which is invisible on a shared
+  // screen and hands the entire flip to one player once they are on separate
+  // devices.
+
+  it('will not throw until a call is on record', async () => {
+    render(<CoinFlip participantA={john} participantB={mike} random={sequence(ORDER, HEADS)} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
+
+    // The call comes first. There is nothing to throw against yet.
+    expect(screen.queryByRole('button', { name: 'Throw the coin' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Heads' })).toBeInTheDocument();
+  });
+
+  it('shows both players the call before the coin is thrown', async () => {
+    render(<CoinFlip participantA={john} participantB={mike} random={sequence(ORDER, HEADS)} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tails' }));
+
+    // Visible to both sides while the coin is still on the table, so the throw
+    // settles something already agreed rather than announced afterwards.
+    expect(screen.getByText(/called tails/)).toBeInTheDocument();
+    expect(screen.getByTestId('coin')).toHaveAttribute('data-spinning', 'false');
+  });
+
+  it('offers the caller only the call, on their own device', async () => {
+    // Mike calls by default; this is Mike's screen.
+    render(
+      <CoinFlip
+        participantA={john}
+        participantB={mike}
+        viewerId={mike.id}
+        random={sequence(ORDER, HEADS)}
+      />
+    );
+
+    // Mike does not hold the coin, so he cannot start it either.
+    expect(screen.queryByRole('button', { name: 'Flip for it' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Waiting for John to start/)).toBeInTheDocument();
+  });
+
+  it('offers the flipper only the throw, on their own device', async () => {
+    // John throws by default; this is John's screen.
+    render(
+      <CoinFlip
+        participantA={john}
+        participantB={mike}
+        viewerId={john.id}
+        random={sequence(ORDER, HEADS)}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
+
+    // The call is Mike's to make. John waits, and is not offered it.
+    expect(screen.queryByRole('button', { name: 'Heads' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Tails' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Waiting for Mike to call it/)).toBeInTheDocument();
+  });
+
+  it('lets the roles be swapped', async () => {
+    // John calls and Mike throws — the reverse of the defaults.
+    render(
+      <CoinFlip
+        participantA={john}
+        participantB={mike}
+        callerId={john.id}
+        flipperId={mike.id}
+        viewerId={john.id}
+        random={sequence(ORDER, HEADS)}
+      />
+    );
+
+    // John calls now, so he waits on Mike to start rather than starting.
+    expect(screen.getByText(/Waiting for Mike to start/)).toBeInTheDocument();
+  });
+
+  it('never offers one player the other player’s control', async () => {
+    // The guard that matters once they are apart: whatever state a screen is
+    // in, it only ever offers its own player's move.
+    //
+    // Note what this does NOT test. Two mounts do not share state, so this
+    // cannot drive a flip across two devices — keeping them in step is the
+    // room's job, through the database, not the component's. The component
+    // renders one device's view of a flip it is told about.
+    const mikeView = render(
+      <CoinFlip participantA={john} participantB={mike} viewerId={mike.id} random={sequence(ORDER)} />
+    );
+
+    // Mike calls, so he is never offered the coin.
+    expect(screen.queryByRole('button', { name: 'Flip for it' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Throw the coin' })).not.toBeInTheDocument();
+    mikeView.unmount();
+
+    // John throws, so he is never offered the call.
+    render(
+      <CoinFlip participantA={john} participantB={mike} viewerId={john.id} random={sequence(ORDER)} />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
+
+    expect(screen.queryByRole('button', { name: 'Heads' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Tails' })).not.toBeInTheDocument();
   });
 });
 
@@ -388,6 +504,7 @@ describe('CoinFlip — lifecycle', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Flip for it' }));
     fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Throw the coin' }));
     unmount();
     settle();
 

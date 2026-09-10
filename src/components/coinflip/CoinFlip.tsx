@@ -42,8 +42,13 @@ const FLIP_DURATION_MS = 1400;
  *
  * `calling` (human picks) and `assigned` (app picked, showing its work) are the
  * mode-specific states. Everything else is shared.
+ *
+ * `called` is the beat between the two people: the call is locked in and the
+ * coin has not been thrown yet. It exists because calling and throwing are
+ * done by DIFFERENT players, and collapsing them into one tap quietly hands
+ * the whole flip to whoever is holding the phone.
  */
-type Phase = 'idle' | 'calling' | 'assigned' | 'flipping' | 'result';
+type Phase = 'idle' | 'calling' | 'called' | 'assigned' | 'flipping' | 'result';
 
 interface CoinFlipProps {
   /** One side of the flip. */
@@ -56,11 +61,28 @@ interface CoinFlipProps {
    */
   mode?: 'call' | 'quick';
   /**
-   * Who makes the call, in `call` mode. Defaults to `participantB` on the
-   * reasoning that the side who did not start the flip should call it. Ignored
-   * in `quick` mode, where the app calls.
+   * Who calls heads or tails, in `call` mode. Defaults to `participantB` on
+   * the reasoning that the side who did not start the flip should call it.
+   * Ignored in `quick` mode, where the app calls.
    */
   callerId?: string;
+  /**
+   * Who throws the coin. Defaults to `participantA`, the side that started it.
+   *
+   * A coin flip is fair because the person calling is NOT the person who
+   * controls the toss. Those are two roles held by two people, and they get
+   * two separate acts here rather than one tap that does both.
+   */
+  flipperId?: string;
+  /**
+   * Whose device this is, when the two players are on separate screens.
+   *
+   * Given, the component renders only the controls belonging to that player
+   * and tells them what the other side is doing. Omitted, both roles are
+   * rendered on the one screen in turn — the standalone case, and the case
+   * where two people share a phone.
+   */
+  viewerId?: string;
   /** Fired once per settled flip, with the same result the UI displays. */
   onResult?: (result: FlipResult) => void;
   /** Whether a "Flip again" control is offered after a result. Defaults to true. */
@@ -74,6 +96,8 @@ export function CoinFlip({
   participantB,
   mode = 'call',
   callerId,
+  flipperId,
+  viewerId,
   onResult,
   allowReflip = true,
   random = Math.random,
@@ -82,6 +106,8 @@ export function CoinFlip({
   const [assignment, setAssignment] = useState<FaceAssignment | null>(null);
   const [landedFace, setLandedFace] = useState<Face>('heads');
   const [result, setResult] = useState<FlipResult | null>(null);
+  /** The call, held between the caller making it and the flipper throwing. */
+  const [pendingCall, setPendingCall] = useState<Call | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Shuffled once, not per render, so the order does not jitter as state
@@ -131,15 +157,26 @@ export function CoinFlip({
     );
   }, [mode, participantA, participantB, random, launch]);
 
-  /** A human picked a side. Record it, then flip. */
-  const handleCall = useCallback(
-    (call: Call) => {
-      const caller = participantA.id === callerId ? participantA : participantB;
-      const other = caller.id === participantA.id ? participantB : participantA;
-      launch(call, caller, other);
-    },
-    [participantA, participantB, callerId, launch]
-  );
+  /**
+   * A human called a side. Record it and wait for the OTHER player to throw.
+   *
+   * This used to toss the coin in the same breath, which made calling and
+   * throwing one act performed by one person. On a shared screen nobody
+   * noticed; with a player on each device it hands the entire flip to the
+   * caller while the other watches.
+   */
+  const handleCall = useCallback((call: Call) => {
+    setPendingCall(call);
+    setPhase('called');
+  }, []);
+
+  /** The flipper throws the coin, against the call already on record. */
+  const handleThrow = useCallback(() => {
+    if (!pendingCall) return;
+    const callerP = participantA.id === callerId ? participantA : participantB;
+    const other = callerP.id === participantA.id ? participantB : participantA;
+    launch(pendingCall, callerP, other);
+  }, [pendingCall, participantA, participantB, callerId, launch]);
 
   /**
    * Flip again, straight back into the flip rather than out to idle.
@@ -153,10 +190,19 @@ export function CoinFlip({
   const flipAgain = useCallback(() => {
     setResult(null);
     setAssignment(null);
+    setPendingCall(null);
     start();
   }, [start]);
 
   const caller = participantA.id === callerId ? participantA : participantB;
+  const flipper = participantB.id === flipperId ? participantB : participantA;
+
+  // With no viewer named, one screen carries both roles in turn — the
+  // standalone case, and two people sharing a phone. With a viewer named,
+  // each device shows only what its own player may do.
+  const isSharedScreen = viewerId === undefined;
+  const viewerCalls = isSharedScreen || viewerId === caller.id;
+  const viewerThrows = isSharedScreen || viewerId === flipper.id;
 
   return (
     <Card className="w-full max-w-sm">
@@ -167,19 +213,52 @@ export function CoinFlip({
       </CardHeader>
 
       <CardContent className="flex flex-col items-center gap-4">
-        {phase === 'idle' && (
-          <Button loadingText="none" onClick={start}>
-            {mode === 'quick' ? 'Quick flip' : 'Flip for it'}
-          </Button>
-        )}
+        {/* The flipper holds the coin, so the flipper starts it. */}
+        {phase === 'idle' &&
+          (viewerThrows ? (
+            <Button loadingText="none" onClick={start}>
+              {mode === 'quick' ? 'Quick flip' : 'Flip for it'}
+            </Button>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Waiting for {flipper.name} to start
+            </p>
+          ))}
 
-        {phase === 'calling' && (
+        {phase === 'calling' &&
+          (viewerCalls ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {isSharedScreen ? `${caller.name} calls it` : 'Your call'}
+              </p>
+              <div className="flex gap-2">
+                <Button loadingText="none" onClick={() => handleCall('heads')}>Heads</Button>
+                <Button loadingText="none" onClick={() => handleCall('tails')}>Tails</Button>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Waiting for {caller.name} to call it
+            </p>
+          ))}
+
+        {/* The call is on record and the coin has not been thrown. Both sides
+            can see what was called, so the throw settles something already
+            agreed rather than something announced afterwards. */}
+        {phase === 'called' && pendingCall && (
           <>
-            <p className="text-sm text-muted-foreground">{caller.name} calls it</p>
-            <div className="flex gap-2">
-              <Button loadingText="none" onClick={() => handleCall('heads')}>Heads</Button>
-              <Button loadingText="none" onClick={() => handleCall('tails')}>Tails</Button>
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {caller.name} called {pendingCall}
+            </p>
+            {viewerThrows ? (
+              <Button loadingText="none" onClick={handleThrow}>
+                Throw the coin
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Waiting for {flipper.name} to throw
+              </p>
+            )}
           </>
         )}
 
