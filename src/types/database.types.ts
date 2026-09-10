@@ -389,6 +389,38 @@ export type Database = {
           },
         ]
       }
+      bracket_walkup_roster: {
+        Row: {
+          display_name: string
+          first_seen_at: string
+          handicap: string | null
+          id: string
+          organizer_member_id: string
+        }
+        Insert: {
+          display_name: string
+          first_seen_at?: string
+          handicap?: string | null
+          id?: string
+          organizer_member_id: string
+        }
+        Update: {
+          display_name?: string
+          first_seen_at?: string
+          handicap?: string | null
+          id?: string
+          organizer_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_walkup_roster_organizer_fkey"
+            columns: ["organizer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brackets: {
         Row: {
           charge_amount_cents: number | null
@@ -1335,6 +1367,7 @@ export type Database = {
           home_to_tie: number | null
           home_to_win: number | null
           id: string
+          lms_entered_at: string | null
           match_number: number
           match_result: string | null
           results_confirmed_by_away: boolean
@@ -1372,6 +1405,7 @@ export type Database = {
           home_to_tie?: number | null
           home_to_win?: number | null
           id?: string
+          lms_entered_at?: string | null
           match_number: number
           match_result?: string | null
           results_confirmed_by_away?: boolean
@@ -1409,6 +1443,7 @@ export type Database = {
           home_to_tie?: number | null
           home_to_win?: number | null
           id?: string
+          lms_entered_at?: string | null
           match_number?: number
           match_result?: string | null
           results_confirmed_by_away?: boolean
@@ -2357,6 +2392,237 @@ export type Database = {
           push_enabled?: boolean
         }
         Relationships: []
+      }
+      race_confirmations: {
+        Row: {
+          action: string
+          auto_confirmed: boolean
+          break_and_run: boolean
+          break_fouled: boolean
+          confirmer_id: string
+          created_at: string
+          game_id: string
+          game_number: number
+          golden_break: boolean
+          id: string
+          is_initiator: boolean
+          loser_value: number | null
+          race_id: string
+          reason: string | null
+          runout: boolean
+          side: string
+          win_by_forfeit: boolean
+          winner_player_id: string | null
+          winner_team_id: string | null
+          winner_value: number | null
+        }
+        Insert: {
+          action?: string
+          auto_confirmed?: boolean
+          break_and_run?: boolean
+          break_fouled?: boolean
+          confirmer_id: string
+          created_at?: string
+          game_id: string
+          game_number: number
+          golden_break?: boolean
+          id?: string
+          is_initiator?: boolean
+          loser_value?: number | null
+          race_id: string
+          reason?: string | null
+          runout?: boolean
+          side: string
+          win_by_forfeit?: boolean
+          winner_player_id?: string | null
+          winner_team_id?: string | null
+          winner_value?: number | null
+        }
+        Update: {
+          action?: string
+          auto_confirmed?: boolean
+          break_and_run?: boolean
+          break_fouled?: boolean
+          confirmer_id?: string
+          created_at?: string
+          game_id?: string
+          game_number?: number
+          golden_break?: boolean
+          id?: string
+          is_initiator?: boolean
+          loser_value?: number | null
+          race_id?: string
+          reason?: string | null
+          runout?: boolean
+          side?: string
+          win_by_forfeit?: boolean
+          winner_player_id?: string | null
+          winner_team_id?: string | null
+          winner_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "race_confirmations_confirmer_id_fkey"
+            columns: ["confirmer_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "race_confirmations_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "race_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "race_confirmations_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      race_games: {
+        Row: {
+          away_action: string
+          break_and_run: boolean
+          break_fouled: boolean
+          confirmed_at: string | null
+          confirmed_by_away: string | null
+          confirmed_by_home: string | null
+          created_at: string
+          game_number: number
+          game_type: string
+          golden_break: boolean
+          home_action: string
+          id: string
+          loser_value: number | null
+          race_id: string
+          runout: boolean
+          updated_at: string
+          vacate_requested_by: string | null
+          win_by_forfeit: boolean
+          winner_player_id: string | null
+          winner_team_id: string | null
+          winner_value: number | null
+        }
+        Insert: {
+          away_action: string
+          break_and_run?: boolean
+          break_fouled?: boolean
+          confirmed_at?: string | null
+          confirmed_by_away?: string | null
+          confirmed_by_home?: string | null
+          created_at?: string
+          game_number: number
+          game_type: string
+          golden_break?: boolean
+          home_action: string
+          id?: string
+          loser_value?: number | null
+          race_id: string
+          runout?: boolean
+          updated_at?: string
+          vacate_requested_by?: string | null
+          win_by_forfeit?: boolean
+          winner_player_id?: string | null
+          winner_team_id?: string | null
+          winner_value?: number | null
+        }
+        Update: {
+          away_action?: string
+          break_and_run?: boolean
+          break_fouled?: boolean
+          confirmed_at?: string | null
+          confirmed_by_away?: string | null
+          confirmed_by_home?: string | null
+          created_at?: string
+          game_number?: number
+          game_type?: string
+          golden_break?: boolean
+          home_action?: string
+          id?: string
+          loser_value?: number | null
+          race_id?: string
+          runout?: boolean
+          updated_at?: string
+          vacate_requested_by?: string | null
+          win_by_forfeit?: boolean
+          winner_player_id?: string | null
+          winner_team_id?: string | null
+          winner_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "race_games_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      races: {
+        Row: {
+          away_member_id: string
+          break_rule: string
+          created_at: string
+          first_breaker_side: string | null
+          game_type: string
+          goal_away: number
+          goal_home: number
+          home_member_id: string
+          id: string
+          last_activity_at: string
+          status: string
+          winner_player_id: string | null
+        }
+        Insert: {
+          away_member_id: string
+          break_rule?: string
+          created_at?: string
+          first_breaker_side?: string | null
+          game_type: string
+          goal_away: number
+          goal_home: number
+          home_member_id: string
+          id?: string
+          last_activity_at?: string
+          status?: string
+          winner_player_id?: string | null
+        }
+        Update: {
+          away_member_id?: string
+          break_rule?: string
+          created_at?: string
+          first_breaker_side?: string | null
+          game_type?: string
+          goal_away?: number
+          goal_home?: number
+          home_member_id?: string
+          id?: string
+          last_activity_at?: string
+          status?: string
+          winner_player_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "races_away_member_id_fkey"
+            columns: ["away_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "races_home_member_id_fkey"
+            columns: ["home_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rating_edit_audit_log: {
         Row: {
@@ -3553,6 +3819,26 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: Json
       }
+      add_late_entry: {
+        Args: {
+          p_display_name?: string
+          p_match_id: string
+          p_member_id?: string
+        }
+        Returns: Json
+      }
+      add_premium_feature: {
+        Args: { p_bracket_id: string; p_feature: string }
+        Returns: Json
+      }
+      add_registered_to_hopper: {
+        Args: { p_bracket_id: string; p_member_id: string }
+        Returns: Json
+      }
+      add_self_as_walkup: {
+        Args: { p_display_name: string; p_join_token: string }
+        Returns: Json
+      }
       advance_bracket_winner: {
         Args: { p_match_id: string; p_winner_participant_id: string }
         Returns: boolean
@@ -3647,38 +3933,17 @@ export type Database = {
         Args: { p_season_id: string; p_team_id: string }
         Returns: string
       }
-      forget_bracket_roster_entry: {
-        Args: { p_member_id?: string; p_display_name?: string }
-        Returns: boolean
-      }
       finalize_bracket_hopper: {
         Args: { p_bracket_id: string; p_include_waiting?: boolean }
         Returns: number
       }
+      forget_bracket_roster_entry: {
+        Args: { p_display_name?: string; p_member_id?: string }
+        Returns: boolean
+      }
       get_bracket_hopper: { Args: { p_bracket_id: string }; Returns: Json }
-      get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
       get_bracket_player_view: { Args: { p_join_token: string }; Returns: Json }
-      get_my_tournaments: { Args: never; Returns: Json }
-      remove_premium_feature: {
-        Args: { p_bracket_id: string; p_feature: string }
-        Returns: Json
-      }
-      add_premium_feature: {
-        Args: { p_bracket_id: string; p_feature: string }
-        Returns: Json
-      }
-      add_late_entry: {
-        Args: { p_match_id: string; p_member_id?: string; p_display_name?: string }
-        Returns: Json
-      }
-      add_registered_to_hopper: {
-        Args: { p_bracket_id: string; p_member_id: string }
-        Returns: Json
-      }
-      add_self_as_walkup: {
-        Args: { p_join_token: string; p_display_name: string }
-        Returns: Json
-      }
+      get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
       get_bracket_share: { Args: { p_share_token: string }; Returns: Json }
       get_current_member_id: { Args: never; Returns: string }
       get_invite_details: {
@@ -3735,6 +4000,7 @@ export type Database = {
           token: string
         }[]
       }
+      get_my_tournaments: { Args: never; Returns: Json }
       get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
       get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
       get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
@@ -3879,6 +4145,10 @@ export type Database = {
       }
       remove_placeholder_from_team: {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
+        Returns: Json
+      }
+      remove_premium_feature: {
+        Args: { p_bracket_id: string; p_feature: string }
         Returns: Json
       }
       reopen_bracket_match: { Args: { p_match_id: string }; Returns: boolean }
