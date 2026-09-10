@@ -29,23 +29,39 @@ describe('game_confirmations schema', () => {
   const insertedIds: string[] = [];
 
   beforeAll(async () => {
-    const games = await executeSql(
-      `SELECT id, match_id, game_number, winner_team_id
-         FROM public.match_games
-         LIMIT 1`
+    // Build the match and game to hang confirmations off, rather than taking
+    // whichever game came back first. Games are only written at lineup lock,
+    // so a freshly seeded database has none and this suite threw in beforeAll,
+    // skipping all 16 of its cases — which is how it failed the first CI run.
+    const week = await executeSql(
+      `SELECT id AS week_id, season_id FROM public.season_weeks ORDER BY id LIMIT 1`
     );
-    const members = await executeSql(`SELECT id FROM public.members LIMIT 1`);
+    const members = await executeSql(`SELECT id FROM public.members ORDER BY id LIMIT 1`);
 
-    if (games.length === 0 || members.length === 0) {
+    if (week.length === 0 || members.length === 0) {
       throw new Error(
-        'game_confirmations.schema.db.test requires seed data (at least one match_games row and one member). Seed the local DB and retry.'
+        'game_confirmations.schema.db.test needs a season week and a member. Load the dev seed.'
       );
     }
 
-    matchId = games[0].match_id;
-    gameId = games[0].id;
-    gameNumber = games[0].game_number;
-    winnerTeamId = games[0].winner_team_id;
+    const match = await executeSql(
+      `INSERT INTO public.matches (season_id, season_week_id, match_number, status)
+       VALUES ($1, $2, 9903, 'scheduled')
+       RETURNING id`,
+      [week[0].season_id, week[0].week_id]
+    );
+    matchId = match[0].id;
+
+    const game = await executeSql(
+      `INSERT INTO public.match_games
+         (match_id, game_number, home_action, away_action, game_type)
+       VALUES ($1, 1, 'breaks', 'racks', 'eight_ball')
+       RETURNING id, game_number, winner_team_id`,
+      [matchId]
+    );
+    gameId = game[0].id;
+    gameNumber = game[0].game_number;
+    winnerTeamId = game[0].winner_team_id;
     confirmerId = members[0].id;
   });
 
@@ -55,6 +71,12 @@ describe('game_confirmations schema', () => {
         `DELETE FROM public.game_confirmations WHERE id = ANY($1::uuid[])`,
         [insertedIds]
       );
+    }
+    if (matchId) {
+      // Confirmations first — they hold a foreign key to the game.
+      await executeSql(`DELETE FROM public.game_confirmations WHERE game_id = $1`, [gameId]);
+      await executeSql(`DELETE FROM public.match_games WHERE match_id = $1`, [matchId]);
+      await executeSql(`DELETE FROM public.matches WHERE id = $1`, [matchId]);
     }
     await closePostgresPool();
   });
