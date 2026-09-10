@@ -7,8 +7,8 @@
  * - Registration/signup flows
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient } from '@/test/dbTestUtils';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createTestClient, executeSql } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -19,16 +19,33 @@ describe('Members Table - RLS Tests', () => {
   beforeAll(async () => {
     client = createTestClient();
 
-    // Get a test member
-    const { data: member } = await client
-      .from('members')
-      .select('id')
-      .limit(1)
-      .single();
+    // A member this file OWNS, rather than whichever row came back first.
+    //
+    // The update cases below rewrite contact details, and doing that to a
+    // seeded member has lasting consequences: changing a placeholder's email
+    // fires `ensure_placeholder_invite_token`, which cancels the old pending
+    // invite and issues a new one. Changing it back leaves a CANCELLED row for
+    // the original address, so the next run's cancel collides with it and the
+    // update dies on `unique_pending_invite` (23505). One run poisoned that
+    // member permanently, and the failure surfaced in whatever file touched it
+    // next — not here.
+    const rows = await executeSql(
+      `INSERT INTO public.members
+         (first_name, last_name, phone, email, address, city, state, zip_code, date_of_birth)
+       VALUES ('Rls', 'Fixture', '5550000000',
+               'rls-members-' || gen_random_uuid() || '@example.test',
+               '1 Test St', 'Testville', 'TX', '00000', '1990-01-01')
+       RETURNING id`
+    );
+    testMemberId = rows[0].id;
+  });
 
-    if (member) {
-      testMemberId = member.id;
-    }
+  afterAll(async () => {
+    if (!testMemberId) return;
+    // Invites first — the trigger above issues one for any placeholder with an
+    // email, and they hold a foreign key to the member.
+    await executeSql(`DELETE FROM public.invite_tokens WHERE member_id = $1`, [testMemberId]);
+    await executeSql(`DELETE FROM public.members WHERE id = $1`, [testMemberId]);
   });
 
   describe('SELECT Operations', () => {

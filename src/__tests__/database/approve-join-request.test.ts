@@ -17,8 +17,13 @@
  * Run: pnpm test:run src/__tests__/database/approve-join-request
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { executeSql, getPostgresPool } from '@/test/dbTestUtils';
+import {
+  createOnboardingFixture,
+  destroyOnboardingFixture,
+  type OnboardingFixture,
+} from '@/test/onboardingFixtures';
 import type { PoolClient } from 'pg';
 
 /** Run fn in a transaction, always rolling back. */
@@ -79,45 +84,25 @@ describe('Onboarding cascade Unit 4 — approve_join_request', () => {
   let joinerMember: string | null = null;
   let outsiderUser: string | null = null;
 
-  beforeAll(async () => {
-    // A team with a registered captain, resolvable org, and a placeholder on it.
-    // Deterministic fixture (ORDER BY id, not arbitrary LIMIT 1) whose captain
-    // is ALSO org staff — so the nullable-captain→staff case has a valid actor.
-    const team = await executeSql(`
-      SELECT t.id AS team_id, c.user_id AS captain_user, l.organization_id AS org
-        FROM teams t
-        JOIN members c ON c.id = t.captain_id
-        JOIN leagues l ON l.id = t.league_id
-       WHERE t.captain_id IS NOT NULL AND c.user_id IS NOT NULL
-         AND EXISTS (
-           SELECT 1 FROM team_players tp JOIN members m ON m.id = tp.member_id
-            WHERE tp.team_id = t.id AND m.user_id IS NULL
-         )
-         AND EXISTS (
-           SELECT 1 FROM organization_staff os
-            WHERE os.organization_id = l.organization_id AND os.member_id = t.captain_id
-         )
-       ORDER BY t.id
-       LIMIT 1`);
-    teamId = team[0]?.team_id ?? null;
-    captainUser = team[0]?.captain_user ?? null;
-    orgId = team[0]?.org ?? null;
-    const org = orgId;
+  let fixture: OnboardingFixture | null = null;
 
-    const ph = await executeSql(
-      `SELECT tp.member_id FROM team_players tp
-         JOIN members m ON m.id = tp.member_id
-        WHERE tp.team_id = $1 AND m.user_id IS NULL
-        ORDER BY tp.member_id LIMIT 1`,
-      [teamId]
-    );
-    placeholderId = ph[0]?.member_id ?? null;
+  beforeAll(async () => {
+    // Build a team captained by the org's staff member, rather than searching
+    // for one. The search wanted a captain who is BOTH a registered user and
+    // org staff, and the seed has no such team — so every id here came back
+    // null and the cases failed on missing fixtures, not on the RPC.
+    fixture = await createOnboardingFixture({ captain: 'staff' });
+
+    teamId = fixture.teamId;
+    captainUser = fixture.staffUserId;
+    orgId = fixture.organizationId;
+    placeholderId = fixture.placeholderMemberIds[0];
 
     // A registered member NOT on the team → the joiner.
     const joiner = await executeSql(
-      `SELECT m.id, m.user_id FROM members m
+      `SELECT m.id, m.user_id FROM public.members m
         WHERE m.user_id IS NOT NULL
-          AND NOT EXISTS (SELECT 1 FROM team_players tp
+          AND NOT EXISTS (SELECT 1 FROM public.team_players tp
                            WHERE tp.team_id = $1 AND tp.member_id = m.id)
         ORDER BY m.id LIMIT 1`,
       [teamId]
@@ -133,9 +118,13 @@ describe('Onboarding cascade Unit 4 — approve_join_request', () => {
           AND NOT EXISTS (SELECT 1 FROM organization_staff os
                            WHERE os.organization_id = $1 AND os.member_id = m.id)
         ORDER BY m.id LIMIT 1`,
-      [org, captainUser]
+      [orgId, captainUser]
     );
     outsiderUser = outsider[0]?.user_id ?? null;
+  });
+
+  afterAll(async () => {
+    await destroyOnboardingFixture(fixture);
   });
 
   it('has the fixtures it needs', () => {

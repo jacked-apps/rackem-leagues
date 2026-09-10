@@ -8,8 +8,8 @@
  * - Privacy (users can only see their own conversations)
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient } from '@/test/dbTestUtils';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createTestClient, executeSql } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -159,27 +159,74 @@ describe('Messages Table - RLS Tests', () => {
   let client: SupabaseClient<Database>;
   let testMessageId: string;
   let testConversationId: string;
+  let testSenderId: string;
 
   beforeAll(async () => {
     client = createTestClient();
 
-    // Get a test message — an editable USER message (not a system message:
-    // editing those is trigger-blocked, and other suites create system
-    // messages, so an unfiltered limit(1) flakes when it lands on one).
-    // Ordered for determinism.
-    const { data: message } = await client
+    // Build the conversation this suite works in. A freshly seeded database
+    // has no messages at all — they only exist once somebody has used the app
+    // — so reaching for "the oldest user message" found nothing. It also
+    // meant the update cases were editing a real message somebody had sent.
+    const conversation = await executeSql(
+      `INSERT INTO public.conversations (auto_managed, conversation_type, scope_type)
+       VALUES (false, NULL, 'none')
+       RETURNING id`
+    );
+    testConversationId = conversation[0].id;
+
+    // messages_is_system_shape requires a non-system message to name a sender.
+    const sender = await executeSql(
+      `SELECT id FROM public.members WHERE user_id IS NOT NULL ORDER BY id LIMIT 1`
+    );
+    if (sender.length === 0) {
+      throw new Error('messaging.rls needs a registered member to send as. Load the dev seed.');
+    }
+    testSenderId = sender[0].id;
+
+    const seedMessage = await executeSql(
+      `INSERT INTO public.messages (conversation_id, sender_id, content, is_system)
+       VALUES ($1, $2, 'rls suite fixture', false)
+       RETURNING id`,
+      [testConversationId, testSenderId]
+    );
+    testMessageId = seedMessage[0].id;
+  });
+
+  afterAll(async () => {
+    if (!testConversationId) return;
+    await executeSql(`DELETE FROM public.messages WHERE conversation_id = $1`, [testConversationId]);
+    await executeSql(`DELETE FROM public.conversation_participants WHERE conversation_id = $1`, [testConversationId]);
+    await executeSql(`DELETE FROM public.conversations WHERE id = $1`, [testConversationId]);
+  });
+
+  /**
+   * Create a message this test owns, in the shared test conversation.
+   *
+   * Edits and soft-deletes are gated by `check_edit_time_limit` (5 minutes)
+   * and `check_delete_time_limit` (15 minutes), both measured from
+   * created_at. The seeded message these tests reached for is the OLDEST one
+   * in the database, so those triggers rejected every edit with P0001 and the
+   * tests could not pass. Nothing noticed, because CI does not run the db
+   * project. A message created here is seconds old, which is the state a real
+   * user edits their own message in.
+   */
+  async function createOwnMessage(): Promise<string | null> {
+    if (!testConversationId) return null;
+
+    const { data } = await client
       .from('messages')
-      .select('id, conversation_id')
-      .eq('is_system', false)
-      .order('created_at', { ascending: true })
-      .limit(1)
+      .insert({
+        conversation_id: testConversationId,
+        sender_id: testSenderId,
+        content: 'rls test message',
+        is_system: false,
+      })
+      .select('id')
       .single();
 
-    if (message) {
-      testMessageId = message.id;
-      testConversationId = message.conversation_id;
-    }
-  });
+    return data?.id ?? null;
+  }
 
   describe('SELECT Operations', () => {
     it('should allow viewing messages', async () => {
@@ -232,26 +279,17 @@ describe('Messages Table - RLS Tests', () => {
         return;
       }
 
-      const { data: before } = await client
-        .from('messages')
-        .select('content')
-        .eq('id', testMessageId)
-        .single();
+      const ownId = await createOwnMessage();
+      if (!ownId) return;
 
       const { error } = await client
         .from('messages')
         .update({ content: 'Updated content' })
-        .eq('id', testMessageId);
+        .eq('id', ownId);
 
       expect(error).toBeNull();
 
-      // Restore
-      if (before) {
-        await client
-          .from('messages')
-          .update({ content: before.content })
-          .eq('id', testMessageId);
-      }
+      await client.from('messages').delete().eq('id', ownId);
     });
 
     it('should allow marking message as deleted', async () => {
@@ -260,26 +298,17 @@ describe('Messages Table - RLS Tests', () => {
         return;
       }
 
-      const { data: before } = await client
-        .from('messages')
-        .select('is_deleted')
-        .eq('id', testMessageId)
-        .single();
+      const ownId = await createOwnMessage();
+      if (!ownId) return;
 
       const { error } = await client
         .from('messages')
         .update({ is_deleted: true })
-        .eq('id', testMessageId);
+        .eq('id', ownId);
 
       expect(error).toBeNull();
 
-      // Restore
-      if (before) {
-        await client
-          .from('messages')
-          .update({ is_deleted: before.is_deleted })
-          .eq('id', testMessageId);
-      }
+      await client.from('messages').delete().eq('id', ownId);
     });
   });
 
