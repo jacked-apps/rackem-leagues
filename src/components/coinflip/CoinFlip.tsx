@@ -28,7 +28,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Coin } from './Coin';
-import { assignFaces, resolveFlip, shuffleOrder, tossCoin } from './flipCoin';
+import { assignFaces, QUICK_CALL, resolveFlip, shuffleOrder, tossCoin } from './flipCoin';
 import type { Call, Face, FaceAssignment, FlipResult, Participant, RandomSource } from './types';
 
 /** How long the assignment is on screen before the coin launches, in quick mode. */
@@ -126,7 +126,7 @@ export function CoinFlip({
     setAssignment(assigned);
     setPhase('assigned');
     timer.current = setTimeout(
-      () => launch('heads', assigned.heads, assigned.tails),
+      () => launch(QUICK_CALL, assigned.heads, assigned.tails),
       ASSIGNMENT_REVEAL_MS
     );
   }, [mode, participantA, participantB, random, launch]);

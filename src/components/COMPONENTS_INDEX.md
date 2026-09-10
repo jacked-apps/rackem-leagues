@@ -138,7 +138,18 @@ This document catalogs all reusable components in the application for easy disco
 ### `flipCoin.ts`
 **Purpose**: The rules of a coin flip, with no React and no ambient randomness
 **Use Cases**: Any caller that wants the outcome without the ceremony; also the reason the winner-selection rule is provable without rendering
-**Exports**: `tossCoin`, `resolveFlip`, `assignFaces`, `shuffleOrder`
+**Exports**: `tossCoin`, `resolveFlip`, `assignFaces`, `shuffleOrder`, `quickFlip`, `QUICK_CALL`
+
+> **`quickFlip(a, b, random?)` is the coin flip as a plain two-outcome randomizer.**
+> No React, no mounting, no animation — hand it two participants, get back a
+> `FlipResult` whose `winner.id` is an id you passed in. This is what a settings
+> option like "set a random breaker" calls, where the visible `CoinFlip` is what
+> "flip for the break" mounts. They are the SAME flip: `quickFlip` still assigns
+> faces before tossing even though nothing displays it, and a parity test pins
+> that both produce the same winner from the same source. Do not "optimize" the
+> assignment out of the silent path — that would quietly make them two different
+> flips, and an operator switching between the two options would change the odds
+> without anyone noticing.
 
 > **No way to force a result.** There is deliberately no prop that hands the
 > component a predetermined face. Such a seam has a legitimate use — a server or

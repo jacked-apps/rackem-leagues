@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CoinFlip } from '@/components/coinflip/CoinFlip';
+import { quickFlip } from '@/components/coinflip/flipCoin';
 import type { FlipResult, Participant } from '@/components/coinflip/types';
 
 const ED: Participant = { id: 'p1', name: 'Ed' };
@@ -98,7 +99,29 @@ export default function CoinFlipSandbox() {
 
       <Card>
         <CardHeader>
-          <CardTitle>onResult log ({log.length})</CardTitle>
+          <CardTitle>Silent flip — no UI at all</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            The same flip as a plain function call. Nothing mounts, nothing animates, nothing
+            is watched — it just returns a winner. This is what a &quot;set random breaker&quot;
+            setting would call. A test pins that it agrees with the visible flip.
+          </p>
+          <Button
+            loadingText="none"
+            onClick={() => {
+              const r = quickFlip(ED, JACK);
+              setLog((prev) => [`Silent flip → ${r.winner.name} wins (id ${r.winner.id}, landed ${r.face})`, ...prev]);
+            }}
+          >
+            Run silent flip
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Flip log ({log.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {log.length === 0 ? (

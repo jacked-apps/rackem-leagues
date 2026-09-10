@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { assignFaces, resolveFlip, shuffleOrder, tossCoin } from './flipCoin';
+import { assignFaces, quickFlip, resolveFlip, shuffleOrder, tossCoin } from './flipCoin';
 import type { Participant, RandomSource } from './types';
 
 const john: Participant = { id: 'p1', name: 'John' };
@@ -125,5 +125,54 @@ describe('shuffleOrder', () => {
       expect(first).toBeDefined();
       expect(result.winner).toEqual(john);
     }
+  });
+});
+
+describe('quickFlip — the silent two-outcome randomizer', () => {
+  it('names a winner and a loser with no DOM in sight', () => {
+    const result = quickFlip(john, mike, sequence(0, 0));
+
+    expect([john, mike]).toContainEqual(result.winner);
+    expect([john, mike]).toContainEqual(result.loser);
+    expect(result.winner).not.toEqual(result.loser);
+  });
+
+  it('hands back the same objects it was given, so ids survive the round trip', () => {
+    // The whole point for a caller: winner.id is the id you passed in, ready to
+    // write to a record. Not a coin face to interpret.
+    const result = quickFlip(john, mike, sequence(0, 0));
+
+    expect(result.winner.id).toMatch(/^p[12]$/);
+    expect(result.winner.name).toBe(result.winner === john ? 'John' : 'Mike');
+  });
+
+  it('is driven by the source at both boundaries', () => {
+    // Assignment then toss. Pinning both ends proves the source actually
+    // reaches the outcome rather than a fixed participant always winning.
+    // john holds heads, coin heads -> john.
+    expect(quickFlip(john, mike, sequence(0, 0)).winner).toEqual(john);
+    // john holds heads, coin tails -> mike.
+    expect(quickFlip(john, mike, sequence(0, 0.99)).winner).toEqual(mike);
+    // mike holds heads, coin heads -> mike.
+    expect(quickFlip(john, mike, sequence(0.99, 0)).winner).toEqual(mike);
+    // mike holds heads, coin tails -> john.
+    expect(quickFlip(john, mike, sequence(0.99, 0.99)).winner).toEqual(john);
+  });
+
+  it('lets each participant win across many runs', () => {
+    // Occurrence, never a ratio, so it cannot flake. Guards a silent flip that
+    // always picks the same side — the failure a caller would never notice.
+    const winners = new Set<string>();
+    for (let i = 0; i < 200; i++) winners.add(quickFlip(john, mike).winner.id);
+
+    expect(winners).toEqual(new Set(['p1', 'p2']));
+  });
+
+  it('reports the call it made on the players behalf', () => {
+    // Nobody nominated a side, so the app called heads for the heads holder.
+    const result = quickFlip(john, mike, sequence(0, 0));
+
+    expect(result.call).toBe('heads');
+    expect(result.callerId).toBe(result.face === 'heads' ? result.winner.id : result.loser.id);
   });
 });

@@ -12,6 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { CoinFlip } from './CoinFlip';
+import { quickFlip } from './flipCoin';
 import type { Participant, RandomSource } from './types';
 
 const john: Participant = { id: 'p1', name: 'John' };
@@ -337,6 +338,39 @@ describe('CoinFlip — quick mode', () => {
 
     expect(onResult).toHaveBeenCalledTimes(1);
     expect(screen.getByText(`${onResult.mock.calls[0][0].winner.name} wins the flip`)).toBeInTheDocument();
+  });
+});
+
+describe('CoinFlip — silent and visible flips agree', () => {
+  // The silent quickFlip and the mounted component must be the SAME flip, not
+  // two implementations that happen to look alike. If they ever diverge, an
+  // operator who switches a league from 'flip a coin' to 'set random breaker'
+  // silently changes the odds — the kind of thing nobody would think to check.
+  //
+  // The component draws one extra value first for its cosmetic display-order
+  // shuffle, so the sources are offset by ORDER and otherwise identical.
+  it.each([
+    [0, 0],
+    [0, 0.99],
+    [0.99, 0],
+    [0.99, 0.99],
+  ])('agrees with quickFlip for assignment %s and toss %s', async (assign, toss) => {
+    const { unmount } = render(
+      <CoinFlip
+        participantA={john}
+        participantB={mike}
+        mode="quick"
+        random={sequence(ORDER, assign, toss)}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quick flip' }));
+    settle();
+
+    const silent = quickFlip(john, mike, sequence(assign, toss));
+    expect(screen.getByText(`${silent.winner.name} wins the flip`)).toBeInTheDocument();
+
+    unmount();
   });
 });
 

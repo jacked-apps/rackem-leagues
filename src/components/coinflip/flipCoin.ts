@@ -120,3 +120,49 @@ export function shuffleOrder(
 ): [Participant, Participant] {
   return random() < 0.5 ? [a, b] : [b, a];
 }
+
+/**
+ * The call a quick flip makes on the player's behalf.
+ *
+ * In a quick flip nobody nominates a side, so the app calls heads for whoever
+ * was assigned heads. Shared by the component and by `quickFlip` below so the
+ * two cannot drift into different conventions.
+ */
+export const QUICK_CALL: Call = 'heads';
+
+/**
+ * Run a whole quick flip and return the winner. No React, no UI, no waiting.
+ *
+ * This is the coin flip as a plain two-outcome randomizer, for the times the
+ * system needs a fair pick between two sides without anyone watching it happen
+ * — "set a random breaker" rather than "flip for the break". Callers that DO
+ * want it watched mount `CoinFlip` instead; this is the same decision with the
+ * ceremony removed, not a different one.
+ *
+ * It deliberately still assigns faces before tossing, even though nothing is on
+ * screen to perceive that assignment. Keeping the steps identical to the
+ * visual path is what makes the two provably the same flip: given the same
+ * random source, this function and the mounted component produce the same
+ * winner, and a test pins exactly that. Skipping the assignment here would save
+ * one call and quietly make the silent and visible flips two different things.
+ *
+ * @param a - One participant.
+ * @param b - The other participant.
+ * @param random - Source of randomness in [0, 1). Defaults to `Math.random`.
+ * @returns The settled result, including who lost and what the coin did.
+ *
+ * @example
+ * // Pick a breaker with no ceremony, then persist it.
+ * const { winner } = quickFlip(homePlayer, awayPlayer);
+ * // winner.id is the id you passed in — write it straight to the game record.
+ */
+export function quickFlip(
+  a: Participant,
+  b: Participant,
+  random: RandomSource = Math.random
+): FlipResult {
+  const assignment = assignFaces(a, b, random);
+  const face = tossCoin(random);
+
+  return resolveFlip(QUICK_CALL, face, assignment.heads, assignment.tails);
+}
