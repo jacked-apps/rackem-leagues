@@ -199,23 +199,47 @@ describe('race engine', () => {
     });
   });
 
-  it('clears the opponent’s confirmation when the result is changed', async () => {
+  it('lets a player correct their own entry before the other has agreed', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c);
       await login(c, homeUser);
       await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
       await rpc(c, `SELECT record_race_game($1, 1, $2)`, [raceId, homeMember]);
-      await login(c, awayUser);
-      await rpc(c, `SELECT confirm_race_game($1, 1)`, [raceId]);
+      // Wrong name tapped. Nobody has agreed yet, so this is a retype, not a
+      // reversal — needing a vacate here would trap the pair on a typo.
+      const out = await rpc(c, `SELECT record_race_game($1, 1, $2)`, [raceId, awayMember]);
 
-      // Home changes their mind about who won.
+      expect(out.ok).toBe(true);
+      const g = await games(c, raceId);
+      expect(g[0].winner_player_id).toBe(awayMember);
+    });
+  });
+
+  it('clears the first player’s vouch when the opponent enters a different result', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c);
       await login(c, homeUser);
+      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await rpc(c, `SELECT record_race_game($1, 1, $2)`, [raceId, homeMember]);
+
+      // Away does not agree — instead of confirming, they enter the other
+      // result. Home vouched for something else, and that vouch must not
+      // silently attach to a result they never saw.
+      await login(c, awayUser);
       await rpc(c, `SELECT record_race_game($1, 1, $2)`, [raceId, awayMember]);
 
       const g = await games(c, raceId);
-      // Away agreed to the OLD result; that agreement must not carry over.
-      expect(g[0].confirmed_by_away).toBeNull();
-      expect(g[0].confirmed_by_home).toBe(homeMember);
+      expect(g[0].winner_player_id).toBe(awayMember);
+      expect(g[0].confirmed_by_home).toBeNull();
+      expect(g[0].confirmed_by_away).toBe(awayMember);
+      // Both attempts survive in the record — this is the disagreement the
+      // many-eyes layer exists to surface, not something to overwrite away.
+      const res = await c.query(
+        `SELECT count(*)::int AS n FROM race_confirmations
+          WHERE race_id = $1 AND game_number = 1 AND action = 'confirm'`,
+        [raceId]
+      );
+      expect(res.rows[0].n).toBe(2);
     });
   });
 
@@ -355,44 +379,97 @@ describe('race engine', () => {
     expect(rows[0].acl).not.toMatch(/authenticated=X/);
   });
 
-  // --- the subtle one -----------------------------------------------------
+  // --- linear play --------------------------------------------------------
 
-  it('names whoever reached their goal FIRST in game order, not whoever has the wins', async () => {
+  it('refuses to wipe anything but the last game played', async () => {
     await inTx(async (c) => {
-      const raceId = await makeRace(c, { goalHome: 3, goalAway: 3 });
+      const raceId = await makeRace(c, { goalHome: 5, goalAway: 5 });
       await login(c, homeUser);
       await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await playGame(c, raceId, 1, homeMember);
+      await playGame(c, raceId, 2, awayMember);
+      await playGame(c, raceId, 3, homeMember);
+      await playGame(c, raceId, 4, awayMember);
+      await playGame(c, raceId, 5, homeMember);
 
-      // home, home, away, away, away — away gets there at game 5.
+      await login(c, homeUser);
+      const out = await rpc(c, `SELECT vacate_race_game($1, 3)`, [raceId]);
+      expect(out.ok).toBe(false);
+      expect(out.reason).toBe('not_last_game');
+      expect(out.last_game).toBe(5);
+    });
+  });
+
+  it('fixes game 3 of 5 by reversing 5, then 4, then 3', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c, { goalHome: 5, goalAway: 5 });
+      await login(c, homeUser);
+      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await playGame(c, raceId, 1, homeMember);
+      await playGame(c, raceId, 2, awayMember);
+      await playGame(c, raceId, 3, homeMember);
+      await playGame(c, raceId, 4, awayMember);
+      await playGame(c, raceId, 5, homeMember);
+
+      // Walk back to game 3, one game at a time.
+      await login(c, homeUser);
+      for (const n of [5, 4, 3]) {
+        const out = await rpc(c, `SELECT vacate_race_game($1, $2)`, [raceId, n]);
+        expect(out.ok).toBe(true);
+      }
+
+      // Game 3 was actually the other player's. Re-score it and play forward.
+      await playGame(c, raceId, 3, awayMember);
+
+      const g = await games(c, raceId);
+      expect(g[2].winner_player_id).toBe(awayMember);
+      // Back to three games played, with game 4 up next — the rows match what
+      // actually happened, with nothing stranded above them.
+      expect(g.length).toBe(4);
+      expect(g[3].winner_player_id).toBeNull();
+
+      const res = await c.query(`SELECT * FROM race_standing($1)`, [raceId]);
+      expect(res.rows[0]).toMatchObject({ home_won: 1, away_won: 2, winner_player_id: null });
+    });
+  });
+
+  it('refuses a result on any game but the next one to be played', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c);
+      await login(c, homeUser);
+      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await playGame(c, raceId, 1, homeMember);
+
+      // Game 1 is settled and game 2 is waiting. Changing game 1 means
+      // vacating it first, not overwriting it.
+      await login(c, homeUser);
+      const out = await rpc(c, `SELECT record_race_game($1, 1, $2)`, [raceId, awayMember]);
+      expect(out.ok).toBe(false);
+      expect(out.reason).toBe('not_next_game');
+      expect(out.next_game).toBe(2);
+
+      const g = await games(c, raceId);
+      expect(g[0].winner_player_id).toBe(homeMember); // untouched
+    });
+  });
+
+  it('un-finishes, then re-finishes, when the deciding game is re-scored', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c, { goalHome: 2, goalAway: 2 });
+      await login(c, homeUser);
+      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
       await playGame(c, raceId, 1, homeMember);
       await playGame(c, raceId, 2, homeMember);
-      await playGame(c, raceId, 3, awayMember);
-      await playGame(c, raceId, 4, awayMember);
-      await playGame(c, raceId, 5, awayMember);
-      expect(await raceRow(c, raceId)).toMatchObject({ winner_player_id: awayMember });
+      expect(await raceRow(c, raceId)).toMatchObject({ winner_player_id: homeMember });
 
-      // Game 3 was wrong. Wipe it and re-score it to home.
-      await login(c, homeUser);
-      await rpc(c, `SELECT vacate_race_game($1, 3)`, [raceId]);
-      await playGame(c, raceId, 3, homeMember);
+      await login(c, awayUser);
+      await rpc(c, `SELECT vacate_race_game($1, 2)`, [raceId]);
+      expect(await raceRow(c, raceId)).toMatchObject({ status: 'in_play' });
 
-      // Home now has games 1, 2, 3 — they reached 3 at game 3, before away's
-      // wins in games 4 and 5 happened. A naive count would say 3-2 to home
-      // and pick the right winner for the wrong reason; the announced score
-      // excludes everything after the deciding game.
-      expect(await raceRow(c, raceId)).toMatchObject({
-        status: 'finished',
-        winner_player_id: homeMember,
-      });
-      const res = await c.query(`SELECT * FROM race_standing($1)`, [raceId]);
-      expect(res.rows[0]).toMatchObject({
-        home_won: 3,
-        away_won: 0,
-        winner_player_id: homeMember,
-        decided_at_game: 3,
-      });
-      // The games after it are still there — they really were played.
-      expect((await games(c, raceId)).length).toBe(5);
+      await playGame(c, raceId, 2, awayMember);
+      // 1-1 now, so the race is live again and has grown a game 3.
+      expect(await raceRow(c, raceId)).toMatchObject({ status: 'in_play' });
+      expect((await games(c, raceId)).length).toBe(3);
     });
   });
 });

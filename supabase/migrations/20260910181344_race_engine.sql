@@ -16,12 +16,19 @@
 -- confirmation that satisfied the gate, after a FOR UPDATE lock on the race
 -- row, with the unique constraint on (race_id, game_number) as the backstop.
 --
--- WHY "FIRST TO REACH THEIR GOAL IN GAME ORDER" IS NOT THE SAME AS "HAS ENOUGH
--- WINS". Re-scoring a vacated middle game can push a player to their goal at an
--- earlier game number while later games still exist. The winner is whoever got
--- there first in game order; games after that point stay as history and are
--- excluded from the announced score. This matters more with unequal goals,
--- where it also decides which side got there first.
+-- WHY A RACE IS LINEAR. Two people play a race; both are at the table for all of
+-- it. Nobody is off playing a different game, so games cannot be played or
+-- entered out of order — which is the whole reason a round-robin match night
+-- allows it (someone is in the bathroom and must not stall the other 24 games).
+-- So a race is a straight line:
+--
+--   * a result may be entered only on the EARLIEST game that has none
+--   * a result may be wiped only on the LATEST game that has one
+--
+-- To fix game 3 of 5, you reverse 5, then 4, then 3. That is deliberately
+-- stricter than the league's per-game vacate, and it is what keeps the score a
+-- simple count: the played games are always an unbroken run from game 1, so
+-- "reached their goal" can never mean two different things.
 --
 -- These functions are the ONLY way to write these tables — the tables
 -- themselves are SELECT-only for anon and authenticated (see the races
@@ -62,56 +69,43 @@ RETURNS TABLE (home_won integer, away_won integer, winner_player_id uuid, decide
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'
 AS $$
 DECLARE
-  v_race    races%ROWTYPE;
-  v_game    RECORD;
-  v_home    integer := 0;
-  v_away    integer := 0;
+  v_race races%ROWTYPE;
 BEGIN
   SELECT * INTO v_race FROM races WHERE id = p_race_id;
   IF NOT FOUND THEN
     RETURN;
   END IF;
 
-  home_won := 0; away_won := 0; winner_player_id := NULL; decided_at_game := NULL;
+  -- Official games only: both sides confirmed. Because play is linear, these
+  -- are always an unbroken run from game 1, so counting them is enough — there
+  -- is no arrangement where one side "got there first" by a different route.
+  SELECT
+    coalesce(count(*) FILTER (WHERE g.winner_player_id = v_race.home_member_id), 0),
+    coalesce(count(*) FILTER (WHERE g.winner_player_id = v_race.away_member_id), 0),
+    max(g.game_number)
+  INTO home_won, away_won, decided_at_game
+  FROM race_games g
+  WHERE g.race_id = p_race_id
+    AND g.winner_player_id IS NOT NULL
+    AND g.confirmed_by_home IS NOT NULL
+    AND g.confirmed_by_away IS NOT NULL;
 
-  FOR v_game IN
-    SELECT g.game_number, g.winner_player_id AS wpid
-    FROM race_games g
-    WHERE g.race_id = p_race_id
-      AND g.winner_player_id IS NOT NULL
-      AND g.confirmed_by_home IS NOT NULL
-      AND g.confirmed_by_away IS NOT NULL
-    ORDER BY g.game_number
-  LOOP
-    IF v_game.wpid = v_race.home_member_id THEN
-      v_home := v_home + 1;
-    ELSE
-      v_away := v_away + 1;
-    END IF;
+  IF home_won >= v_race.goal_home THEN
+    winner_player_id := v_race.home_member_id;
+  ELSIF away_won >= v_race.goal_away THEN
+    winner_player_id := v_race.away_member_id;
+  ELSE
+    winner_player_id := NULL;
+    decided_at_game  := NULL; -- nobody is there yet; no game decided anything
+  END IF;
 
-    -- Stop counting at the moment someone reaches their number. Later games
-    -- are real history but are not part of the announced score.
-    IF winner_player_id IS NULL AND v_home >= v_race.goal_home THEN
-      winner_player_id := v_race.home_member_id;
-      decided_at_game  := v_game.game_number;
-    ELSIF winner_player_id IS NULL AND v_away >= v_race.goal_away THEN
-      winner_player_id := v_race.away_member_id;
-      decided_at_game  := v_game.game_number;
-    END IF;
-
-    IF winner_player_id IS NOT NULL THEN
-      home_won := v_home; away_won := v_away;
-      RETURN NEXT; RETURN;
-    END IF;
-  END LOOP;
-
-  home_won := v_home; away_won := v_away;
   RETURN NEXT;
 END;
 $$;
 
+
 COMMENT ON FUNCTION "public"."race_standing"(uuid) IS
-'The announced score plus who (if anyone) reached their goal FIRST in game order. Counts only official games — both sides confirmed. Games played after the deciding game are history, not score.';
+'The announced score plus who (if anyone) has reached their goal. Counts only official games — both sides confirmed. A plain count is correct because play is linear: the played games are always an unbroken run from game 1.';
 
 
 -- Who breaks game N, from the race's break rule. Called only by the append, so
@@ -310,6 +304,7 @@ DECLARE
   v_race   races%ROWTYPE;
   v_side   text;
   v_game   race_games%ROWTYPE;
+  v_next   integer;
 BEGIN
   SELECT * INTO v_race FROM races WHERE id = p_race_id FOR UPDATE;
   IF NOT FOUND THEN
@@ -333,6 +328,22 @@ BEGIN
   WHERE race_id = p_race_id AND game_number = p_game_number;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('ok', false, 'reason', 'no_such_game');
+  END IF;
+
+  -- Linear play, entry end: a result goes on the earliest game that is not yet
+  -- SETTLED (both sides confirmed). Not "has no result" — that would trap the
+  -- pair the moment one of them taps the wrong name, since the fix would need a
+  -- vacate before the opponent had even agreed. This still blocks changing a
+  -- settled game, which is what the reversal rule is actually protecting.
+  SELECT min(g.game_number) INTO v_next
+  FROM race_games g
+  WHERE g.race_id = p_race_id
+    AND (g.winner_player_id IS NULL
+         OR g.confirmed_by_home IS NULL
+         OR g.confirmed_by_away IS NULL);
+
+  IF v_next IS DISTINCT FROM p_game_number THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'not_next_game', 'next_game', v_next);
   END IF;
 
   -- Entering a result replaces whatever was there and RESETS the other side's
@@ -457,6 +468,7 @@ DECLARE
   v_race   races%ROWTYPE;
   v_side   text;
   v_game   race_games%ROWTYPE;
+  v_last   integer;
 BEGIN
   SELECT * INTO v_race FROM races WHERE id = p_race_id FOR UPDATE;
   IF NOT FOUND THEN
@@ -476,6 +488,16 @@ BEGIN
 
   IF v_game.winner_player_id IS NULL THEN
     RETURN jsonb_build_object('ok', true, 'reason', 'already_empty');
+  END IF;
+
+  -- Linear play, wipe end: only the last game with a result comes off. To fix
+  -- game 3 of 5, reverse 5, then 4, then 3. The room disables the button on
+  -- every other game; this is what makes that a rule rather than a nudge.
+  SELECT max(g.game_number) INTO v_last
+  FROM race_games g WHERE g.race_id = p_race_id AND g.winner_player_id IS NOT NULL;
+
+  IF v_last IS DISTINCT FROM p_game_number THEN
+    RETURN jsonb_build_object('ok', false, 'reason', 'not_last_game', 'last_game', v_last);
   END IF;
 
   -- The vacate marker goes in BEFORE the wipe, carrying the result being
@@ -502,8 +524,18 @@ BEGIN
       vacate_requested_by = v_side, updated_at = now()
   WHERE id = v_game.id;
 
-  -- Games played after this one stay — they really were played. But the score
-  -- has dropped, so a finished race becomes unfinished again.
+  -- Sweep any empty rows above this one. Linear play means every game after
+  -- the one being wiped is already empty — the game the race had grown ready
+  -- for, and any left by an earlier step of the same walk-back. Leaving them
+  -- would make the race look like it had games waiting that nobody can reach,
+  -- and breaks the rule that a game which was never played is never a row.
+  DELETE FROM race_games
+  WHERE race_id = p_race_id
+    AND game_number > p_game_number
+    AND winner_player_id IS NULL;
+
+  -- The score has dropped, so a finished race becomes unfinished again, and
+  -- the wiped game becomes the one being played.
   PERFORM race_advance(p_race_id);
 
   RETURN jsonb_build_object('ok', true);
@@ -511,7 +543,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION "public"."vacate_race_game"(uuid, integer) IS
-'Wipe a game''s result so it can be entered again. Games played after it remain — they really were played — but the race un-finishes if the score drops back under the goal.';
+'Wipe a game''s result so it can be entered again. Only the LAST game with a result — a race is linear, so fixing game 3 of 5 means reversing 5, then 4, then 3. The race un-finishes if the score drops back under the goal.';
 
 
 -- ============================================================================
