@@ -181,6 +181,33 @@ describe('Messages Table - RLS Tests', () => {
     }
   });
 
+  /**
+   * Create a message this test owns, in the shared test conversation.
+   *
+   * Edits and soft-deletes are gated by `check_edit_time_limit` (5 minutes)
+   * and `check_delete_time_limit` (15 minutes), both measured from
+   * created_at. The seeded message these tests reached for is the OLDEST one
+   * in the database, so those triggers rejected every edit with P0001 and the
+   * tests could not pass. Nothing noticed, because CI does not run the db
+   * project. A message created here is seconds old, which is the state a real
+   * user edits their own message in.
+   */
+  async function createOwnMessage(): Promise<string | null> {
+    if (!testConversationId) return null;
+
+    const { data } = await client
+      .from('messages')
+      .insert({
+        conversation_id: testConversationId,
+        content: 'rls test message',
+        is_system: false,
+      })
+      .select('id')
+      .single();
+
+    return data?.id ?? null;
+  }
+
   describe('SELECT Operations', () => {
     it('should allow viewing messages', async () => {
       const { data, error } = await client
@@ -232,26 +259,17 @@ describe('Messages Table - RLS Tests', () => {
         return;
       }
 
-      const { data: before } = await client
-        .from('messages')
-        .select('content')
-        .eq('id', testMessageId)
-        .single();
+      const ownId = await createOwnMessage();
+      if (!ownId) return;
 
       const { error } = await client
         .from('messages')
         .update({ content: 'Updated content' })
-        .eq('id', testMessageId);
+        .eq('id', ownId);
 
       expect(error).toBeNull();
 
-      // Restore
-      if (before) {
-        await client
-          .from('messages')
-          .update({ content: before.content })
-          .eq('id', testMessageId);
-      }
+      await client.from('messages').delete().eq('id', ownId);
     });
 
     it('should allow marking message as deleted', async () => {
@@ -260,26 +278,17 @@ describe('Messages Table - RLS Tests', () => {
         return;
       }
 
-      const { data: before } = await client
-        .from('messages')
-        .select('is_deleted')
-        .eq('id', testMessageId)
-        .single();
+      const ownId = await createOwnMessage();
+      if (!ownId) return;
 
       const { error } = await client
         .from('messages')
         .update({ is_deleted: true })
-        .eq('id', testMessageId);
+        .eq('id', ownId);
 
       expect(error).toBeNull();
 
-      // Restore
-      if (before) {
-        await client
-          .from('messages')
-          .update({ is_deleted: before.is_deleted })
-          .eq('id', testMessageId);
-      }
+      await client.from('messages').delete().eq('id', ownId);
     });
   });
 

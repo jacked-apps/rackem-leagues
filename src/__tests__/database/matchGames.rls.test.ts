@@ -216,21 +216,22 @@ describe('Match Games Table - RLS Tests', () => {
         return;
       }
 
-      // Get a player from the match
-      const { data: game } = await client
-        .from('match_games')
-        .select('home_player_id')
-        .eq('id', testGameId)
-        .single();
-
-      if (!game?.home_player_id) return;
-
+      // vacate_requested_by names the SIDE that asked, not the player: it is
+      // varchar(4) with a CHECK of ('home','away'). Writing a player id here
+      // fails with 22001 (value too long) — which is what this test did until
+      // the column's meaning changed underneath it.
       const { error } = await client
         .from('match_games')
-        .update({ vacate_requested_by: game.home_player_id })
+        .update({ vacate_requested_by: 'home' })
         .eq('id', testGameId);
 
       expect(error).toBeNull();
+
+      // Put it back, so the next run does not inherit a pending vacate.
+      await client
+        .from('match_games')
+        .update({ vacate_requested_by: null })
+        .eq('id', testGameId);
     });
   });
 
