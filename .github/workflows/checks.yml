@@ -195,6 +195,17 @@ jobs:
 
       - name: Run database tests
         run: pnpm test:db
+        env:
+          # `src/supabaseClient.ts` builds a client at IMPORT time from these,
+          # so every test file that transitively imports an app module dies at
+          # collection without them — "supabaseUrl is required", nothing to do
+          # with the database itself. The unit job passes placeholders because
+          # it mocks supabase-js; here the calls are real, so these are the
+          # actual local values. Not secrets: the anon key is the same demo key
+          # `supabase start` prints and `src/test/dbTestUtils.ts` already
+          # hardcodes, and it only ever addresses a throwaway local stack.
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
 
   typecheck:
     name: Typecheck + build
