@@ -1,101 +1,135 @@
 ---
-title: 'Game Room — two players decide something between themselves'
+title: 'Game Room — a host for two-player games, of which the coin flip is the first'
 date: 2026-09-10
 status: settled
 ---
 
-# Game Room — two players decide something between themselves
+# Game Room — a host for two-player games
 
 A room reached from the profile page where a member challenges another member
-to settle something. The first question it settles is **who breaks**, and the
-coin flip is how it settles it.
+and they play something. Two players, two devices, one agreed outcome.
 
-Two players, two devices, one outcome. Not a pass-the-phone toy.
+**The coin flip is the first tenant, not the design.** The room will hold
+matches with many games in them, and anything else two members need to settle
+between themselves. Nothing below is allowed to assume a game finishes in one
+step.
 
-## The model: this is the scoring page's confirmation flow
+## The runtime knows nothing about the game
 
-The app already has a proven answer for "two people must agree about a thing
-that just happened", and it is the live scoring page. The Game Room copies it
-rather than inventing a second vocabulary for the same idea.
+The principle already applied to scoring systems: the thing that runs a game
+never branches on which game it is. It hosts a session, records events, and
+enforces that both players agree about each one. It asks the game whether the
+session is finished; it never works that out itself.
 
-How scoring does it:
+A design with `if (game === coin_flip)` anywhere in the runtime has already
+failed, because the second game then has to be threaded through every one of
+those branches.
 
-| Scoring | Game Room |
+So there are two layers, and the seam between them is the whole design:
+
+**The room** — invitations, acceptance, an append-only event log, per-event
+two-sided confirmation, whose turn it is, realtime, and abandonment. Every one
+of these is identical for a coin flip and for a race to seven.
+
+**The game** — how many events make a session, what an event contains, who may
+produce one, whether the outcome is decided by a player or by the server, and
+when it is over. This is the only part that changes per game, and it is
+declared rather than coded into the room.
+
+## The model: this is the scoring page, generalised
+
+The app already solves "two people must agree about something that just
+happened", and it is the live scoring page. The room is that pattern lifted up
+one level so it is not tied to league matches.
+
+| Scoring page today | The room |
 |---|---|
-| One side reports a game result | One side proposes a challenge |
-| It appears on the opponent's device and asks them to confirm | It appears on the opponent's device and asks them to accept |
-| `confirmed_by_home` / `confirmed_by_away` — a column per side | `accepted_by` / acknowledgement per side |
-| Official only when BOTH are filled | Settled only when BOTH have acknowledged |
-| `vacate_requested_by` — either side asks to undo, the other must agree | `redo_requested_by` — either side asks to re-flip, the other must agree |
-| `game_confirmations` — append-only record of every vouch | append-only record of every step |
+| A match | A session |
+| `match_games` — many rows per match | Events — many per session |
+| One side reports a game result | One side produces an event |
+| `confirmed_by_home` / `confirmed_by_away` per GAME | A confirmation per side, per EVENT |
+| Official only when both are filled | Settled only when both are filled |
+| `vacate_requested_by` — either side asks to undo, the other agrees | Same, per event |
+| `game_confirmations` — append-only vouch history | Append-only event history |
 | Realtime pushes the ask to the other device | Realtime pushes the ask to the other device |
 
-Same shape, same guarantees, and a player who has scored a match already knows
-how to use it.
+This is the part that matters for "matches with games and such":
+**confirmation belongs to the event, not the session.** A coin flip is a
+session with one event to agree about. A race to seven is a session with
+seven. The room does not care which — it keeps asking both players to agree
+about the next thing, until the game says it is done.
 
-## The flow
+Getting this wrong is the trap. If a session carried a single result and a
+single pair of confirmations, the coin flip would work and every real match
+would need the schema rebuilt.
 
-1. **Propose.** A picks B and proposes a coin flip for the break. Proposing is
-   A's half of the agreement — nobody has to confirm their own challenge.
-2. **The ask arrives.** B's device shows it, the way an opponent's score
-   arrives during scoring. Accept or decline.
-3. **The coin is thrown once.** On acceptance the **database** decides the
-   result and writes it. Both devices display what the row says.
-4. **Both acknowledge.** Each player taps to say they saw it. Only when both
-   have is it settled — the same "official when both sides are filled" rule
-   scoring uses.
-5. **Either side may ask for a re-flip**, and the other must agree, exactly as
-   a vacate works during scoring.
+## Turn order exists even where it is unused
 
-## Why the database throws the coin
+Games with turns need to know whose it is. A coin flip has none. The session
+carries a current-actor that a turn-free game leaves empty — cheap now, and it
+avoids a migration the first time a game needs it.
 
-The one thing that cannot be got wrong: **if each phone flips its own coin,
-the two phones disagree about who won.** The outcome is decided once, by the
-one participant neither player controls, and both devices are told.
+## Who decides an outcome
 
-This is the seam removed from `CoinFlip` on 2026-09-09 — a way to hand the
-component a predetermined result to display. It was cut because nothing used
-it and its only demonstrable use was rigging a flip. This is the caller that
-justifies it, and it comes back pointed at the server, which is the version a
-player cannot lean on. The component keeps knowing nothing: it is handed an
-outcome and animates it.
+Some events are reported by a player: *I won that game.* Others must not be
+decided by either device — a coin flip is worthless if the phone that threw it
+chose the answer. So an event declares where its outcome comes from: a player,
+or the server.
 
-## What already exists and is reused, not rebuilt
+Server-decided events are generated by the database as the event is created.
+Both devices then display what the row says rather than working anything out.
 
-- **The opponent picker.** `NewMessageModal` already searches every registered
-  member, excludes blocked users and yourself, and offers All / My Leagues /
-  My Teams. Challenging someone is that component with a different verb.
-- **Realtime.** `useMatchRealtime` — subscription lifecycle, reconnect
-  handling, and a `live | reconnecting | error` status the UI can show.
-  `brackets`, `messages` and `game_confirmations` are already on the
-  publication; the challenge table joins them.
-- **The confirmation UI.** `ConfirmationDialog` is deliberately dumb — it
-  renders what it is given and delegates every decision to its caller. A
-  challenge ask is another thing to hand it.
-- **The coin flip.** Finished and tested, and knows nothing about leagues or
-  matches, which is exactly why it drops in here unchanged apart from being
-  handed its result.
-- **Blocking.** `blocked_users` exists and the picker honours it. A blocked
-  member cannot challenge you.
+For the coin flip this is the seam removed from `CoinFlip` on 2026-09-09 — a
+way to hand the component a predetermined result. It was cut because nothing
+used it and its only demonstrable use was rigging a flip. It returns pointed
+at the server, which is the version a player cannot lean on, and the component
+keeps knowing nothing: it is handed an outcome and animates it.
 
-## Reaching someone who isn't looking
+## The flow, in the general form
 
-`push_type_policy` has only `direct` enabled in production. A challenge
-therefore rides on a direct message for now, which works today and costs
-nothing. Its own push kind is a later refinement, and a later thing for a
-member to have to mute.
+1. **Propose.** A picks B and a game. Proposing is A's half of the agreement.
+2. **The ask arrives** on B's device, the way an opponent's score does now.
+   Accept or decline.
+3. **Events happen** until the game says the session is complete. Each is
+   produced by whoever the game says may produce it, and each is agreed by
+   both sides before it counts.
+4. **Either side may ask to undo an event**, and the other must agree —
+   exactly as a vacate works during scoring.
 
-## Deliberately out of scope
+For a coin flip, step 3 happens once and the server produces it. For a match,
+step 3 repeats and the players produce it. Same room.
 
-- More than two players.
-- Anything turn-based. A coin flip resolves in one step; a game with turns
-  needs a move log and a whose-turn-is-it rule, which is a different and much
-  larger design. The room is built for one-step decisions first.
-- Stakes, scores, history, rematches, leaderboards, spectators.
+## What is reused rather than rebuilt
 
-## Why it is worth more than the coin flip
+- **The opponent picker** — `NewMessageModal` already searches every
+  registered member, excludes yourself and blocked users, and offers All / My
+  Leagues / My Teams. Challenging is that component with a different verb.
+- **Realtime** — the `useMatchRealtime` pattern: subscription lifecycle,
+  reconnect handling, and a `live | reconnecting | error` status worth showing.
+- **The confirmation UI** — `ConfirmationDialog` renders what it is given and
+  delegates every decision to its caller, which is exactly the posture a
+  game-agnostic room needs.
+- **Blocking** — `blocked_users` exists and the picker honours it.
 
-Two members settling something between themselves — who breaks, who racks, who
-buys — is the shape of most of what a league argues about. A room that can
-host one two-player decision can host the next one. The coin flip is the
-cheapest possible first tenant to prove the plumbing.
+## Reaching someone who is not looking
+
+`push_type_policy` has only `direct` enabled in production, so an invitation
+rides on a direct message for now. Its own push kind is a later refinement,
+and a later thing for a member to have to mute.
+
+## Deliberately out of scope for the first build
+
+- More than two players. The room is built for two; three is a different
+  problem, and pretending otherwise now would cost more than it saves.
+- A workshop for defining games. Games are declared in code to begin with.
+  Moving those declarations into the database is the same journey the scoring
+  systems are on, and the room should be able to follow it later without
+  changing shape.
+- Stakes, ratings, history, rematches, leaderboards, spectators.
+
+## Why this is worth building
+
+Two members settling something between themselves is the shape of most of what
+a league argues about. The coin flip is the cheapest possible first tenant —
+one event, no turns, server-decided — which makes it a good way to prove the
+plumbing without the plumbing being about coin flips.
