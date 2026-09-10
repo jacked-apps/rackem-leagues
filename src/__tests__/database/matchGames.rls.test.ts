@@ -5,8 +5,8 @@
  * Players need to be able to update scores for matches they participate in.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient } from '@/test/dbTestUtils';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createTestClient, executeSql } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -18,17 +18,40 @@ describe('Match Games Table - RLS Tests', () => {
   beforeAll(async () => {
     client = createTestClient();
 
-    // Get a test game from the database
-    const { data: game } = await client
-      .from('match_games')
-      .select('id, match_id')
-      .limit(1)
-      .single();
-
-    if (game) {
-      testGameId = game.id;
-      testMatchId = game.match_id;
+    // Build the match and game rather than taking whichever one came back
+    // first. Games are only written at lineup lock, so a freshly seeded
+    // database has none at all and this suite had nothing to work with — and
+    // when it DID find one, the update cases below were writing to a real
+    // seeded game and leaving the change behind.
+    const week = await executeSql(
+      `SELECT id AS week_id, season_id FROM public.season_weeks ORDER BY id LIMIT 1`
+    );
+    if (week.length === 0) {
+      throw new Error('matchGames.rls needs a season week. Load the dev seed.');
     }
+
+    const match = await executeSql(
+      `INSERT INTO public.matches (season_id, season_week_id, match_number, status)
+       VALUES ($1, $2, 9902, 'scheduled')
+       RETURNING id`,
+      [week[0].season_id, week[0].week_id]
+    );
+    testMatchId = match[0].id;
+
+    const game = await executeSql(
+      `INSERT INTO public.match_games
+         (match_id, game_number, home_action, away_action, game_type)
+       VALUES ($1, 1, 'breaks', 'racks', 'eight_ball')
+       RETURNING id`,
+      [testMatchId]
+    );
+    testGameId = game[0].id;
+  });
+
+  afterAll(async () => {
+    if (!testMatchId) return;
+    await executeSql(`DELETE FROM public.match_games WHERE match_id = $1`, [testMatchId]);
+    await executeSql(`DELETE FROM public.matches WHERE id = $1`, [testMatchId]);
   });
 
   describe('SELECT Operations', () => {

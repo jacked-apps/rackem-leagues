@@ -170,18 +170,24 @@ jobs:
       - name: Start Supabase
         run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,mailpit,storage-api,realtime
 
-      # `supabase start` applies migrations but NOT the seed — config.toml has
-      # [db.seed] disabled, because local development restores from dumps
-      # instead. The db tests need real rows, so load it explicitly.
+      # `supabase start` applies migrations but seeds nothing, so the rows have
+      # to be loaded explicitly.
+      #
+      # This is `database/dev_starting_point.sql`, the maintained dev seed —
+      # deliberately NOT `supabase/seed.sql`, which references columns that
+      # have since been dropped and fails partway through, leaving a
+      # half-populated database. That file is being removed separately.
+      #
+      # It carries a guard refusing to run against anything but a database
+      # named "postgres", which local Supabase satisfies.
       - name: Load seed data
         env:
           PGPASSWORD: postgres
-        run: psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f supabase/seed.sql
+        run: psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f database/dev_starting_point.sql
 
-      # Idempotent (ON CONFLICT DO NOTHING). The seed above already carries
-      # these users, but several suites name them explicitly, so this makes the
-      # dependency self-healing rather than something that silently vanishes if
-      # the seed is ever regenerated from a database that lacks them.
+      # The dev seed creates dev@ and the three captain logins; these are the
+      # four the suites name explicitly via TEST_USERS. Idempotent
+      # (ON CONFLICT DO NOTHING), so running it alongside the dev seed is safe.
       - name: Ensure test users exist
         env:
           PGPASSWORD: postgres
