@@ -68,6 +68,12 @@ export function ParticipantsStep({
         </p>
       </div>
 
+      {participants.length === 0 && (
+        <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+          No players yet — add your first above.
+        </p>
+      )}
+
       <ol className="space-y-2">
         {participants.map((name, i) => (
           <li

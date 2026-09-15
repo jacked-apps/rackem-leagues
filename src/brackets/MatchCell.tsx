@@ -12,7 +12,7 @@
  * decided match shows "Reset" to undo a mis-tap.
  */
 
-import { Play, RotateCcw } from 'lucide-react';
+import { Play, RotateCcw, UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { MatchView, SlotView } from './bracketViewModel';
@@ -29,6 +29,11 @@ interface MatchCellProps {
   onToggleInProgress?: (matchId: string, inProgress: boolean) => void;
   /** Undo a decided match (organizer mode). */
   onReopen?: (matchId: string) => void;
+  /**
+   * Seat a latecomer in this bye (paid tournaments). Offered only on a bye,
+   * because it is the only match with a seat nobody is going to arrive in.
+   */
+  onLateEntry?: (matchId: string) => void;
 }
 
 export function MatchCell({
@@ -37,6 +42,7 @@ export function MatchCell({
   onPick,
   onToggleInProgress,
   onReopen,
+  onLateEntry,
 }: MatchCellProps) {
   const isReady = match.status === 'ready';
   const isComplete = match.status === 'complete';
@@ -52,12 +58,14 @@ export function MatchCell({
         slot={match.home}
         pickable={!readOnly && isSlotPickable(match, 'home')}
         dimmed={isComplete && !match.home.isWinner}
+        isBye={match.isBye}
         onPick={() => pick('home')}
       />
       <SlotRow
         slot={match.away}
         pickable={!readOnly && isSlotPickable(match, 'away')}
         dimmed={isComplete && !match.away.isWinner}
+        isBye={match.isBye}
         onPick={() => pick('away')}
       />
 
@@ -71,7 +79,16 @@ export function MatchCell({
         </FooterButton>
       )}
 
-      {!readOnly && isComplete && onReopen && (
+      {/* A bye's action is "fill it", not "undo it" — Reset would just leave a
+          match with one player and nobody coming. */}
+      {!readOnly && match.isBye && onLateEntry && (
+        <FooterButton onClick={() => onLateEntry(match.id)}>
+          <UserPlus className="h-3 w-3" />
+          Add player
+        </FooterButton>
+      )}
+
+      {!readOnly && isComplete && !match.isBye && onReopen && (
         <FooterButton onClick={() => onReopen(match.id)}>
           <RotateCcw className="h-3 w-3" />
           Reset
@@ -114,14 +131,19 @@ function SlotRow({
   slot,
   pickable,
   dimmed,
+  isBye,
   onPick,
 }: {
   slot: SlotView;
   pickable: boolean;
   dimmed: boolean;
+  /** This match is a bye, so an empty seat means "nobody entered". */
+  isBye: boolean;
   onPick: () => void;
 }) {
-  const label = slot.name ?? '—';
+  // An empty seat in a BYE is not "to be decided" — nobody is coming. Say so,
+  // rather than leaving a dash the organizer has to interpret.
+  const label = slot.name ?? (isBye ? 'Bye' : '—');
   const base = 'flex items-center px-3 py-2';
 
   if (pickable) {

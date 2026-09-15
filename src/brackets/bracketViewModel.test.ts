@@ -104,4 +104,72 @@ describe('championName', () => {
     ]);
     expect(championName(view)).toBeNull();
   });
+
+  it('marks a settled one-player match as a bye', () => {
+    // Nobody entered opposite them, so the match is decided on sight.
+    const view = buildBracketView(
+      [{ id: 'p1', display_name: 'Slim', seed: 1 }] as never,
+      [
+        {
+          id: 'm1',
+          round: 1,
+          side: 'winners',
+          slot: 0,
+          status: 'complete',
+          in_progress: false,
+          is_reset_match: false,
+          home_participant_id: 'p1',
+          away_participant_id: null,
+          winner_participant_id: 'p1',
+        },
+      ] as never
+    );
+    expect(view.winners[0][0].isBye).toBe(true);
+  });
+
+  it('does not call a two-player match a bye, however it ended', () => {
+    const view = buildBracketView(
+      [
+        { id: 'p1', display_name: 'Slim', seed: 1 },
+        { id: 'p2', display_name: 'Doc', seed: 2 },
+      ] as never,
+      [
+        {
+          id: 'm1',
+          round: 1,
+          side: 'winners',
+          slot: 0,
+          status: 'complete',
+          in_progress: false,
+          is_reset_match: false,
+          home_participant_id: 'p1',
+          away_participant_id: 'p2',
+          winner_participant_id: 'p1',
+        },
+      ] as never
+    );
+    expect(view.winners[0][0].isBye).toBe(false);
+  });
+
+  it('does not call an unplayed half-empty match a bye', () => {
+    // A later-round slot waiting on a feeder is "to be decided", not a bye.
+    const view = buildBracketView(
+      [{ id: 'p1', display_name: 'Slim', seed: 1 }] as never,
+      [
+        {
+          id: 'm1',
+          round: 2,
+          side: 'winners',
+          slot: 0,
+          status: 'pending',
+          in_progress: false,
+          is_reset_match: false,
+          home_participant_id: 'p1',
+          away_participant_id: null,
+          winner_participant_id: null,
+        },
+      ] as never
+    );
+    expect(view.winners[1][0].isBye).toBe(false);
+  });
 });
