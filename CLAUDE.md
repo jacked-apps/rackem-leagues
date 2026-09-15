@@ -1,163 +1,11 @@
-# Claude Code Memory Bank
+# Rackem Leagues — project guidance for Claude
 
-I am Claude Code, an expert software engineer designed to help with complex development tasks. Unlike other AI assistants, I maintain context throughout our conversation session and can read/analyze your entire codebase directly. I work with developers of all experience levels, providing thorough explanations of my actions as part of my mission to educate while collaborating.
+## Memory Bank
 
-## Memory Bank Structure
+Project notes live in `memory-bank/`. When the user says **update memory bank**,
+review every file in it — not just the ones that look stale.
 
-The Memory Bank consists of required core files and optional context files, all in Markdown format. Files build upon each other in a clear hierarchy:
-
-```mermaid
-flowchart TD
-    PB[projectbrief.md] --> PC[productContext.md]
-    PB --> SP[systemPatterns.md]
-    PB --> TC[techContext.md]
-
-    PC --> AC[activeContext.md]
-    SP --> AC
-    TC --> AC
-
-    AC --> P[progress.md]
-```
-
-### Core Files (Required)
-
-1. `projectbrief.md`
-   - Foundation document that shapes all other files
-   - Created at project start if it doesn't exist
-   - Defines core requirements and goals
-   - Source of truth for project scope
-
-2. `productContext.md`
-   - Why this project exists
-   - Problems it solves
-   - How it should work
-   - User experience goals
-
-3. `activeContext.md`
-   - Current work focus
-   - Recent changes
-   - Next steps
-   - Active decisions and considerations
-
-4. `systemPatterns.md`
-   - System architecture
-   - Key technical decisions
-   - Design patterns in use
-   - Component relationships
-
-5. `techContext.md`
-   - Technologies used
-   - Development setup
-   - Technical constraints
-   - Dependencies
-
-6. `progress.md`
-   - What works
-   - What's left to build
-   - Current status
-   - Known issues
-
-### Additional Context
-
-Create additional files/folders within memory-bank/ when they help organize:
-
-- Complex feature documentation
-- Integration specifications
-- API documentation
-- Testing strategies
-- Deployment procedures
-- authTodoList.md (authentication-related tasks and todos)
-
-## Core Workflows
-
-### Planning Mode
-
-```mermaid
-flowchart TD
-    Start[Start] --> ReadFiles[Read Memory Bank & Codebase]
-    ReadFiles --> CheckFiles{Context Complete?}
-
-    CheckFiles -->|No| Plan[Create Plan]
-    Plan --> Document[Document in Chat]
-
-    CheckFiles -->|Yes| Verify[Verify Context]
-    Verify --> Strategy[Develop Strategy]
-    Strategy --> Present[Present Approach]
-```
-
-### Implementation Mode
-
-```mermaid
-flowchart TD
-    Start[Start] --> Context[Check Memory Bank & Codebase]
-    Context --> Plan[Use TodoWrite to plan tasks]
-    Plan --> Execute[Execute Tasks]
-    Execute --> Verify[Run tests/linting]
-    Verify --> Document[Update Documentation]
-```
-
-## Documentation Updates
-
-Memory Bank updates occur when:
-
-1. Discovering new project patterns
-2. After implementing significant changes
-3. When user requests with **update memory bank** (MUST review ALL files)
-4. When context needs clarification
-
-```mermaid
-flowchart TD
-    Start[Update Process]
-
-    subgraph Process
-        P1[Review ALL Files]
-        P2[Document Current State]
-        P3[Clarify Next Steps]
-        P4[Update CLAUDE.md]
-
-        P1 --> P2 --> P3 --> P4
-    end
-
-    Start --> Process
-```
-
-Note: When triggered by **update memory bank**, I MUST review every memory bank file, even if some don't require updates. Focus particularly on activeContext.md and progress.md as they track current state.
-
-## Project Intelligence (memory-bank)
-
-The memory-bank folder is my learning journal for each project. It captures important patterns, preferences, and project intelligence that help me work more effectively. As I work with you and the project, I'll discover and document key insights that aren't obvious from the code alone.
-
-```mermaid
-flowchart TD
-    Start{Discover New Pattern}
-
-    subgraph Learn [Learning Process]
-        D1[Identify Pattern]
-        D2[Validate with User]
-        D3[Document in memory-bank folder]
-    end
-
-    subgraph Apply [Usage]
-        A1[Read memory-bank folder]
-        A2[Apply Learned Patterns]
-        A3[Improve Future Work]
-    end
-
-    Start --> Learn
-    Learn --> Apply
-```
-
-### What to Capture
-
-- Critical implementation paths
-- User preferences and workflow
-- Project-specific patterns
-- Known challenges
-- Evolution of project decisions
-- Tool usage patterns
-- Common commands (lint, test, build, etc.)
-
-### User Preferences
+## User Preferences
 
 - **Best Practices Over Convenience**: When the user asks for something that conflicts with software engineering best practices, I should push back respectfully and explain the best practice approach. Provide clear reasoning with pros/cons, real-world examples, and performance implications. The user wants to learn and make informed decisions, not receive "yes man" responses. In the end, the user has final say, but they always want to know the correct way to do something first. **The user is learning and wants to be taught, not blindly agreed with.**
 
@@ -212,24 +60,11 @@ The format is flexible - focus on capturing valuable insights that help me work 
 1. Add/update/remove the file entry in the appropriate section
 2. Update the "Last Updated" date at the top of TABLE_OF_CONTENTS.md
 3. If the change affects a feature, update the "Quick Reference: Find By Feature" section
-4. If moving files as part of restructuring, also note changes in RESTRUCTURE_PLAN.md
 
 The table of contents is a critical navigation tool for both you and the user. Keeping it current is mandatory.
 
-### Task Management
-- I use TodoWrite tool to plan and track complex tasks
-- I break down large tasks into manageable steps
-- I mark tasks as completed in real-time
-
-### Code Analysis
-- I can search your entire codebase efficiently
-- I read multiple files in parallel for context
-- I follow your existing code conventions and patterns
-
-### Quality Assurance
-- I run lint/typecheck commands after making changes
-- I verify solutions with tests when available
-- I never commit changes unless explicitly asked
+### Committing
+- Never commit changes unless explicitly asked.
 
 ### Feature Gating Workflow
 Some features ship **gated** — merged to `main` but NOT yet live for users
