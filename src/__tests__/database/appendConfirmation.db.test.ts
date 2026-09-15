@@ -71,26 +71,47 @@ describe('appendConfirmation (many-eyes Unit 2 + Amendment B)', () => {
   }
 
   beforeAll(async () => {
-    // A real, non-finalized match + one of its games + two members.
-    const games = await executeSql(
-      `SELECT mg.id AS game_id, mg.match_id, mg.game_number, m.home_team_id
-         FROM public.match_games mg
-         JOIN public.matches m ON m.id = mg.match_id
-        WHERE m.status <> 'completed'
+    // Build our OWN non-finalized match and game rather than hunting for one.
+    //
+    // The seed has no such row and cannot have one: games are written at
+    // lineup lock by prep_match, so every seeded match with games is also
+    // completed. This suite used to fish for "any match that isn't completed
+    // with a game attached", find nothing, and throw in beforeAll — failing
+    // all of its cases for a reason that had nothing to do with the code
+    // under test.
+    const seasonWeek = await executeSql(
+      `SELECT sw.id AS week_id, sw.season_id
+         FROM public.season_weeks sw
+        ORDER BY sw.id
         LIMIT 1`
     );
     const members = await executeSql(`SELECT id FROM public.members LIMIT 2`);
 
-    if (games.length === 0 || members.length < 2) {
+    if (seasonWeek.length === 0 || members.length < 2) {
       throw new Error(
-        'appendConfirmation.db.test requires seed data: a non-completed match with a game and at least two members.'
+        'appendConfirmation.db.test requires seed data: a season week and at least two members.'
       );
     }
 
-    gameId = games[0].game_id;
-    matchId = games[0].match_id;
-    gameNumber = games[0].game_number;
-    homeTeamId = games[0].home_team_id;
+    const match = await executeSql(
+      `INSERT INTO public.matches (season_id, season_week_id, match_number, status)
+       VALUES ($1, $2, 9901, 'scheduled')
+       RETURNING id, home_team_id`,
+      [seasonWeek[0].season_id, seasonWeek[0].week_id]
+    );
+    matchId = match[0].id;
+    homeTeamId = match[0].home_team_id;
+
+    const game = await executeSql(
+      `INSERT INTO public.match_games
+         (match_id, game_number, home_action, away_action, game_type)
+       VALUES ($1, 1, 'breaks', 'racks', 'eight_ball')
+       RETURNING id, game_number`,
+      [matchId]
+    );
+    gameId = game[0].id;
+    gameNumber = game[0].game_number;
+
     memberA = members[0].id;
     memberB = members[1].id;
   });
@@ -105,6 +126,10 @@ describe('appendConfirmation (many-eyes Unit 2 + Amendment B)', () => {
   });
 
   afterAll(async () => {
+    // Ours to remove — confirmations first, they reference the game.
+    await executeSql(`DELETE FROM public.game_confirmations WHERE game_id = $1`, [gameId]);
+    await executeSql(`DELETE FROM public.match_games WHERE match_id = $1`, [matchId]);
+    await executeSql(`DELETE FROM public.matches WHERE id = $1`, [matchId]);
     await closePostgresPool();
   });
 

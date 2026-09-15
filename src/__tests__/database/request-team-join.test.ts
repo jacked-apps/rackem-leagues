@@ -18,8 +18,13 @@
  * Run: pnpm test:run src/__tests__/database/request-team-join
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { executeSql, getPostgresPool } from '@/test/dbTestUtils';
+import {
+  createOnboardingFixture,
+  destroyOnboardingFixture,
+  type OnboardingFixture,
+} from '@/test/onboardingFixtures';
 import type { PoolClient } from 'pg';
 
 /**
@@ -64,57 +69,38 @@ describe('Onboarding cascade Unit 3 — request_team_join', () => {
   let otherUser: string | null = null; // a second registered user, NOT on the team
   let onTeamUser: string | null = null; // a user already on the team
 
+  let fixture: OnboardingFixture | null = null;
+
   beforeAll(async () => {
-    // A team that has open placeholders AND room for a self-add.
-    const team = await executeSql(
-      `SELECT t.id, t.join_token
-         FROM teams t
-         JOIN team_players tp ON tp.team_id = t.id
-         JOIN members m ON m.id = tp.member_id
-        WHERE m.user_id IS NULL
-        GROUP BY t.id, t.join_token, t.roster_size
-       HAVING t.roster_size IS NULL
-           OR COUNT(*) FILTER (WHERE tp.status = 'active') < t.roster_size
-        LIMIT 1`
-    );
-    teamId = team[0]?.id ?? null;
-    token = team[0]?.join_token ?? null;
+    // Build the team rather than hunting for one. Every seeded team is full
+    // and captained by a registered user, so the old search for "a team with
+    // open placeholders and room for a self-add" came back empty and the
+    // happy-path cases failed on a fixture problem dressed up as a logic one.
+    fixture = await createOnboardingFixture();
 
-    const ph = await executeSql(
-      `SELECT tp.member_id
-         FROM team_players tp
-         JOIN members m ON m.id = tp.member_id
-        WHERE tp.team_id = $1 AND m.user_id IS NULL
-        LIMIT 1`,
-      [teamId]
-    );
-    placeholderId = ph[0]?.member_id ?? null;
-
-    // A user already on this team (for already_member).
-    const onTeam = await executeSql(
-      `SELECT m.user_id
-         FROM team_players tp
-         JOIN members m ON m.id = tp.member_id
-        WHERE tp.team_id = $1 AND m.user_id IS NOT NULL
-        LIMIT 1`,
-      [teamId]
-    );
-    onTeamUser = onTeam[0]?.user_id ?? null;
+    teamId = fixture.teamId;
+    token = fixture.joinToken;
+    placeholderId = fixture.placeholderMemberIds[0];
+    onTeamUser = fixture.onTeamUserId;
 
     // Two registered users who are NOT on this team (joiner + race partner).
     const others = await executeSql(
-      `SELECT m.user_id
-         FROM members m
+      `SELECT m.user_id FROM public.members m
         WHERE m.user_id IS NOT NULL
           AND NOT EXISTS (
-            SELECT 1 FROM team_players tp
+            SELECT 1 FROM public.team_players tp
              WHERE tp.team_id = $1 AND tp.member_id = m.id
           )
+        ORDER BY m.id
         LIMIT 2`,
       [teamId]
     );
     joinerUser = others[0]?.user_id ?? null;
     otherUser = others[1]?.user_id ?? null;
+  });
+
+  afterAll(async () => {
+    await destroyOnboardingFixture(fixture);
   });
 
   it('has the fixtures it needs', () => {
