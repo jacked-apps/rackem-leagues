@@ -157,6 +157,57 @@ export type Database = {
           },
         ]
       }
+      bracket_hopper: {
+        Row: {
+          added_via: string | null
+          bracket_id: string
+          created_at: string
+          display_name: string
+          id: string
+          member_id: string | null
+          paid_status: string | null
+          seed: number | null
+          status: string
+        }
+        Insert: {
+          added_via?: string | null
+          bracket_id: string
+          created_at?: string
+          display_name: string
+          id?: string
+          member_id?: string | null
+          paid_status?: string | null
+          seed?: number | null
+          status?: string
+        }
+        Update: {
+          added_via?: string | null
+          bracket_id?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          member_id?: string | null
+          paid_status?: string | null
+          seed?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_hopper_bracket_id_fkey"
+            columns: ["bracket_id"]
+            isOneToOne: false
+            referencedRelation: "brackets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_hopper_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bracket_matches: {
         Row: {
           away_participant_id: string | null
@@ -262,6 +313,7 @@ export type Database = {
           bracket_id: string
           created_at: string
           display_name: string
+          entry_fee_paid: boolean
           id: string
           member_id: string | null
           seed: number
@@ -270,6 +322,7 @@ export type Database = {
           bracket_id: string
           created_at?: string
           display_name: string
+          entry_fee_paid?: boolean
           id?: string
           member_id?: string | null
           seed: number
@@ -278,6 +331,7 @@ export type Database = {
           bracket_id?: string
           created_at?: string
           display_name?: string
+          entry_fee_paid?: boolean
           id?: string
           member_id?: string | null
           seed?: number
@@ -299,42 +353,99 @@ export type Database = {
           },
         ]
       }
+      bracket_roster: {
+        Row: {
+          first_seen_at: string
+          id: string
+          organizer_member_id: string
+          player_member_id: string
+        }
+        Insert: {
+          first_seen_at?: string
+          id?: string
+          organizer_member_id: string
+          player_member_id: string
+        }
+        Update: {
+          first_seen_at?: string
+          id?: string
+          organizer_member_id?: string
+          player_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_roster_organizer_fkey"
+            columns: ["organizer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_roster_player_fkey"
+            columns: ["player_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brackets: {
         Row: {
+          charge_amount_cents: number | null
+          charged_at: string | null
           created_at: string
           created_by: string
           format: string
+          game_type: string | null
           grand_final_reset: boolean
           id: string
+          join_token: string
           last_activity_at: string
           name: string
+          payment_method_id: string | null
+          premium_features: string[]
           seeding_mode: string
           share_token: string
           status: string
+          tier: string
         }
         Insert: {
+          charge_amount_cents?: number | null
+          charged_at?: string | null
           created_at?: string
           created_by: string
           format: string
+          game_type?: string | null
           grand_final_reset?: boolean
           id?: string
+          join_token?: string
           last_activity_at?: string
           name: string
+          payment_method_id?: string | null
+          premium_features?: string[]
           seeding_mode?: string
           share_token?: string
           status?: string
+          tier?: string
         }
         Update: {
+          charge_amount_cents?: number | null
+          charged_at?: string | null
           created_at?: string
           created_by?: string
           format?: string
+          game_type?: string | null
           grand_final_reset?: boolean
           id?: string
+          join_token?: string
           last_activity_at?: string
           name?: string
+          payment_method_id?: string | null
+          premium_features?: string[]
           seeding_mode?: string
           share_token?: string
           status?: string
+          tier?: string
         }
         Relationships: [
           {
@@ -342,6 +453,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brackets_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
             referencedColumns: ["id"]
           },
         ]
@@ -1840,6 +1958,53 @@ export type Database = {
           {
             foreignKeyName: "organizations_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          card_brand: string | null
+          card_last4: string | null
+          created_at: string
+          id: string
+          is_default: boolean
+          member_id: string
+          nickname: string | null
+          stripe_customer_id: string | null
+          stripe_payment_method_id: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          card_brand?: string | null
+          card_last4?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          member_id: string
+          nickname?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          card_brand?: string | null
+          card_last4?: string | null
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          member_id?: string
+          nickname?: string | null
+          stripe_customer_id?: string | null
+          stripe_payment_method_id?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_methods_member_id_fkey"
+            columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
@@ -3482,6 +3647,38 @@ export type Database = {
         Args: { p_season_id: string; p_team_id: string }
         Returns: string
       }
+      forget_bracket_roster_entry: {
+        Args: { p_member_id?: string; p_display_name?: string }
+        Returns: boolean
+      }
+      finalize_bracket_hopper: {
+        Args: { p_bracket_id: string; p_include_waiting?: boolean }
+        Returns: number
+      }
+      get_bracket_hopper: { Args: { p_bracket_id: string }; Returns: Json }
+      get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
+      get_bracket_player_view: { Args: { p_join_token: string }; Returns: Json }
+      get_my_tournaments: { Args: never; Returns: Json }
+      remove_premium_feature: {
+        Args: { p_bracket_id: string; p_feature: string }
+        Returns: Json
+      }
+      add_premium_feature: {
+        Args: { p_bracket_id: string; p_feature: string }
+        Returns: Json
+      }
+      add_late_entry: {
+        Args: { p_match_id: string; p_member_id?: string; p_display_name?: string }
+        Returns: Json
+      }
+      add_registered_to_hopper: {
+        Args: { p_bracket_id: string; p_member_id: string }
+        Returns: Json
+      }
+      add_self_as_walkup: {
+        Args: { p_join_token: string; p_display_name: string }
+        Returns: Json
+      }
       get_bracket_share: { Args: { p_share_token: string }; Returns: Json }
       get_current_member_id: { Args: never; Returns: string }
       get_invite_details: {
@@ -3609,6 +3806,10 @@ export type Database = {
       is_in_quiet_hours: {
         Args: { p_end: string; p_start: string; p_tz: string }
         Returns: boolean
+      }
+      join_bracket_hopper: {
+        Args: { p_join_token: string; p_via?: string }
+        Returns: Json
       }
       league_display_name: { Args: { p_league_id: string }; Returns: string }
       lookup_placeholder_by_system_number: {

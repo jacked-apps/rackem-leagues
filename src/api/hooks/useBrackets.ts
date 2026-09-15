@@ -9,15 +9,39 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
-import { getBracket, getBracketShare, getBracketsByCreator } from '../queries/brackets';
+import {
+  getBracket,
+  getBracketShare,
+  getBracketsByCreator,
+  getBracketHopper,
+  getBracketRoster,
+  getBracketPlayerView,
+  getMyTournaments,
+} from '../queries/brackets';
 import {
   createBracket,
   setParticipants,
   startBracket,
+  chargeForStart,
+  setEntryFeePaid,
+  joinHopper,
+  addSelfAsWalkup,
+  addWalkupToHopper,
+  addRegisteredToHopper,
+  admitHopperEntry,
+  setHopperPaidStatus,
+  ejectHopperEntry,
+  finalizeHopper,
+  updateBracketSettings,
+  addPremiumFeature,
+  removePremiumFeature,
+  forgetRosterEntry,
   advanceWinner,
   setMatchInProgress,
   reopenMatch,
+  addLateEntry,
   closeBracket,
+  type BracketSettings,
   type CreateBracketParams,
   type NewParticipant,
 } from '../mutations/brackets';
@@ -50,6 +74,21 @@ export function useBracketShare(shareToken: string | undefined) {
     staleTime: 0,
     refetchInterval: (query) =>
       query.state.data?.bracket?.status === 'live' ? 15_000 : false,
+  });
+}
+
+/**
+ * Tournaments the signed-in member is PLAYING in.
+ *
+ * Enabled only once we know who they are: the RPC returns an empty list for an
+ * anonymous caller, and fetching that would just cache an empty answer against
+ * the moment before the session resolved.
+ */
+export function useMyTournaments(memberId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.brackets.mine(),
+    queryFn: () => getMyTournaments(),
+    enabled: !!memberId,
   });
 }
 
@@ -106,6 +145,267 @@ export function useStartBracket() {
 }
 
 /** Record a match winner (guarded advance). */
+/** Self-add: the caller joins a tournament's hopper via its join_token (QR/link). */
+export function useJoinHopper() {
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (vars: { joinToken: string; via?: 'link' | 'qr' }) =>
+      joinHopper(vars.joinToken, vars.via),
+  });
+}
+
+/**
+ * The organizer's hopper for a bracket — every candidate and every official
+ * entry in one list (the view splits them by `status`).
+ *
+ * staleTime 0 because players self-add live during setup; realtime pushes the
+ * invalidation and this fetch is the fallback.
+ */
+export function useBracketHopper(bracketId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.brackets.hopper(bracketId ?? ''),
+    queryFn: () => getBracketHopper(bracketId!),
+    enabled: !!bracketId,
+    staleTime: 0,
+  });
+}
+
+/**
+ * The organizer's past players who are NOT yet in this bracket's hopper — the
+ * one-tap add source at the bottom of the hopper screen. Every hopper mutation
+ * invalidates this too, since adding a past player must remove them from it.
+ */
+export function useBracketRoster(bracketId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.brackets.roster(bracketId ?? ''),
+    queryFn: () => getBracketRoster(bracketId!),
+    enabled: !!bracketId,
+    staleTime: 0,
+  });
+}
+
+/**
+ * Anonymous self-add from the tournament page. Invalidates the player view so
+ * the name appears in the waiting list immediately, without waiting for the
+ * realtime event to make the round trip.
+ */
+export function useAddSelfAsWalkup(joinToken: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (displayName: string) => addSelfAsWalkup(joinToken, displayName),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.playerView(joinToken) });
+    },
+  });
+}
+
+/**
+ * A player's live view of a tournament, from its join token.
+ *
+ * staleTime 0 and realtime on the hopper: the entire point is watching the room
+ * fill up while you stand in it. Anon-safe — a walk-up has no session.
+ */
+export function useBracketPlayerView(joinToken: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.brackets.playerView(joinToken ?? ''),
+    queryFn: () => getBracketPlayerView(joinToken!),
+    enabled: !!joinToken,
+    staleTime: 0,
+  });
+}
+
+/**
+ * Writes here are NOT retried, overriding the app-wide `mutations: { retry: 1 }`.
+ *
+ * Two reasons. Their failures are deterministic — a duplicate name, a guard
+ * refusing a started tournament — so a second attempt fails identically, just
+ * later and with the console noise doubled. And they are non-idempotent
+ * INSERTs: if the first attempt actually succeeded and only its response was
+ * lost, a retry adds a second row.
+ */
+const NO_RETRY = { retry: false } as const;
+
+/**
+ * Shared invalidation for every hopper write.
+ *
+ * Both keys always refresh together: the three on-screen groups are derived from
+ * these two reads, and a player moving between groups changes both at once (an
+ * admitted past player leaves the roster list and joins the official list). The
+ * bracket detail refreshes too because admissions drive the eventual seed count.
+ */
+function useHopperInvalidation(bracketId: string) {
+  const qc = useQueryClient();
+  return () => {
+    qc.invalidateQueries({ queryKey: queryKeys.brackets.hopper(bracketId) });
+    qc.invalidateQueries({ queryKey: queryKeys.brackets.roster(bracketId) });
+    qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+  };
+}
+
+/**
+ * Organizer adds a walk-up (a typed name, no account), optionally straight into
+ * the tournament with their entry fee already marked.
+ */
+export function useAddWalkupToHopper(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (vars: {
+      displayName: string;
+      admit?: boolean;
+      paidStatus?: 'paid' | 'unpaid';
+    }) => addWalkupToHopper(bracketId, vars.displayName, vars),
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * Organizer adds a registered player (from search or the past-players list).
+ *
+ * Takes only the member id — the display name is the server's to derive, so
+ * that a player enters under the same name however they got there.
+ */
+export function useAddRegisteredToHopper(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (memberId: string) => addRegisteredToHopper(bracketId, memberId),
+    onSuccess: invalidate,
+  });
+}
+
+/** Admit a candidate to the official list, flagged paid or unpaid. */
+export function useAdmitHopperEntry(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (vars: { entryId: string; paidStatus: 'paid' | 'unpaid' }) =>
+      admitHopperEntry(vars.entryId, bracketId, vars.paidStatus),
+    onSuccess: invalidate,
+  });
+}
+
+/** Flip an already-official entry's paid flag (they paid after being added). */
+export function useSetHopperPaidStatus(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (vars: { entryId: string; paidStatus: 'paid' | 'unpaid' }) =>
+      setHopperPaidStatus(vars.entryId, bracketId, vars.paidStatus),
+    onSuccess: invalidate,
+  });
+}
+
+/** Remove an entry from the hopper entirely. The sticky roster is untouched. */
+export function useEjectHopperEntry(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (entryId: string) => ejectHopperEntry(entryId, bracketId),
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * Housekeeping on the organizer's remembered past players — one person at a
+ * time. Invalidates the same pair as every other hopper write, since forgetting
+ * someone changes what the past-players group offers.
+ */
+export function useForgetRosterEntry(bracketId: string) {
+  const invalidate = useHopperInvalidation(bracketId);
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (target: { memberId?: string | null; displayName?: string | null }) =>
+      forgetRosterEntry(target),
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * Buy a premium feature for a tournament already in setup.
+ *
+ * Invalidates the bracket AND the hopper: the gate those screens read comes
+ * from the bracket row, so the newly-bought controls only appear once it is
+ * refetched.
+ */
+export function useAddPremiumFeature(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (feature: string) => addPremiumFeature(bracketId, feature),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.hopper(bracketId) });
+    },
+  });
+}
+
+/** Take a premium feature back off, while it is still within its free allowance. */
+export function useRemovePremiumFeature(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (feature: string) => removePremiumFeature(bracketId, feature),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.hopper(bracketId) });
+    },
+  });
+}
+
+/** Edit a tournament's name, game and format while it is still in setup. */
+export function useUpdateBracketSettings(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: BracketSettings) => updateBracketSettings(bracketId, settings),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.all });
+    },
+  });
+}
+
+/**
+ * Convert the official hopper list into seeded participants at Start. Returns
+ * the player count, which the caller feeds to the bracket generator.
+ *
+ * No cache invalidation here: this is always immediately followed by
+ * startBracket, and the caller invalidates once the bracket is actually live —
+ * refreshing in between would briefly render a setup screen against
+ * half-converted state.
+ */
+export function useFinalizeHopper(bracketId: string) {
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (includeWaiting: boolean) => finalizeHopper(bracketId, includeWaiting),
+  });
+}
+
+/** Charge-at-checkout seam (A3): record the paid tournament's ($0 mock) charge at Start. */
+export function useChargeForStart() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { bracketId: string; amountCents: number }) =>
+      chargeForStart(vars.bracketId, vars.amountCents),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(vars.bracketId) });
+    },
+  });
+}
+
+/** Entry-fee tracker: toggle a player's paid/unpaid flag; invalidate the bracket. */
+export function useSetEntryFeePaid(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { participantId: string; paid: boolean }) =>
+      setEntryFeePaid(vars.participantId, bracketId, vars.paid),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+    },
+  });
+}
+
 export function useAdvanceWinner(bracketId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -123,6 +423,22 @@ export function useSetMatchInProgress(bracketId: string) {
   return useMutation({
     mutationFn: (vars: { matchId: string; inProgress: boolean }) =>
       setMatchInProgress(vars.matchId, vars.inProgress),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
+    },
+  });
+}
+
+/** Seat a latecomer in an unused bye. Refreshes the bracket so the tree redraws. */
+export function useAddLateEntry(bracketId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    ...NO_RETRY,
+    mutationFn: (vars: {
+      matchId: string;
+      memberId?: string | null;
+      displayName?: string | null;
+    }) => addLateEntry(vars.matchId, vars),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.brackets.detail(bracketId) });
     },

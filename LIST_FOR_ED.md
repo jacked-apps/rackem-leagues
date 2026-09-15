@@ -38,6 +38,43 @@ running them — is the one option with no upside.
 
 ---
 
+## 🔧 2026-09-05 — Reuse `PaymentMethodSetup` in the LO application
+
+The tournament paid flow introduced a **reusable** "set up a payment method"
+component: **`src/components/PaymentMethodSetup.tsx`** — the no-charge-now
+reassurance (caller supplies the charge timing) + `PaymentCardForm` verify,
+returning the card data for the caller to persist. It's built to be shared.
+
+The **League Operator application** flow does NOT use it — it wires
+`PaymentCardForm` + the application reducer **inline** in
+`src/leagueOperator/questionDefinitions.tsx` (the `paymentInfo` question). **TODO:
+refactor the LO application to use `PaymentMethodSetup`** so payment-method setup
+is one consistent component everywhere. Good to bundle with Jack's payment
+consolidation (he owns that flow + the eventual real Stripe wiring).
+
+---
+
+## 💳 2026-09-05 — MOCK cards on file: keep them to comp beta users (or purge)
+
+During beta the tournament payment flow saves a **real, persistent per-player card
+on file** (`payment_methods`) so users enter a card once and it's reused across
+tournaments — but the token is a **mock** (`PaymentCardForm` returns
+`tok_mock_<ts>`; no real Stripe). Mock tokens are identifiable by the
+`tok_mock_%` prefix.
+
+**When Jack's real Stripe goes live, two options — Ed prefers KEEP:**
+- **Keep + comp (preferred):** at the charge-at-checkout seam (`chargeForStart`),
+  check if the card's token is a mock (`tok_mock_%`); if so, **skip the real
+  charge and mark the tournament paid** — so beta users keep playing **free**
+  forever. A clean grandfather perk (pairs with coupon codes).
+- **Purge (force re-enter):** `DELETE FROM public.payment_methods WHERE
+  stripe_payment_method_id LIKE 'tok_mock_%';`
+
+(If you want a belt-and-suspenders marker instead of the token prefix, add an
+`is_mock boolean` column — ask and I'll do it.)
+
+---
+
 ## 🧪 2026-08-04 — VERIFY: tiebreaker scoring fix (PR #249)
 
 **Bug (live):** the first match to end in a games **tie** couldn't be scored —
