@@ -20,9 +20,16 @@ import { RELEASES, UNRELEASED, type Release } from './releases';
 import { earlierReleases, groupEntries, resolveRelease } from './releaseSelectors';
 import { useMarkWhatsNewSeen } from './useWhatsNewSeen';
 
-/** "March 4, 2026" — or "Coming soon" for the block still being written. */
+/**
+ * "March 4, 2026", or nothing at all for the block not yet given a version.
+ *
+ * Deliberately NOT "Coming soon". This file ships WITH the app, so anything a
+ * reader can see on this page is already in the build they are reading it from
+ * — there is no state in which an entry here describes something that has not
+ * arrived. Saying otherwise told people their working features were unreleased.
+ */
 function formatReleaseDate(date: string | null): string {
-  if (!date) return 'Coming soon';
+  if (!date) return '';
   // Split rather than `new Date(iso)`, which parses as UTC and can render the
   // previous day for anyone west of Greenwich.
   const [y, m, d] = date.split('-').map(Number);
@@ -33,10 +40,18 @@ function formatReleaseDate(date: string | null): string {
   });
 }
 
-/** Heading for one release: version + date, or "In progress" while unreleased. */
+/**
+ * Heading for one release.
+ *
+ * The un-versioned block is "Latest changes", not "In progress": these are
+ * things that have shipped and simply have not been given a version number
+ * yet. "In progress" described the release process, which is our concern and
+ * not the reader's — from where they sit, it is just what changed most
+ * recently.
+ */
 function releaseTitle(release: Release): string {
   return release.version === UNRELEASED
-    ? 'In progress'
+    ? 'Latest changes'
     : `Version ${release.version}`;
 }
 
@@ -69,9 +84,11 @@ export default function WhatsNewPage() {
         ) : (
           <section>
             <h2 className="text-2xl font-semibold">{releaseTitle(release)}</h2>
-            <p className="mb-4 text-sm text-muted-foreground">
-              {formatReleaseDate(release.date)}
-            </p>
+            {formatReleaseDate(release.date) && (
+              <p className="mb-4 text-sm text-muted-foreground">
+                {formatReleaseDate(release.date)}
+              </p>
+            )}
 
             {release.noUserFacingChanges ? (
               <p className="text-foreground">{release.noUserFacingChanges}</p>

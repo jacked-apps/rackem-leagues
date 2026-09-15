@@ -607,6 +607,7 @@ export type Database = {
           break_fouled: boolean
           confirmer_id: string
           created_at: string
+          early_eight: boolean
           game_id: string
           game_number: number
           golden_break: boolean
@@ -629,6 +630,7 @@ export type Database = {
           break_fouled?: boolean
           confirmer_id: string
           created_at?: string
+          early_eight?: boolean
           game_id: string
           game_number: number
           golden_break?: boolean
@@ -651,6 +653,7 @@ export type Database = {
           break_fouled?: boolean
           confirmer_id?: string
           created_at?: string
+          early_eight?: boolean
           game_id?: string
           game_number?: number
           golden_break?: boolean
@@ -1054,6 +1057,7 @@ export type Database = {
           confirmed_by_away: string | null
           confirmed_by_home: string | null
           created_at: string
+          early_eight: boolean
           game_number: number
           game_type: string
           golden_break: boolean
@@ -1082,6 +1086,7 @@ export type Database = {
           confirmed_by_away?: string | null
           confirmed_by_home?: string | null
           created_at?: string
+          early_eight?: boolean
           game_number: number
           game_type: string
           golden_break?: boolean
@@ -1110,6 +1115,7 @@ export type Database = {
           confirmed_by_away?: string | null
           confirmed_by_home?: string | null
           created_at?: string
+          early_eight?: boolean
           game_number?: number
           game_type?: string
           golden_break?: boolean
@@ -1554,6 +1560,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          last_seen_whats_new: string | null
           membership_paid_date: string | null
           nickname: string | null
           organization_id: string | null
@@ -1587,6 +1594,7 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          last_seen_whats_new?: string | null
           membership_paid_date?: string | null
           nickname?: string | null
           organization_id?: string | null
@@ -1620,6 +1628,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          last_seen_whats_new?: string | null
           membership_paid_date?: string | null
           nickname?: string | null
           organization_id?: string | null
