@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-09-10 (FIXED a real invite bug found while repairing the db tests. `unique_pending_invite` was UNIQUE (member_id, email, status) with a comment saying it prevents duplicate PENDING invites — but putting status in the key constrains every status separately, so a member+email could hold one pending AND one cancelled row, never two cancelled. `ensure_placeholder_invite_token` cancels the prior pending invite on every email change, so editing a placeholder email A→B→A→B eventually cancelled a row whose cancelled twin already existed and the save died with 23505. Because the constraint was DEFERRABLE INITIALLY DEFERRED the error landed at COMMIT, not at the offending statement, so it read as though saving itself was broken. New migration `20260910185914_invite_tokens_pending_only_unique.sql` swaps the constraint for a PARTIAL unique index on (member_id, email) WHERE status = pending — which is what the original comment always described; a UNIQUE CONSTRAINT cannot be scoped to a subset of rows, only an index can. Reproduced first (SET CONSTRAINTS ALL IMMEDIATE inside a rolled-back transaction, since the deferral hides it), then verified fixed. New `src/__tests__/database/inviteTokensPendingUnique.db.test.ts` — and confirmed the tests FAIL with the old constraint restored, so they actually guard the bug rather than merely passing. This also silently fixed the members.rls test failure, whose real cause was this bug all along.)
+> **Last Updated**: 2026-09-15 (FIXED the two db tests red on main since #280 made CI run them: `appendConfirmation.db.test.ts` built its `baseResult` fixture before `earlyEight` was added to `ConfirmationResult` (#276), so the insert wrote `undefined` → DB default `false`, and the exact-duplicate guard compared `false === undefined` → not a dup → a second identical vouch row. Test file is excluded from tsconfig, which is why typecheck never flagged the missing field; production callers are all typed and pass it. Also restored the `src/components/coinflip/` entries that fell out of the TOC when #279 merged, and trimmed the sandbox line's reference to the cut supplied-face prop.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -641,7 +641,7 @@ how to add a new test, demo recording, cleanup model).
 #### Dev-Only Pages (`/dev/`) — `import.meta.env.DEV` only, unlinked
 - `dev/DevOnly.tsx` - Route guard rendering children in development only; redirects to home otherwise
 - `dev/RLSTestPage.tsx` - Manual RLS INSERT/DELETE policy testing at `/dev/rls-tests`
-- `dev/CoinFlipSandbox.tsx` - Sandbox for the reusable CoinFlip at `/dev/coin-flip`; mounts every prop combination (called/quick, explicit caller, no-reflip, supplied face) plus an onResult log. Delete once a real caller mounts CoinFlip
+- `dev/CoinFlipSandbox.tsx` - Sandbox for the reusable CoinFlip at `/dev/coin-flip`; mounts every prop combination (called/quick, explicit caller, no-reflip) plus an onResult log. Delete once a real caller mounts CoinFlip
 
 #### Player Pages (`/player/`)
 - `MatchLineup.tsx` - Match lineup editor
@@ -1115,6 +1115,14 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `MatchTransitionRecovery.tsx` - Unified recovery surface for the lineup → scoring transition. Reason-aware copy (connection / match_not_found / auth_expired / server_error / unknown_status), two-level Try Again (soft refetch first, Hard Reset only after soft fails — with confirmation dialog).
 - `ConnectionIndicator.tsx` - Calm connection indicator for the active scorer. Renders nothing while live, a quiet "Catching up…" pill while degraded, and a single calm note only after a sustained offline outage (north star: invisible robustness).
 - `ConnectionIndicator.test.tsx` - Tests for ConnectionIndicator (live=nothing, degraded=quiet pill, sustained-offline=calm note + threshold).
+
+#### Coin Flip (`/components/coinflip/`) — reusable, context-free 50/50
+- `types.ts` - Participant / Call / Face / FlipResult / RandomSource. No playerId or teamId anywhere — a player and a team are the same `{ id, name }` shape, which is what lets one component serve league play, tournaments and individual races
+- `flipCoin.ts` - Pure flip rules with no React and no ambient randomness: `tossCoin`, `resolveFlip`, `assignFaces`, `shuffleOrder`, plus `quickFlip` (the flip as a headless two-outcome randomizer for callers that need a result without a screen). Random source is injected
+- `Coin.tsx` - The coin visual — rotateX spin via a CSS transition, no keyframes and no global CSS so it drops in anywhere. Face shown as a letter AND spelled out; honors prefers-reduced-motion
+- `CoinFlip.tsx` - The reusable coin flip component: two participants in, one winner out. Two modes on one state machine (idle → calling|assigned → flipping → result): CALLED (one player calls, the OTHER throws) and QUICK (app assigns faces, shows the assignment as its own beat, then flips). Winner announced by name, never by color alone
+- `flipCoin.test.ts` - Tests for the flip rules; pins both boundaries of the random source, asserts occurrence not ratio so it cannot flake
+- `CoinFlip.test.tsx` - Component tests across both modes and both roles; fake timers with fireEvent (userEvent deadlocks under fake timers)
 
 #### Player Components (`/components/player/`)
 - `TeamCard.tsx` - Player team card ⚠️ **DUPLICATE** (also in `/components`)
