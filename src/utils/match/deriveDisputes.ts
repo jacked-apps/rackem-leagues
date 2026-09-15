@@ -61,6 +61,7 @@ function extractResult(row: ConfirmationWithResult): ResultLike {
     golden_break: row.golden_break,
     break_fouled: row.break_fouled,
     runout: row.runout,
+    early_eight: row.early_eight,
     win_by_forfeit: row.win_by_forfeit,
     winner_value: row.winner_value,
     loser_value: row.loser_value,

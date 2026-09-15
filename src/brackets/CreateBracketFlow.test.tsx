@@ -4,8 +4,10 @@
  *
  * Covers the happy path (fill details → add players → review → submit calls
  * create/setParticipants/start with the expected args and navigates), the
- * min-participant guard, and the duplicate-name soft warning. The mutation
- * hooks + navigation are mocked so this stays a fast UI test.
+ * min-participant guard, the duplicate-name soft warning, and the Unit C3 fork
+ * where "Real players & sign-up" ends the flow after Details and hands off to
+ * the setup page instead of starting anything. The mutation hooks + navigation
+ * are mocked so this stays a fast UI test.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -15,6 +17,7 @@ const mockNavigate = vi.fn();
 const mockCreate = vi.fn();
 const mockSetParticipants = vi.fn();
 const mockStart = vi.fn();
+const mockCharge = vi.fn();
 const mockUseCurrentMember = vi.fn();
 
 vi.mock('react-router-dom', async (orig) => ({
@@ -30,6 +33,15 @@ vi.mock('@/api/hooks/useBrackets', () => ({
   useCreateBracket: () => ({ mutateAsync: mockCreate }),
   useSetParticipants: () => ({ mutateAsync: mockSetParticipants }),
   useStartBracket: () => ({ mutateAsync: mockStart }),
+  useChargeForStart: () => ({ mutateAsync: mockCharge }),
+}));
+
+// A card already on file, so turning on a premium feature enables it straight
+// away instead of opening the set-up-a-payment-method dialog.
+const mockDefaultCard = vi.fn();
+vi.mock('@/api/hooks/usePaymentMethods', () => ({
+  useDefaultPaymentMethod: () => mockDefaultCard(),
+  useSaveDefaultPaymentMethod: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -57,6 +69,7 @@ beforeEach(() => {
   mockCreate.mockResolvedValue({ id: 'bracket-1', created_by: 'member-1' });
   mockSetParticipants.mockResolvedValue(undefined);
   mockStart.mockResolvedValue(undefined);
+  mockDefaultCard.mockReturnValue({ data: null });
 });
 
 describe('CreateBracketFlow', () => {
@@ -114,5 +127,45 @@ describe('CreateBracketFlow', () => {
     await addPlayers(user, ['Sam', 'Sam']);
 
     expect(screen.getByText(/some names are duplicated/i)).toBeInTheDocument();
+  });
+
+  describe('with "Real players & sign-up" (the hopper fork)', () => {
+    beforeEach(() => {
+      mockDefaultCard.mockReturnValue({
+        data: { id: 'pm-1', card_last4: '4242', card_brand: 'visa', nickname: null },
+      });
+    });
+
+    it('ends after Details and hands off to the setup page without starting', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<CreateBracketFlow />);
+
+      await user.type(screen.getByLabelText('Tournament name'), 'Friday 9-Ball');
+      await user.click(screen.getByLabelText('Real players & sign-up'));
+      await user.click(screen.getByRole('button', { name: 'Create & add players' }));
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Friday 9-Ball',
+          premiumFeatures: ['real_players'],
+        })
+      );
+      // Players arrive via the hopper, so there is nothing to seed or start yet
+      // — and nothing to charge until the organizer actually starts.
+      expect(mockSetParticipants).not.toHaveBeenCalled();
+      expect(mockStart).not.toHaveBeenCalled();
+      expect(mockCharge).not.toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('/brackets/bracket-1/setup');
+    });
+
+    it('offers no player-typing step at all', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<CreateBracketFlow />);
+
+      await user.type(screen.getByLabelText('Tournament name'), 'Friday 9-Ball');
+      await user.click(screen.getByLabelText('Real players & sign-up'));
+
+      expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+    });
   });
 });

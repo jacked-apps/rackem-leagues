@@ -93,13 +93,26 @@ describe('generateSingleElim', () => {
     expect(r1.every((x) => x.status === 'ready')).toBe(true);
   });
 
-  it('13 players → 3 byes (seeds 1–3) start directly in round 2', () => {
+  it('13 players → 3 byes (seeds 1–3), shown as completed round-1 matches', () => {
     const m = generateSingleElim(13);
-    assertValidTree(m, { count: 12, terminals: 1 }); // N-1 (byes are not matches)
+    // A FULL bracket now: 16 slots ⇒ 15 matches, byes included. They used to be
+    // elided, which left a top seed appearing in round 2 unexplained.
+    assertValidTree(m, { count: 15, terminals: 1 });
 
-    // 5 real round-1 matches (8 conceptual pairs − 3 byes).
-    expect(m.filter((x) => x.round === 1).length).toBe(5);
-    // The 3 bye seeds are pre-placed into round-2 slots.
+    const r1 = m.filter((x) => x.round === 1);
+    expect(r1.length).toBe(8); // every conceptual pair is a row
+
+    const byes = r1.filter((x) => x.homeSeed === null || x.awaySeed === null);
+    expect(byes.length).toBe(3);
+    // A bye is already decided, and its lone player is the winner.
+    for (const b of byes) {
+      expect(b.status).toBe('complete');
+      expect(b.winnerSeed).toBe(b.homeSeed ?? b.awaySeed);
+    }
+    expect(byes.map((b) => b.winnerSeed).sort((a, b) => a! - b!)).toEqual([1, 2, 3]);
+
+    // The bye winners still stand in their round-2 slots, exactly as a played
+    // match's winner would.
     const r2Seeds = m
       .filter((x) => x.round === 2)
       .flatMap((x) => [x.homeSeed, x.awaySeed])
@@ -116,19 +129,37 @@ describe('generateSingleElim', () => {
     expect(m[0].nextMatchKey).toBeNull();
   });
 
-  it('3 players → 1 bye to seed 1 (seed 1 starts in the final)', () => {
+  it('3 players → 1 bye to seed 1, who is already in the final', () => {
     const m = generateSingleElim(3);
-    assertValidTree(m, { count: 2, terminals: 1 });
-    // One real round-1 match (seeds 2 v 3); seed 1 sits in the round-2 final.
-    expect(m.filter((x) => x.round === 1).length).toBe(1);
+    assertValidTree(m, { count: 3, terminals: 1 }); // 4-slot bracket
+
+    const r1 = m.filter((x) => x.round === 1);
+    expect(r1.length).toBe(2); // seeds 2 v 3, and seed 1's bye
+    const bye = r1.find((x) => x.homeSeed === null || x.awaySeed === null)!;
+    expect(bye.winnerSeed).toBe(1);
+    expect(bye.status).toBe('complete');
+
     const final = m.find((x) => x.round === 2)!;
     expect([final.homeSeed, final.awaySeed]).toContain(1);
   });
 
-  it('match count is exactly N-1 across a range of fields', () => {
+  it('produces a FULL bracket — nextPow2(N) - 1 matches, byes included', () => {
+    // Byes are rows now, so the tree is always the full shape for the bracket
+    // size rather than shrinking to the field. A power-of-two field is
+    // unchanged, since it has no byes.
     for (const n of [2, 3, 4, 5, 7, 8, 13, 16, 32, 64]) {
-      expect(generateSingleElim(n).length).toBe(n - 1);
+      const size = 2 ** Math.ceil(Math.log2(n));
+      expect(generateSingleElim(n).length).toBe(size - 1);
     }
+  });
+
+  it('a bye never routes a loser — nobody has lost one', () => {
+    const m = generateSingleElim(13);
+    const byes = m.filter(
+      (x) => x.round === 1 && (x.homeSeed === null || x.awaySeed === null)
+    );
+    expect(byes.length).toBeGreaterThan(0);
+    for (const b of byes) expect(b.loserNextMatchKey).toBeNull();
   });
 
   it('is deterministic — same field yields an identical tree', () => {
@@ -202,18 +233,43 @@ describe('generateDoubleElim', () => {
     expect(m.filter((x) => x.side === 'losers').length).toBe(0);
   });
 
-  it('non-power-of-two fields stay valid with exactly 2N-2 matches', () => {
+  it('non-power-of-two fields stay valid, with byes as visible round-1 matches', () => {
     for (const n of [3, 5, 6, 7, 11, 13]) {
       const m = de(n);
-      assertValidTree(m, { count: 2 * n - 2, terminals: 1 });
+      const byes = m.filter(
+        (x) => x.side === 'winners' && x.round === 1 && (x.homeSeed === null || x.awaySeed === null)
+      );
+      // The bracket size, not the field size, decides how many byes there are.
+      expect(byes.length).toBe(2 ** Math.ceil(Math.log2(n)) - n);
+      assertValidTree(m, { count: 2 * n - 2 + byes.length, terminals: 1 });
+
+      for (const b of byes) {
+        expect(b.status).toBe('complete');
+        expect(b.winnerSeed).toBe(b.homeSeed ?? b.awaySeed);
+        // Nobody lost, so nobody drops. The losers bracket is sized on that.
+        expect(b.loserNextMatchKey).toBeNull();
+        // It still advances its player, exactly as a played match would.
+        expect(b.nextMatchKey).not.toBeNull();
+      }
+
       // Byes never leave a match with two empty slots waiting on nothing.
       expect(m.every((x) => x.homeSeed !== null || x.awaySeed !== null || x.status === 'pending')).toBe(true);
     }
   });
 
-  it('match count is exactly 2N-2 across a range of fields', () => {
+  it('adds exactly one match per bye and nothing else', () => {
+    // 2N-2 is the playable-match count; each bye is one extra visible row.
     for (const n of [2, 3, 4, 5, 8, 13, 16, 32]) {
-      expect(de(n).length).toBe(2 * n - 2);
+      const byeCount = 2 ** Math.ceil(Math.log2(n)) - n;
+      expect(de(n).length).toBe(2 * n - 2 + byeCount);
+    }
+  });
+
+  it('a power-of-two field is completely unchanged — no byes to add', () => {
+    for (const n of [2, 4, 8, 16, 32]) {
+      const m = de(n);
+      expect(m.length).toBe(2 * n - 2);
+      expect(m.some((x) => x.homeSeed === null && x.status === 'complete')).toBe(false);
     }
   });
 

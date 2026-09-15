@@ -104,12 +104,74 @@ export const RELEASES: Release[] = [
   {
     version: UNRELEASED,
     date: null,
+    summary: 'My Stats, and early 8s on the scoring page',
+    entries: [
+      {
+        text: 'My Stats is real now. Every game you have played is in there: who you played, where, which table, whether you won, and how the game ended. It goes back over everything already recorded, so there is history to look at from day one.',
+        kind: 'feature',
+      },
+      {
+        text: 'It splits how games ended BOTH ways — not just the break and runs you made, but the ones that beat you. Two players can have the same win-loss record and be nothing alike, and this is where you see it.',
+        kind: 'feature',
+      },
+      {
+        text: 'Filter it however you like: one opponent, one venue, one table, bar box or big table, 8-ball only, or opponents in a handicap range. The totals recalculate as you go, so "my record on table 2" really is your record on table 2.',
+        kind: 'feature',
+      },
+      {
+        text: 'Scoring an 8-ball game now has an "Early 8" box. Tick it when the game ended because someone put the 8 down early. It goes on the record like a break and run does, so it can be counted later instead of just being remembered.',
+        kind: 'feature',
+      },
+      {
+        text: 'Fair warning: the My Stats page is brand new and has barely been tested against real games — it is going out to you to be tried properly. If a number looks wrong, or you want it to answer something it cannot, please say so. Tell your league operator, and it will get looked at.',
+        kind: 'improvement',
+      },
+    ],
+  },
+  {
+    version: '1.9.0',
+    date: '2026-09-06',
     summary:
       'Message notifications on your phone, tournament brackets, and an update button that works',
     entries: [
       {
         text: 'Tournaments: run a single or double elimination bracket for a week off or a special event. Add names, tap the winners, and share a link so anyone can follow along live. It’s free and it doesn’t need a league.',
         kind: 'feature',
+      },
+      {
+        text: 'Players can put themselves in your tournament. Print the QR code, stick it on the wall, and anyone who scans it is added to a waiting list you approve from. No account needed \u2014 they can just type a name.',
+        kind: 'feature',
+      },
+      {
+        text: 'Scan the code and you get the tournament\u2019s own page: who\u2019s in, who\u2019s still waiting, and what you\u2019re playing. It updates itself while you stand there, and the bracket appears on it once the organiser starts.',
+        kind: 'feature',
+      },
+      {
+        text: 'Everyone you\u2019ve run a tournament with is remembered, so next time they\u2019re one tap away instead of retyped \u2014 including the regulars who don\u2019t use the app. You can drop anyone from that list whenever you like.',
+        kind: 'feature',
+        forOperators: true,
+      },
+      {
+        text: 'Someone turn up after you started? If a bye hasn\u2019t been used yet, you can put them in it \u2014 the player with the bye then plays that round instead of sitting it out. Included with any paid tournament.',
+        kind: 'feature',
+        forOperators: true,
+      },
+      {
+        text: 'Byes now show on the bracket. If you get a bye in the first round it says so, instead of your name quietly appearing in round two with no explanation.',
+        kind: 'improvement',
+      },
+      {
+        text: 'Running a tournament, you can now search for a player by name or player number and add them, instead of retyping a name you know we already have.',
+        kind: 'feature',
+        forOperators: true,
+      },
+      {
+        text: 'Tournaments you\u2019ve joined now show up on your Tournaments page, so you can get back to one without hunting down the QR code again.',
+        kind: 'fix',
+      },
+      {
+        text: 'The paid tournament extras are switched on but nobody is being charged for them yet. Cards aren\u2019t checked and no money is taken \u2014 the price you see is a placeholder while we finish the payment side. Use them free in the meantime.',
+        kind: 'improvement',
       },
       {
         text: 'Messages can now reach your phone even when the app is closed. Tap the notification and it opens straight to that conversation.',

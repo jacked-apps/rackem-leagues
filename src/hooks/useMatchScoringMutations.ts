@@ -36,6 +36,7 @@ function resultFromGame(g: {
   break_fouled: boolean;
   runout: boolean;
   win_by_forfeit: boolean;
+  early_eight: boolean;
   winner_value: number | null;
   loser_value: number | null;
 }): ConfirmationResult {
@@ -47,6 +48,7 @@ function resultFromGame(g: {
     breakFouled: g.break_fouled,
     runout: g.runout,
     winByForfeit: g.win_by_forfeit,
+    earlyEight: g.early_eight,
     winnerValue: g.winner_value,
     loserValue: g.loser_value,
   };
@@ -85,6 +87,7 @@ interface UseMatchScoringMutationsParams {
     breakFouled: boolean;
     runout: boolean;
     winByForfeit: boolean;
+    earlyEight: boolean;
     winnerValue: number | null;
     loserValue: number | null;
   }) => void;
@@ -177,6 +180,7 @@ export function useMatchScoringMutations({
             breakFouled: existingGame.break_fouled,
             runout: existingGame.runout,
             winByForfeit: existingGame.win_by_forfeit,
+            earlyEight: existingGame.early_eight,
             loserValue: existingGame.loser_value,
             winnerValue: existingGame.winner_value,
           });
@@ -326,7 +330,7 @@ export function useMatchScoringMutations({
           const { data: freshRow } = await supabase
             .from('match_games')
             .select(
-              'confirmed_by_home, confirmed_by_away, winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+              'confirmed_by_home, confirmed_by_away, winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, early_eight, winner_value, loser_value'
             )
             .eq('id', existingGame.id)
             .maybeSingle();
@@ -586,6 +590,8 @@ export function useMatchScoringMutations({
         breakFouled?: boolean;
         runout?: boolean;
         winByForfeit?: boolean;
+        /** Loser pocketed the 8 early. 8-ball only. */
+        earlyEight?: boolean;
         winnerValue?: number | null;
         loserValue?: number | null;
       } = {}
@@ -595,6 +601,7 @@ export function useMatchScoringMutations({
       const breakFouled = extras.breakFouled ?? false;
       const runout = extras.runout ?? false;
       const winByForfeit = extras.winByForfeit ?? false;
+      const earlyEight = extras.earlyEight ?? false;
       const winnerValue = extras.winnerValue ?? null;
       const loserValue = extras.loserValue ?? null;
 
@@ -662,6 +669,7 @@ export function useMatchScoringMutations({
           break_fouled: breakFouled,
           runout,
           win_by_forfeit: winByForfeit,
+          early_eight: earlyEight,
           winner_value: winnerValue,
           loser_value: loserValue,
           confirmed_by_home: isHomeTeamScoring ? memberId : null,
@@ -691,7 +699,7 @@ export function useMatchScoringMutations({
         const { data: freshRow } = await supabase
           .from('match_games')
           .select(
-            'winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, winner_value, loser_value'
+            'winner_team_id, winner_player_id, break_and_run, golden_break, break_fouled, runout, win_by_forfeit, early_eight, winner_value, loser_value'
           )
           .eq('id', existingGame.id)
           .maybeSingle();
@@ -779,6 +787,7 @@ export function useMatchScoringMutations({
             break_fouled: gameData.break_fouled,
             runout: gameData.runout,
             win_by_forfeit: gameData.win_by_forfeit,
+            early_eight: gameData.early_eight,
             winner_value: gameData.winner_value,
             loser_value: gameData.loser_value,
             confirmed_by_home: isHomeTeamScoring

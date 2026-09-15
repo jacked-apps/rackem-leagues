@@ -62,10 +62,18 @@ function placeSeed(match: GeneratedMatch, slot: MatchSlot, seed: number): void {
 /**
  * Generate the single-elimination winners tree for N participants.
  *
- * Exactly `N-1` matches — a bye is NOT a match. Byes (nextPow2(N) - N, on the
- * top seeds) are resolved by placing that seed directly into its round-2 slot,
- * so a top seed with a bye simply starts in round 2. Round-1 rows exist only
- * for real (both-sides-real) pairings.
+ * Byes are REAL, COMPLETED round-1 matches: one seed, an empty opposite slot,
+ * and that seed already recorded as the winner and placed in round 2.
+ *
+ * They used to be elided, which made a top seed simply appear in round 2 with
+ * no explanation — the mistake tournament guides name outright ("the most
+ * common mistake is hiding byes inside a bracket image; label them clearly in
+ * the first round"). Emitting them also gives a late entrant somewhere to sit:
+ * an empty chair opposite a player who is waiting for an opponent who never
+ * entered.
+ *
+ * A bye routes NO loser. Nobody has lost, and the losers bracket is sized on
+ * the assumption that nobody arrives from here.
  */
 export function generateSingleElim(participantCount: number): GeneratedBracket {
   const size = nextPow2(participantCount);
@@ -73,23 +81,34 @@ export function generateSingleElim(participantCount: number): GeneratedBracket {
   const matches: GeneratedMatch[] = [];
   const byKey = new Map<string, GeneratedMatch>();
 
-  // Round 1: materialize a match only for real pairings; a bye resolves to the
-  // real seed which we route into round 2 below.
+  // Round 1: every conceptual pair becomes a match. A pair with only one real
+  // seed becomes a BYE — already complete, its lone player already the winner.
   const pairs = roundOnePairs(participantCount); // size/2 conceptual pairs
-  type Resolution = { type: 'match'; key: string } | { type: 'bye'; seed: number };
+  type Resolution =
+    | { type: 'match'; key: string }
+    | { type: 'bye'; key: string; seed: number };
   const resolutions: Resolution[] = pairs.map((pair, i) => {
     const hasHome = pair.home !== null;
     const hasAway = pair.away !== null;
+    const m = makeMatch(`W1-${i}`, 1, 'winners', i);
+    m.homeSeed = pair.home;
+    m.awaySeed = pair.away;
+
     if (hasHome && hasAway) {
-      const m = makeMatch(`W1-${i}`, 1, 'winners', i);
-      m.homeSeed = pair.home;
-      m.awaySeed = pair.away;
       m.status = 'ready';
       matches.push(m);
       byKey.set(m.key, m);
       return { type: 'match', key: m.key };
     }
-    return { type: 'bye', seed: (pair.home ?? pair.away)! };
+
+    // A bye: the one real seed has already won it, and is placed into round 2
+    // below exactly as a played match's winner would be.
+    const seed = (pair.home ?? pair.away)!;
+    m.winnerSeed = seed;
+    m.status = 'complete';
+    matches.push(m);
+    byKey.set(m.key, m);
+    return { type: 'bye', key: m.key, seed };
   });
 
   // Rounds 2..k: fully materialized (every one is a real potential game).
@@ -112,19 +131,18 @@ export function generateSingleElim(participantCount: number): GeneratedBracket {
     }
   }
 
-  // Connect round 1 into round 2: conceptual pair i feeds W2-floor(i/2). A real
-  // match wires its winner pointer; a bye places its seed straight in.
+  // Connect round 1 into round 2: conceptual pair i feeds W2-floor(i/2). Every
+  // round-1 match now wires its winner pointer — a bye additionally has its
+  // winner ALREADY placed in that slot, which is the same state a real match
+  // reaches the moment it is decided.
   if (rounds >= 2) {
     resolutions.forEach((res, i) => {
       const targetKey = `W2-${Math.floor(i / 2)}`;
       const slot: MatchSlot = i % 2 === 0 ? 'home' : 'away';
-      if (res.type === 'match') {
-        const m = byKey.get(res.key)!;
-        m.nextMatchKey = targetKey;
-        m.nextMatchSlot = slot;
-      } else {
-        placeSeed(byKey.get(targetKey)!, slot, res.seed);
-      }
+      const m = byKey.get(res.key)!;
+      m.nextMatchKey = targetKey;
+      m.nextMatchSlot = slot;
+      if (res.type === 'bye') placeSeed(byKey.get(targetKey)!, slot, res.seed);
     });
   }
 

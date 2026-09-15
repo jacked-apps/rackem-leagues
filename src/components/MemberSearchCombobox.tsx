@@ -4,6 +4,12 @@
  * Server-side search combobox for selecting members.
  * Scales to large datasets by searching on the server instead of loading all members.
  * Includes filter chips for All/My Org/State/Staff.
+ *
+ * The chips are configurable because they are LEAGUE concepts. "My Org",
+ * "State" and "Staff" only mean something to a caller inside an organization —
+ * a tournament organizer is just a player with no org, so showing them three
+ * buttons that can't help is worse than showing none. Callers pass `filters` to
+ * say which apply to them.
  */
 import React, { useState } from 'react';
 import { Check, ChevronsUpDown, X } from 'lucide-react';
@@ -26,6 +32,12 @@ import { getPlayerDisplayName, isPlaceholderMember } from '@/types/member';
 import { PlaceholderBadge } from '@/components/PlaceholderBadge';
 
 interface MemberSearchComboboxProps {
+  /**
+   * DOM id for the trigger, so an external <label htmlFor> actually associates
+   * with it. Without one a caller's own label is decorative — it reads as a
+   * label but doesn't focus or announce the control.
+   */
+  id?: string;
   /** Currently selected member ID */
   value: string;
   /** Called when selection changes */
@@ -48,6 +60,19 @@ interface MemberSearchComboboxProps {
   userState?: string | null;
   /** Default filter to show */
   defaultFilter?: MemberSearchFilter;
+  /**
+   * Which filter chips to offer, in order. Defaults to all four. Pass a single
+   * filter to hide the row entirely — one chip is not a choice.
+   */
+  filters?: MemberSearchFilter[];
+  /**
+   * Only offer members with a real account.
+   *
+   * Placeholder players belong to a league's team structure. A caller outside
+   * it — a tournament, which has no org and no teams — shouldn't be handing them
+   * out, and skipping them also avoids a full team_players read per keystroke.
+   */
+  registeredOnly?: boolean;
 }
 
 /**
@@ -58,6 +83,7 @@ interface MemberSearchComboboxProps {
  * Only loads top 50 matches - scales to large datasets.
  */
 export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
+  id,
   value,
   onValueChange,
   placeholder = 'Select member...',
@@ -69,6 +95,8 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
   organizationId = null,
   userState = null,
   defaultFilter = 'state',
+  filters = ['my_org', 'state', 'staff', 'all'],
+  registeredOnly = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,7 +109,8 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
     activeFilter,
     organizationId,
     userState,
-    open // Only search when dropdown is open
+    open, // Only search when dropdown is open
+    registeredOnly
   );
 
   // Filter out excluded IDs (completely remove them from results)
@@ -93,12 +122,13 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
   const selectedMemberFromResults = searchResults.find((member) => member.id === value);
   const selectedMember = selectedMemberFromResults || cachedSelectedMember;
 
-  const filterButtons: Array<{ id: MemberSearchFilter; label: string }> = [
-    { id: 'my_org', label: 'My Org' },
-    { id: 'state', label: 'State' },
-    { id: 'staff', label: 'Staff' },
-    { id: 'all', label: 'All' },
-  ];
+  const FILTER_LABELS: Record<MemberSearchFilter, string> = {
+    my_org: 'My Org',
+    state: 'State',
+    staff: 'Staff',
+    all: 'All',
+  };
+  const filterButtons = filters.map((id) => ({ id, label: FILTER_LABELS[id] }));
 
   return (
     <div className={className}>
@@ -111,6 +141,7 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <button
+              id={id}
               type="button"
               role="combobox"
               aria-expanded={open}
@@ -130,7 +161,9 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
           </PopoverTrigger>
           <PopoverContent className="w-[400px] p-0" align="start">
             <Command shouldFilter={false}>
-              {/* Filter Chips */}
+              {/* Filter chips — hidden when there is only one, since a lone
+                  chip offers no choice and just takes a row. */}
+              {filterButtons.length > 1 && (
               <div className="flex gap-1 p-2 border-b">
                 {filterButtons.map((filter) => (
                   <button
@@ -147,6 +180,7 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
                   </button>
                 ))}
               </div>
+              )}
 
               <CommandInput
                 placeholder="Search by name or player #..."
