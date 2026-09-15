@@ -27,6 +27,7 @@ vi.mock('@/api/hooks/useBrackets', () => ({
   useAdvanceWinner: () => ({ mutateAsync: mockAdvance }),
   useSetMatchInProgress: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
   useReopenMatch: () => ({ mutateAsync: mockReopen }),
+  useAddLateEntry: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCloseBracket: () => ({ mutateAsync: mockClose }),
 }));
 
