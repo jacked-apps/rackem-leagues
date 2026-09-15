@@ -26,6 +26,12 @@ export type MemberSearchFilter = 'all' | 'my_org' | 'state' | 'staff';
  * @param organizationId - Current user's organization (for 'my_org' filter)
  * @param userState - Current user's state (for 'state' filter)
  * @param limit - Max results to return (default 50)
+ * @param registeredOnly - Return only members with a real account.
+ *   Placeholder players belong to a league's team structure; a caller outside
+ *   that structure (a tournament, which has no org and no teams) has no business
+ *   offering them, and the whole assigned-placeholder rule below is meaningless
+ *   to it. Setting this also SKIPS the team_players scan entirely, which is a
+ *   full-table read this search otherwise does on every keystroke.
  * @returns Array of members matching search criteria
  * @throws Error if database query fails
  *
@@ -38,22 +44,29 @@ export async function searchMembers(
   filter: MemberSearchFilter,
   organizationId: string | null,
   userState: string | null,
-  limit: number = 50
+  limit: number = 50,
+  registeredOnly: boolean = false
 ): Promise<PartialMember[]> {
-  // First, get IDs of placeholder players already on teams (to exclude them)
-  // These PPs belong to specific teams and shouldn't be "adopted" by other captains
-  const { data: assignedPPs, error: ppError } = await supabase
-    .from('team_players')
-    .select('member_id, members!inner(user_id)')
-    .is('members.user_id', null);
+  // IDs of placeholder players already on teams, so they can be excluded — a PP
+  // belongs to a specific team and shouldn't be "adopted" by another captain.
+  //
+  // Skipped entirely when the caller wants registered members only: this is a
+  // full read of team_players on EVERY search, and a caller with no teams gains
+  // nothing from it.
+  let assignedPPIds: string[] = [];
+  if (!registeredOnly) {
+    const { data: assignedPPs, error: ppError } = await supabase
+      .from('team_players')
+      .select('member_id, members!inner(user_id)')
+      .is('members.user_id', null);
 
-  if (ppError) {
-    console.error('Failed to fetch assigned PPs:', ppError);
-    // Continue without exclusion rather than fail entirely
+    if (ppError) {
+      console.error('Failed to fetch assigned PPs:', ppError);
+      // Continue without exclusion rather than fail entirely
+    }
+
+    assignedPPIds = [...new Set(assignedPPs?.map(tp => tp.member_id) || [])];
   }
-
-  // Extract unique PP member IDs that are already on teams
-  const assignedPPIds = [...new Set(assignedPPs?.map(tp => tp.member_id) || [])];
 
   // Handle 'my_org' filter separately since it requires a subquery
   if (filter === 'my_org' && organizationId) {
@@ -81,6 +94,8 @@ export async function searchMembers(
       .select('id, first_name, last_name, system_player_number, bca_member_number, state, user_id, email')
       .in('id', memberIds)
       .limit(limit);
+
+    if (registeredOnly) query = query.not('user_id', 'is', null);
 
     // Apply search if query provided
     const trimmedQuery = searchQuery.trim();
@@ -126,6 +141,8 @@ export async function searchMembers(
     .from('members')
     .select('id, first_name, last_name, system_player_number, bca_member_number, state, user_id, email')
     .limit(limit);
+
+  if (registeredOnly) query = query.not('user_id', 'is', null);
 
   if (filter === 'state' && userState) {
     query = query.eq('state', userState);
