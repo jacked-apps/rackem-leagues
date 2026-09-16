@@ -102,7 +102,7 @@ A second concern surfaced during the same testing pass: the live scoreboard's mo
 
 - PR #98 (modular league system v2) merges as-is. All schema fields referenced (`home_to_win` trio, `home_games_won` / `home_points_earned`, `system_snapshot.points_calculator` + `points_calculator_params`) exist post-merge.
 - Each calculator's existing `paramSchema` will be extended with optional `display_role` declarations on params (e.g. `display_role: 'milestone'` on `accumulate_with_milestone_jumps`'s `multiplier_at_tie` param). The scoreboard reads the schema and renders accordingly; an optional `getDisplayHints(params)` escape hatch on the calculator module covers genuinely-unique cases. Today's three registered calculators (`linear_above_threshold`, `accumulate_with_milestone_jumps`, `accumulated_per_game`) plus the `'none'` sentinel are in scope; the exact `display_role` taxonomy is a planning decision.
-- **PR #98 fragility note:** PR #98 is OPEN at brainstorm time. Schema fields referenced (snapshot keys, threshold-trio columns, calculator registry method signatures) are assumed to merge as-is. If review feedback materially reshapes any of these, this brainstorm needs revision before planning starts. Re-read PR #98 immediately before invoking `/ce:plan` and flag any drift.
+- **PR #98 fragility note:** PR #98 is OPEN at brainstorm time. Schema fields referenced (snapshot keys, threshold-trio columns, calculator registry method signatures) are assumed to merge as-is. If review feedback materially reshapes any of these, this brainstorm needs revision before planning starts. Re-read PR #98 immediately before invoking `/compound-engineering:ce-plan` and flag any drift.
 - **Legacy snapshot fallback policy:** Existing in-flight matches may have legacy snapshots without `points_calculator_params`. `src/api/queries/matches.ts:856` already has a defensive live-prefs fallback. The unified scoreboard inherits that fallback — meaning R3's "no re-computation" is true for fresh matches, but legacy matches still fall through the live-prefs path. Acceptable for this branch since all dev data is disposable per project convention; production deployment would gate on either a snapshot backfill or `supabase db reset`.
 - `src/types/match.ts` already carries the threshold-trio columns (per PR #98 Phase 2); `src/types/database.types.ts` already has the regenerated types.
 - `useResolvedLeaguePrefs` already exposes `win_condition` and `lineup_size` — no schema work needed for this branch.
@@ -170,4 +170,4 @@ Pixel-level visuals defer to plan. Constraint: scoreboard remains the page's mai
 
 ## Next Steps
 
--> `/ce:plan` for structured implementation planning
+-> `/compound-engineering:ce-plan` for structured implementation planning
