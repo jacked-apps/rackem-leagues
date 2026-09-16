@@ -389,6 +389,38 @@ export type Database = {
           },
         ]
       }
+      bracket_walkup_roster: {
+        Row: {
+          display_name: string
+          first_seen_at: string
+          handicap: string | null
+          id: string
+          organizer_member_id: string
+        }
+        Insert: {
+          display_name: string
+          first_seen_at?: string
+          handicap?: string | null
+          id?: string
+          organizer_member_id: string
+        }
+        Update: {
+          display_name?: string
+          first_seen_at?: string
+          handicap?: string | null
+          id?: string
+          organizer_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_walkup_roster_organizer_fkey"
+            columns: ["organizer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brackets: {
         Row: {
           charge_amount_cents: number | null
@@ -1335,6 +1367,7 @@ export type Database = {
           home_to_tie: number | null
           home_to_win: number | null
           id: string
+          lms_entered_at: string | null
           match_number: number
           match_result: string | null
           results_confirmed_by_away: boolean
@@ -1372,6 +1405,7 @@ export type Database = {
           home_to_tie?: number | null
           home_to_win?: number | null
           id?: string
+          lms_entered_at?: string | null
           match_number: number
           match_result?: string | null
           results_confirmed_by_away?: boolean
@@ -1409,6 +1443,7 @@ export type Database = {
           home_to_tie?: number | null
           home_to_win?: number | null
           id?: string
+          lms_entered_at?: string | null
           match_number?: number
           match_result?: string | null
           results_confirmed_by_away?: boolean
@@ -2502,6 +2537,98 @@ export type Database = {
           },
         ]
       }
+      room_phones: {
+        Row: {
+          device_id: string
+          display_name: string
+          id: string
+          is_host: boolean
+          joined_at: string
+          last_seen_at: string
+          member_id: string
+          room_id: string
+        }
+        Insert: {
+          device_id: string
+          display_name: string
+          id?: string
+          is_host?: boolean
+          joined_at?: string
+          last_seen_at?: string
+          member_id: string
+          room_id: string
+        }
+        Update: {
+          device_id?: string
+          display_name?: string
+          id?: string
+          is_host?: boolean
+          joined_at?: string
+          last_seen_at?: string
+          member_id?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_phones_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_phones_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rooms: {
+        Row: {
+          created_at: string
+          game_key: string
+          game_tables: string[]
+          host_member_id: string
+          id: string
+          join_token: string
+          last_activity_at: string
+          settings: Json
+          shared: boolean
+        }
+        Insert: {
+          created_at?: string
+          game_key: string
+          game_tables?: string[]
+          host_member_id: string
+          id?: string
+          join_token?: string
+          last_activity_at?: string
+          settings?: Json
+          shared?: boolean
+        }
+        Update: {
+          created_at?: string
+          game_key?: string
+          game_tables?: string[]
+          host_member_id?: string
+          id?: string
+          join_token?: string
+          last_activity_at?: string
+          settings?: Json
+          shared?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_host_member_id_fkey"
+            columns: ["host_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rules_page_events: {
         Row: {
           created_at: string
@@ -3553,6 +3680,26 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: Json
       }
+      add_late_entry: {
+        Args: {
+          p_display_name?: string
+          p_match_id: string
+          p_member_id?: string
+        }
+        Returns: Json
+      }
+      add_premium_feature: {
+        Args: { p_bracket_id: string; p_feature: string }
+        Returns: Json
+      }
+      add_registered_to_hopper: {
+        Args: { p_bracket_id: string; p_member_id: string }
+        Returns: Json
+      }
+      add_self_as_walkup: {
+        Args: { p_display_name: string; p_join_token: string }
+        Returns: Json
+      }
       advance_bracket_winner: {
         Args: { p_match_id: string; p_winner_participant_id: string }
         Returns: boolean
@@ -3609,6 +3756,10 @@ export type Database = {
           team_id: string
         }[]
       }
+      close_room: {
+        Args: { p_room_id: string }
+        Returns: Json
+      }
       create_announcement_conversation: {
         Args: { p_member_ids: string[]; p_season_id: string; p_title: string }
         Returns: string
@@ -3629,7 +3780,20 @@ export type Database = {
         }
         Returns: string
       }
-      daitch_mokotoff: { Args: { "": string }; Returns: string[] }
+      create_room: {
+        Args: {
+          p_device_id: string
+          p_game_key: string
+          p_settings?: Json
+          p_shared?: boolean
+          p_tables: string[]
+        }
+        Returns: Json
+      }
+      daitch_mokotoff: {
+        Args: { "": string }
+        Returns: string[]
+      }
       delete_unused_placeholder: {
         Args: {
           p_actor_member_id: string
@@ -3641,46 +3805,46 @@ export type Database = {
           success: boolean
         }[]
       }
-      dmetaphone: { Args: { "": string }; Returns: string }
-      dmetaphone_alt: { Args: { "": string }; Returns: string }
+      dmetaphone: {
+        Args: { "": string }
+        Returns: string
+      }
+      dmetaphone_alt: {
+        Args: { "": string }
+        Returns: string
+      }
       drop_team_mid_season: {
         Args: { p_season_id: string; p_team_id: string }
         Returns: string
-      }
-      forget_bracket_roster_entry: {
-        Args: { p_member_id?: string; p_display_name?: string }
-        Returns: boolean
       }
       finalize_bracket_hopper: {
         Args: { p_bracket_id: string; p_include_waiting?: boolean }
         Returns: number
       }
-      get_bracket_hopper: { Args: { p_bracket_id: string }; Returns: Json }
-      get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
-      get_bracket_player_view: { Args: { p_join_token: string }; Returns: Json }
-      get_my_tournaments: { Args: never; Returns: Json }
-      remove_premium_feature: {
-        Args: { p_bracket_id: string; p_feature: string }
+      forget_bracket_roster_entry: {
+        Args: { p_display_name?: string; p_member_id?: string }
+        Returns: boolean
+      }
+      get_bracket_hopper: {
+        Args: { p_bracket_id: string }
         Returns: Json
       }
-      add_premium_feature: {
-        Args: { p_bracket_id: string; p_feature: string }
+      get_bracket_player_view: {
+        Args: { p_join_token: string }
         Returns: Json
       }
-      add_late_entry: {
-        Args: { p_match_id: string; p_member_id?: string; p_display_name?: string }
+      get_bracket_roster: {
+        Args: { p_bracket_id: string }
         Returns: Json
       }
-      add_registered_to_hopper: {
-        Args: { p_bracket_id: string; p_member_id: string }
+      get_bracket_share: {
+        Args: { p_share_token: string }
         Returns: Json
       }
-      add_self_as_walkup: {
-        Args: { p_join_token: string; p_display_name: string }
-        Returns: Json
+      get_current_member_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
-      get_bracket_share: { Args: { p_share_token: string }; Returns: Json }
-      get_current_member_id: { Args: never; Returns: string }
       get_invite_details: {
         Args: { p_token: string }
         Returns: {
@@ -3694,7 +3858,10 @@ export type Database = {
           team_name: string
         }[]
       }
-      get_join_requests_for_approver: { Args: never; Returns: Json }
+      get_join_requests_for_approver: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_league_teams_for_onboarding: {
         Args: { p_league_id: string }
         Returns: Json
@@ -3714,9 +3881,12 @@ export type Database = {
           synopsis: Json
         }[]
       }
-      get_my_approved_join_requests: { Args: never; Returns: Json }
+      get_my_approved_join_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_my_pending_invites: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           captain_name: string
           creator_name: string
@@ -3735,9 +3905,22 @@ export type Database = {
           token: string
         }[]
       }
-      get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
-      get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
-      get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
+      get_my_tournaments: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_operator_placeholders: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_player_stats: {
+        Args: { p_org_id: string }
+        Returns: Json
+      }
+      get_operator_stats: {
+        Args: { operator_id_param: string }
+        Returns: Json
+      }
       get_org_placeholders_for_merge: {
         Args: { p_include_archived?: boolean; p_org_id: string }
         Returns: {
@@ -3783,7 +3966,18 @@ export type Database = {
           sender_name: string
         }[]
       }
-      get_team_join_view: { Args: { p_token: string }; Returns: Json }
+      get_room: {
+        Args: { p_room_id: string }
+        Returns: Json
+      }
+      get_room_by_token: {
+        Args: { p_join_token: string }
+        Returns: Json
+      }
+      get_team_join_view: {
+        Args: { p_token: string }
+        Returns: Json
+      }
       get_team_placeholders_for_claim: {
         Args: { p_team_id: string }
         Returns: Json
@@ -3799,6 +3993,26 @@ export type Database = {
           team_name: string
         }[]
       }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
       is_conversation_participant: {
         Args: { conv_id: string; uid: string }
         Returns: boolean
@@ -3811,7 +4025,14 @@ export type Database = {
         Args: { p_join_token: string; p_via?: string }
         Returns: Json
       }
-      league_display_name: { Args: { p_league_id: string }; Returns: string }
+      join_room: {
+        Args: { p_device_id: string; p_join_token: string }
+        Returns: Json
+      }
+      league_display_name: {
+        Args: { p_league_id: string }
+        Returns: string
+      }
       lookup_placeholder_by_system_number: {
         Args: { p_system_number: number }
         Returns: {
@@ -3837,7 +4058,10 @@ export type Database = {
         Args: { p_conversation_id: string; p_member_ids: string[] }
         Returns: undefined
       }
-      member_display_name: { Args: { p_member_id: string }; Returns: string }
+      member_display_name: {
+        Args: { p_member_id: string }
+        Returns: string
+      }
       merge_placeholder_into_member: {
         Args: { p_placeholder_member_id: string; p_target_member_id: string }
         Returns: {
@@ -3863,7 +4087,10 @@ export type Database = {
           total_rows_updated: number
         }[]
       }
-      placeholder_has_stats: { Args: { p_member_id: string }; Returns: boolean }
+      placeholder_has_stats: {
+        Args: { p_member_id: string }
+        Returns: boolean
+      }
       prep_match: {
         Args: { p_game_rows: Json; p_match_id: string; p_thresholds: Json }
         Returns: undefined
@@ -3881,7 +4108,14 @@ export type Database = {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
         Returns: Json
       }
-      reopen_bracket_match: { Args: { p_match_id: string }; Returns: boolean }
+      remove_premium_feature: {
+        Args: { p_bracket_id: string; p_feature: string }
+        Returns: Json
+      }
+      reopen_bracket_match: {
+        Args: { p_match_id: string }
+        Returns: boolean
+      }
       request_team_join: {
         Args: { p_claimed_member_id?: string; p_token: string }
         Returns: Json
@@ -3901,7 +4135,87 @@ export type Database = {
           success: boolean
         }[]
       }
-      rotate_team_join_token: { Args: { p_team_id: string }; Returns: Json }
+      room_activity_threshold: {
+        Args: Record<PropertyKey, never>
+        Returns: unknown
+      }
+      room_current_member: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          address: string | null
+          archived_at: string | null
+          bca_member_number: string | null
+          city: string
+          created_at: string | null
+          created_by_member_id: string | null
+          date_of_birth: string | null
+          deleted_at: string | null
+          email: string | null
+          fargo_rating: number | null
+          first_name: string
+          id: string
+          last_name: string
+          last_seen_whats_new: string | null
+          membership_paid_date: string | null
+          nickname: string | null
+          organization_id: string | null
+          phone: string | null
+          profanity_filter_enabled: boolean | null
+          profanity_onboarding_completed_at: string | null
+          push_enabled: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          starting_handicap_3v3: number | null
+          starting_handicap_5v5: number | null
+          state: string
+          system_player_number: number
+          timezone: string | null
+          updated_at: string | null
+          user_id: string | null
+          zip_code: string | null
+        }
+      }
+      room_display_name: {
+        Args: { p_member: Database["public"]["Tables"]["members"]["Row"] }
+        Returns: string
+      }
+      room_heartbeat: {
+        Args: { p_device_id: string; p_room_id: string }
+        Returns: Json
+      }
+      room_member_is_host: {
+        Args: { p_member_id: string }
+        Returns: boolean
+      }
+      room_presence_grace: {
+        Args: Record<PropertyKey, never>
+        Returns: unknown
+      }
+      room_seats: {
+        Args: { p_room_id: string }
+        Returns: Json
+      }
+      room_seats_per_host: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      room_state: {
+        Args: { p_room: Database["public"]["Tables"]["rooms"]["Row"] }
+        Returns: Json
+      }
+      room_table_cap: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      room_validate_tables: {
+        Args: { p_tables: string[] }
+        Returns: Json
+      }
+      rotate_team_join_token: {
+        Args: { p_team_id: string }
+        Returns: Json
+      }
       search_placeholder_matches: {
         Args: {
           p_city?: string
@@ -3963,6 +4277,10 @@ export type Database = {
           total_score: number
         }[]
       }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
       set_match_lineup_rating: {
         Args: {
           p_match_lineup_id: string
@@ -3981,9 +4299,35 @@ export type Database = {
         }
         Returns: string
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
-      soundex: { Args: { "": string }; Returns: string }
+      set_room_game: {
+        Args: {
+          p_game_key: string
+          p_room_id: string
+          p_settings?: Json
+          p_tables: string[]
+        }
+        Returns: Json
+      }
+      set_room_settings: {
+        Args: { p_room_id: string; p_settings: Json }
+        Returns: Json
+      }
+      set_room_shared: {
+        Args: { p_room_id: string; p_shared: boolean }
+        Returns: Json
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
+      }
+      soundex: {
+        Args: { "": string }
+        Returns: string
+      }
       start_bracket: {
         Args: { p_bracket_id: string; p_matches: Json }
         Returns: undefined
@@ -3992,9 +4336,18 @@ export type Database = {
         Args: { p_lineup_id: string; p_resolution: Json; p_thresholds: Json }
         Returns: undefined
       }
-      sweep_auto_forfeits: { Args: never; Returns: number }
-      sweep_stale_brackets: { Args: { p_idle_days?: number }; Returns: number }
-      text_soundex: { Args: { "": string }; Returns: string }
+      sweep_auto_forfeits: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      sweep_stale_brackets: {
+        Args: { p_idle_days?: number }
+        Returns: number
+      }
+      text_soundex: {
+        Args: { "": string }
+        Returns: string
+      }
       undo_merge_placeholder: {
         Args: {
           p_actor_member_id: string

@@ -347,7 +347,7 @@ granted to `authenticated` only; every caller is resolved `auth.uid()` →
 
 ### Phase A — the room's database
 
-- [ ] **Unit 1: Rooms schema, RPCs, and realtime publication**
+- [x] **Unit 1: Rooms schema, RPCs, and realtime publication** — built 2026-09-16 (`20260916171612_game_rooms.sql`, 28 db tests)
 
 **Goal:** The room exists as data, with every door and the table-validation
 check enforced in the database.
