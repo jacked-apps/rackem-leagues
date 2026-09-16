@@ -37,6 +37,7 @@ const baseResult: ConfirmationResult = {
   breakFouled: false,
   runout: false,
   winByForfeit: false,
+  earlyEight: false,
   winnerValue: null,
   loserValue: null,
 };
