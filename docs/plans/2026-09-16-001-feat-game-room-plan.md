@@ -50,10 +50,11 @@ self-scoring (R4 is a fence, not a wall); first tenant = two-phone coin flip.
 - R5 free = not shared = no channel, otherwise identical
 - R6 shared requires host gate; interim = `role in (league_operator, developer)`
 - R7 free → shared in place
-- R8–R10 seats: Game Room members × 4 − phones; derived; door-only
+- R8–R10 seats: distinct hosts present × 4 − devices present; derived;
+  door-only; a host's second device takes a seat and adds no allowance
 - R11 join by link/QR; must be signed in (registered member); name from profile
 - R12 people here / empty seats; tap → QR + link
-- R13 presence = `room_phones` row (one per member per room) + heartbeat
+- R13 presence = `room_phones` row (one per **device** per room) + heartbeat
 - R14–R16 one channel per phone; `room_id` filter; invalidate
   `['room', roomId, table]`, all tables on catch-up
 - R17 plug-in contract; creation-time table check
@@ -150,13 +151,20 @@ room A never hears room B; delete leaves no rows; league engine untouched.
   `/rooms/join/:token` are `withMember` under `MemberLayout`, like
   `/brackets`. Not public like the tournament share page. The RPCs remain
   the boundary for *which* members may do what.
-- **`room_phones` is the identity and the presence — one row per member per
-  room.** `UNIQUE(room_id, member_id)`; refresh or a second device = the same
-  row (a person, not a device; a member on two phones is one seat).
-  `display_name` is copied from the profile at join. `last_seen_at` is the
-  heartbeat; present = seen within the grace window. The room row's
-  `last_activity_at` is bumped by the same heartbeat RPC, so activity is
-  room-owned (R2) and free rooms are never swept mid-play.
+- **`room_phones` is the identity and the presence — one row per device per
+  room.** Supabase bills sockets, and every device opens its own, so the
+  thing the seat cap limits must be the thing that costs: devices. Each
+  browser mints a `device_id` once (localStorage, try/catch-wrapped like
+  `walkupMemory.ts`); a refresh or a second tab is the same device, a
+  tablet is a new one. `UNIQUE(room_id, device_id)`; `member_id` on every
+  row. **Allowance is per person, seats are per device:** a host on a phone
+  and a tablet is one host present (4 seats) using two of them — the second
+  device is "not me" for allowance and "one more screen" for seats, so the
+  cap and the bill move together. `display_name` is copied from the
+  profile at join. `last_seen_at` is the heartbeat; present = seen within
+  the grace window. The room row's `last_activity_at` is bumped by the same
+  heartbeat RPC, so activity is room-owned (R2) and free rooms are never
+  swept mid-play.
 - **The heartbeat must not spam the channel — on either table.**
   `room_phones` UPDATEs where only `last_seen_at` changed, and `rooms`
   UPDATEs where only `last_activity_at` changed, are ignored client-side
@@ -243,7 +251,8 @@ room A never hears room B; delete leaves no rows; league engine untouched.
 - *Room page chrome:* ordinary member route under `MemberLayout`. Whether
   the bottom tab bar should hide on `/rooms/:id` is judged on the sandbox
   (`HIDDEN_TAB_ROUTES` pattern).
-- *Member on a second device:* same member, same row, one seat.
+- *Member on a second device:* a new row, a new seat, no new allowance (Ed,
+  2026-09-16: "my second device is not me and is not a new host").
 
 ### Deferred to Implementation
 
@@ -275,6 +284,7 @@ room A never hears room B; delete leaves no rows; league engine untouched.
       InviteSheet.tsx                   QR + copyable link (the sign-in funnel)
       PhoneList.tsx                     who's here
       useRoomHeartbeat.ts               interval → room_heartbeat RPC
+      deviceId.ts                       mint-once per-browser id (a seat = a device)
       useRoomRealtime.ts                channel over the table list
       games/types.ts                    GameDefinition contract
       games/registry.ts                 gameKey → definition
@@ -304,7 +314,7 @@ sequenceDiagram
   H->>DB: heartbeat every 30s (bumps phone + room)
   Note over G: scans QR -> /rooms/join/token -> ProtectedRoute -> login/register -> back
   G->>DB: get_room_by_token(token) -> {found, room, seats}
-  G->>DB: join_room(token) -- FOR UPDATE + seat check; name from profile
+  G->>DB: join_room(token, device_id) -- FOR UPDATE + seat check; name from profile
   DB-->>H: room_phones INSERT (room_id filter) -> invalidate ['room', id, 'room_phones']
   Note over H,G: game rows flow the same way, one key per listed table
   G->>DB: call_room_coin(flip_id, 'heads') -- refused after the throw
@@ -323,7 +333,7 @@ granted to `authenticated` only; every caller is resolved `auth.uid()` →
 |---|---|---|
 | `create_room(game_key, tables[], settings, shared)` | signed-in member; shared needs host gate | validate tables; insert room + host phone row |
 | `get_room_by_token(token)` | any signed-in member | `{found:false}` or room + derived seats |
-| `join_room(token)` | any signed-in member | `not_shared` on a free room; lock the room row (`FOR UPDATE`); seat check; upsert the member's phone row (name from profile, host flag from gate) |
+| `join_room(token, device_id)` | any signed-in member | `not_shared` on a free room; lock the room row (`FOR UPDATE`); seat check (distinct hosts × 4 − devices); upsert this device's phone row (name from profile, host flag from gate) |
 | `room_heartbeat(room_id)` | a phone in the room | bump `last_seen_at` + `rooms.last_activity_at` |
 | `set_room_game(room_id, game_key, tables[], settings)` | host | validate; wipe old tables by room_id; update row |
 | `set_room_settings(room_id, settings)` | host | update settings; no wipe |
@@ -358,9 +368,10 @@ check enforced in the database.
   shared boolean default false, join_token uuid default gen_random_uuid()
   unique, last_activity_at, created_at.
 - `room_phones`: id, room_id (FK rooms cascade), member_id (FK members
-  cascade, NOT NULL), display_name (copied from the profile at join),
-  is_host boolean (the R6 gate evaluated at join — a "Game Room member"),
-  last_seen_at, joined_at; `UNIQUE(room_id, member_id)`.
+  cascade, NOT NULL), device_id uuid (client-minted, NOT NULL), display_name
+  (copied from the profile at join), is_host boolean (the R6 gate evaluated
+  at join — a "Game Room member"), last_seen_at, joined_at;
+  `UNIQUE(room_id, device_id)`.
 - Both tables: publication block + `REPLICA IDENTITY FULL`, header note
   about restarting the local realtime container.
 - A private validation function used by `create_room` and `set_room_game`:
@@ -368,13 +379,15 @@ check enforced in the database.
   `supabase_realtime`, with `relreplident = 'f'`; count ≤ cap. Returns the
   offending table name so the error is specific.
 - Seat math lives in one SQL function `room_seats(room_id)` → present
-  phones, present members, open seats — used by `join_room` and returned by
+  devices, present hosts (**distinct** `member_id` where `is_host`), open
+  seats = hosts × 4 − devices — used by `join_room` and returned by
   `get_room_by_token` so client and server never disagree.
 - Every RPC resolves the caller via `auth.uid()` → `members.user_id` (the
   `join_bracket_hopper` template) and returns `not_signed_in` / `no_member`
   when it cannot.
-- `join_room` on an existing (room, member) row just refreshes name/last_seen
-  (rejoin, refresh, or a second device is not a new phone). It refuses a free room (`not_shared`), locks
+- `join_room(token, device_id)` on an existing (room, device) row just
+  refreshes name/last_seen (rejoin or refresh is not a new device; a second
+  device is). It refuses a free room (`not_shared`), locks
   the room row `FOR UPDATE` so two phones cannot both take the last seat,
   and a full room returns `{ok:false, reason:'full', hint:'another member
   joining opens more'}`.
@@ -399,11 +412,12 @@ cascade) before the RPC tests; it is the thing the whole design leans on.
 **Test scenarios:**
 - Happy path: both tables are in `pg_publication_tables` and have `relreplident = 'f'`.
 - Happy path: `create_room` with a valid table list returns ok and creates the host's phone row with `is_member` true for an LO.
-- Happy path: `join_room` with a fresh token inserts a phone row carrying the member's profile name; a second call from the same member updates it, does not duplicate.
+- Happy path: `join_room` with a fresh token + device inserts a phone row carrying the member's profile name; a second call from the same device updates it, does not duplicate; a call from the same member with a different device inserts a second row.
 - Error path: `join_room` with `auth.uid()` null → `not_signed_in`; with a user that has no members row → `no_member`.
 - Happy path: `get_room_by_token` returns `{found:true}` with derived seats matching `room_seats`.
 - Edge case: a player-role host can create a free room but `create_room(shared=true)` → `not_a_host`; `set_room_shared` likewise.
-- Edge case: seats — one member present → 4 phones fit, the 5th `join_room` → `full`; a second member joining raises capacity to 8.
+- Edge case: seats — one host present → 4 devices fit, the 5th `join_room` → `full`; a second host joining raises capacity to 8.
+- Edge case: a host on two devices counts as one host (4 seats) and two devices (2 used); `room_seats` reports 2 open.
 - Edge case: a phone whose `last_seen_at` is older than the grace window is not counted as present by `room_seats`.
 - Edge case: `create_room` with 4 tables → `too_many_tables`; with a table lacking `room_id`, or `room_id` not uuid, or no cascade FK to rooms, or not published, or not full-replica → `table_not_ready` naming the table and what is missing; with `room_phones` listed → `table_reserved`.
 - Edge case: `join_room` on a free room → `not_shared`.
@@ -465,10 +479,11 @@ the existing `useCurrentMember()` — nothing new.
 
 **Files:**
 - Create: `src/api/queries/rooms.ts`, `src/api/mutations/rooms.ts`,
-  `src/api/hooks/useRooms.ts`, `src/rooms/useRoomHeartbeat.ts`
+  `src/api/hooks/useRooms.ts`, `src/rooms/useRoomHeartbeat.ts`,
+  `src/rooms/deviceId.ts` (mint-once localStorage id, try/catch-wrapped)
 - Modify: `src/api/queryKeys.ts` (rooms block), `src/api/hooks/index.ts`
 - Test: `src/api/hooks/useRooms.test.ts` (mocked supabase),
-  `src/rooms/useRoomHeartbeat.test.ts`
+  `src/rooms/useRoomHeartbeat.test.ts`, `src/rooms/deviceId.test.ts`
 
 **Approach:**
 - Queries throw on transport errors and return typed rows (`Tables<'rooms'>`).
@@ -487,6 +502,7 @@ the existing `useCurrentMember()` — nothing new.
 
 **Test scenarios:**
 - Happy path: `getRoom` for a deleted id resolves to null, not an error.
+- Happy path: `deviceId()` returns the same value on repeated calls and after a simulated reload; a fresh storage yields a new one; a throwing storage still returns a per-session id rather than crashing.
 - Happy path: `useRoomHeartbeat` fires on mount then every interval while enabled; stops on unmount.
 - Edge case: heartbeat pauses on `visibilitychange` hidden and fires immediately on visible.
 - Error path: a failing heartbeat RPC logs and does not throw or stop the interval.

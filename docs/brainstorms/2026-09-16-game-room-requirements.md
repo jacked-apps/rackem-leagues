@@ -88,16 +88,17 @@ bug, fixed in the room.
   channel at that moment.)
 
 **Seats and joining**
-- R8. Every **Game Room member** present in a shared room brings three guest
-  seats (four phones per member, including their own). Two members present =
-  eight phones. A signed-in account that does not hold membership is a guest.
-  Three-per-member is a starting dial, not a fixed number; nothing may assume
-  it. **Purpose of the cap:** to stop one membership from serving a whole bar.
-  It is not cost control (cost is trivial at these numbers) and not an upsell
-  aimed at guests.
-- R9. Seats are derived, never stored as a number: members present × 4, minus
-  phones present. A member joining raises the count; a member leaving lowers
-  it.
+- R8. Every **Game Room member** (host) present in a shared room brings three
+  guest seats (four devices per host, including their own). Two hosts
+  present = eight devices. A signed-in account that does not hold membership
+  is a guest. Three-per-host is a starting dial, not a fixed number; nothing
+  may assume it. **Purpose of the cap:** to stop one membership from serving
+  a whole bar — and, because Supabase bills per connected device, to keep
+  the thing you limit and the thing you pay for the same.
+- R9. Seats are derived, never stored as a number: **distinct hosts present ×
+  4, minus devices present.** A host's second device (phone + tablet) takes a
+  seat and adds no allowance — "my second device is not me and is not a new
+  host." A host joining raises the count; a host leaving lowers it.
 - R10. Capacity is checked only when a phone tries to join. Once in, a phone
   is never removed because the count later dropped (a member left, a phone
   went to sleep). The rule means "may one more phone come in," never "must
@@ -117,8 +118,9 @@ bug, fixed in the room.
   keeps one row per member in the room (profile name, whether they are a
   Game Room member, a last-seen heartbeat). A member is present while their
   heartbeat is fresh; a phone whose screen sleeps at the bar stays present
-  for a grace window and keeps its seat. A member on two devices is one row
-  and one seat. Seats, the door check, and "who's here" all read these rows.
+  for a grace window and keeps its seat. One row per **device**: a member on
+  two devices is two rows and two seats (but one host for allowance). Seats,
+  the door check, and "who's here" all read these rows.
   This row is the per-room identity a game keys "confirmed by" on, and it
   dies with the room. (Precedent: the bracket hopper stores participants as
   rows; the codebase has no channel-presence usage and does not need one.)
@@ -239,10 +241,12 @@ confirmation helper once a second game wants one (games appendix).
   on. Rows give all three; channel presence gives none. The cost is that
   "leaving" is a stale heartbeat, not an instant event — acceptable, and it
   is what keeps a sleeping phone at the bar in its seat.
-- **Count people in the room, not players at the table.** Six players and two
-  members in the room is two seats. The seat rule limits how many *members*
-  are in the room, never how many people play. The free room already handles
-  any number of players on one screen.
+- **Count devices, not people — allowance per person, seats per device.**
+  Supabase counts sockets; a phone and a tablet are two sockets even for one
+  person. So a seat is a device, and a host's extra device is a guest seat.
+  Six players around one phone is one seat. The seat rule limits how many
+  *screens* are in the room, never how many people play; the free room
+  already handles any number of players on one screen.
 - **Registered members only; the QR is a funnel.** Ed wants non-registered
   players pushed to become users. It also removes the whole anonymous-guest
   layer (a separate session type, app-wide "logged in ≠ member" handling, a

@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-09-16 (Game Room DECISION: registered members only — no anonymous guests. Ed: "pushing non-registered players to become users." The QR is a sign-in/register funnel via the existing `?redirect=`; room routes are ordinary `withMember` pages, not public like the tournament share page; `room_phones` is one row per member per room (a member on two devices = one seat). This deleted the whole anonymous-session layer from the plan (config flag, UserProvider/Login/ProtectedRoute changes, join-page guest choice, anonymous-user sweep, rate limit). Plan + brainstorm updated; `docs/plans/2026-09-16-001-feat-game-room-plan.md` remains the plan of record.)
+> **Last Updated**: 2026-09-16 (Game Room seat rule finalized: a seat is a DEVICE, allowance is per PERSON. Supabase bills per connected socket, so phone + tablet = 2 seats even for one member; a host's second device takes a seat and adds no allowance ("my second device is not me and is not a new host"). `room_phones` is one row per device (`UNIQUE(room_id, device_id)`, client-minted id in localStorage); `room_seats` = distinct hosts present × 4 − devices present. Earlier today: registered-members-only decision; plan + brainstorm at `docs/plans/2026-09-16-001-feat-game-room-plan.md` / `docs/brainstorms/2026-09-16-game-room-requirements.md`.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
