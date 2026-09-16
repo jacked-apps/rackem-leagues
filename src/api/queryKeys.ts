@@ -243,6 +243,19 @@ export const queryKeys = {
   },
 
   /**
+   * Permission / authorization query keys.
+   * A member's staff grants (organization_staff rows) are resolved live and
+   * feed the `can(...)` check layer.
+   */
+  permissions: {
+    /** Base key for all permission queries */
+    all: ['permissions'] as const,
+
+    /** A member's staff grants across all organizations */
+    grants: (memberId: string) => [...queryKeys.permissions.all, 'grants', memberId] as const,
+  },
+
+  /**
    * Operator-related query keys
    */
   operators: {

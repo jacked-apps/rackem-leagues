@@ -1837,6 +1837,7 @@ export type Database = {
           added_at: string | null
           added_by: string | null
           id: string
+          league_id: string | null
           member_id: string
           organization_id: string
           position: string
@@ -1845,6 +1846,7 @@ export type Database = {
           added_at?: string | null
           added_by?: string | null
           id?: string
+          league_id?: string | null
           member_id: string
           organization_id: string
           position: string
@@ -1853,6 +1855,7 @@ export type Database = {
           added_at?: string | null
           added_by?: string | null
           id?: string
+          league_id?: string | null
           member_id?: string
           organization_id?: string
           position?: string
@@ -1864,6 +1867,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_staff_league_scope_fkey"
+            columns: ["organization_id", "league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["organization_id", "id"]
           },
           {
             foreignKeyName: "organization_staff_member_id_fkey"
