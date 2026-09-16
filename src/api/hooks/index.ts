@@ -307,3 +307,17 @@ export { useCaptainTeamsMissingChat } from './useCaptainTeamsMissingChat';
 export type { CaptainTeamMissingChat } from './useCaptainTeamsMissingChat';
 export { useMessageComposerStatus } from './useMessageComposerStatus';
 export type { ComposerLockReason, ComposerStatus } from './useMessageComposerStatus';
+
+// Game Room — reads poll as the realtime fallback; writes invalidate the room prefix
+export {
+  useRoom,
+  useRoomByToken,
+  useMyRooms,
+  useCreateRoom,
+  useJoinRoom,
+  useSetRoomGame,
+  useSetRoomSettings,
+  useSetRoomShared,
+  useCloseRoom,
+  ROOM_POLL_MS,
+} from './useRooms';

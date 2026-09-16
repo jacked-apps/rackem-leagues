@@ -468,7 +468,7 @@ cascade) before the RPC tests; it is the thing the whole design leans on.
 
 ### Phase B — the room in the browser
 
-- [ ] **Unit 3: Data layer and identity**
+- [x] **Unit 3: Data layer and identity** — built 2026-09-16 (queries, mutations, hooks, deviceId, heartbeat; 13 unit + 2 db tests)
 
 **Goal:** Typed queries, mutations, hooks, and the heartbeat. Identity is
 the existing `useCurrentMember()` — nothing new.
