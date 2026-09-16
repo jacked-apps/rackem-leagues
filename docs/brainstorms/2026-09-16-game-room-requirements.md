@@ -102,23 +102,26 @@ bug, fixed in the room.
   is never removed because the count later dropped (a member left, a phone
   went to sleep). The rule means "may one more phone come in," never "must
   someone leave."
-- R11. Joining is by link or QR code. A guest with no account types a name and
-  is in. A signed-in account is recognized as such; a Game Room member adds
-  seats. *(Name-only guests: assumed — Ed did not object; flagged in
-  Outstanding Questions.)*
+- R11. Joining is by link or QR code, and **only registered members may
+  join**. A scanner who is signed out is sent through sign-in / registration
+  and brought straight back to the join link — the QR on the table is the
+  funnel into becoming a user. No name-only guests. A Game Room member adds
+  seats; any other registered member is a guest. *(Ed, 2026-09-16 — reversing
+  the earlier name-only assumption: "I am leaning towards pushing
+  non-registered players to become users.")*
 - R12. The room shows how many phones are watching and how many seats are
   empty. Tapping the empty-seat count is how you invite: it shows the room's
   QR code and a copyable link. With no seats left, the same tap explains that
   another member joining opens more.
 - R13. **"Present" is a stored fact, not a channel side-effect.** The room
-  keeps one row per phone in the room (name, whether they are a member, a
-  last-seen heartbeat). A phone is present while its heartbeat is fresh; a
-  phone whose screen sleeps at the bar stays present for a grace window and
-  keeps its seat. Seats, the door check, and "who's here" all read these rows.
-  This row is also the stable per-room identity a game can key "confirmed by"
-  on — it means nothing outside the room and dies with it. (Precedent: the
-  bracket hopper stores participants as rows; the codebase has no
-  channel-presence usage and does not need one.)
+  keeps one row per member in the room (profile name, whether they are a
+  Game Room member, a last-seen heartbeat). A member is present while their
+  heartbeat is fresh; a phone whose screen sleeps at the bar stays present
+  for a grace window and keeps its seat. A member on two devices is one row
+  and one seat. Seats, the door check, and "who's here" all read these rows.
+  This row is the per-room identity a game keys "confirmed by" on, and it
+  dies with the room. (Precedent: the bracket hopper stores participants as
+  rows; the codebase has no channel-presence usage and does not need one.)
 
 **Live sync**
 - R14. Each phone in a shared room holds exactly one live channel for the
@@ -236,9 +239,15 @@ confirmation helper once a second game wants one (games appendix).
   on. Rows give all three; channel presence gives none. The cost is that
   "leaving" is a stale heartbeat, not an instant event — acceptable, and it
   is what keeps a sleeping phone at the bar in its seat.
-- **Count phones, not players.** Six players and two phones is two phones. The
-  seat rule limits how many screens score, never how many people play. The
-  free room already handles any number of players on one screen.
+- **Count people in the room, not players at the table.** Six players and two
+  members in the room is two seats. The seat rule limits how many *members*
+  are in the room, never how many people play. The free room already handles
+  any number of players on one screen.
+- **Registered members only; the QR is a funnel.** Ed wants non-registered
+  players pushed to become users. It also removes the whole anonymous-guest
+  layer (a separate session type, app-wide "logged in ≠ member" handling, a
+  user garbage collector) that the first plan draft had to carry. Room pages
+  are ordinary member pages, not public ones like the tournament share page.
 - **Host pays, guests ride free.** If a guest had to pay to confirm a score,
   he'd say "just put it on your phone." One membership covering a table of
   phones is well inside the dollar.
@@ -296,13 +305,8 @@ whichever game implements them. The room knows nothing about any of it.
   developer), so it cannot express "LO *and* host" — which is why Ed is
   designing a one-row-per-hat designations table (with `until` and
   `source`) separately. Until then: LO or developer may host.
-- **Name-only guests write rows and listen on the anon key with RLS off.**
-  That is the current posture on every table (RLS enablement is a separate
-  planned pre-launch pass), and the one anon write in the codebase (walk-up
-  self-add) is a deliberately scoped RPC. The room's phone row (R13) is the
-  identity a future RLS policy can key on. Supabase anonymous sign-ins are
-  currently disabled in config; enabling them would give guests a real
-  `auth.uid()` cheaply and is the recommended path — decided in planning.
+- **Every caller is a signed-in member**, resolved `auth.uid()` → `members`
+  in each RPC (the `join_bracket_hopper` template). No anon paths are added.
 - `pg_cron` already exists in the project (auto-forfeit sweep) and is the
   honest way to run a 24-hour inactivity sweep; sweep-on-create (the brackets
   precedent) would leave rooms alive until someone, anywhere, creates one.
@@ -317,11 +321,6 @@ whichever game implements them. The room knows nothing about any of it.
 
 ### Deferred to Planning
 
-- [Affects R11][User decision, assumed] Guests join by name only, no account.
-  Ed did not confirm or object. Proceeding on this; reverse if he wants a
-  sign-up wall.
-- [Affects R11, R13][Technical] Enable Supabase anonymous sign-ins for guests
-  vs. rely on anon-key writes with RLS off. Recommendation: enable.
 - [Affects R6][Deferred to Ed] The per-member designations table (LO /
   tournament organizer / host, one row per hat with `until` and `source`) is
   Ed's work on his other machine. This iteration gates on `members.role`.

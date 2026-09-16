@@ -19,7 +19,9 @@ with the face decided by the database so no phone can lean on it.
 
 Ships **gated** (non-production) for staging review. No payment processor;
 the shared-room door checks `members.role` until Ed's per-hat designations
-table lands.
+table lands. **Every person in a room is a registered member** — decided
+2026-09-16: no anonymous guests; the QR on the table is a funnel into
+"sign in or create an account."
 
 ## Problem Frame
 
@@ -49,9 +51,9 @@ self-scoring (R4 is a fence, not a wall); first tenant = two-phone coin flip.
 - R6 shared requires host gate; interim = `role in (league_operator, developer)`
 - R7 free → shared in place
 - R8–R10 seats: Game Room members × 4 − phones; derived; door-only
-- R11 join by link/QR; guest = name only; member recognised
-- R12 phones watching / empty seats; tap → QR + link
-- R13 presence = `room_phones` row + heartbeat; stable per-room identity
+- R11 join by link/QR; must be signed in (registered member); name from profile
+- R12 people here / empty seats; tap → QR + link
+- R13 presence = `room_phones` row (one per member per room) + heartbeat
 - R14–R16 one channel per phone; `room_id` filter; invalidate
   `['room', roomId, table]`, all tables on catch-up
 - R17 plug-in contract; creation-time table check
@@ -76,8 +78,7 @@ room A never hears room B; delete leaves no rows; league engine untouched.
 
 - Ed's race as second tenant — Ed's other machine; plugs in after this lands.
 - Per-hat designations table — Ed's other machine; swaps into the R6 gate.
-- Enabling anonymous sign-ins on the **hosted** projects (staging, prod) is a
-  dashboard setting, not a migration — a deploy-day step in LIST_FOR_ED.
+- A "challenge from profile" door (invite via message) — later.
 
 ## Context & Research
 
@@ -122,7 +123,7 @@ room A never hears room B; delete leaves no rows; league engine untouched.
 ### Institutional Learnings
 
 - Filtered UPDATE/DELETE silently drop without full replica identity + publication (bracket plan). Every table here gets both, in the same migration, and a db test asserts it.
-- Anon-role realtime delivery is unproven; brackets ship a 15 s poll fallback. Room: anonymous sign-in makes guests `authenticated` (proven path) **and** keeps the poll fallback.
+- Anon-role realtime delivery is unproven; brackets ship a 15 s poll fallback. Room: every phone is a signed-in member (`authenticated`, the proven role) **and** the poll fallback stays as insurance.
 - Realtime never replays; catch-up refetch on re-SUBSCRIBED; don't tear down on transient CLOSED; all state data-derived.
 - One filter per binding; heartbeat UPDATEs are noise — the phones binding must ignore heartbeat-only updates.
 - happy-dom breaks supabase-js writes: db tests under `src/__tests__/database/` with the jsdom pragma; prefer `executeSql`.
@@ -132,36 +133,27 @@ room A never hears room B; delete leaves no rows; league engine untouched.
 
 ## Key Technical Decisions
 
-- **Guests get a Supabase anonymous session.** `enable_anonymous_sign_ins = true`
-  in `supabase/config.toml`; the room's identity hook signs in anonymously
-  when no session exists. Every phone then has an `auth.uid()`, all RPCs
-  resolve identity one way (the `join_bracket_hopper` template), realtime
-  runs as `authenticated` (the proven role), and the future RLS pass has
-  something to key on. Guest sessions live in localStorage like any session.
-  Rejected: raw anon-key writes with anon-granted RPCs — works today only
-  because RLS is off, and leaves realtime delivery unproven.
-- **The app must know a guest is not a member.** An anonymous session would
-  otherwise make `isLoggedIn` true everywhere: the login page bounces, the
-  drawer shows member links, member routes dump the guest into profile
-  completion, and a real member who scans a QR on a cold phone gets turned
-  into a guest before they can sign in. So: `UserProvider` exposes
-  `isGuest` (`user.is_anonymous`) and `isLoggedIn` means *signed in and not
-  anonymous*. `Login` renders for a guest and a real sign-in replaces the
-  anonymous session (supabase-js does this natively). `ProtectedRoute`
-  treats a guest as not logged in. The join page asks "Sign in" or "Continue
-  as guest" **before** minting anything, and only reads the room (granted to
-  `anon`, `{found:false}`-safe) until the guest commits. `useRoomIdentity`
-  does nothing while `UserProvider.loading` is true. Leaving a room as a guest
-  signs the anonymous session out. Anonymous `auth.users` older than 48 h
-  are swept by the same cron (Supabase's own guidance).
-- **Room routes are not member routes.** `/rooms/join/:token` and
-  `/rooms/:id` are public routes outside `MemberLayout` (the
-  `/brackets/join/:joinToken` precedent); the room page renders its own
-  minimal chrome. Only `/rooms` (start / rejoin) is `withMember`. The RPCs
-  are the boundary.
-- **`room_phones` is the identity and the presence.** One row per
-  (room, auth user), `UNIQUE(room_id, user_id)`; refresh = same row; a
-  second device = a second row (phones, not people). `last_seen_at` is the
+- **Everyone in a room is a registered member; no anonymous sessions.** Ed's
+  call: non-registered players are pushed to become users. The QR encodes
+  `/rooms/join/<token>`; `ProtectedRoute` already sends a signed-out visitor
+  to `/login?redirect=<that url>` and back, and the login page offers
+  registration — that *is* the funnel. Consequences: every RPC resolves the
+  caller from `auth.uid()` → `members` exactly like `join_bracket_hopper`;
+  realtime runs as `authenticated` (the proven role); no config change, no
+  changes to `UserProvider`, `Login` or `ProtectedRoute`; no anonymous-user
+  sweep; no rate-limit concern; the future RLS pass keys on member ids.
+  Rejected (and planned in an earlier draft): Supabase anonymous sign-in
+  for name-only guests — it required teaching the whole app that "logged in"
+  ≠ "member," a sign-in-vs-guest choice on the join page, and a user
+  garbage-collector. All of that is gone.
+- **Room routes are ordinary member routes.** `/rooms`, `/rooms/:id` and
+  `/rooms/join/:token` are `withMember` under `MemberLayout`, like
+  `/brackets`. Not public like the tournament share page. The RPCs remain
+  the boundary for *which* members may do what.
+- **`room_phones` is the identity and the presence — one row per member per
+  room.** `UNIQUE(room_id, member_id)`; refresh or a second device = the same
+  row (a person, not a device; a member on two phones is one seat).
+  `display_name` is copied from the profile at join. `last_seen_at` is the
   heartbeat; present = seen within the grace window. The room row's
   `last_activity_at` is bumped by the same heartbeat RPC, so activity is
   room-owned (R2) and free rooms are never swept mid-play.
@@ -237,8 +229,9 @@ room A never hears room B; delete leaves no rows; league engine untouched.
 
 ### Resolved During Planning
 
-- *Anon vs anonymous sign-in:* anonymous sign-in (above).
-- *Per-phone identity:* `room_phones.id`, keyed by `auth.uid()`.
+- *Guest identity:* registered members only (Ed, 2026-09-16); the QR is a
+  sign-in/register funnel via the existing `redirect` param.
+- *Per-phone identity:* `room_phones.id`, keyed by the member id.
 - *Activity signal:* heartbeat RPC bumps phone + room; games contribute nothing.
 - *Sweep mechanism:* pg_cron hourly calling `sweep_stale_rooms(24)`.
 - *Table cap enforcement:* in the RPC (a constant), not a DB CHECK — it's a dial.
@@ -247,11 +240,10 @@ room A never hears room B; delete leaves no rows; league engine untouched.
 - *Settings slot size:* no cap now; it is game-owned and small; note in risks.
 - *Which phone calls in the flip:* the phone that did not create the flip
   calls; the creator throws. Default only; the setup lets the creator flip it.
-- *Room page chrome:* public route with its own minimal header; not under
-  `MemberLayout`, so the tab bar / sidebar question does not arise.
-- *Member on a second device:* joins as whatever that device's session is; a
-  second anonymous device is a guest phone and does not add seats. Named in
-  the seats copy, not special-cased.
+- *Room page chrome:* ordinary member route under `MemberLayout`. Whether
+  the bottom tab bar should hide on `/rooms/:id` is judged on the sandbox
+  (`HIDDEN_TAB_ROUTES` pattern).
+- *Member on a second device:* same member, same row, one seat.
 
 ### Deferred to Implementation
 
@@ -277,12 +269,11 @@ room A never hears room B; delete leaves no rows; league engine untouched.
       RoomsIndexPage.tsx                start a room / rejoin mine
       CreateRoomDialog.tsx              game picker, free/shared
       RoomPage.tsx                      the room: header, seats, game slot
-      JoinRoomPage.tsx                  public /rooms/join/:token, name entry
+      JoinRoomPage.tsx                  /rooms/join/:token (member route), one Join button
       RoomEnded.tsx                     not-found / closed / swept
-      SeatCounter.tsx                   "3 watching · 1 empty seat" (tap → invite)
-      InviteSheet.tsx                   QR + copyable link
+      SeatCounter.tsx                   "3 here · 1 empty seat" (tap → invite)
+      InviteSheet.tsx                   QR + copyable link (the sign-in funnel)
       PhoneList.tsx                     who's here
-      useRoomIdentity.ts                ensure a session (anonymous if none)
       useRoomHeartbeat.ts               interval → room_heartbeat RPC
       useRoomRealtime.ts                channel over the table list
       games/types.ts                    GameDefinition contract
@@ -308,11 +299,12 @@ screens, its rules.
 sequenceDiagram
   participant H as Host phone
   participant DB as Postgres + Realtime
-  participant G as Guest phone
+  participant G as Guest phone (a signed-in member)
   H->>DB: create_room(game, tables, settings, shared)  -- validates tables
   H->>DB: heartbeat every 30s (bumps phone + room)
-  G->>DB: get_room_by_token(token) -> {found, room, seats}  -- no session needed
-  G->>DB: "Continue as guest" -> sign in anonymously; join_room(token, name) -- FOR UPDATE + seat check
+  Note over G: scans QR -> /rooms/join/token -> ProtectedRoute -> login/register -> back
+  G->>DB: get_room_by_token(token) -> {found, room, seats}
+  G->>DB: join_room(token) -- FOR UPDATE + seat check; name from profile
   DB-->>H: room_phones INSERT (room_id filter) -> invalidate ['room', id, 'room_phones']
   Note over H,G: game rows flow the same way, one key per listed table
   G->>DB: call_room_coin(flip_id, 'heads') -- refused after the throw
@@ -324,20 +316,20 @@ sequenceDiagram
 ```
 
 RPC surface (all SECURITY DEFINER, return `{ok, reason?}` rather than raise,
-granted to `authenticated` — anonymous users are authenticated — except the
-one read that must work before any sign-in):
+granted to `authenticated` only; every caller is resolved `auth.uid()` →
+`members`, `not_signed_in` / `no_member` otherwise):
 
 | RPC | Who | Does |
 |---|---|---|
 | `create_room(game_key, tables[], settings, shared)` | signed-in member; shared needs host gate | validate tables; insert room + host phone row |
-| `get_room_by_token(token)` | anyone, incl. `anon` (column-projected, `{found:false}`-safe) | room + derived seats, before any sign-in |
-| `join_room(token, display_name)` | anyone signed in | `not_shared` on a free room; lock the room row (`FOR UPDATE`); seat check; upsert phone row (member flag from gate) |
+| `get_room_by_token(token)` | any signed-in member | `{found:false}` or room + derived seats |
+| `join_room(token)` | any signed-in member | `not_shared` on a free room; lock the room row (`FOR UPDATE`); seat check; upsert the member's phone row (name from profile, host flag from gate) |
 | `room_heartbeat(room_id)` | a phone in the room | bump `last_seen_at` + `rooms.last_activity_at` |
 | `set_room_game(room_id, game_key, tables[], settings)` | host | validate; wipe old tables by room_id; update row |
 | `set_room_settings(room_id, settings)` | host | update settings; no wipe |
 | `set_room_shared(room_id)` | host, host gate | flip the cell |
 | `close_room(room_id)` | host | delete the row (cascade) |
-| `sweep_stale_rooms(idle_hours)` | pg_cron | delete idle rooms + anonymous auth users older than 48 h; returns count |
+| `sweep_stale_rooms(idle_hours)` | pg_cron | delete idle rooms; returns count |
 | `call_room_coin(flip_id, call)` | the caller phone | set call once, refused after the throw |
 | `throw_room_coin(flip_id)` | the flipper phone | set face from `random()` once |
 
@@ -356,7 +348,6 @@ check enforced in the database.
 
 **Files:**
 - Create: `supabase/migrations/<real-utc-ts>_game_rooms.sql`
-- Modify: `supabase/config.toml` (`enable_anonymous_sign_ins = true`)
 - Modify: `src/types/database.types.ts` (regenerate)
 - Test: `src/__tests__/database/rooms.schema.db.test.ts`
 - Test: `src/__tests__/database/rooms.rpc.db.test.ts`
@@ -366,10 +357,10 @@ check enforced in the database.
   game_tables text[] (validated, cap constant), settings jsonb default '{}',
   shared boolean default false, join_token uuid default gen_random_uuid()
   unique, last_activity_at, created_at.
-- `room_phones`: id, room_id (FK rooms cascade), user_id uuid (auth user,
-  anonymous or not), member_id nullable (FK members), display_name,
-  is_member boolean (the R6 gate evaluated at join), last_seen_at, joined_at;
-  `UNIQUE(room_id, user_id)`.
+- `room_phones`: id, room_id (FK rooms cascade), member_id (FK members
+  cascade, NOT NULL), display_name (copied from the profile at join),
+  is_host boolean (the R6 gate evaluated at join — a "Game Room member"),
+  last_seen_at, joined_at; `UNIQUE(room_id, member_id)`.
 - Both tables: publication block + `REPLICA IDENTITY FULL`, header note
   about restarting the local realtime container.
 - A private validation function used by `create_room` and `set_room_game`:
@@ -379,8 +370,11 @@ check enforced in the database.
 - Seat math lives in one SQL function `room_seats(room_id)` → present
   phones, present members, open seats — used by `join_room` and returned by
   `get_room_by_token` so client and server never disagree.
-- `join_room` on an existing (room, user) row just refreshes name/last_seen
-  (rejoin is not a new phone). It refuses a free room (`not_shared`), locks
+- Every RPC resolves the caller via `auth.uid()` → `members.user_id` (the
+  `join_bracket_hopper` template) and returns `not_signed_in` / `no_member`
+  when it cannot.
+- `join_room` on an existing (room, member) row just refreshes name/last_seen
+  (rejoin, refresh, or a second device is not a new phone). It refuses a free room (`not_shared`), locks
   the room row `FOR UPDATE` so two phones cannot both take the last seat,
   and a full room returns `{ok:false, reason:'full', hint:'another member
   joining opens more'}`.
@@ -391,11 +385,8 @@ check enforced in the database.
 - Host gate inside `create_room(shared=true)` and `set_room_shared`: caller's
   `members.role in ('league_operator','developer')`, returned as
   `reason:'not_a_host'`. One place to swap when the designations table lands.
-- Revoke EXECUTE from `anon`/PUBLIC on every RPC and grant `authenticated`
-  — except `get_room_by_token`, granted to `anon` too (the
-  `get_bracket_share` shape), so scanning a dead poster never mints a user.
-- Migration header explains anonymous sign-in and the deploy-day dashboard
-  step for hosted projects.
+- Revoke EXECUTE from `anon`/PUBLIC on every RPC; grant `authenticated`.
+  Nothing here is reachable without a session.
 
 **Execution note:** Write the schema test (publication + replica identity +
 cascade) before the RPC tests; it is the thing the whole design leans on.
@@ -408,7 +399,8 @@ cascade) before the RPC tests; it is the thing the whole design leans on.
 **Test scenarios:**
 - Happy path: both tables are in `pg_publication_tables` and have `relreplident = 'f'`.
 - Happy path: `create_room` with a valid table list returns ok and creates the host's phone row with `is_member` true for an LO.
-- Happy path: `join_room` with a fresh token + name inserts a phone row; a second call from the same user updates it, does not duplicate.
+- Happy path: `join_room` with a fresh token inserts a phone row carrying the member's profile name; a second call from the same member updates it, does not duplicate.
+- Error path: `join_room` with `auth.uid()` null → `not_signed_in`; with a user that has no members row → `no_member`.
 - Happy path: `get_room_by_token` returns `{found:true}` with derived seats matching `room_seats`.
 - Edge case: a player-role host can create a free room but `create_room(shared=true)` → `not_a_host`; `set_room_shared` likewise.
 - Edge case: seats — one member present → 4 phones fit, the 5th `join_room` → `full`; a second member joining raises capacity to 8.
@@ -417,7 +409,7 @@ cascade) before the RPC tests; it is the thing the whole design leans on.
 - Edge case: `join_room` on a free room → `not_shared`.
 - Edge case: `room_heartbeat` twice within a minute updates the phone row twice and the room row once.
 - Edge case: `set_room_settings` changes settings and leaves every game-table row in place.
-- Edge case: `get_room_by_token` works with `auth.uid()` null (executeSql runs as postgres) and returns `{found:false}` for a swept token.
+- Edge case: `get_room_by_token` returns `{found:false}` for a swept token.
 - Edge case: `set_room_game` deletes the previous game's rows by `room_id` from each old listed table (fixture: a published test table with `room_id` + cascade FK) and leaves other rooms' rows alone; a switch to an invalid list is refused and the old rows survive.
 - Error path: `join_room` with an unknown token → `not_found`; `close_room` by a non-host → `not_host`.
 - Integration: deleting a room removes its phone rows and rows in a listed game table (cascade), leaving zero orphans.
@@ -442,10 +434,8 @@ cascade) before the RPC tests; it is the thing the whole design leans on.
 
 **Approach:**
 - `sweep_stale_rooms(p_idle_hours integer default 24)` deletes rooms whose
-  `last_activity_at` is older than the window, then deletes anonymous
-  `auth.users` (`is_anonymous`) older than 48 h that no phone row still
-  references; returns the room count. Keyed on state, so a skipped run
-  self-heals.
+  `last_activity_at` is older than the window; returns the count. Keyed on
+  state, so a skipped run self-heals.
 - Hourly `cron.schedule('game-room-sweep', …)` after a guarded unschedule.
 - Revoke from anon/PUBLIC.
 
@@ -457,7 +447,6 @@ cascade) before the RPC tests; it is the thing the whole design leans on.
 - Happy path: a room heartbeated 1 h ago survives.
 - Edge case: a swept room's phone rows and game-table rows are gone (cascade); other rooms untouched.
 - Edge case: calling the sweep twice is idempotent (second returns 0).
-- Happy path: an anonymous auth user created 3 days ago with no phone row is deleted; one created an hour ago survives; one still referenced by a live room survives.
 
 **Verification:**
 - `cron.job` contains exactly one `game-room-sweep` entry after re-applying the migration.
@@ -467,8 +456,8 @@ cascade) before the RPC tests; it is the thing the whole design leans on.
 
 - [ ] **Unit 3: Data layer and identity**
 
-**Goal:** Typed queries, mutations, hooks, and a hook that guarantees every
-phone has a session before it touches a room.
+**Goal:** Typed queries, mutations, hooks, and the heartbeat. Identity is
+the existing `useCurrentMember()` — nothing new.
 
 **Requirements:** R11, R13, R16
 
@@ -476,26 +465,15 @@ phone has a session before it touches a room.
 
 **Files:**
 - Create: `src/api/queries/rooms.ts`, `src/api/mutations/rooms.ts`,
-  `src/api/hooks/useRooms.ts`, `src/rooms/useRoomIdentity.ts`,
-  `src/rooms/useRoomHeartbeat.ts`
-- Modify: `src/api/queryKeys.ts` (rooms block), `src/api/hooks/index.ts`,
-  `src/context/UserProvider.tsx` (`isGuest`; `isLoggedIn` excludes
-  anonymous), `src/login/Login.tsx` (no bounce for a guest),
-  `src/components/ProtectedRoute.tsx` (guest = not logged in)
-- Test: the nearest existing auth/provider test, `src/components/ProtectedRoute.test.tsx`
+  `src/api/hooks/useRooms.ts`, `src/rooms/useRoomHeartbeat.ts`
+- Modify: `src/api/queryKeys.ts` (rooms block), `src/api/hooks/index.ts`
 - Test: `src/api/hooks/useRooms.test.ts` (mocked supabase),
-  `src/rooms/useRoomIdentity.test.ts`, `src/rooms/useRoomHeartbeat.test.ts`
+  `src/rooms/useRoomHeartbeat.test.ts`
 
 **Approach:**
 - Queries throw on transport errors and return typed rows (`Tables<'rooms'>`).
   RPC results cast to local `{ ok, reason }` unions, as in
   `src/api/mutations/brackets.ts`.
-- `useRoomIdentity({ wanted })`: waits for `UserProvider.loading` to be
-  false; if there is no session and the caller has asked for a guest
-  session (`wanted` — set only when the user taps "Continue as guest"),
-  calls `supabase.auth.signInAnonymously()` once (ref-guarded); exposes
-  `{ userId, isGuest, ready, leaveAsGuest }`. Members are untouched;
-  `leaveAsGuest` signs an anonymous session out.
 - `getRoom` uses `maybeSingle` and returns null for a missing room — that
   null *is* the ended state.
 - `useRoomHeartbeat(roomId, enabled)`: interval → `room_heartbeat`; pauses
@@ -508,10 +486,6 @@ phone has a session before it touches a room.
 - `src/api/hooks/useBrackets.ts` (`useBracketShare` polling), `src/api/queryKeys.ts` brackets block.
 
 **Test scenarios:**
-- Happy path: `useRoomIdentity` with an existing session never calls `signInAnonymously`; with none and `wanted` it calls it exactly once and reports `isGuest`.
-- Edge case: with `loading=true` and a session arriving afterwards, `signInAnonymously` is never called.
-- Edge case: without `wanted`, no session is ever created (reading a room stays anonymous-role).
-- Happy path: `isLoggedIn` is false and `isGuest` true for an anonymous session; `Login` renders its form for a guest; `ProtectedRoute` sends a guest to login on a member route.
 - Happy path: `getRoom` for a deleted id resolves to null, not an error.
 - Happy path: `useRoomHeartbeat` fires on mount then every interval while enabled; stops on unmount.
 - Edge case: heartbeat pauses on `visibilitychange` hidden and fires immediately on visible.
@@ -592,8 +566,7 @@ whichever game the room row names.
 **Files:**
 - Create: `src/rooms/RoomsIndexPage.tsx`, `CreateRoomDialog.tsx`,
   `RoomPage.tsx`, `JoinRoomPage.tsx`, `RoomEnded.tsx`, `SeatCounter.tsx`,
-  `InviteSheet.tsx`, `PhoneList.tsx`, `RoomChrome.tsx` (minimal header for
-  the public room page), `games/types.ts`, `games/registry.ts`
+  `InviteSheet.tsx`, `PhoneList.tsx`, `games/types.ts`, `games/registry.ts`
 - Modify: `src/navigation/NavRoutes.tsx` (routes, gated — see Unit 7)
 - Test: `src/rooms/RoomPage.test.tsx`, `JoinRoomPage.test.tsx`,
   `SeatCounter.test.tsx`, `games/registry.test.ts`
@@ -606,16 +579,15 @@ whichever game the room row names.
 - `RoomPage`: header (game name, connection status text), `SeatCounter`,
   `PhoneList`, the game slot. Host-only controls: switch game, open the door
   (free → shared), close room. Guests see none of them.
-- `JoinRoomPage` (public route): `get_room_by_token` first (works with no
-  session) → if signed-in member: name from profile, join; if no session:
-  two buttons, "Sign in" (to `/login?redirect=` back here) and "Continue as
-  guest" (name entry → `useRoomIdentity({wanted:true})` → `join_room`) →
-  navigate into the room. `{found:false}`, `not_shared` and `full` render
-  in-page notices, never errors. Ended/closed → `RoomEnded`.
-- `RoomPage` (public route, own chrome): renders `RoomEnded` whenever the
-  room query resolves to null or `roomGone` fires; a guest's "Leave" calls
-  `leaveAsGuest`.
-- `SeatCounter` renders "N watching · M empty seats" as text; tapping opens
+- `JoinRoomPage` (`withMember` — a signed-out scanner is sent through
+  login/register and redirected back here by `ProtectedRoute`):
+  `get_room_by_token` → show the room name and seats → one "Join" button →
+  `join_room` → navigate into the room. `{found:false}`, `not_shared` and
+  `full` render in-page notices, never errors. Ended/closed → `RoomEnded`.
+- `RoomPage` (`withMember`): renders `RoomEnded` whenever the room query
+  resolves to null or `roomGone` fires. "Leave" just navigates away; the
+  member's phone row ages out by heartbeat.
+- `SeatCounter` renders "N here · M empty seats" as text; tapping opens
   `InviteSheet` (QR via `qrcode.react` + copyable link, `joinUrl` pattern).
   Zero seats → the explanatory copy from R12. On a free room it reads "1
   phone · open the door to invite" and the tap offers the door (host) or
@@ -634,18 +606,17 @@ whichever game the room row names.
 
 **Test scenarios:**
 - Happy path: `RoomPage` renders the game named by the row via the registry; an unknown key renders a plain "unknown game" notice, not a crash.
-- Happy path: `SeatCounter` shows "3 watching · 1 empty seat"; tapping opens the invite sheet with the join URL for the room's token.
-- Happy path: `JoinRoomPage` for a guest shows the name field; submitting calls `join_room` and navigates.
-- Edge case: a signed-in member skips the name field.
+- Happy path: `SeatCounter` shows "3 here · 1 empty seat"; tapping opens the invite sheet with the join URL for the room's token.
+- Happy path: `JoinRoomPage` shows the room name and seats with one Join button; tapping it calls `join_room` and navigates.
+- Edge case (routing): `/rooms/join/x` while signed out redirects to `/login?redirect=/rooms/join/x` (existing `ProtectedRoute` behaviour — one test pins it for this route).
 - Edge case: `{found:false}` → "this room has ended" notice; `full` → seat explanation with the members-open-more hint.
 - Edge case: host controls render only for the host phone.
 - Edge case: `roomGone` from the realtime hook flips the page to `RoomEnded` without a refetch; a room query resolving to null does the same.
-- Edge case: `JoinRoomPage` with no session shows "Sign in" and "Continue as guest"; a guest is only signed in anonymously after tapping the latter.
 - Edge case: `SeatCounter` on a free room shows the door copy, not the QR.
 - Integration: switching games via `CreateRoomDialog` on an existing room calls `set_room_game` with the registry's table list for the new game.
 
 **Verification:**
-- Two devices on the sandbox: host creates a shared room, guest scans the QR, name in, both see "2 watching"; host closes, guest sees ended.
+- Two devices on the sandbox: host creates a shared room, guest scans the QR, signs in, joins, both see "2 here"; host closes, guest sees ended.
 
 ### Phase C — the first tenant
 
@@ -720,17 +691,15 @@ in the indexes.
 **Dependencies:** Units 5, 6
 
 **Files:**
-- Modify: `src/navigation/NavRoutes.tsx` (`/rooms` withMember; `/rooms/:id`
-  and `/rooms/join/:token` public, outside `MemberLayout`; all under
+- Modify: `src/navigation/NavRoutes.tsx` (`/rooms`, `/rooms/:id`,
+  `/rooms/join/:token` all `withMember` under `MemberLayout`, all under
   `NonProdGate`), `src/components/layout/AppDrawer.tsx`,
-  `src/components/layout/AppSidebar.tsx` (Game Room link, same gate; both
-  already hide for a guest once `isLoggedIn` excludes anonymous)
-- Modify: `LIST_FOR_ED.md` (gated section: route + every door + the
-  anonymous-sign-in dashboard step + the 30/hour/IP anonymous rate limit as
-  a dial + confirm pg_cron runs on hosted + what to verify),
+  `src/components/layout/AppSidebar.tsx` (Game Room link, same gate)
+- Modify: `LIST_FOR_ED.md` (gated section: route + every door + the join
+  route + confirm pg_cron runs on hosted + what to verify),
   `TABLE_OF_CONTENTS.md`,
   `src/components/COMPONENTS_INDEX.md` (CoinFlip controlled props, room
-  components), `PRE_LAUNCH_CHECKLIST.md` (new anonymous-user paths)
+  components), `PRE_LAUNCH_CHECKLIST.md` (the realtime `old`-payload note)
 - Delete: `src/dev/CoinFlipSandbox.tsx` + its route (a real caller now mounts
   CoinFlip — its header says to delete it)
 - Test: `src/navigation/roomsGate.test.tsx`
@@ -742,7 +711,7 @@ in the indexes.
 **Test scenarios:**
 - Happy path: with `isProduction=false`, `/rooms` and `/rooms/join/x` resolve and the nav link renders.
 - Edge case: with `isProduction=true`, the routes redirect and neither nav link renders.
-- Happy path: an anonymous session reaches `/rooms/:id` without a redirect; a guest on `/rooms` is sent to login.
+- Edge case: signed out, `/rooms/join/x` redirects to login with the join URL as the redirect target.
 
 **Verification:**
 - Production build shows no Game Room door; staging shows all of them.
@@ -750,11 +719,9 @@ in the indexes.
 
 ## System-Wide Impact
 
-- **Interaction graph:** New routes, two nav links, a config flag, and one
-  deliberate change to shared auth plumbing: `UserProvider.isLoggedIn` now
-  excludes anonymous sessions and `ProtectedRoute`/`Login` read `isGuest`.
-  Nothing existing imports from `src/rooms/`. `CoinFlip` gains optional
-  props only.
+- **Interaction graph:** New routes and two nav links. No auth plumbing
+  changes. Nothing existing imports from `src/rooms/`. `CoinFlip` gains
+  optional props only.
 - **Error propagation:** RPCs return `{ok:false, reason}`; pages phrase
   reasons; realtime errors surface as text status; heartbeat failures are
   swallowed.
@@ -768,17 +735,15 @@ in the indexes.
 - **Unchanged invariants:** `matches`, `match_games`, `game_confirmations`,
   `useMatchRealtime`, the scoring room, stats — untouched. `CoinFlip`'s
   uncontrolled path and `flipCoin.ts` — byte-identical. `members.role` —
-  read, not written. For a real (non-anonymous) session, `isLoggedIn` and
-  every route guard behave exactly as today.
+  read, not written. `UserProvider`, `Login`, `ProtectedRoute` — untouched.
 
 ## Risks & Dependencies
 
 | Risk | Mitigation |
 |------|------------|
-| Anonymous sign-in not enabled on hosted staging/prod → guests cannot join | Deploy-day step in LIST_FOR_ED; `useRoomIdentity` surfaces a plain "guest sign-in unavailable" notice instead of a blank page |
 | A game table forgets publication/replica → deletes never sync | `create_room` refuses the table by name; db schema test per table |
 | Heartbeat writes flood the channel | Both bindings ignore timestamp-only updates; room row bumped at most every 5 min; row events invalidate exactly, prefix only on subscribe |
-| An anonymous session makes the app think a guest is a member | `isLoggedIn` excludes anonymous; Login/ProtectedRoute/nav read it; join page offers sign-in before minting a guest; guests sign out on leave; stale anonymous users swept |
+| A scanner without an account bounces off the sign-in wall and never comes back | The redirect brings them straight back to the join page after registering; the join page shows the room name so they know what they're signing in for. Accepted on purpose: this is the funnel |
 | A sleeping phone misses the room DELETE | Ended state is data-derived (`getRoom` null); `roomGone` is only the fast path |
 | Two guests take the last seat at once | `join_room` locks the room row `FOR UPDATE` |
 | Enabling RLS later narrows `old` payloads and turns heartbeats back into invalidations | Comment in the hook + PRE_LAUNCH_CHECKLIST line |
@@ -790,14 +755,14 @@ in the indexes.
 ## Documentation / Operational Notes
 
 - Ships gated (`!isProduction`) with a LIST_FOR_ED entry listing route, both
-  nav doors, the public join route, and the anonymous-sign-in dashboard step.
+  nav doors, and the join route.
 - `pnpm run db:types` after each migration; `pnpm run build` is the
   authoritative typecheck.
 - Ed's race plugs in afterwards as its own migration, a folder under
   `src/rooms/games/`, and a registry entry; if it needs any change outside
   `src/rooms/games/**` or to the room RPCs, that is a room bug.
-- Jack's mobile mirror must use anonymous sign-in for guests too — the RPC
-  grants make it a requirement, not a preference.
+- Jack's mobile mirror: every room caller is a signed-in member; the RPC
+  grants (`authenticated` only) make that a requirement.
 
 ## Sources & References
 
