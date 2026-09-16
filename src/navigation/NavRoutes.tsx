@@ -70,6 +70,10 @@ import RLSTestPage from '../dev/RLSTestPage';
 import CoinFlipSandbox from '../dev/CoinFlipSandbox';
 // --- Handicap Calculator (dev/staging only) — remove this import + the route below to delete the feature ---
 import { HandicapCalculator, NonProdGate } from '../handicapCalculator';
+// --- Game Room (GATED: dev/staging only until Ed reviews on staging; see LIST_FOR_ED.md) ---
+import { RoomsIndexPage } from '../rooms/RoomsIndexPage';
+import { RoomPage } from '../rooms/RoomPage';
+import { JoinRoomPage } from '../rooms/JoinRoomPage';
 
 // Lazy-loaded public rules reader (keeps the cleaned rulebook data out of the main bundle).
 const RulesPage = lazy(() => import('../rules/RulesPage'));
@@ -252,6 +256,13 @@ export const router = createBrowserRouter([
           // Printable / big-screen join QR sign (organizer only).
           { path: 'brackets/:bracketId/qr', element: withMember(<JoinQrPoster />) },
           { path: 'brackets/:bracketId', element: withMember(<BracketView />) },
+          // --- Game Room — GATED non-production (route + every door share
+          // this one `NonProdGate`; flip them together when Ed un-gates).
+          // Member routes: the join link is the sign-in funnel, so a
+          // signed-out scanner goes through login/register and back.
+          { path: 'rooms', element: <NonProdGate>{withMember(<RoomsIndexPage />)}</NonProdGate> },
+          { path: 'rooms/join/:joinToken', element: <NonProdGate>{withMember(<JoinRoomPage />)}</NonProdGate> },
+          { path: 'rooms/:roomId', element: <NonProdGate>{withMember(<RoomPage />)}</NonProdGate> },
           // Rules pages — public (no auth wrapper) but rendered inside
           // MemberLayout so logged-in users keep their sidebar/tab bar.
           // AppSidebar and BottomTabBar both auth-gate their nav content,

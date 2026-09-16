@@ -8,10 +8,10 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **RESUME POINT (2026-09-16):** Units 1–4 are built, tested, and pushed on
-> branch `feat/game-room`. **Next is Unit 5 — the room screens + game
-> registry.** Unit 4's hook returns `{ connectionStatus, roomGone }`; the page
-> renders `RoomEnded` on `roomGone` OR a null room query. Before building: pull
+> **RESUME POINT (2026-09-16):** Units 1–5 are built, tested, and pushed on
+> branch `feat/game-room`. **Next is Unit 6 — the two-phone coin flip
+> (first tenant).** Register it in `src/rooms/games/registry.ts` (`GameDefinition`
+> in `games/types.ts`); the room screens already dispatch on it. Before building: pull
 > the branch, then locally `supabase db reset` → load
 > `database/dev_starting_point.sql` + `supabase/seed_test_users.sql` (CI
 > order) → `supabase stop && supabase start` once so the realtime container
@@ -582,7 +582,7 @@ key per table, hardened like the scoring room's hook.
 
 ---
 
-- [ ] **Unit 5: Room screens and the game registry**
+- [x] **Unit 5: Room screens and the game registry** — built 2026-09-16 (24 unit tests). Notes: the registry is EMPTY until Unit 6 registers `coin_flip` (its table must exist for `create_room` to accept it); `GameDefinition` gained `description` + `isReady(settings)` so the room can show `Setup` vs `Play` without knowing the game; `RoomPage` offers "Take a seat" to a device with no phone row (host's second device / a tab from the rooms list); `RoomHostControls` + `GameSlot` + `seatCopy.ts` split out to keep files near ~100 lines. Routes landed now under `NonProdGate` (Unit 7 adds the nav doors + `roomsGate.test.tsx`, incl. the signed-out redirect pin). shadcn `Sheet` gained a `bottom` side; `CopyLinkButton` gained a `url` prop.
 
 **Goal:** Create, join, see who's here, invite, and hand the game slot to
 whichever game the room row names.

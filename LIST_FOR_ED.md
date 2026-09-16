@@ -203,6 +203,17 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
+- **Game Room** (`feat/game-room`, in progress — Units 1–5 built; coin flip
+  tenant + nav doors still to come) — gated by `<NonProdGate>` on all three
+  routes in `src/navigation/NavRoutes.tsx`: `rooms`, `rooms/join/:joinToken`,
+  `rooms/:roomId`. **No nav door exists yet** (Unit 7 adds the drawer/sidebar
+  link under the same gate) — reach it by typing `/rooms`. Verify on staging:
+  start a room on one phone, open the door, scan the QR on a second phone
+  (signed out → login → lands back on the join page), join, both see "2 here";
+  host ends the room → guest sees "This room has ended" without refreshing.
+  Also confirm `pg_cron` runs `sweep_stale_rooms` on the hosted project. Un-gate
+  = remove `NonProdGate` from the three routes AND the nav links together.
+
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
 commit. The half-gated bug that prompted it: the "Score a Match" button +

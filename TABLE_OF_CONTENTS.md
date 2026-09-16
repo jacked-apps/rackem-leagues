@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-09-16 (BUILT Game Room Unit 4 — `src/rooms/useRoomRealtime.ts`: one channel per device over the room's table list, one query key per table, heartbeat-only UPDATEs dropped via `roomChangeFilter.ts`, every SUBSCRIBED refetches, `rooms` DELETE → `roomGone`, table-list change rebuilds the channel and drops the old tables' cache. 15 unit tests. Units 1–3 landed earlier today.)
+> **Last Updated**: 2026-09-16 (BUILT Game Room Unit 5 — the room in the browser: `RoomsIndexPage`, `RoomPage` (+ `GameSlot`, `RoomHostControls`, `SeatCounter`, `PhoneList`, `InviteSheet`, `RoomEnded`), `JoinRoomPage`, `CreateRoomDialog`, and the plug-in contract `games/types.ts` + `games/registry.ts`. Routes `/rooms`, `/rooms/join/:joinToken`, `/rooms/:roomId` added under `NonProdGate` (GATED). shadcn Sheet gained a `bottom` side; `CopyLinkButton` gained a `url` prop. 24 new unit tests (47 in `src/rooms`). Units 1–4 landed earlier today.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -863,7 +863,7 @@ Public feature at `/rules`. Reads the cleaned CSI rulebook from `/src/officalBCA
 - `SearchResults.tsx` - Results list + zero-results state (Clear filter / Clear search)
 - `SearchSnippet.tsx` - Snippet extraction + <mark> highlighting
 - `Attribution.tsx` - R11 footer linking to CSI's hosted PDF
-- `CopyLinkButton.tsx` - One-tap clipboard share with sonner toast
+- `CopyLinkButton.tsx` - One-tap clipboard share with sonner toast. Optional `url` / `ariaLabel` props (default: current page URL, rule-page label) — the Game Room InviteSheet reuses it for the join link
 - `RulesSkeleton.tsx` - Suspense fallback matching the page layout
 - `RulesErrorBoundary.tsx` - Branded error boundary for data-load failures
 - `useRulebook.ts` - Typed loader singleton (merges cleaned game modules)
@@ -919,7 +919,7 @@ LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade int
 | `capitalize-input.tsx` | Auto-capitalize input |
 | `password-input.tsx` | Password input with toggle |
 | `filter-chip.tsx` | **ALL filter chip buttons** — extracted from MemberSearchCombobox |
-| `sheet.tsx` | Side-anchored drawer (shadcn Sheet, built on Radix Dialog) |
+| `sheet.tsx` | Side-anchored drawer (shadcn Sheet, built on Radix Dialog); sides `left` / `right` / `bottom` (bottom = phone-thumb sheet, used by the Game Room InviteSheet) |
 
 #### Shared UI Components (`/components/shared/`)
 - `EmptyState.tsx` - Empty state component
@@ -1137,6 +1137,26 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `useRoomRealtime.test.ts` - 11 tests on a fake channel + real QueryClient: bindings/filters, per-table invalidation, heartbeat noise dropped, `roomGone`, table-list rebuild (cache dropped, no rebuild on same list), every-SUBSCRIBED prefix invalidation, binding-mismatch → `error`
 - `roomChangeFilter.ts` - Pure "only the heartbeat column moved?" check (`onlyIgnoredColumnsChanged`, `HEARTBEAT_COLUMNS`). Compares `old` vs `new` column by column; fails OPEN on a missing/partial `old` (the RLS shape) — see PRE_LAUNCH_CHECKLIST
 - `roomChangeFilter.test.ts` - Ignored-only → true; rendered column → false; jsonb compared structurally; null/partial old → false
+- `RoomsIndexPage.tsx` - `/rooms` (GATED non-prod): "Start a room" → `CreateRoomDialog` → `create_room` on this device → navigate in; "Rooms you're in" (`useMyRooms`) with Open links. Any member starts a FREE room; sharing is behind the host gate inside the dialog
+- `RoomPage.tsx` - `/rooms/:roomId` (GATED): header (game name via registry + connection status AS TEXT, shared rooms only), `SeatCounter`, `PhoneList`, host-only `RoomHostControls`, `GameSlot`. Wires `useRoomRealtime` + `useRoomHeartbeat` (beats only once this device has a seat). `RoomEnded` on null query OR `roomGone`. A device with no phone row is offered "Take a seat" instead of the game
+- `RoomPage.test.tsx` - Registry renders the game; Setup vs Play by `isReady`; unknown key → notice; host controls host-only; realtime + heartbeat wiring; no-seat → Take a seat; roomGone / null → ended; free room copy
+- `JoinRoomPage.tsx` - `/rooms/join/:joinToken` (GATED, member route = the sign-in funnel): `get_room_by_token` → game + host + seat line → one Join → `join_room(token, deviceId)` → navigate into the room. Refusals (`full`, `not_shared`) are in-page sentences; a gone room → `RoomEnded`
+- `JoinRoomPage.test.tsx` - Card + single button; Join calls with token + device and navigates; gone → ended; `full` copy with hint replaces the button; `not_shared` copy
+- `RoomEnded.tsx` - The one "This room has ended" screen (closed / swept / stale link), with a Back-to-rooms link; optional `detail` override
+- `SeatCounter.tsx` - "3 here · 1 empty seat" as a tap: shared → invite sheet (even at zero seats — the sheet explains); free + host → open the door; free + guest → plain text
+- `SeatCounter.test.tsx` - Copy for every state; which tap fires which callback; guest on free room has no button
+- `seatCopy.ts` - `emptySeatsLabel`, `seatLine` — the seat picture as words, shared by counter, sheet, join page
+- `InviteSheet.tsx` - Bottom sheet: black-on-white QR of the join URL + `CopyLinkButton`. At zero seats the QR gives way to "another host joining opens more"
+- `PhoneList.tsx` - One line per DEVICE with word tags (`you` / `host` / `away`); server-computed `is_present`
+- `GameSlot.tsx` - The room's only contact with a game: registry lookup → `Setup` until `isReady(settings)`, then `Play`; unknown key → notice. `onStart` = `set_room_game` with the same key (wipe + new settings)
+- `RoomHostControls.tsx` - Host-only: Switch game (`CreateRoomDialog` mode=switch → `set_room_game` with the registry's tables), Open to others / Make private (door toggle owned by the page), End room (AlertDialog confirm → `close_room` → `/rooms`)
+- `RoomHostControls.test.tsx` - Switch via dialog calls `set_room_game` with the NEW game's registry tables; door button names its direction
+- `CreateRoomDialog.tsx` - Game picker (RadioGroup over `listGames()`), two modes (`create` adds the shared toggle — disabled with a note unless `useIsOperator`; `switch` warns it wipes). Dumb: `onSubmit(game, shared)` returns a problem sentence or null
+- `roomJoinUrl.ts` - `roomJoinUrl(token)` → `${origin}/rooms/join/<token>` — the one builder for QR + copy link
+- `roomRefusalCopy.ts` - `RoomRefusal` → one sentence a person can act on (incl. `table_not_ready` missing-part wording for developers)
+- `games/types.ts` - THE PLUG-IN CONTRACT: `GameDefinition { key, name, description, tables, Setup, Play, isReady }`, `GameSetupProps` (`onStart(settings)`), `GamePlayProps` (`roomId, myPhone, phones, settings, isHost`). A game keys its queries with `queryKeys.rooms.table`
+- `games/registry.ts` - `gameKey → GameDefinition` (code-side; data-side later). `getGame`, `listGames`, `gameName` (falls back to the key), `RESERVED_TABLES`, `MAX_GAME_TABLES`. EMPTY until Unit 6 registers `coin_flip` with its migration
+- `games/registry.test.ts` - Unknown key → undefined + fallback name; every entry honours the contract (1–3 unique, non-reserved tables; Setup/Play/isReady present)
 - `types.ts` - Participant / Call / Face / FlipResult / RandomSource. No playerId or teamId anywhere — a player and a team are the same `{ id, name }` shape, which is what lets one component serve league play, tournaments and individual races
 - `flipCoin.ts` - Pure flip rules with no React and no ambient randomness: `tossCoin`, `resolveFlip`, `assignFaces`, `shuffleOrder`, plus `quickFlip` (the flip as a headless two-outcome randomizer for callers that need a result without a screen). Random source is injected
 - `Coin.tsx` - The coin visual — rotateX spin via a CSS transition, no keyframes and no global CSS so it drops in anywhere. Face shown as a letter AND spelled out; honors prefers-reduced-motion
