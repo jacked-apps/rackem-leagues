@@ -317,3 +317,31 @@ export async function getMemberProfanitySettings(
 
   return data;
 }
+
+/**
+ * Fetch all members holding the developer designation (master key).
+ *
+ * The developer flag currently lives on members.role — a deliberately small,
+ * SQL-or-tool-assigned flag, not the full designations store (which is deferred
+ * until the RLS security pass actually needs it). Used by the developer-only
+ * assign tool so a developer can see and manage who else has the key.
+ *
+ * @returns Developers, minimal display fields, ordered by name.
+ * @throws Error if the database read fails.
+ */
+export async function getDevelopers(): Promise<
+  Pick<Member, 'id' | 'first_name' | 'last_name' | 'system_player_number'>[]
+> {
+  const { data, error } = await supabase
+    .from('members')
+    .select('id, first_name, last_name, system_player_number')
+    .eq('role', 'developer')
+    .order('last_name', { ascending: true })
+    .order('first_name', { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch developers: ${error.message}`);
+  }
+
+  return data ?? [];
+}

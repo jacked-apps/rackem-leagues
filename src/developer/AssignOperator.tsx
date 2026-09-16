@@ -25,7 +25,9 @@ import { Label } from '@/components/ui/label';
 import { MemberSearchCombobox } from '@/components/MemberSearchCombobox';
 import { useUserProfile } from '@/api/hooks';
 import { useCreateOrganization } from '@/api/hooks/useOrganizationMutations';
+import { useUpdateMemberRole } from '@/api/hooks/useMemberMutations';
 import { getAllLeagueOperators } from '@/api/queries/operators';
+import { getDevelopers } from '@/api/queries/members';
 import { queryKeys } from '@/api/queryKeys';
 import { generateMockPaymentData } from '@/types/operator';
 import { logger } from '@/utils/logger';
@@ -38,15 +40,23 @@ import { toast } from 'sonner';
 export const AssignOperator: React.FC = () => {
   const { member } = useUserProfile();
   const createOrganization = useCreateOrganization();
+  const updateMemberRole = useUpdateMemberRole();
 
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [orgName, setOrgName] = useState('');
+  const [selectedDevMemberId, setSelectedDevMemberId] = useState('');
 
   // Current operators = owners of organizations, so the developer can see who
   // already has access and confirm a new one landed.
   const { data: operators = [], isLoading: operatorsLoading } = useQuery({
     queryKey: [...queryKeys.operators.all, 'all-owners'],
     queryFn: getAllLeagueOperators,
+  });
+
+  // Current developers (master key holders), for the same reason.
+  const { data: developers = [], isLoading: developersLoading } = useQuery({
+    queryKey: [...queryKeys.members.all, 'developers'],
+    queryFn: getDevelopers,
   });
 
   const canSubmit = !!selectedMemberId && orgName.trim().length > 0 && !createOrganization.isPending;
@@ -78,6 +88,30 @@ export const AssignOperator: React.FC = () => {
       const message = err instanceof Error ? err.message : String(err);
       logger.error('Failed to assign league operator', { error: message });
       toast.error(`Failed to assign operator: ${message}`);
+    }
+  };
+
+  const canAssignDev = !!selectedDevMemberId && !updateMemberRole.isPending;
+
+  const handleAssignDeveloper = async () => {
+    if (!canAssignDev) return;
+
+    try {
+      // Developer is still a members.role flag (the small, deferred-store path
+      // we agreed on). Assigning it lights up the master key everywhere it's
+      // already consumed: dev routes, canAccessDeveloperFeatures, and operator
+      // access via the master-key branch in the check layer.
+      await updateMemberRole.mutateAsync({
+        memberId: selectedDevMemberId,
+        role: 'developer',
+      });
+
+      toast.success('That member is now a Developer.');
+      setSelectedDevMemberId('');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error('Failed to assign developer', { error: message });
+      toast.error(`Failed to assign developer: ${message}`);
     }
   };
 
@@ -150,6 +184,66 @@ export const AssignOperator: React.FC = () => {
                   <span className="text-sm font-medium">{op.organization_name}</span>
                   <span className="text-xs text-muted-foreground">
                     {op.first_name} {op.last_name}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Make someone a Developer</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Grants the developer master key — access to every operator page and the
+            developer tools. Use sparingly.
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="developer-member">Member</Label>
+            <MemberSearchCombobox
+              id="developer-member"
+              value={selectedDevMemberId}
+              onValueChange={setSelectedDevMemberId}
+              placeholder="Search for a registered member..."
+              userState={member?.state || null}
+              defaultFilter="all"
+              filters={['all', 'state']}
+              registeredOnly
+              showClear
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleAssignDeveloper} disabled={!canAssignDev} loadingText="Assigning...">
+              {updateMemberRole.isPending ? 'Assigning...' : 'Assign as developer'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Current Developers</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {developersLoading ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">Loading developers...</p>
+          ) : developers.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">No developers yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {developers.map((dev) => (
+                <li
+                  key={dev.id}
+                  className="flex items-center justify-between rounded p-2 hover:bg-muted"
+                >
+                  <span className="text-sm font-medium">
+                    {dev.first_name} {dev.last_name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    #P-{String(dev.system_player_number).padStart(5, '0')}
                   </span>
                 </li>
               ))}
