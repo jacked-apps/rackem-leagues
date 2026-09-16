@@ -2401,6 +2401,7 @@ export type Database = {
           break_fouled: boolean
           confirmer_id: string
           created_at: string
+          early_eight: boolean
           game_id: string
           game_number: number
           golden_break: boolean
@@ -2423,6 +2424,7 @@ export type Database = {
           break_fouled?: boolean
           confirmer_id: string
           created_at?: string
+          early_eight?: boolean
           game_id: string
           game_number: number
           golden_break?: boolean
@@ -2445,6 +2447,7 @@ export type Database = {
           break_fouled?: boolean
           confirmer_id?: string
           created_at?: string
+          early_eight?: boolean
           game_id?: string
           game_number?: number
           golden_break?: boolean
@@ -2493,6 +2496,7 @@ export type Database = {
           confirmed_by_away: string | null
           confirmed_by_home: string | null
           created_at: string
+          early_eight: boolean
           game_number: number
           game_type: string
           golden_break: boolean
@@ -2516,6 +2520,7 @@ export type Database = {
           confirmed_by_away?: string | null
           confirmed_by_home?: string | null
           created_at?: string
+          early_eight?: boolean
           game_number: number
           game_type: string
           golden_break?: boolean
@@ -2539,6 +2544,7 @@ export type Database = {
           confirmed_by_away?: string | null
           confirmed_by_home?: string | null
           created_at?: string
+          early_eight?: boolean
           game_number?: number
           game_type?: string
           golden_break?: boolean
@@ -4180,6 +4186,7 @@ export type Database = {
         Args: {
           p_break_and_run?: boolean
           p_break_fouled?: boolean
+          p_early_eight?: boolean
           p_game_number: number
           p_golden_break?: boolean
           p_loser_value?: number

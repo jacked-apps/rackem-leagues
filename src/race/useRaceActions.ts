@@ -90,6 +90,8 @@ export interface RaceGameResult {
   winnerPlayerId: string;
   breakAndRun?: boolean;
   goldenBreak?: boolean;
+  /** The game ended on an early 8 — an ending, not a feat. 8-ball only. */
+  earlyEight?: boolean;
   breakFouled?: boolean;
   runout?: boolean;
   winByForfeit?: boolean;
@@ -110,6 +112,7 @@ export function useRaceActions(raceId: string) {
     p_winner_player_id: r.winnerPlayerId,
     p_break_and_run: r.breakAndRun ?? false,
     p_golden_break: r.goldenBreak ?? false,
+    p_early_eight: r.earlyEight ?? false,
     p_break_fouled: r.breakFouled ?? false,
     p_runout: r.runout ?? false,
     p_win_by_forfeit: r.winByForfeit ?? false,

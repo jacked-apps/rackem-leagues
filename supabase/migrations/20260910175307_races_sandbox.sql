@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS "public"."race_games" (
     "winner_team_id" "uuid",
     "break_and_run" boolean DEFAULT false NOT NULL,
     "golden_break" boolean DEFAULT false NOT NULL,
+    "early_eight" boolean DEFAULT false NOT NULL,
     "break_fouled" boolean DEFAULT false NOT NULL,
     "runout" boolean DEFAULT false NOT NULL,
     "win_by_forfeit" boolean DEFAULT false NOT NULL,
@@ -146,6 +147,12 @@ CREATE TABLE IF NOT EXISTS "public"."race_games" (
     CONSTRAINT "race_games_actions_differ_check" CHECK ("home_action" <> "away_action"),
     CONSTRAINT "race_games_game_type_check" CHECK ((("game_type")::"text" = ANY ((ARRAY['eight_ball'::character varying, 'nine_ball'::character varying, 'ten_ball'::character varying])::"text"[]))),
     CONSTRAINT "race_games_check" CHECK ((NOT (("break_and_run" = true) AND ("golden_break" = true)))),
+    -- A game ends exactly one way. These are rival descriptions of the same
+    -- game, not facts that stack: an 8 down on the break is a golden break,
+    -- a table cleared from the break is a break and run. Two at once would say
+    -- the ending is unknown, not that both happened. Mirrors
+    -- match_games_early_eight_excludes_feats.
+    CONSTRAINT "race_games_early_eight_excludes_feats" CHECK (NOT ("early_eight" AND ("break_and_run" OR "golden_break" OR "runout"))),
     CONSTRAINT "race_games_vacate_requested_by_check" CHECK ((("vacate_requested_by")::"text" = ANY ((ARRAY['home'::character varying, 'away'::character varying])::"text"[]))),
     CONSTRAINT "race_games_race_id_fkey" FOREIGN KEY ("race_id") REFERENCES "public"."races"("id") ON DELETE CASCADE
 );
@@ -187,6 +194,10 @@ CREATE TABLE IF NOT EXISTS "public"."race_confirmations" (
     "winner_team_id" "uuid",
     "break_and_run" boolean DEFAULT false NOT NULL,
     "golden_break" boolean DEFAULT false NOT NULL,
+    -- How a game ended is exactly the sort of call one player sees and the
+    -- other does not, so it belongs in the compared snapshot rather than being
+    -- applied after agreement is reached.
+    "early_eight" boolean DEFAULT false NOT NULL,
     "break_fouled" boolean DEFAULT false NOT NULL,
     "runout" boolean DEFAULT false NOT NULL,
     "win_by_forfeit" boolean DEFAULT false NOT NULL,

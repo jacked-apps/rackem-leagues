@@ -344,6 +344,11 @@ COMMENT ON FUNCTION "public"."start_race"(uuid, text) IS
 'Open a race: record who breaks game 1 (however it was decided at the table) and write game 1. Idempotent — a second tap from the other phone is a no-op.';
 
 
+-- The previous signature is dropped rather than left alongside: adding an
+-- argument with a default would otherwise leave two overloads, and a call
+-- naming neither would be ambiguous at runtime.
+DROP FUNCTION IF EXISTS "public"."record_race_game"(uuid, integer, uuid, boolean, boolean, boolean, boolean, boolean, integer, integer);
+
 -- ============================================================================
 -- 4. record_race_game — a player enters a result and vouches for it
 -- ============================================================================
@@ -354,6 +359,7 @@ CREATE OR REPLACE FUNCTION "public"."record_race_game"(
   p_winner_player_id uuid,
   p_break_and_run  boolean DEFAULT false,
   p_golden_break   boolean DEFAULT false,
+  p_early_eight    boolean DEFAULT false,
   p_break_fouled   boolean DEFAULT false,
   p_runout         boolean DEFAULT false,
   p_win_by_forfeit boolean DEFAULT false,
@@ -417,6 +423,7 @@ BEGIN
   SET winner_player_id  = p_winner_player_id,
       break_and_run     = p_break_and_run,
       golden_break      = p_golden_break,
+      early_eight       = p_early_eight,
       break_fouled      = p_break_fouled,
       runout            = p_runout,
       win_by_forfeit    = p_win_by_forfeit,
@@ -430,12 +437,12 @@ BEGIN
 
   INSERT INTO race_confirmations (
     race_id, game_id, game_number, confirmer_id, side, action, is_initiator,
-    winner_player_id, break_and_run, golden_break, break_fouled, runout,
+    winner_player_id, break_and_run, golden_break, early_eight, break_fouled, runout,
     win_by_forfeit, winner_value, loser_value
   ) VALUES (
     p_race_id, v_game.id, p_game_number, v_member, v_side, 'confirm', true,
-    p_winner_player_id, p_break_and_run, p_golden_break, p_break_fouled, p_runout,
-    p_win_by_forfeit, p_winner_value, p_loser_value
+    p_winner_player_id, p_break_and_run, p_golden_break, p_early_eight, p_break_fouled,
+    p_runout, p_win_by_forfeit, p_winner_value, p_loser_value
   );
 
   -- A changed result can un-finish a race that had been decided.
@@ -445,7 +452,7 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION "public"."record_race_game"(uuid, integer, uuid, boolean, boolean, boolean, boolean, boolean, integer, integer) IS
+COMMENT ON FUNCTION "public"."record_race_game"(uuid, integer, uuid, boolean, boolean, boolean, boolean, boolean, boolean, integer, integer) IS
 'Enter a game result and vouch for it. Replaces any previous result and clears the other side''s confirmation — they agreed to the old result, not this one.';
 
 
@@ -498,12 +505,12 @@ BEGIN
 
   INSERT INTO race_confirmations (
     race_id, game_id, game_number, confirmer_id, side, action, is_initiator,
-    winner_player_id, break_and_run, golden_break, break_fouled, runout,
+    winner_player_id, break_and_run, golden_break, early_eight, break_fouled, runout,
     win_by_forfeit, winner_value, loser_value
   ) VALUES (
     p_race_id, v_game.id, p_game_number, v_member, v_side, 'confirm', false,
     v_game.winner_player_id, v_game.break_and_run, v_game.golden_break,
-    v_game.break_fouled, v_game.runout, v_game.win_by_forfeit,
+    v_game.early_eight, v_game.break_fouled, v_game.runout, v_game.win_by_forfeit,
     v_game.winner_value, v_game.loser_value
   );
 
@@ -570,19 +577,19 @@ BEGIN
   -- with the new one.
   INSERT INTO race_confirmations (
     race_id, game_id, game_number, confirmer_id, side, action, is_initiator,
-    winner_player_id, break_and_run, golden_break, break_fouled, runout,
+    winner_player_id, break_and_run, golden_break, early_eight, break_fouled, runout,
     win_by_forfeit, winner_value, loser_value
   ) VALUES (
     p_race_id, v_game.id, p_game_number, v_member, v_side, 'vacate', false,
     v_game.winner_player_id, v_game.break_and_run, v_game.golden_break,
-    v_game.break_fouled, v_game.runout, v_game.win_by_forfeit,
+    v_game.early_eight, v_game.break_fouled, v_game.runout, v_game.win_by_forfeit,
     v_game.winner_value, v_game.loser_value
   );
 
   UPDATE race_games
   SET winner_player_id = NULL, winner_team_id = NULL,
-      break_and_run = false, golden_break = false, break_fouled = false,
-      runout = false, win_by_forfeit = false,
+      break_and_run = false, golden_break = false, early_eight = false,
+      break_fouled = false, runout = false, win_by_forfeit = false,
       winner_value = NULL, loser_value = NULL,
       confirmed_by_home = NULL, confirmed_by_away = NULL, confirmed_at = NULL,
       vacate_requested_by = v_side, updated_at = now()
@@ -631,7 +638,7 @@ REVOKE ALL ON FUNCTION "public"."race_breaker_side"(uuid, integer) FROM PUBLIC, 
 REVOKE ALL ON FUNCTION "public"."race_advance"(uuid) FROM PUBLIC, "anon", "authenticated";
 REVOKE ALL ON FUNCTION "public"."create_race"(uuid, uuid, integer, integer, text, text) FROM PUBLIC, "anon";
 REVOKE ALL ON FUNCTION "public"."start_race"(uuid, text) FROM PUBLIC, "anon";
-REVOKE ALL ON FUNCTION "public"."record_race_game"(uuid, integer, uuid, boolean, boolean, boolean, boolean, boolean, integer, integer) FROM PUBLIC, "anon";
+REVOKE ALL ON FUNCTION "public"."record_race_game"(uuid, integer, uuid, boolean, boolean, boolean, boolean, boolean, boolean, integer, integer) FROM PUBLIC, "anon";
 REVOKE ALL ON FUNCTION "public"."confirm_race_game"(uuid, integer) FROM PUBLIC, "anon";
 REVOKE ALL ON FUNCTION "public"."vacate_race_game"(uuid, integer) FROM PUBLIC, "anon";
 
@@ -640,6 +647,6 @@ GRANT EXECUTE ON FUNCTION "public"."race_standing"(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."race_breaker_side"(uuid, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."create_race"(uuid, uuid, integer, integer, text, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."start_race"(uuid, text) TO authenticated;
-GRANT EXECUTE ON FUNCTION "public"."record_race_game"(uuid, integer, uuid, boolean, boolean, boolean, boolean, boolean, integer, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION "public"."record_race_game"(uuid, integer, uuid, boolean, boolean, boolean, boolean, boolean, boolean, integer, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."confirm_race_game"(uuid, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION "public"."vacate_race_game"(uuid, integer) TO authenticated;

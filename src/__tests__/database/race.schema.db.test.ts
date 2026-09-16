@@ -47,7 +47,7 @@ describe('race tables schema', () => {
   }
 
   beforeAll(async () => {
-    const members = await executeSql(`SELECT id FROM public.members LIMIT 2`);
+    const members = await executeSql(`SELECT id FROM public.members ORDER BY id LIMIT 2`);
     if (members.length < 2) {
       throw new Error(
         'race.schema.db.test requires at least two member rows. Seed the local DB and retry.'

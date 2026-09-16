@@ -91,7 +91,7 @@ async function raceRow(c: PoolClient, raceId: string) {
 describe('race engine', () => {
   beforeAll(async () => {
     const rows = await executeSql(
-      `SELECT id, user_id FROM public.members WHERE user_id IS NOT NULL LIMIT 2`
+      `SELECT id, user_id FROM public.members WHERE user_id IS NOT NULL ORDER BY id LIMIT 2`
     );
     if (rows.length < 2) {
       throw new Error(

@@ -40,6 +40,7 @@ interface PendingResult {
   winnerWasBreaker: boolean;
   breakAndRun: boolean;
   goldenBreak: boolean;
+  earlyEight: boolean;
   breakFouled: boolean;
   runout: boolean;
 }
@@ -127,6 +128,7 @@ export function ScoreRace({ raceId, names }: ScoreRaceProps) {
             winnerWasBreaker,
             breakAndRun: false,
             goldenBreak: false,
+            earlyEight: false,
             breakFouled: false,
             runout: false,
           })
@@ -153,10 +155,12 @@ export function ScoreRace({ raceId, names }: ScoreRaceProps) {
         hideForfeit
         breakAndRun={pending?.breakAndRun ?? false}
         goldenBreak={pending?.goldenBreak ?? false}
+        earlyEight={pending?.earlyEight ?? false}
         breakFouled={pending?.breakFouled ?? false}
         runout={pending?.runout ?? false}
         onBreakAndRunChange={(v) => setPending((p) => (p ? { ...p, breakAndRun: v } : p))}
         onGoldenBreakChange={(v) => setPending((p) => (p ? { ...p, goldenBreak: v } : p))}
+        onEarlyEightChange={(v) => setPending((p) => (p ? { ...p, earlyEight: v } : p))}
         onBreakFouledChange={(v) => setPending((p) => (p ? { ...p, breakFouled: v } : p))}
         onRunoutChange={(v) => setPending((p) => (p ? { ...p, runout: v } : p))}
         onCancel={() => setPending(null)}
@@ -167,6 +171,7 @@ export function ScoreRace({ raceId, names }: ScoreRaceProps) {
             winnerPlayerId: pending.winner.memberId,
             breakAndRun: pending.breakAndRun,
             goldenBreak: pending.goldenBreak,
+            earlyEight: pending.earlyEight,
             breakFouled: pending.breakFouled,
             runout: pending.runout,
           });
@@ -184,6 +189,7 @@ export function ScoreRace({ raceId, names }: ScoreRaceProps) {
                 winnerPlayerName: awaitingWinner.displayName,
                 breakAndRun: awaitingMe.break_and_run,
                 goldenBreak: awaitingMe.golden_break,
+                earlyEight: awaitingMe.early_eight,
                 breakFouled: awaitingMe.break_fouled,
                 runout: awaitingMe.runout,
                 winByForfeit: awaitingMe.win_by_forfeit,
