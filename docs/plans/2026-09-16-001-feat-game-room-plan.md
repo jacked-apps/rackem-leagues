@@ -434,7 +434,7 @@ cascade) before the RPC tests; it is the thing the whole design leans on.
 
 ---
 
-- [ ] **Unit 2: Idle sweep via pg_cron**
+- [x] **Unit 2: Idle sweep via pg_cron** — built 2026-09-16 (`20260916184405_game_rooms_sweep.sql`, 5 db tests)
 
 **Goal:** Rooms nobody has touched for a day disappear on their own.
 

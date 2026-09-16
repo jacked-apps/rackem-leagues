@@ -4344,6 +4344,10 @@ export type Database = {
         Args: { p_idle_days?: number }
         Returns: number
       }
+      sweep_stale_rooms: {
+        Args: { p_idle_hours?: number }
+        Returns: number
+      }
       text_soundex: {
         Args: { "": string }
         Returns: string
