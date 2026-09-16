@@ -1,144 +1,147 @@
-# Resume here — self-scoring for individual races
+# Resume here — individual races
 
-> Written 2026-09-10 at the end of a session, so a fresh session starts from
-> the right place. Read this first, then the plan.
+> Rewritten 2026-09-16. **The race is built.** It is waiting on one thing: the
+> game room that launches it. Read this, then go straight to §5.
 
-## Where we are in one line
+## 1. Where we are in one line
 
-**Design is finished and reviewed. Unit 0 is done. No code has been written.**
-The next action is Unit 1 — the late-entry hopper fix — or Phase 1 proper.
+**Schema, engine and room are built, tested and committed** on
+`feat/self-scoring-individual-races`, rebased onto main. Nothing is merged.
+Two people can already play and score a race end to end today — see §3.
 
-## The three documents, in order
+## 2. Scope, restated (Ed, 2026-09-10)
 
-1. `docs/brainstorms/2026-09-08-self-scoring-primer.md` — background and Ed's
-   original vision. Committed.
-2. `docs/brainstorms/2026-09-09-self-scoring-requirements.md` — **what** to
-   build. 47 requirements, no blocking questions. Reviewed by seven personas,
-   auto-fixes applied. Committed (`435b9e26`).
-3. `docs/plans/2026-09-09-001-feat-self-scoring-individual-races-plan.md` —
-   **how** to build it. 11 units across five phases. Reviewed by seven personas,
-   all auto-fixes applied.
+**This is tournaments only.** The league is NOT "the race, five times": its
+lineup sequencing, its scoring and its matchups (which are not predetermined)
+are each far larger than a race and are their own effort. Do not pull league
+schema or league flows into this branch.
 
-## Branch
+The only league obligation while building here: **the race must not be built in
+a shape a league could never reuse.** That is honoured and is worth not
+undoing — see §6.
 
-`feat/self-scoring-individual-races`, stacked off
-`feat/tournament-paid-foundation` (PR #275, awaiting Jack). Nothing is pushed.
-PR #275 itself is untouched — the branch was cut so the docs would not land on a
-PR under review.
+## 3. How to run it right now
 
-## The open question — answered 2026-09-10
+Two people must be signed in — two accounts in two browsers works. Locally that
+is `operator@test.com` (shows as **Op**) and `shodbyed@gmail.com` (**Ed**).
 
-**Advance policy default: Automatic.** All three settings stay, and the choice
-is the organizer's dial:
+1. One of them opens **`/race/new`** — pick the opponent, a target EACH, the
+   break rule, the game type, Start.
+2. That lands them in the race. Send the other person the same URL.
+3. Tap who breaks. Then tap whoever won each game.
 
-- **Automatic** (default) — everything updates by itself.
-- **Confirm** — it pings the organizer with the result; he approves.
-- **Manual** — players score, then walk up and tell the organizer directly,
-  much like the free version.
+Nothing counts until the other person agrees, and the next game does not appear
+until then either. **Reverse** shows on exactly one row — the last game played.
 
-Recorded in R29 of the requirements and in Unit 8's settings list. Unit 8 is
-unblocked.
+Both routes are gated `!isProduction`. Nothing links to them, so there is no
+door to gate alongside them — **when the game room adds one, it needs the same
+guard** until this un-gates. Logged in `LIST_FOR_ED.md`.
 
-## Three things deferred to Ed, none blocking
+## 4. What exists
 
-- The Scoring tab's **name**. "Scoring" is provisional. Ed ruled out "Rules"
-  (the BCA rulebook owns that word) and named the real tension himself: race
-  length and game type read as *format*, while the advance and single-player
-  policies are organizer preferences and are objectively not rules — yet
-  splitting them scatters one coherent setup.
-- **Shipped defaults** for break rule, race length per side, game type per side.
-- Whether the catalog blurb — which promises buyers "You'll pick one thing"
-  (`src/brackets/paid/premiumFeatures.ts:65`) — gets reworded. The plan sides
-  with keeping the blurb true by collapsing the four format settings behind an
-  "Advanced" disclosure, since expanding a disclosure later is trivial and
-  collapsing a tested flat tab is not.
+**Database** — `supabase/migrations/20260910175307_races_sandbox.sql`
+- `races` — the two players, a goal EACH, break rule, game type, status, who
+  breaks first. No parent pointer: a bracket match or a league pairing points AT
+  a race, never the reverse.
+- `race_games` — one row per game actually played. Appended, never pre-created.
+- `race_confirmations` — the many-eyes record, mirroring `game_confirmations`.
+- All three are SELECT-only for the browser. Writes go through the RPCs.
 
-## What Ed decided this session (do not re-litigate)
+**Engine** — `supabase/migrations/20260910181344_race_engine.sql`
+`create_race`, `start_race`, `record_race_game`, `confirm_race_game`,
+`vacate_race_game`, plus internal `race_advance` / `race_standing` /
+`race_breaker_side` / `race_side_of`.
 
-- **Three kinds of human, not two.** A = registered; B = has a phone, scans,
-  gets a claim ticket; C = no phone, organizer scores. Once a ticket counts as
-  an identity the scoring layer stops caring which kind someone is.
-- **Scanning the QR issues a ticket before any name is typed.** The organizer's
-  **Validate** action then issues a large single-use 6-digit code that binds
-  that ticket to a participant he typed in himself.
-- **A match going in progress is what creates its race.**
-- **Disputes are not adjudicated by the app.** Everyone is standing at the
-  table; a disagreement is made visible and the players fetch the organizer, who
-  settles it in person. Do not design a remote arbitration flow — Ed pushed back
-  on this explicitly.
-- **No forfeit ceremony in a tournament.** Someone who leaves is gone; the
-  organizer taps the other name, exactly like the free tier.
-- **Practice races are the build method, not a feature.** The race is built and
-  tested with no parent first, then tournaments use it, then leagues. No
-  user-facing practice mode ships.
-- **Settings lock once play starts.** Race length, game type and break rule are
-  the terms players agreed to — read-only after the first match starts. Advance
-  policy and single-player policy stay adjustable.
-- **Three views** (Ed's shape): a player Home tab (rules, who is still alive,
-  on-deck, call order, payouts), a Bracket tab (who is playing, scores, table),
-  and an organizer view (the setup pages). The plan builds the route into the
-  room and live scores on the bracket; the richer home screen is left as its own
-  piece of work.
+**Room** — `src/race/`
+`ScoreRace.tsx` (the room), `RaceScoreboard`, `RaceGamesList`,
+`FirstBreakerPrompt`, `useRaceView`, `useRaceData`, `useRaceActions`,
+`ScoreRacePage` (route wrapper), `StartRacePage` (**disposable**, see §5).
 
-## The two P0s the plan review caught — do not undo these
+**Tests** — 44 db (`race.schema` + `race.engine`), 7 component
+(`src/race/__tests__/RaceGamesList.test.tsx`). All green, build clean.
 
-1. **Any table created in `public` is born writable by `anon`**, because the
-   baseline runs `ALTER DEFAULT PRIVILEGES … GRANT ALL ON TABLES TO "anon"`.
-   That is why `setMatchInProgress` can update `bracket_matches` from the
-   browser today. The race tables therefore need explicit
-   `REVOKE INSERT, UPDATE, DELETE`, and claim tickets live in a **schema
-   PostgREST does not expose** — a ticket column on a public table would be
-   downloadable in one request with the key that ships in the client bundle.
-2. **The automatic advance must run in a nested caught block.**
-   `advance_bracket_winner` contains `RAISE EXCEPTION 'Winner % is not a
-   participant in match %'` (bracket migration line 364), and that branch is
-   reachable because reopening an upstream match NULLs seats downstream. Running
-   it inside the scoring transaction without catching means a throw rolls back
-   the confirmation too — a player watches the rack they just confirmed vanish.
+## 5. THE NEXT ACTION — wiring the game room
 
-## Other findings worth not rediscovering
+This is the whole remaining job, and it is small by design.
 
-- `reopen_bracket_match` writes to **three** places: the winner's next match,
-  the loser's drop, and the grand-final reset row. Guards and cleanup apply to
-  all three.
-- `add_late_entry` calls `PERFORM reopen_bracket_match(...)` and **discards the
-  result**, so a new guard must return a reason rather than raise.
-- `deriveDissents` silently skips any row whose `side` is not exactly `'home'`
-  or `'away'` — a participant uuid there disables the whole many-eyes layer
-  invisibly.
-- `pendingConfirmations.ts` is **not** table-agnostic (an early claim of mine
-  that was wrong): its predicates take `userTeamId`/`homeTeamId` and a
-  `MatchGame`. The team ids are used for one line — deriving `mySide`.
-- `VacateModal.tsx` has zero callers; the live vacate flow is `EditGameDialog`.
-- `src/login/EmailCodeStep.tsx` already has a tuned 6-digit numeric input.
-  Reuse it for the validation code.
-- **CI never runs the `db` vitest project** — `.github/workflows/checks.yml`
-  runs `unit` only. Every RPC guard in this plan is verified only when someone
-  runs `pnpm test:run --project db` by hand.
+**The room is a component that takes a race id.** It is not a page that finds
+one. So the game room hosts it directly:
 
-## Unit 0 — done 2026-09-10
+```
+<ScoreRace raceId={id} />
+```
 
-`docs/plans/2026-09-09-002-league-race-walkthrough.md`, and **it is a parked league
-reference, not an input to this plan.**
+It also accepts optional `names={{ home, away }}` when the host already knows
+what to call the two people — a league would pass nicknames from its lineup.
+Given nothing, it looks them up itself.
 
-**This plan is solely tournaments.** The league is not "the race, five times" —
-lineup sequencing, league scoring and matchups that are not predetermined are all
-far bigger than a race and are their own effort (Ed, 2026-09-10). Do not pull
-league schema into these units.
+**`create_race` is the seam.** Once the game room has two people together, it
+calls `create_race(home_member_id, away_member_id, goal_home, goal_away,
+break_rule, game_type)` and gets back `{ ok, race_id }`. The caller must be one
+of the two players.
 
-Unit 0's one job was to check the race primitive is not being built in a shape a
-league could never reuse. **It passes.** One constraint carried forward, now in
-Unit 9: the room is addressable per race and assumes no single race exists,
-because a league night is several at once. Everything else stays parked.
+So the wiring is: game room knows the two people → calls `create_race` → renders
+`<ScoreRace raceId={...} />` (or navigates both to `/race/:raceId`).
 
-## Next actions, in order
+**`/race/new` (`StartRacePage.tsx`) is disposable.** It exists only so a race
+could be played before the game room existed. It calls the same `create_race`.
+Delete it when the room lands, or keep it as a dev entrance — nothing else
+depends on it.
 
-1. **Unit 1** — the late-entry hopper fix. Ed may prefer this as its own small
-   PR ahead of the feature, since it corrects a flow that is broken today.
-2. Then Phase 1 proper (Units 2–4).
+**Also when the room lands:** the coin flip (merged in main, PR #279) and the
+race are siblings in that room. A coin flip is the natural way to settle who
+breaks first — `start_race(race_id, 'home' | 'away')` takes that answer.
 
-## Housekeeping done this session
+## 6. Decisions — do not re-litigate
 
-- Corrected a stale memory: the live-scoring / many-eyes stack is **merged into
-  `main`** (commit `336bfd05`), not stranded on stacked PRs as the memory said.
-  Verified with `git log`. `MEMORY.md` index updated too.
+- **A race is LINEAR.** Both players are at one table the whole time, so games
+  cannot be played or entered out of order. A result goes only on the earliest
+  unsettled game; a wipe comes only off the LAST game with a result. To fix game
+  3 of 5 you reverse 5, then 4, then 3. (The round-robin reason for out-of-order
+  scoring — someone is in the bathroom and must not stall 24 other games — does
+  not exist here.)
+- **A goal EACH, not one shared number.** Equal is the ordinary race; unequal is
+  the handicap. Nothing else about the race differs between them, which is why
+  they are two plain columns and not a handicap feature.
+- **`race_games` mirrors `match_games` column-for-column** — including a NULL
+  `winner_team_id`. That is what lets the existing `ScoringDialog` /
+  `ConfirmationDialog` / `deriveDissents` read a race with no shim, and what
+  would let a league adopt races without a second scoring implementation. When
+  main adds a scoring field (it added **early 8** on 2026-09-15), mirror it here
+  and thread it through — that is the mirroring working, not extra work.
+- **The append is server-side**, inside the transaction of the confirmation that
+  satisfied the gate, under `FOR UPDATE` on the race row. Both phones hit the
+  gate at the same instant; a client-side append writes two game 6s.
+- **Changing a result clears the opponent's agreement.** They agreed to the old
+  result. You may retype freely until they agree; after that it takes a
+  reversal.
+- **Advance policy default: automatic**, with confirm and manual kept as the
+  organizer's dial. (Not yet built — that is bracket integration, Unit 7/8 of
+  the plan, and not needed for the game room.)
+- **The room derives nothing about identity.** It is handed the two names and
+  their sides. Whoever hosts a race resolves them — bracket seats, a lineup, or
+  a game room. Keep it that way; it is the reason a league can reuse this.
+
+## 7. Local environment notes
+
+- The race migrations were applied BEFORE main's `20260905225925` (which is
+  dated earlier), so `supabase migration up` needs `--include-all` on this
+  machine. A fresh database applies everything in date order and is fine.
+- **18 db test files fail locally** — none of them race. They want the dev seed
+  (`database/dev_starting_point.sql`), which this machine does not have. CI
+  loads it, so they pass there. That seed is DESTRUCTIVE (deletes members, auth
+  users, matches, seasons) — do not load it without asking Ed.
+- After any migration touching the realtime publication, run
+  `supabase stop && supabase start`, or the realtime container serves the old
+  schema and the symptom looks like an app bug.
+
+## 8. The rest of the plan, not started
+
+`docs/plans/2026-09-09-001-feat-self-scoring-individual-races-plan.md` still has
+the tournament half: the late-entry fix (**done separately — PR #284**), QR
+claim tickets, Validate, bracket integration, the Scoring tab, player entry.
+None of it is needed for the game room.
+
+`docs/plans/2026-09-09-002-league-race-walkthrough.md` is a **parked league
+reference** — notes to a future league brainstorm, not scope, and nothing here
+depends on it.
