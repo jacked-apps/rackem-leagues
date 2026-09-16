@@ -1,7 +1,7 @@
 ---
 title: 'Game Room — a host for two-player games, of which the coin flip is the first'
 date: 2026-09-10
-status: settled
+status: superseded — see docs/brainstorms/2026-09-16-game-room-requirements.md (2026-09-16). Kept for the reasoning; three ideas carried forward: server-decided coin flip outcome, the profile "challenge" door, a shared game-side confirmation helper.
 ---
 
 # Game Room — a host for two-player games
