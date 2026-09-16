@@ -8,6 +8,7 @@
 import React from 'react';
 import { MapPin, Calendar } from 'lucide-react';
 import type { MatchWithDetails } from '@/types';
+import { TeamNameLink } from '@/components/TeamNameLink';
 
 interface MatchCardProps {
   /** Match data with team and venue details */
@@ -95,16 +96,20 @@ export const MatchCard: React.FC<MatchCardProps> = ({
           {/* Teams */}
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <p
-                className={`font-semibold ${
-                  highlightTeamId === homeTeam?.id
-                    ? 'text-info'
-                    : 'text-foreground'
-                }`}
-              >
-                {homeTeam?.team_name || 'Unknown'}
+              <p className="font-semibold">
+                {homeTeam?.id ? (
+                  <TeamNameLink teamId={homeTeam.id} teamName={homeTeam.team_name} />
+                ) : (
+                  'Unknown'
+                )}
               </p>
-              <p className="text-xs text-muted-foreground">Home</p>
+              <p className="text-xs text-muted-foreground">
+                Home
+                {/* "Your team" used to be marked by the link colour, which now
+                    means one thing only: this text is pressable. A word says it
+                    instead — and unlike a hue, it reads for everyone. */}
+                {highlightTeamId === homeTeam?.id ? ' · Your team' : ''}
+              </p>
             </div>
 
             <div className="px-4">
@@ -120,16 +125,17 @@ export const MatchCard: React.FC<MatchCardProps> = ({
             </div>
 
             <div className="flex-1 text-right">
-              <p
-                className={`font-semibold ${
-                  highlightTeamId === awayTeam?.id
-                    ? 'text-info'
-                    : 'text-foreground'
-                }`}
-              >
-                {awayTeam?.team_name || 'Unknown'}
+              <p className="font-semibold">
+                {awayTeam?.id ? (
+                  <TeamNameLink teamId={awayTeam.id} teamName={awayTeam.team_name} />
+                ) : (
+                  'Unknown'
+                )}
               </p>
-              <p className="text-xs text-muted-foreground">Away</p>
+              <p className="text-xs text-muted-foreground">
+                Away
+                {highlightTeamId === awayTeam?.id ? ' · Your team' : ''}
+              </p>
             </div>
           </div>
 

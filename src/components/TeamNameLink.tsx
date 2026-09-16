@@ -11,35 +11,22 @@
  * to provide consistent user interaction patterns.
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/supabaseClient';
 import { PlayerNameLink } from './PlayerNameLink';
 import { formatPartialMemberNumber } from '@/types/member';
-import { logger } from '@/utils/logger';
+import { useTeamRosterWithMembers } from '@/api/hooks/useTeamRosterWithMembers';
 
 interface TeamNameLinkProps {
   teamId: string;
   teamName: string;
   className?: string;
   disablePopover?: boolean; // Use this when inside a button/interactive element
-}
-
-interface TeamPlayer {
-  member_id: string;
-  is_captain: boolean;
-  members: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    system_player_number: number;
-    bca_member_number: string | null;
-  };
 }
 
 export function TeamNameLink({
@@ -49,43 +36,14 @@ export function TeamNameLink({
   disablePopover = false,
 }: TeamNameLinkProps) {
   const [open, setOpen] = useState(false);
-  const [players, setPlayers] = useState<TeamPlayer[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  // Fetch team roster when popover opens
-  useEffect(() => {
-    async function fetchTeamRoster() {
-      if (!open || disablePopover) return;
-
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('team_players')
-        .select(`
-          member_id,
-          is_captain,
-          members:members!team_players_member_id_fkey(
-            id,
-            first_name,
-            last_name,
-            system_player_number,
-            bca_member_number
-          )
-        `)
-        .eq('team_id', teamId)
-        .order('is_captain', { ascending: false });
-
-      if (error) {
-        logger.error('Error fetching team roster', { error: error.message });
-        setLoading(false);
-        return;
-      }
-
-      setPlayers((data || []) as unknown as TeamPlayer[]);
-      setLoading(false);
-    }
-
-    fetchTeamRoster();
-  }, [teamId, open, disablePopover]);
+  // Lazy: nothing is fetched until someone actually opens the popover, so a
+  // page listing a dozen teams costs nothing until one is asked about. Cached
+  // after that, because rosters do not change while a table is being read.
+  const { data: players = [], isLoading } = useTeamRosterWithMembers(
+    teamId,
+    open && !disablePopover
+  );
 
   // If used inside a button, just render as plain text
   if (disablePopover) {
@@ -114,7 +72,7 @@ export function TeamNameLink({
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-2" align="start">
-        {loading ? (
+        {isLoading ? (
           <div className="px-2 py-4 text-center text-sm text-muted-foreground">
             Loading roster...
           </div>
