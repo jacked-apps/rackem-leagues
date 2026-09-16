@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-09-16 (BUILT Game Room Unit 3 — the browser data layer: `queryKeys.rooms` (detail is the PREFIX of every game-table key), `api/queries/rooms.ts`, `api/mutations/rooms.ts` (typed refusal union), `api/hooks/useRooms.ts` (15 s poll as realtime fallback), `src/rooms/deviceId.ts` (a seat is a device), `src/rooms/useRoomHeartbeat.ts` (visibility-aware). 13 unit tests + 2 real-DB query tests. Units 1–2 landed earlier today.)
+> **Last Updated**: 2026-09-16 (BUILT Game Room Unit 4 — `src/rooms/useRoomRealtime.ts`: one channel per device over the room's table list, one query key per table, heartbeat-only UPDATEs dropped via `roomChangeFilter.ts`, every SUBSCRIBED refetches, `rooms` DELETE → `roomGone`, table-list change rebuilds the channel and drops the old tables' cache. 15 unit tests. Units 1–3 landed earlier today.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -1133,6 +1133,10 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `deviceId.test.ts` - Stable across calls + simulated reload; fresh storage = new id; throwing storage still stable
 - `useRoomHeartbeat.ts` - Beats `room_heartbeat` every 30 s while the room screen is visible; pauses when the tab hides (the grace window keeps the seat) and beats at once on return; failures logged + ignored. The room OWNS its activity signal — games contribute nothing, so a free room is never swept mid-play
 - `useRoomHeartbeat.test.ts` - Mount + interval + unmount, disabled/no-room no-op, hidden/visible pause-resume, failure swallowed
+- `useRoomRealtime.ts` - ONE channel per device over the room's table list: `rooms` (id filter) + `room_phones` (room_id) → invalidate `rooms.detail` EXACTLY (phones live inside it); each listed game table → its own `rooms.table` key. Drops heartbeat-only UPDATEs. EVERY SUBSCRIBED (first included) invalidates the detail PREFIX (realtime never replays). `rooms` DELETE → `roomGone`. Table list change = teardown + `removeQueries` old table keys + rebuild. `shared=false` = no socket, status `live`. Status via `classifySubscribeEvent`
+- `useRoomRealtime.test.ts` - 11 tests on a fake channel + real QueryClient: bindings/filters, per-table invalidation, heartbeat noise dropped, `roomGone`, table-list rebuild (cache dropped, no rebuild on same list), every-SUBSCRIBED prefix invalidation, binding-mismatch → `error`
+- `roomChangeFilter.ts` - Pure "only the heartbeat column moved?" check (`onlyIgnoredColumnsChanged`, `HEARTBEAT_COLUMNS`). Compares `old` vs `new` column by column; fails OPEN on a missing/partial `old` (the RLS shape) — see PRE_LAUNCH_CHECKLIST
+- `roomChangeFilter.test.ts` - Ignored-only → true; rendered column → false; jsonb compared structurally; null/partial old → false
 - `types.ts` - Participant / Call / Face / FlipResult / RandomSource. No playerId or teamId anywhere — a player and a team are the same `{ id, name }` shape, which is what lets one component serve league play, tournaments and individual races
 - `flipCoin.ts` - Pure flip rules with no React and no ambient randomness: `tossCoin`, `resolveFlip`, `assignFaces`, `shuffleOrder`, plus `quickFlip` (the flip as a headless two-outcome randomizer for callers that need a result without a screen). Random source is injected
 - `Coin.tsx` - The coin visual — rotateX spin via a CSS transition, no keyframes and no global CSS so it drops in anywhere. Face shown as a letter AND spelled out; honors prefers-reduced-motion

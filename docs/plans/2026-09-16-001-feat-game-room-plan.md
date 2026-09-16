@@ -8,10 +8,11 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **RESUME POINT (2026-09-16):** Units 1–3 are built, tested, and pushed on
-> branch `feat/game-room` (last commit `077df70c`). **Next is Unit 4 — the
-> realtime hook `src/rooms/useRoomRealtime.ts`.** Before building: pull the
-> branch, then locally `supabase db reset` → load
+> **RESUME POINT (2026-09-16):** Units 1–4 are built, tested, and pushed on
+> branch `feat/game-room`. **Next is Unit 5 — the room screens + game
+> registry.** Unit 4's hook returns `{ connectionStatus, roomGone }`; the page
+> renders `RoomEnded` on `roomGone` OR a null room query. Before building: pull
+> the branch, then locally `supabase db reset` → load
 > `database/dev_starting_point.sql` + `supabase/seed_test_users.sql` (CI
 > order) → `supabase stop && supabase start` once so the realtime container
 > sees the published `rooms` / `room_phones` tables. Decisions made after the
@@ -524,7 +525,7 @@ the existing `useCurrentMember()` — nothing new.
 
 ---
 
-- [ ] **Unit 4: The room realtime hook**
+- [x] **Unit 4: The room realtime hook** — built 2026-09-16 (`useRoomRealtime.ts` + `roomChangeFilter.ts`; 15 unit tests). One deviation from the text below: `room_phones` events invalidate `rooms.detail` **exactly**, not `rooms.phones` — Unit 3 shipped phones INSIDE the `room_state` shape, so there is no separate phones query to poke. `queryKeys.rooms.phones` stays reserved for a future split.
 
 **Goal:** One channel per phone over the room's table list, invalidating one
 key per table, hardened like the scoring room's hook.
