@@ -31,4 +31,4 @@ The app has no user-facing theme switching despite having a complete dark-mode C
 - Toggle location: to be decided during planning based on existing header/navbar layout
 
 ## Next Steps
--> `/ce:plan` for structured implementation planning
+-> `/compound-engineering:ce-plan` for structured implementation planning

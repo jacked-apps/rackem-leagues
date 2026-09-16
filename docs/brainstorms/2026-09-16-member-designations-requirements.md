@@ -438,4 +438,4 @@ doing this now rather than when a paid capability appears.
 
 ## Next Steps
 
--> `/ce:plan` for Phase 1
+-> `/compound-engineering:ce-plan` for Phase 1
