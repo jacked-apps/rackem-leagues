@@ -301,6 +301,11 @@ function lateEntryProblem(result: LateEntryResult): string {
       return 'Their next match has already started, so the bye is locked in.';
     case 'name_taken':
       return `${result.name} is already in this tournament — use a different name.`;
+    case 'name_waiting':
+      // Deliberately NOT "already in this tournament": they are on the sign-up
+      // list and never got admitted, so an organizer sent looking for them in
+      // the bracket would not find them.
+      return `${result.name} is on the sign-up list for this tournament — admit them there, or use a different name.`;
     case 'name_required':
       return 'Enter a name.';
     case 'name_too_long':
