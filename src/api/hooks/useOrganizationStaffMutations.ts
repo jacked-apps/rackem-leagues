@@ -69,7 +69,7 @@ export function useRemoveOrganizationStaff() {
 
   return useMutation({
     mutationFn: (params: { staffId: string; memberId: string; organizationId: string }) =>
-      removeOrganizationStaff(params.staffId, params.memberId),
+      removeOrganizationStaff(params.staffId),
     onSuccess: (_, variables) => {
       // Invalidate staff list for this organization
       queryClient.invalidateQueries({
