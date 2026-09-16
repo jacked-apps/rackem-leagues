@@ -8,6 +8,17 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
+> **RESUME POINT (2026-09-16):** Units 1–3 are built, tested, and pushed on
+> branch `feat/game-room` (last commit `077df70c`). **Next is Unit 4 — the
+> realtime hook `src/rooms/useRoomRealtime.ts`.** Before building: pull the
+> branch, then locally `supabase db reset` → load
+> `database/dev_starting_point.sql` + `supabase/seed_test_users.sql` (CI
+> order) → `supabase stop && supabase start` once so the realtime container
+> sees the published `rooms` / `room_phones` tables. Decisions made after the
+> plan was written and already reflected below: registered members only (no
+> anonymous guests); a seat is a DEVICE, allowance per person; the interim
+> host gate is `members.role` in (league_operator, developer).
+
 ## Overview
 
 A `rooms` row plus a `room_phones` row per phone, one realtime channel per
