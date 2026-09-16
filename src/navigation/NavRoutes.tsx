@@ -53,6 +53,7 @@ import { LeagueOperatorApplication } from '../leagueOperator/LeagueOperatorAppli
 import { Messages } from '../pages/Messages';
 import { PlayerProfile } from '../pages/PlayerProfile';
 import { AdminReports } from '../pages/AdminReports';
+import { AssignOperator } from '../developer/AssignOperator';
 import { MatchDataViewer } from '../pages/MatchDataViewer';
 import { Standings } from '../pages/Standings';
 import { SeasonOverview } from '../pages/SeasonOverview';
@@ -350,6 +351,7 @@ export const router = createBrowserRouter([
 
           // --- Developer Routes (require developer role) ---
           { path: 'admin-reports', element: withDeveloper(<AdminReports />) },
+          { path: 'assign-operator', element: withDeveloper(<AssignOperator />) },
         ],
       },
     ],

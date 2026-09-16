@@ -85,8 +85,9 @@ function resolveJoinRequestsTo(isOperator: boolean, orgs: OperatorOrg[]): string
 
 export function AppDrawer(_props: AppDrawerProps) {
   const { isLoggedIn } = useUser();
-  const { member, canAccessLeagueOperatorFeatures } = useUserProfile();
+  const { member, canAccessLeagueOperatorFeatures, canAccessDeveloperFeatures } = useUserProfile();
   const isOperator = canAccessLeagueOperatorFeatures();
+  const isDeveloper = canAccessDeveloperFeatures();
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
   const { drawerItems: myMatchItems, isHydrating: myMatchHydrating } =
@@ -164,6 +165,7 @@ export function AppDrawer(_props: AppDrawerProps) {
             <MyMatchPanel items={myMatchItems} isHydrating={myMatchHydrating} inSheet />
             <PlayerSection unreadCount={unreadCount} joinRequestsTo={joinRequestsTo} />
             {isOperator ? <OperatorSection orgs={organizations as OperatorOrg[]} /> : null}
+            {isDeveloper ? <DeveloperSection /> : null}
           </>
         )}
       </nav>
@@ -272,6 +274,19 @@ function OperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
             ))}
           </ul>
         ))}
+    </div>
+  );
+}
+
+/** Mirrors SidebarDeveloperSection — developer-only tools, master-key gated.
+ *  The routes themselves are withDeveloper-guarded. */
+function DeveloperSection() {
+  return (
+    <div className="mt-6 border-t pt-4">
+      <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Developer
+      </h3>
+      <DrawerLink to="/assign-operator" label="Assign Operator" />
     </div>
   );
 }

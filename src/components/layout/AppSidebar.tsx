@@ -64,8 +64,9 @@ function resolveJoinRequestsTo(isOperator: boolean, orgs: OperatorOrg[]): string
 
 export function AppSidebar() {
   const { isLoggedIn } = useUser();
-  const { member, canAccessLeagueOperatorFeatures } = useUserProfile();
+  const { member, canAccessLeagueOperatorFeatures, canAccessDeveloperFeatures } = useUserProfile();
   const isOperator = canAccessLeagueOperatorFeatures();
+  const isDeveloper = canAccessDeveloperFeatures();
   const { organizations } = useOrganizations(member?.id);
   const { data: unreadCount = 0 } = useUnreadMessageCount(member?.id);
   const { drawerItems: myMatchItems, isHydrating: myMatchHydrating } =
@@ -133,6 +134,7 @@ export function AppSidebar() {
             {isOperator ? (
               <SidebarOperatorSection orgs={organizations as OperatorOrg[]} />
             ) : null}
+            {isDeveloper ? <SidebarDeveloperSection /> : null}
           </>
         ) : null}
       </nav>
@@ -207,6 +209,21 @@ function SidebarOperatorSection({ orgs }: { orgs: OperatorOrg[] }) {
             ))}
           </ul>
         ))}
+    </div>
+  );
+}
+
+/** Developer-only tools. Gated by the developer master key, mirrored in the
+ *  drawer's DeveloperSection. The routes themselves are withDeveloper-guarded. */
+function SidebarDeveloperSection() {
+  return (
+    <div className="mt-6 border-t pt-4">
+      <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Developer
+      </h3>
+      <ul className="space-y-1">
+        <SidebarLink to="/assign-operator" label="Assign Operator" />
+      </ul>
     </div>
   );
 }
