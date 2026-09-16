@@ -1,18 +1,20 @@
 ---
 title: 'feat: Game Room — a generic, perishable, multi-phone room that games plug into'
 type: feat
-status: active
+status: built-gated
 date: 2026-09-16
 origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 ---
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **RESUME POINT (2026-09-16):** Units 1–6 are built, tested, and pushed on
-> branch `feat/game-room`. **Next is Unit 7 — gate, nav doors, docs
-> (the last unit).** Routes are already under `NonProdGate`; add the drawer/sidebar
-> doors under the same gate, `roomsGate.test.tsx`, delete `CoinFlipSandbox`, docs. Before building: pull
-> the branch, then locally `supabase db reset` → load
+> **STATUS (2026-09-16): ALL SEVEN UNITS BUILT** on branch `feat/game-room`,
+> **GATED** non-production (routes + both nav doors behind `!isProduction`).
+> Next: Ed reviews on staging (checklist in `LIST_FOR_ED.md` → Gated section),
+> then un-gate by removing `NonProdGate` from the three `rooms/**` routes AND
+> the two `!isProduction &&` door conditions together (`roomsGate.test.tsx`
+> will need its production-case expectations flipped or removed). To run it
+> locally: pull the branch, then `supabase db reset` → load
 > `database/dev_starting_point.sql` + `supabase/seed_test_users.sql` (CI
 > order) → `supabase stop && supabase start` once so the realtime container
 > sees the published `rooms` / `room_phones` tables. Decisions made after the
@@ -709,7 +711,7 @@ flip; controlled seam)
 
 ### Phase D — gate, doors, docs
 
-- [ ] **Unit 7: Gating, entry points, and documentation**
+- [x] **Unit 7: Gating, entry points, and documentation** — built 2026-09-16. `NonProdGate` was feature-local to the Handicap Calculator ("deletable in one motion") and the room now depended on it, so it was promoted to `src/components/NonProdGate.tsx`; the calculator imports the shared one. `roomsGate.test.tsx` (5 tests) walks `router.routes` to prove every `rooms/**` element is the gate, flips one `isProduction` getter to show the sidebar + drawer doors render exactly when the gate is open, and pins the signed-out join redirect. `CoinFlipSandbox` + its `dev/coin-flip` route deleted. Docs: COMPONENTS_INDEX (CoinFlip `controlled`, seam-is-back note, NonProdGate), TOC, LIST_FOR_ED gated entry (already carried the PRE_LAUNCH_CHECKLIST note from Unit 4).
 
 **Goal:** Reachable on dev + staging, invisible in production, and findable
 in the indexes.

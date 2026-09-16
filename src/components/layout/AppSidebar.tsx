@@ -23,6 +23,7 @@ import { useHasUnseenWhatsNew } from '@/whatsNew/useWhatsNewSeen';
 import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
 import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
+import { isProduction } from '@/config/environment';
 
 /** Cap on visible orgs — matches AppDrawer. */
 const OPERATOR_ORG_CAP = 4;
@@ -173,6 +174,9 @@ function SidebarPlayerSection({
       {/* No "Profile" link — the name/avatar above already opens /profile.
           The reclaimed slot holds the Tournaments side tool. */}
       <SidebarLink to="/brackets" label="Tournaments" />
+      {/* Game Room — GATED non-production (same condition as its routes in
+          NavRoutes; flip both together when un-gating). */}
+      {!isProduction && <SidebarLink to="/rooms" label="Rooms" />}
     </ul>
   );
 }

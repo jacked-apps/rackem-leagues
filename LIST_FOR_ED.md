@@ -203,18 +203,22 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
-- **Game Room** (`feat/game-room`, in progress — Units 1–6 built incl. the coin flip;
-  nav doors + docs (Unit 7) still to come) — gated by `<NonProdGate>` on all three
-  routes in `src/navigation/NavRoutes.tsx`: `rooms`, `rooms/join/:joinToken`,
-  `rooms/:roomId`. **No nav door exists yet** (Unit 7 adds the drawer/sidebar
-  link under the same gate) — reach it by typing `/rooms`. Verify on staging:
+- **Game Room** (`feat/game-room` — ALL 7 UNITS BUILT, incl. the two-phone coin
+  flip) — gated in FOUR places, one condition: `<NonProdGate>` on the three
+  routes in `src/navigation/NavRoutes.tsx` (`rooms`, `rooms/join/:joinToken`,
+  `rooms/:roomId`) + `!isProduction &&` on the "Rooms" link in
+  `src/components/layout/AppDrawer.tsx` AND `AppSidebar.tsx`.
+  `src/navigation/roomsGate.test.tsx` pins that all four hide together. Verify on staging
+  (the "Rooms" link is in the drawer/sidebar next to Tournaments):
   start a room on one phone, open the door, scan the QR on a second phone
   (signed out → login → lands back on the join page), join, both see "2 here";
   host ends the room → guest sees "This room has ended" without refreshing.
   Coin flip: guest taps Heads/Tails, host taps Throw, BOTH phones show the same
   face + winner; refresh either — same result.
   Also confirm `pg_cron` runs `sweep_stale_rooms` on the hosted project. Un-gate
-  = remove `NonProdGate` from the three routes AND the nav links together.
+  = remove `NonProdGate` from the three routes AND the two `!isProduction &&`
+  door conditions in the same commit, then drop/flip the production cases in
+  `roomsGate.test.tsx`. Ask Claude — one motion.
 
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate

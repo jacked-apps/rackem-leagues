@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-09-16 (BUILT Game Room Unit 6 — the first tenant, a two-phone coin flip: `room_coin_flips` migration (server-decided face via `throw_room_coin`, frozen call via `call_room_coin`, `start_room_coin_flip`), the CONTROLLED path on `CoinFlip` (renders from a record; taps reported up; random never consulted), and `src/rooms/games/coinflip/` (definition, `RoomCoinFlip` Play screen, `CoinFlipSetup`, api + hooks). `GameDefinition.Setup` is now optional. 7 db + 7 controlled + 7 Play-screen tests. Units 1–5 landed earlier today.)
+> **Last Updated**: 2026-09-16 (BUILT Game Room Unit 7 — the last unit: "Rooms" nav door in `AppDrawer` + `AppSidebar` under the same `!isProduction` as the routes; `roomsGate.test.tsx` pins routes + doors hide together and the signed-out join redirect; `NonProdGate` promoted to `src/components/` (shared by the calculator + the room); `dev/CoinFlipSandbox.tsx` + its route deleted (a real caller mounts CoinFlip now); COMPONENTS_INDEX updated (CoinFlip `controlled`, the seam-is-back note, NonProdGate). Units 1–6 landed earlier today; the whole feature is now on `feat/game-room`, gated.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -652,7 +652,6 @@ how to add a new test, demo recording, cleanup model).
 #### Dev-Only Pages (`/dev/`) — `import.meta.env.DEV` only, unlinked
 - `dev/DevOnly.tsx` - Route guard rendering children in development only; redirects to home otherwise
 - `dev/RLSTestPage.tsx` - Manual RLS INSERT/DELETE policy testing at `/dev/rls-tests`
-- `dev/CoinFlipSandbox.tsx` - Sandbox for the reusable CoinFlip at `/dev/coin-flip`; mounts every prop combination (called/quick, explicit caller, no-reflip) plus an onResult log. Delete once a real caller mounts CoinFlip
 
 #### Player Pages (`/player/`)
 - `MatchLineup.tsx` - Match lineup editor
@@ -847,8 +846,7 @@ Standalone explainer at `/tools/calc`. Estimates Fargo-style team handicap for a
 
 - `HandicapCalculator.tsx` - The page: 10 rating inputs + result card
 - `fargoHandicap.ts` - Educational handicap-spot approximation (gap / 65, capped)
-- `NonProdGate.tsx` - Local route gate; redirects to `/` in production
-- `index.ts` - Public surface (page + gate re-exports)
+- `index.ts` - Public surface (the page only; the gate is the shared `@/components/NonProdGate`)
 
 #### Official Rulebook Reader (`/rules/`)
 
@@ -933,13 +931,13 @@ LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade int
 Shared chrome that wraps all authenticated routes. `MemberLayout` is mounted by `NavRoutes.tsx` as a parent route; child routes render into its `<Outlet/>`.
 
 - `MemberLayout.tsx` - Persistent layout shell. Desktop: left sidebar (`<AppSidebar>`). Mobile: bottom tab bar (`<BottomTabBar>`). Also hosts global features previously on the Dashboard (e.g., pending-invites modal). Pages still own their own `<PageHeader>`.
-- `AppSidebar.tsx` - Desktop persistent sidebar — brand, primary nav, theme toggle, drawer trigger. Auth-aware: minimal chrome for public visitors, full nav for logged-in users. Renders the shared **`MyMatchPanel`** at the top (mirrors the drawer's Live/Makeup chips + lists), replacing the old static `/my-match` link.
+- `AppSidebar.tsx` - Desktop persistent sidebar — brand, primary nav, theme toggle, drawer trigger. Auth-aware: minimal chrome for public visitors, full nav for logged-in users. Renders the shared **`MyMatchPanel`** at the top (mirrors the drawer's Live/Makeup chips + lists), replacing the old static `/my-match` link. **Rooms** link GATED by `!isProduction` (same condition as the `rooms/**` routes).
 - `AppSidebar.test.tsx` - Tests that the sidebar wires in the My Match panel (chips + matchup, chip switching, hidden-when-empty).
 - `MyMatchPanel.tsx` - **✅ Shared My Match panel** used by BOTH the drawer and the desktop sidebar (so they can't drift). Live/Makeup filter chips (icons on phones, text on `sm+`), radio-select with a 0-count chip dimmed/disabled; revealed list under a small heading; rows lead with date + matchup that wraps instead of truncating. `inSheet` wraps rows in `SheetClose` for the drawer.
 - `BottomTabBar.tsx` - Mobile fixed bottom tab bar (My Teams / My Match / Messages / Profile, + Manage for operators). Auth-aware like the sidebar. Generic tabs render via a local `TabLink`; the My Match slot renders `<MyMatchTab>`.
 - `MyMatchTab.tsx` - **✅ My Match tab (Unit 3)** — state-driven bottom-nav tab consuming `useMyMatchSurfaces`. Links to the player's current match (Tiers 1–3, accent live dot on Tier 1); dims + toasts as a non-navigating button on Tier 4 / error; neutral silent no-op while hydrating.
 - `MyMatchTab.test.tsx` - Tests for the My Match tab's five postures (live/today/makeup Link, Tier-4 toast, hydrating no-op, error toast).
-- `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out) + the shared **`MyMatchPanel`** pinned at the TOP (`inSheet`). Drawer is the home for nav items that don't fit on the sidebar/tab bar.
+- `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out) + the shared **`MyMatchPanel`** pinned at the TOP (`inSheet`). Drawer is the home for nav items that don't fit on the sidebar/tab bar. **Rooms** link GATED by `!isProduction` (same condition as the `rooms/**` routes).
 - `AppDrawer.test.tsx` - Tests for the drawer's per-org operator shortcuts and auth-gated content.
 - `OperatorOrgRow.tsx` - Per-org entry in the Operator nav section (shared by `<AppDrawer>` + `<AppSidebar>`). Exposes **Dashboard** + **Reports** per org (Reports carries the pending-reports doorbell badge); **Create League removed** from nav (page still routable). Owns `usePendingReportsCount(orgId)`. Flat mode = inline links (single-org); collapsible `<details>` group (multi-org).
 
@@ -1202,6 +1200,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `AlertDialog.tsx` - Alert/info dialog with OK button (success/warning/error/info)
 - `ConfirmDialog.tsx` - Confirmation dialog with Cancel/Confirm buttons
 - `InfoButton.tsx` - Info button with tooltip
+- `NonProdGate.tsx` - Shared route gate for GATED features (dev + staging render children; production redirects to `/`). Wrap the ROUTE and gate every DOOR with the same `!isProduction`; flip together when un-gating. Users: Handicap Calculator (`tools/calc`), Game Room (`rooms/**`). Promoted from `handicapCalculator/` in Game Room Unit 7 so deleting the calculator cannot take the room's gate with it
 - `InstallAppCard.tsx` - **Install the app** — platform-adaptive PWA install entry: Android/desktop fire the native install prompt; iPhone (Safari) + Android-without-a-captured-prompt open a step-by-step add-to-home-screen instructions modal. Renders nothing when already installed or unsupported. Self-contained (drop-in); used at the top of Player Settings. Tested in `InstallAppCard.test.tsx`.
 - `InvitePlayerModal.tsx` - **✅ Phase 8** Captain invite modal for placeholder players
 - `InviteStatusBadge.tsx` - **✅ Phase 9** Badge showing invite status on PP cards
@@ -1833,7 +1832,8 @@ Supabase real-time subscription hooks for live data updates
 
 - `NavBar.tsx` - Main navigation bar
 - `OperatorNavBar.tsx` - Operator navigation
-- `NavRoutes.tsx` - Route definitions
+- `NavRoutes.tsx` - Route definitions. GATED (non-prod) routes: `tools/calc`, `rooms`, `rooms/join/:joinToken`, `rooms/:roomId` — each wrapped in `NonProdGate`
+- `roomsGate.test.tsx` - **Game Room / Unit 7** — pins that the room and its doors hide TOGETHER: every `rooms/**` route element is `NonProdGate` (walks `router.routes`); the gate renders off production and redirects home on it; the sidebar + drawer "Rooms" links render exactly when the gate is open (one `isProduction` getter flipped per test); signed out, `/rooms/join/x` → `/login?redirect=…` (the QR funnel)
 
 ---
 

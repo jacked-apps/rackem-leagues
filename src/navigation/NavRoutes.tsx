@@ -67,9 +67,9 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import HandicapLookupTest from '../pages/HandicapLookupTest';
 import { DevOnly } from '../dev/DevOnly';
 import RLSTestPage from '../dev/RLSTestPage';
-import CoinFlipSandbox from '../dev/CoinFlipSandbox';
 // --- Handicap Calculator (dev/staging only) — remove this import + the route below to delete the feature ---
-import { HandicapCalculator, NonProdGate } from '../handicapCalculator';
+import { HandicapCalculator } from '../handicapCalculator';
+import { NonProdGate } from '../components/NonProdGate';
 // --- Game Room (GATED: dev/staging only until Ed reviews on staging; see LIST_FOR_ED.md) ---
 import { RoomsIndexPage } from '../rooms/RoomsIndexPage';
 import { RoomPage } from '../rooms/RoomPage';
@@ -217,9 +217,6 @@ export const router = createBrowserRouter([
 
       // === Development-only Routes ===
       { path: 'dev/rls-tests', element: <DevOnly><RLSTestPage /></DevOnly> },
-      // Sandbox for the reusable CoinFlip component — unlinked on purpose;
-      // reach it by typing the URL. Delete once a real caller mounts CoinFlip.
-      { path: 'dev/coin-flip', element: <DevOnly><CoinFlipSandbox /></DevOnly> },
       // --- Handicap Calculator (dev/staging only) — remove this line + the import above to delete the feature ---
       { path: 'tools/calc', element: <NonProdGate>{withMember(<HandicapCalculator />)}</NonProdGate> },
 

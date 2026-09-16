@@ -101,6 +101,10 @@ This document catalogs all reusable components in the application for easy disco
 **Purpose**: Information popup trigger button
 **Use Cases**: Contextual help throughout forms
 
+### `NonProdGate.tsx` (`/src/components/`)
+**Purpose**: Route gate for features that ship GATED — live on dev + staging, redirect home in production
+**Use Cases**: Wrap the route of anything merged but not yet un-gated (Feature Gating Workflow in CLAUDE.md). Gate every DOOR to it (nav link, button, card) with the same `!isProduction`, and flip route + doors together when un-gating. Users: Handicap Calculator, Game Room (`src/navigation/roomsGate.test.tsx` pins that routes + doors hide together)
+
 ## 🎨 Component Patterns
 
 ### **Multi-Step Forms**
@@ -135,7 +139,9 @@ This document catalogs all reusable components in the application for easy disco
 - "Flip again" re-enters the flip at its first real beat — the call buttons in `call` mode, a fresh assignment in `quick` — rather than returning to the idle button, which would be the same intent pressed twice
 - Writes nothing and persists nothing — reports through `onResult` and leaves storage to the caller
 
-**Props**: `participantA`, `participantB`, `mode?`, `callerId?`, `flipperId?`, `viewerId?`, `onResult?`, `allowReflip?`, `random?`
+- CONTROLLED path (`controlled={{ call, face, onCall, onThrow, onFlipAgain? }}`): the record lives elsewhere — a database row — and the component renders it. Phase is derived (no call → calling; call, no face → called; face → flipping, then result); taps are reported up, not stored; `tossCoin` and the random source are never consulted; no display shuffle so two phones show the same order. Mounting with a face on record shows the result at once; a face ARRIVING spins. Without `controlled`, nothing changes. Used by the Game Room's two-phone flip (`src/rooms/games/coinflip/RoomCoinFlip.tsx`)
+
+**Props**: `participantA`, `participantB`, `mode?`, `callerId?`, `flipperId?`, `viewerId?`, `onResult?`, `allowReflip?`, `random?`, `controlled?`
 
 ### `flipCoin.ts`
 **Purpose**: The rules of a coin flip, with no React and no ambient randomness
@@ -156,16 +162,18 @@ This document catalogs all reusable components in the application for easy disco
 > **Keeping two devices in step is NOT this component's job.** It renders one
 > device's view of a flip. Two mounted copies share no state; syncing them —
 > and deciding the outcome somewhere neither player controls — belongs to
-> whatever hosts the flip. See `docs/brainstorms/2026-09-10-game-room-requirements.md`.
+> whatever hosts the flip. The Game Room does exactly that: `RoomCoinFlip`
+> feeds each phone the same `room_coin_flips` row through `controlled`, and the
+> database picks the face. See `docs/plans/2026-09-16-001-feat-game-room-plan.md`.
 
-> **No way to force a result.** There is deliberately no prop that hands the
-> component a predetermined face. Such a seam has a legitimate use — a server or
-> one device telling another what was decided, so two screens agree — and it will
-> need to come back the day a flip has to span two devices. It was removed because
-> nothing needed it yet and its only demonstrable use today was rigging the
-> outcome. Note this does NOT make the flip tamper-proof: the toss runs on the
-> client, so a determined user can still lean on it. Moving the decision to a
-> server is the actual fix, and that is when this seam returns.
+> **The seam is back — as `controlled`, and only as a whole.** The 2026-09-09
+> cut removed a lone "supplied face" prop because its only demonstrable use was
+> rigging the outcome. The Game Room (2026-09-16) is the day a flip spans two
+> devices, so the seam returned in the shape that use demands: one `controlled`
+> object carrying the record AND the taps, so a caller cannot hand over a face
+> without also handing over the calling and throwing. The uncontrolled flip is
+> still client-side `Math.random` and still not tamper-proof; the ROOM's flip
+> is decided by the database (`throw_room_coin`), which is the actual fix.
 
 > **Note on `assignFaces`**: randomizing which side holds heads does **not** make the
 > flip fairer — chaining fair 50/50s still yields a fair 50/50. It exists so entry

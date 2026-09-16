@@ -36,6 +36,7 @@ import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { useMyMatchSurfaces } from '@/api/hooks/useMyMatchSurfaces';
 import { MyMatchPanel } from './MyMatchPanel';
 import { OperatorOrgRow } from './OperatorOrgRow';
+import { isProduction } from '@/config/environment';
 
 interface AppDrawerProps {
   /** Whether the parent Sheet is open. */
@@ -83,6 +84,9 @@ function resolveJoinRequestsTo(isOperator: boolean, orgs: OperatorOrg[]): string
   return '/my-teams';
 }
 
+// The parent Sheet owns open/close; links inside close it via SheetClose, so
+// the props are accepted for the call-site contract and not read here.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function AppDrawer(_props: AppDrawerProps) {
   const { isLoggedIn } = useUser();
   const { member, canAccessLeagueOperatorFeatures } = useUserProfile();
@@ -237,6 +241,9 @@ function PlayerSection({
       {/* No "Profile" link — the name/avatar at the top of the drawer already
           opens /profile. The reclaimed slot holds the Tournaments side tool. */}
       <DrawerLink to="/brackets" label="Tournaments" />
+      {/* Game Room — GATED non-production (same condition as its routes in
+          NavRoutes; flip both together when un-gating). */}
+      {!isProduction && <DrawerLink to="/rooms" label="Rooms" />}
     </ul>
   );
 }
