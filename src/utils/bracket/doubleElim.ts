@@ -153,6 +153,23 @@ export function generateDoubleElim(
     return resolve(def.home).t !== 'phantom' && resolve(def.away).t !== 'phantom';
   }
 
+  /**
+   * Exactly one side is real — the shape of a bye.
+   *
+   * Only meaningful in WINNERS round 1, where the empty side is a player who
+   * never entered the tournament. Anywhere else the empty side is a slot fed by
+   * a match that doesn't exist, and showing it as a bye would invent a game
+   * nobody can play (and, in the losers bracket, a seat nobody can ever fill —
+   * those belong to players who lost).
+   */
+  function isHalfBye(key: string): boolean {
+    const def = defs.get(key)!;
+    if (def.side !== 'winners' || def.round !== 1) return false;
+    const rh = resolve(def.home).t !== 'phantom';
+    const ra = resolve(def.away).t !== 'phantom';
+    return rh !== ra;
+  }
+
   function resolve(p: Producer): Resolved {
     const id = pid(p);
     const cached = memo.get(id);
@@ -183,7 +200,11 @@ export function generateDoubleElim(
   for (const key of order) {
     const def = defs.get(key)!;
     const isGrandFinal = def.side === 'grand_final';
-    if (!isGrandFinal && !kept(key)) continue; // elide bye matches
+    // A HALF-bye (exactly one real producer) is kept as a real, already-decided
+    // match — the visible bye. A FULLY phantom match is still elided: there is
+    // genuinely nobody there, and materialising it would put a bye in the
+    // losers bracket, which tournament practice warns against.
+    if (!isGrandFinal && !kept(key) && !isHalfBye(key)) continue;
     const m: GeneratedMatch = {
       key: def.key,
       round: def.round,
@@ -212,6 +233,21 @@ export function generateDoubleElim(
     if (rp.t === 'seed') {
       if (slot === 'home') consumer.homeSeed = rp.s;
       else consumer.awaySeed = rp.s;
+
+      // The producer contracted THROUGH a kept half-bye to reach this seed. The
+      // seed is that bye match's winner, so finish it off: record the winner,
+      // mark it decided, and give it the forward pointer. Without the pointer
+      // the bracket would show a settled match wired to nothing — and a late
+      // entrant, when the bye is reopened, would have nowhere to advance to.
+      if (raw.t === 'wbwin' || raw.t === 'lbwin') {
+        const byeMatch = outByKey.get(raw.k);
+        if (byeMatch) {
+          byeMatch.winnerSeed = rp.s;
+          byeMatch.status = 'complete';
+          byeMatch.nextMatchKey = consumerKey;
+          byeMatch.nextMatchSlot = slot;
+        }
+      }
       return;
     }
     const producer = outByKey.get(rp.k)!;
@@ -233,7 +269,10 @@ export function generateDoubleElim(
   }
 
   // ── Statuses: both seeds present (a real round-1 pairing) → ready ─────────
+  // A bye is already 'complete' and must stay that way — it has one seed, so
+  // the rule below would otherwise demote it back to pending.
   for (const m of out) {
+    if (m.status === 'complete') continue;
     m.status = m.homeSeed !== null && m.awaySeed !== null ? 'ready' : 'pending';
   }
 

@@ -1,7 +1,7 @@
 {
   "name": "supabase-learning-hub",
   "private": true,
-  "version": "1.9.0",
+  "version": "1.10.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,6 +13,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:unit": "vitest run --project unit",
+    "test:db": "vitest run --project db",
     "test:coverage": "vitest run --coverage",
     "db:reset": "supabase db reset && pnpm run db:types",
     "db:types": "supabase gen types typescript --local > src/types/database.types.ts",
@@ -50,6 +51,7 @@
     "@supabase/supabase-js": "^2.57.4",
     "@tailwindcss/vite": "^4.1.13",
     "@tanstack/react-query": "^5.90.6",
+    "@tanstack/react-virtual": "^3.14.10",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

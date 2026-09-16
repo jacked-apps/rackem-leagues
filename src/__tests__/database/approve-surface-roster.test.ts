@@ -19,8 +19,13 @@
  * Run: pnpm test:run src/__tests__/database/approve-surface-roster
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { executeSql, getPostgresPool } from '@/test/dbTestUtils';
+import {
+  createOnboardingFixture,
+  destroyOnboardingFixture,
+  type OnboardingFixture,
+} from '@/test/onboardingFixtures';
 import type { PoolClient } from 'pg';
 
 async function inTx(fn: (c: PoolClient) => Promise<void>): Promise<void> {
@@ -69,56 +74,51 @@ describe('Approve surface Unit 1 — roster RPC + feed captain summary', () => {
   let joinerUser: string | null = null;
   let joinerMember: string | null = null;
 
+  let regFixture: OnboardingFixture | null = null;
+  let phFixture: OnboardingFixture | null = null;
+
   beforeAll(async () => {
-    const a = await executeSql(`
-      SELECT t.id AS team_id, c.user_id AS captain_user, l.organization_id AS org
-        FROM teams t
-        JOIN members c ON c.id = t.captain_id
-        JOIN leagues l ON l.id = t.league_id
-       WHERE c.user_id IS NOT NULL
-         AND EXISTS (SELECT 1 FROM organization_staff os
-                      WHERE os.organization_id = l.organization_id
-                        AND os.member_id = t.captain_id)
-       ORDER BY t.id
-       LIMIT 1`);
-    regTeam = a[0]?.team_id ?? null;
-    regCaptainUser = a[0]?.captain_user ?? null;
+    // Both shapes are built, not hunted for. The seed has no placeholder-
+    // captained team at all, and no team whose registered captain is also org
+    // staff, so fixture B (and often A) came back null — and the cases below
+    // failed on empty ids rather than on anything the roster RPC did.
+    regFixture = await createOnboardingFixture({ captain: 'staff' });
+    regTeam = regFixture.teamId;
+    regCaptainUser = regFixture.staffUserId;
 
-    const b = await executeSql(`
-      SELECT t.id AS team_id,
-             s.member_id AS staff_member,
-             sm.user_id  AS staff_user
-        FROM teams t
-        JOIN members c ON c.id = t.captain_id
-        JOIN leagues l ON l.id = t.league_id
-        JOIN organization_staff s ON s.organization_id = l.organization_id
-        JOIN members sm ON sm.id = s.member_id AND sm.user_id IS NOT NULL
-       WHERE c.user_id IS NULL
-       ORDER BY t.id
-       LIMIT 1`);
-    phTeam = b[0]?.team_id ?? null;
-    phStaffMember = b[0]?.staff_member ?? null;
-    phStaffUser = b[0]?.staff_user ?? null;
+    phFixture = await createOnboardingFixture({ captain: 'placeholder' });
+    phTeam = phFixture.teamId;
+    phStaffMember = phFixture.staffMemberId;
+    phStaffUser = phFixture.staffUserId;
 
+    // An outsider: registered, and staff of neither fixture's organization.
     const outsider = await executeSql(
-      `SELECT m.user_id FROM members m
+      `SELECT m.user_id FROM public.members m
         WHERE m.user_id IS NOT NULL
-          AND m.id <> COALESCE($1::uuid, '00000000-0000-0000-0000-000000000000')
           AND NOT EXISTS (
-            SELECT 1 FROM organization_staff os
-              JOIN teams t ON t.id = $2::uuid
-              JOIN leagues l ON l.id = t.league_id
-             WHERE os.organization_id = l.organization_id AND os.member_id = m.id)
+            SELECT 1 FROM public.organization_staff os
+             WHERE os.member_id = m.id
+               AND os.organization_id = ANY($1::uuid[]))
+        ORDER BY m.id
         LIMIT 1`,
-      [phStaffMember, phTeam]
+      [[regFixture.organizationId, phFixture.organizationId]]
     );
     outsiderUser = outsider[0]?.user_id ?? null;
 
+    // Somebody registered to stand in as the requester.
     const joiner = await executeSql(
-      `SELECT m.id, m.user_id FROM members m WHERE m.user_id IS NOT NULL LIMIT 1`
+      `SELECT m.id, m.user_id FROM public.members m
+        WHERE m.user_id IS NOT NULL
+        ORDER BY m.id
+        LIMIT 1`
     );
     joinerMember = joiner[0]?.id ?? null;
     joinerUser = joiner[0]?.user_id ?? null;
+  });
+
+  afterAll(async () => {
+    await destroyOnboardingFixture(regFixture);
+    await destroyOnboardingFixture(phFixture);
   });
 
   it('has fixtures', () => {

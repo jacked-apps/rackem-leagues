@@ -28,6 +28,7 @@ interface ConfirmationDialogProps {
     winnerPlayerName: string;
     breakAndRun: boolean;
     goldenBreak: boolean;
+    earlyEight: boolean;
     breakFouled: boolean;
     runout: boolean;
     winByForfeit: boolean;
@@ -178,6 +179,9 @@ export function ConfirmationDialog({
                 )}
                 {game.winByForfeit && (
                   <div className="text-foreground">Won by forfeit</div>
+                )}
+                {game.earlyEight && (
+                  <div className="text-foreground">Early 8</div>
                 )}
                 {game.breakFouled && (
                   <div className="text-warning">

@@ -19,6 +19,9 @@ import { BracketsIndexPage } from '../brackets/BracketsIndexPage';
 import { CreateBracketFlow } from '../brackets/CreateBracketFlow';
 import { BracketView } from '../brackets/BracketView';
 import { PublicBracketPage } from '../brackets/PublicBracketPage';
+import { JoinHopperPage } from '../brackets/paid/JoinHopperPage';
+import { BracketSetupPage } from '../brackets/paid/BracketSetupPage';
+import { JoinQrPoster } from '../brackets/paid/JoinQrPoster';
 import { Home } from '../home/Home';
 import { RulesSkeleton } from '../rules/RulesSkeleton';
 import { RulesErrorBoundary } from '../rules/RulesErrorBoundary';
@@ -64,6 +67,7 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import HandicapLookupTest from '../pages/HandicapLookupTest';
 import { DevOnly } from '../dev/DevOnly';
 import RLSTestPage from '../dev/RLSTestPage';
+import CoinFlipSandbox from '../dev/CoinFlipSandbox';
 // --- Handicap Calculator (dev/staging only) — remove this import + the route below to delete the feature ---
 import { HandicapCalculator, NonProdGate } from '../handicapCalculator';
 
@@ -196,6 +200,9 @@ export const router = createBrowserRouter([
       // Public, read-only bracket share (names only via the get_bracket_share
       // RPC) — the anon boundary is the RPC itself, not the route.
       { path: 'brackets/share/:shareToken', element: <PublicBracketPage /> },
+      // Self-add join (paid): a scanned QR / opened link. Public route — auth is
+      // handled inside (a cold scanner is prompted to sign in first).
+      { path: 'brackets/join/:joinToken', element: <JoinHopperPage /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password', element: <ResetPassword /> },
       { path: 'confirm', element: <EmailConfirmation /> },
@@ -206,6 +213,9 @@ export const router = createBrowserRouter([
 
       // === Development-only Routes ===
       { path: 'dev/rls-tests', element: <DevOnly><RLSTestPage /></DevOnly> },
+      // Sandbox for the reusable CoinFlip component — unlinked on purpose;
+      // reach it by typing the URL. Delete once a real caller mounts CoinFlip.
+      { path: 'dev/coin-flip', element: <DevOnly><CoinFlipSandbox /></DevOnly> },
       // --- Handicap Calculator (dev/staging only) — remove this line + the import above to delete the feature ---
       { path: 'tools/calc', element: <NonProdGate>{withMember(<HandicapCalculator />)}</NonProdGate> },
 
@@ -236,6 +246,11 @@ export const router = createBrowserRouter([
           // environment; the nav entries in AppDrawer/AppSidebar are the doors.
           { path: 'brackets', element: withMember(<BracketsIndexPage />) },
           { path: 'brackets/new', element: withMember(<CreateBracketFlow />) },
+          // Paid setup screen — a "Real players & sign-up" tournament sits here
+          // in `setup` while its hopper fills, then starts from this page.
+          { path: 'brackets/:bracketId/setup', element: withMember(<BracketSetupPage />) },
+          // Printable / big-screen join QR sign (organizer only).
+          { path: 'brackets/:bracketId/qr', element: withMember(<JoinQrPoster />) },
           { path: 'brackets/:bracketId', element: withMember(<BracketView />) },
           // Rules pages — public (no auth wrapper) but rendered inside
           // MemberLayout so logged-in users keep their sidebar/tab bar.

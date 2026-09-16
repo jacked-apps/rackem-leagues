@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Copy, Check, QrCode, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { copyText } from '@/utils/clipboard';
 
 interface ShareLinkSectionProps {
   /** The registration link to share */
@@ -39,24 +40,6 @@ interface ShareLinkSectionProps {
   shareMessage?: string;
 }
 
-/**
- * Copy a string to the clipboard with a document.execCommand fallback for
- * browsers without the async clipboard API. Returns nothing — callers manage
- * their own "copied" UI state.
- */
-const copyToClipboard = async (text: string) => {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    // Fallback for browsers that don't support the clipboard API
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
-  }
-};
 
 /**
  * ShareLinkSection Component
@@ -76,7 +59,7 @@ export const ShareLinkSection: React.FC<ShareLinkSectionProps> = ({
    * Copy the bare registration link to clipboard.
    */
   const handleCopyLink = async () => {
-    await copyToClipboard(registrationLink);
+    await copyText(registrationLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -86,7 +69,7 @@ export const ShareLinkSection: React.FC<ShareLinkSectionProps> = ({
    */
   const handleCopyMessage = async () => {
     if (!shareMessage) return;
-    await copyToClipboard(shareMessage);
+    await copyText(shareMessage);
     setCopiedMessage(true);
     setTimeout(() => setCopiedMessage(false), 2000);
   };

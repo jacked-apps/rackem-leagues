@@ -33,6 +33,7 @@ export interface ResultLike {
   break_fouled: boolean;
   runout: boolean;
   win_by_forfeit: boolean;
+  early_eight: boolean;
   winner_value: number | null;
   loser_value: number | null;
 }
@@ -96,6 +97,7 @@ export function resultsDiffer(official: ResultLike, vouch: ResultLike): boolean 
     official.break_fouled !== vouch.break_fouled ||
     official.runout !== vouch.runout ||
     official.win_by_forfeit !== vouch.win_by_forfeit ||
+    official.early_eight !== vouch.early_eight ||
     official.winner_value !== vouch.winner_value ||
     official.loser_value !== vouch.loser_value
   );
@@ -110,6 +112,7 @@ function extractResult(row: ConfirmationWithResult): ResultLike {
     break_fouled: row.break_fouled,
     runout: row.runout,
     win_by_forfeit: row.win_by_forfeit,
+    early_eight: row.early_eight,
     winner_value: row.winner_value,
     loser_value: row.loser_value,
   };

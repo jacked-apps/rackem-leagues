@@ -271,6 +271,7 @@ export function buildConfirmationItem(
     breakFouled: game.break_fouled,
     runout: game.runout,
     winByForfeit: game.win_by_forfeit,
+    earlyEight: game.early_eight,
     winnerValue: game.winner_value,
     loserValue: game.loser_value,
   };
