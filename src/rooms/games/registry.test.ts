@@ -21,7 +21,7 @@ describe('registry', () => {
       expect(new Set(game.tables).size).toBe(game.tables.length);
       for (const t of game.tables) expect(RESERVED_TABLES).not.toContain(t);
       expect(typeof game.isReady).toBe('function');
-      expect(game.Setup).toBeDefined();
+      if (!game.Setup) expect(game.isReady({})).toBe(true);
       expect(game.Play).toBeDefined();
     }
   });

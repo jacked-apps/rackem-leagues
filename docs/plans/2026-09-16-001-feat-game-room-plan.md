@@ -8,10 +8,10 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **RESUME POINT (2026-09-16):** Units 1–5 are built, tested, and pushed on
-> branch `feat/game-room`. **Next is Unit 6 — the two-phone coin flip
-> (first tenant).** Register it in `src/rooms/games/registry.ts` (`GameDefinition`
-> in `games/types.ts`); the room screens already dispatch on it. Before building: pull
+> **RESUME POINT (2026-09-16):** Units 1–6 are built, tested, and pushed on
+> branch `feat/game-room`. **Next is Unit 7 — gate, nav doors, docs
+> (the last unit).** Routes are already under `NonProdGate`; add the drawer/sidebar
+> doors under the same gate, `roomsGate.test.tsx`, delete `CoinFlipSandbox`, docs. Before building: pull
 > the branch, then locally `supabase db reset` → load
 > `database/dev_starting_point.sql` + `supabase/seed_test_users.sql` (CI
 > order) → `supabase stop && supabase start` once so the realtime container
@@ -648,7 +648,7 @@ whichever game the room row names.
 
 ### Phase C — the first tenant
 
-- [ ] **Unit 6: Two-phone coin flip**
+- [x] **Unit 6: Two-phone coin flip** — built 2026-09-16 (migration `20260916200041_room_coin_flips.sql`; 7 db + 7 controlled-CoinFlip + 7 Play-screen tests; the 29 existing CoinFlip tests untouched and green). Deviations from the text below, all in the direction of the acceptance boundary: (1) the flip's reads/writes live in `src/rooms/games/coinflip/coinFlipApi.ts` + `useRoomCoinFlip.ts`, NOT in `src/api/{queries,mutations}/rooms.ts` — "adding a game touches nothing outside `games/`" is the rule, so the room's api files stay untouched; (2) a third RPC, `start_room_coin_flip`, makes the row (the caller must be one of the two phones) — with RLS off a plain insert would let anyone stage a flip between any phones, and "nothing about the flip is a plain update" should include its birth; (3) `CoinFlipSetup` is the "start a flip" panel INSIDE `Play`, not the room's `Setup` slot — who calls is a per-flip choice, not a room setting, so `GameDefinition.Setup` became optional and the coin flip has none; (4) the controlled props are one object, `controlled={{ call, face, onCall, onThrow, onFlipAgain? }}`, so half a controlled flip cannot be passed; (5) the call is changeable until the throw (the RPC freezes it at the face, exactly as specified) — "changed my mind" before the coin is in the air is fine.
 
 **Goal:** One phone calls, the other throws, the database picks the face,
 both phones watch the same coin land.

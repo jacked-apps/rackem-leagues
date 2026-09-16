@@ -60,13 +60,17 @@ export interface GameDefinition {
   description: string;
   /** The tables the game's rows live in — the plug-in contract (cap 3). */
   tables: readonly string[];
-  /** Renders when the room has this game but its settings say "not started". */
-  Setup: ComponentType<GameSetupProps>;
+  /**
+   * Renders when the room has this game but its settings say "not started".
+   * Omit for a game with nothing to configure before play (the coin flip:
+   * who calls is chosen per flip, inside `Play`, not once for the room).
+   */
+  Setup?: ComponentType<GameSetupProps>;
   /** The game itself. */
   Play: ComponentType<GamePlayProps>;
   /**
    * Has `Setup` run? The room shows `Setup` until this says yes, then `Play`.
-   * A game with nothing to set up returns true always.
+   * A game with no `Setup` returns true always.
    */
   isReady: (settings: Record<string, Json>) => boolean;
 }

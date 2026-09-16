@@ -2537,6 +2537,61 @@ export type Database = {
           },
         ]
       }
+      room_coin_flips: {
+        Row: {
+          call: string | null
+          caller_phone_id: string
+          created_at: string
+          face: string | null
+          flipper_phone_id: string
+          id: string
+          room_id: string
+          thrown_at: string | null
+        }
+        Insert: {
+          call?: string | null
+          caller_phone_id: string
+          created_at?: string
+          face?: string | null
+          flipper_phone_id: string
+          id?: string
+          room_id: string
+          thrown_at?: string | null
+        }
+        Update: {
+          call?: string | null
+          caller_phone_id?: string
+          created_at?: string
+          face?: string | null
+          flipper_phone_id?: string
+          id?: string
+          room_id?: string
+          thrown_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_coin_flips_caller_phone_id_fkey"
+            columns: ["caller_phone_id"]
+            isOneToOne: false
+            referencedRelation: "room_phones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_coin_flips_flipper_phone_id_fkey"
+            columns: ["flipper_phone_id"]
+            isOneToOne: false
+            referencedRelation: "room_phones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_coin_flips_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_phones: {
         Row: {
           device_id: string
@@ -3735,6 +3790,10 @@ export type Database = {
         Args: { p_season_id: string }
         Returns: undefined
       }
+      call_room_coin: {
+        Args: { p_call: string; p_flip_id: string }
+        Returns: Json
+      }
       can_write_house_rule_org: {
         Args: { target_org_id: string }
         Returns: boolean
@@ -4188,6 +4247,10 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: boolean
       }
+      room_phone_is_mine: {
+        Args: { p_member_id: string; p_phone_id: string; p_room_id: string }
+        Returns: boolean
+      }
       room_presence_grace: {
         Args: Record<PropertyKey, never>
         Returns: unknown
@@ -4332,6 +4395,14 @@ export type Database = {
         Args: { p_bracket_id: string; p_matches: Json }
         Returns: undefined
       }
+      start_room_coin_flip: {
+        Args: {
+          p_caller_phone_id: string
+          p_flipper_phone_id: string
+          p_room_id: string
+        }
+        Returns: Json
+      }
       swap_player_in_lineup: {
         Args: { p_lineup_id: string; p_resolution: Json; p_thresholds: Json }
         Returns: undefined
@@ -4351,6 +4422,10 @@ export type Database = {
       text_soundex: {
         Args: { "": string }
         Returns: string
+      }
+      throw_room_coin: {
+        Args: { p_flip_id: string }
+        Returns: Json
       }
       undo_merge_placeholder: {
         Args: {

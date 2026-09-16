@@ -36,7 +36,7 @@ export function GameSlot({ room, myPhone, phones, isHost, onStart }: GameSlotPro
 
   const shared = { roomId: room.id, myPhone, phones, settings: room.settings };
 
-  if (!game.isReady(room.settings)) {
+  if (game.Setup && !game.isReady(room.settings)) {
     return <game.Setup {...shared} onStart={onStart} />;
   }
   return <game.Play {...shared} isHost={isHost} />;
