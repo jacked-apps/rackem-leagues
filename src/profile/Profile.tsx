@@ -54,7 +54,7 @@ import { isProduction } from '@/config/environment';
  */
 export const Profile: React.FC = () => {
   const { user, logout } = useUser();
-  const { member, loading } = useUserProfile();
+  const { member, loading, canAccessLeagueOperatorFeatures } = useUserProfile();
 
   // Get all form state and handlers from custom hook
   const {
@@ -175,8 +175,8 @@ export const Profile: React.FC = () => {
             description="Scan the QR code or share the link to get your teammates on Rack'em Leagues."
           />
 
-          {/* Become League Operator CTA — only for regular players */}
-          {member.role === 'player' && (
+          {/* Become League Operator CTA — only for members who aren't operators yet */}
+          {!canAccessLeagueOperatorFeatures() && (
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold text-foreground mb-2">

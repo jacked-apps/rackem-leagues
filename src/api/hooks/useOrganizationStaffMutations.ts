@@ -6,6 +6,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addOrganizationStaff, removeOrganizationStaff } from '../mutations/organizationStaff';
+import { queryKeys } from '../queryKeys';
 
 /**
  * Hook to add a staff member to an organization
@@ -41,6 +42,11 @@ export function useAddOrganizationStaff() {
       queryClient.invalidateQueries({
         queryKey: ['organizationStaff', variables.organizationId],
       });
+      // The added member's operator access is resolved live from their grants —
+      // refresh them so the change is reflected immediately.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.permissions.grants(variables.memberId),
+      });
     },
   });
 }
@@ -68,6 +74,11 @@ export function useRemoveOrganizationStaff() {
       // Invalidate staff list for this organization
       queryClient.invalidateQueries({
         queryKey: ['organizationStaff', variables.organizationId],
+      });
+      // The removed member's operator access is resolved live from their grants —
+      // refresh them so the change is reflected immediately.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.permissions.grants(variables.memberId),
       });
     },
   });

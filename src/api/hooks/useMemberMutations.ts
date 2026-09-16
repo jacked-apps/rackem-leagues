@@ -60,6 +60,9 @@ function invalidateMemberEmbedders(
     queryKeys.operators.all,
     queryKeys.messages.all,
     queryKeys.stats.all,
+    // Operator access is now resolved LIVE from staff grants, so any member
+    // change that could affect it (role, staffing) must refresh the grants too.
+    queryKeys.permissions.all,
     ['memberSearch'],
     ['organizationStaff'],
     ['leagueReupStatus'],
