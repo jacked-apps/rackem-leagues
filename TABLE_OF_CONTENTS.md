@@ -810,7 +810,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 ### 🏗️ Features
 
 #### Host (`/host/`)
-- `BecomeHost.tsx` - **Become a Host** (`/become-host`) — self-serve purchase (`$1/mo` or `$10/yr`, mock `PaymentCardForm`) that saves the card on file and grants the `host` designation via `useGrantDesignation`, so the member can host game rooms. **Gated off in production** (route + Profile CTA) until the game room ships — see `LIST_FOR_ED.md`. Shows an "already a host" state if held.
+- `BecomeHost.tsx` - **Become a Host** (`/become-host`) — self-serve purchase (`$1/mo` or `$10/yr`, mock `PaymentCardForm`) that saves the card on file and grants the `host` designation via `useGrantDesignation`, so the member can host game rooms. Reachable from the Profile "Become a Host" CTA. Shows an "already a host" state if held. Self-contained — grants the designation independently of the game room, which reads it separately.
 
 #### League Operator Application (`/leagueOperator/`)
 - `BecomeLeagueOperator.tsx` - Entry point

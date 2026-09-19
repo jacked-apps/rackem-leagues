@@ -224,11 +224,7 @@ export const router = createBrowserRouter([
       { path: 'complete-profile', element: withAuth(<CompleteProfileForm />) },
       { path: 'new-player', element: withAuth(<NewPlayerForm />) },
       { path: 'become-league-operator', element: withAuth(<BecomeLeagueOperator />) },
-      // Become a Host — gated off in production (route + Profile CTA) until the
-      // game room ships; dev/staging only. Un-gate both together when it's live.
-      ...(!isProduction
-        ? [{ path: 'become-host', element: withAuth(<BecomeHost />) }]
-        : []),
+      { path: 'become-host', element: withAuth(<BecomeHost />) },
       { path: 'league-operator-application', element: withAuth(<LeagueOperatorApplication />) },
 
       // === Authenticated Routes (wrapped in MemberLayout for shared nav) ===

@@ -194,10 +194,8 @@ export const Profile: React.FC = () => {
             </Card>
           )}
 
-          {/* Become a Host CTA — gated off in production (paired with the
-              /become-host route) until the game room ships; dev/staging only.
-              Also only shown to members who aren't hosts yet. */}
-          {!isProduction && !hasDesignation('host') && (
+          {/* Become a Host CTA — only for members who aren't hosts yet */}
+          {!hasDesignation('host') && (
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold text-foreground mb-2">
