@@ -755,7 +755,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `wizardReducer.ts` - Wizard state reducer
 
 #### Developer Tools (`/developer/`)
-- `AssignOperator.tsx` - **Designations Phase 1 (slice 3)** — developer-only page (`/assign-operator`, `withDeveloper`-guarded). (1) Creates an organization for a chosen member, making them its owner = a League Operator (create_owner_staff trigger + live grant resolution; mock card until billing is real). (2) Assigns the developer master key to a member (still a `members.role` flag — the full designations store is deferred until the RLS pass needs it). Lists current operators + developers. Dev-gated nav links live in AppSidebar + AppDrawer.
+- `AssignOperator.tsx` - **Designations Phase 1 (slice 3)** — developer-only page (`/assign-operator`, `withDeveloper`-guarded) that creates an organization for a chosen member, making them its owner = a League Operator (create_owner_staff trigger + live grant resolution; mock card until billing is real). Lists current operators. Dev-gated nav links live in AppSidebar + AppDrawer. The developer master key is deliberately NOT grantable here — it has no UI entry point and is assigned by hand.
 
 #### Standalone Pages (`/pages/`)
 - `AdminReports.tsx` - Admin reports dashboard
