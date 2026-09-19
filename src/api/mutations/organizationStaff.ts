@@ -9,7 +9,10 @@ import { supabase } from '@/supabaseClient';
 /**
  * Add a staff member to an organization
  *
- * Also updates the member's role to 'league_operator' so they can access operator pages.
+ * Operator access is now resolved LIVE from this organization_staff row — adding
+ * it is the whole grant. We deliberately no longer touch members.role here: that
+ * hand-synced second copy was the motivating bug (a grant written in two places,
+ * kept in sync by hand, drifting on removal).
  *
  * @param organizationId - Organization's primary key ID
  * @param memberId - Member to add as staff
@@ -24,17 +27,6 @@ export async function addOrganizationStaff(
   position: 'admin' | 'league_rep',
   addedBy: string
 ) {
-  // First, update member's role to league_operator
-  const { error: roleError } = await supabase
-    .from('members')
-    .update({ role: 'league_operator' })
-    .eq('id', memberId);
-
-  if (roleError) {
-    throw new Error(`Failed to update member role: ${roleError.message}`);
-  }
-
-  // Then add them to organization_staff
   const { data, error } = await supabase
     .from('organization_staff')
     .insert({
@@ -56,14 +48,16 @@ export async function addOrganizationStaff(
 /**
  * Remove a staff member from an organization
  *
- * Also checks if the member is staff anywhere else. If not, reverts their role to 'player'.
+ * Deleting the organization_staff row IS the removal — operator access is
+ * resolved live from remaining grants, so there is no members.role to revert and
+ * no "are they staff anywhere else?" scan to run. That scan + revert was the
+ * compensating write the old two-copies design forced; removing the copy removes
+ * the bug (Success Criteria: "no compensating write anywhere").
  *
  * @param staffId - organization_staff record ID
- * @param memberId - Member ID to check for other staff positions
  * @throws Error if database operation fails
  */
-export async function removeOrganizationStaff(staffId: string, memberId: string) {
-  // First, delete the staff record
+export async function removeOrganizationStaff(staffId: string) {
   const { error: deleteError } = await supabase
     .from('organization_staff')
     .delete()
@@ -71,27 +65,5 @@ export async function removeOrganizationStaff(staffId: string, memberId: string)
 
   if (deleteError) {
     throw new Error(`Failed to remove staff member: ${deleteError.message}`);
-  }
-
-  // Check if member is staff in any other organizations
-  const { data: otherStaffPositions, error: checkError } = await supabase
-    .from('organization_staff')
-    .select('id')
-    .eq('member_id', memberId);
-
-  if (checkError) {
-    throw new Error(`Failed to check member staff positions: ${checkError.message}`);
-  }
-
-  // If no other staff positions, revert role to 'player'
-  if (!otherStaffPositions || otherStaffPositions.length === 0) {
-    const { error: roleError } = await supabase
-      .from('members')
-      .update({ role: 'player' })
-      .eq('id', memberId);
-
-    if (roleError) {
-      throw new Error(`Failed to revert member role: ${roleError.message}`);
-    }
   }
 }

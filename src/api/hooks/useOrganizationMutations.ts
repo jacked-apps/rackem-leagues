@@ -10,6 +10,7 @@ import {
   createOrganization,
   type CreateOrganizationParams,
 } from '../mutations/organizations';
+import { queryKeys } from '../queryKeys';
 
 /**
  * Hook to update organization's profanity filter setting
@@ -73,7 +74,15 @@ export function useCreateOrganization() {
 
   return useMutation({
     mutationFn: (params: CreateOrganizationParams) => createOrganization(params),
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
+      // Creating an org auto-inserts the creator as 'owner' in organization_staff
+      // (DB trigger create_owner_staff). Operator access is resolved live from
+      // that grant, so refresh the creator's grants — with refetchType 'all'
+      // because the LO-application flow navigates straight to a page gated on it.
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.permissions.grants(variables.created_by),
+        refetchType: 'all',
+      });
       // Invalidate AND wait for refetch — closes LIST_FOR_ED #7. The
       // dashboard's org-list query (`useOrganizations(memberId)`) is
       // typically NOT mounted during the LO-application flow, so a

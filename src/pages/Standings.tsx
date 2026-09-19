@@ -23,7 +23,7 @@ import { ArrowLeft, Lock, Trophy, Award } from 'lucide-react';
 import { useStandings } from '@/api/hooks/useStandings';
 import { StatsNavBar } from '@/components/StatsNavBar';
 import { PageHeader } from '@/components/PageHeader';
-import { useCurrentMember } from '@/api/hooks/useCurrentMember';
+import { useIsOperator } from '@/api/hooks';
 import { useSeasonLockedPayouts } from '@/api/hooks/useSeasonLockedPayouts';
 
 /**
@@ -38,7 +38,6 @@ export function Standings() {
 
   // Fetch standings data
   const { standings, isLoading, error } = useStandings(seasonId || '');
-  const { data: member } = useCurrentMember();
   const { data: lockedPayouts } = useSeasonLockedPayouts(seasonId || undefined);
 
   // Build a place → amount lookup so we can map rank-by-index to prize
@@ -46,8 +45,8 @@ export function Standings() {
     (lockedPayouts?.team_payouts ?? []).map((p) => [p.place, p.amount]),
   );
 
-  // Check if current user is a league operator
-  const isOperator = member?.role === 'league_operator';
+  // Check if current user is a league operator (resolved live from staff grants)
+  const isOperator = useIsOperator();
 
   // Loading state
   if (isLoading) {

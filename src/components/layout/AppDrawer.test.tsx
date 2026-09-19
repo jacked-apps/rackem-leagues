@@ -87,6 +87,7 @@ function configurePlayer() {
   mockUseUserProfile.mockReturnValue({
     member: { id: 'm1', first_name: 'Pat', last_name: 'Player' },
     canAccessLeagueOperatorFeatures: () => false,
+    canAccessDeveloperFeatures: () => false,
     loading: false,
   });
   mockUseOrganizations.mockReturnValue({ organizations: [], loading: false, error: null });
@@ -99,6 +100,7 @@ function configureLoggedOut() {
   mockUseUserProfile.mockReturnValue({
     member: null,
     canAccessLeagueOperatorFeatures: () => false,
+    canAccessDeveloperFeatures: () => false,
     loading: false,
   });
   mockUseOrganizations.mockReturnValue({ organizations: [], loading: false, error: null });
@@ -171,6 +173,7 @@ describe('AppDrawer', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Solo' },
       canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
       loading: false,
     });
     mockUseOrganizations.mockReturnValue({
@@ -201,6 +204,7 @@ describe('AppDrawer', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
       canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
       loading: false,
     });
     mockUseOrganizations.mockReturnValue({
@@ -252,6 +256,7 @@ describe('AppDrawer', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'X' },
       canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
       loading: false,
     });
     mockUseOrganizations.mockReturnValue({
@@ -272,6 +277,7 @@ describe('AppDrawer', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Many' },
       canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
       loading: false,
     });
     mockUseOrganizations.mockReturnValue({
@@ -310,6 +316,7 @@ describe('AppDrawer', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Staff' },
       canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
       loading: false,
     });
     mockUseOrganizations.mockReturnValue({
@@ -337,6 +344,7 @@ describe('AppDrawer', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'X' },
       canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
       loading: false,
     });
     mockUseOrganizations.mockReturnValue({ organizations: [], loading: true, error: null });
@@ -369,6 +377,7 @@ describe('AppDrawer', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Solo' },
       canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
       loading: false,
     });
     mockUseOrganizations.mockReturnValue({
@@ -392,6 +401,7 @@ describe('AppDrawer', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
       canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
       loading: false,
     });
     // org-b is staff (admin); org-a is owner — owned orgs sort first, so the
