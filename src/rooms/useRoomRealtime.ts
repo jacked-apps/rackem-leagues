@@ -12,6 +12,10 @@
  *   hear; status reads `live` because there is nothing to be behind on.
  * - Refetch on a heartbeat. `room_phones.last_seen_at` / `rooms.last_activity_at`
  *   -only UPDATEs are dropped (see `roomChangeFilter.ts`).
+ * - Hold a socket for a hidden tab. After `HIDDEN_RELEASE_MS` hidden (the
+ *   same 2 min as the server's presence grace) the channel is released and
+ *   reopened on return — a backgrounded desktop tab behaves like a phone
+ *   whose OS suspended it. A visible screen, however idle, is never touched.
  * - Replay. Realtime never delivers rows missed while the socket was down, so
  *   EVERY SUBSCRIBED — the first included — invalidates the `rooms.detail`
  *   prefix (the room and every table). A rebuild is a normal in-game move here
@@ -40,6 +44,13 @@ import { HEARTBEAT_COLUMNS, onlyIgnoredColumnsChanged } from './roomChangeFilter
 
 type Row = Record<string, unknown>;
 type ChangePayload = RealtimePostgresChangesPayload<Row>;
+
+/**
+ * How long a tab may stay hidden before its socket is released. Matches the
+ * server's presence grace (`room_presence_grace()`, 2 min): the moment this
+ * device reads as "away" is the moment it stops holding a connection.
+ */
+export const HIDDEN_RELEASE_MS = 120_000;
 
 interface UseRoomRealtimeParams {
   /** The room this device is in (undefined = nothing to listen to). */
@@ -96,6 +107,13 @@ export function useRoomRealtime({
   // A new room is a fresh start: it has not been deleted under us yet.
   useEffect(() => setRoomGone(false), [roomId]);
 
+  // Tab hidden past the grace window → let go of the socket. Phones already
+  // lose it (the OS suspends the tab); this makes a backgrounded desktop tab
+  // behave the same instead of holding a connection for up to the 24 h sweep.
+  // Coming back re-subscribes, and every SUBSCRIBED refetches, so the return
+  // is seamless. Never fires for a visible screen, however idle.
+  const released = useHiddenRelease(HIDDEN_RELEASE_MS);
+
   useEffect(() => {
     // Game switch (same room, new table list): drop the old tables' cached
     // rows so the new game never flashes what the server already wiped. Runs
@@ -111,7 +129,7 @@ export function useRoomRealtime({
     }
     prevRef.current = { roomId, tablesKey };
 
-    if (!roomId || !shared) {
+    if (!roomId || !shared || released) {
       setConnectionStatus('live');
       return;
     }
@@ -171,7 +189,38 @@ export function useRoomRealtime({
     };
     // `tables` is represented by `tablesKey`; the array identity is noise.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, shared, tablesKey, queryClient]);
+  }, [roomId, shared, tablesKey, queryClient, released]);
 
   return { connectionStatus, roomGone };
+}
+
+/**
+ * True once the tab has been hidden for `afterMs`; false again the moment it
+ * is visible. A visible tab — however idle — never counts.
+ */
+function useHiddenRelease(afterMs: number): boolean {
+  const [released, setReleased] = useState(false);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const arm = () => {
+      if (timer) return;
+      timer = setTimeout(() => setReleased(true), afterMs);
+    };
+    const disarm = () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+      setReleased(false);
+    };
+    const onVisibility = () => (document.visibilityState === 'hidden' ? arm() : disarm());
+
+    document.addEventListener('visibilitychange', onVisibility);
+    if (document.visibilityState === 'hidden') arm();
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (timer) clearTimeout(timer);
+    };
+  }, [afterMs]);
+
+  return released;
 }

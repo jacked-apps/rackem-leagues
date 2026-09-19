@@ -179,6 +179,16 @@ room A never hears room B; delete leaves no rows; league engine untouched.
   the grace window. The room row's `last_activity_at` is bumped by the same
   heartbeat RPC, so activity is room-owned (R2) and free rooms are never
   swept mid-play.
+- **A hidden tab lets go of its socket** (added 2026-09-19, after Ed asked
+  what idle phones and PCs cost). Heartbeat and websocket are separate: the
+  heartbeat already pauses on `visibilitychange`, so a hidden device reads
+  "away" after the 2 min grace and frees its seat — but a backgrounded
+  DESKTOP tab kept its websocket open until the 24 h sweep (phones lose it
+  to OS suspension anyway). `useRoomRealtime` now releases the channel after
+  `HIDDEN_RELEASE_MS` (2 min, same as the grace) hidden and reopens on
+  return; every SUBSCRIBED already refetches, so the return is seamless. A
+  visible screen, however idle (a 10-minute game), is never touched. Writes
+  are HTTP RPCs and never need the socket; the 15 s poll is the floor.
 - **The heartbeat must not spam the channel — on either table.**
   `room_phones` UPDATEs where only `last_seen_at` changed, and `rooms`
   UPDATEs where only `last_activity_at` changed, are ignored client-side

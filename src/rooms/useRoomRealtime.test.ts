@@ -7,7 +7,7 @@
  * QueryClient sits underneath so invalidation is observed on the cache, not
  * on a mock.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createElement, type ReactNode } from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -42,7 +42,7 @@ const mocks = vi.hoisted(() => {
 vi.mock('@/supabaseClient', () => ({ supabase: mocks.supabaseMock }));
 vi.mock('@/utils/logger', () => ({ logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() } }));
 
-import { useRoomRealtime } from './useRoomRealtime';
+import { useRoomRealtime, HIDDEN_RELEASE_MS } from './useRoomRealtime';
 import { queryKeys } from '@/api/queryKeys';
 
 const ROOM = 'room-1';
@@ -205,5 +205,57 @@ describe('useRoomRealtime — subscribe status', () => {
     expect(result.current.connectionStatus).toBe('error');
     expect(mocks.channelMock.subscribe).toHaveBeenCalledTimes(1);
     expect(invalidate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useRoomRealtime — hidden tab releases the socket', () => {
+  function setVisibility(state: 'visible' | 'hidden') {
+    Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+  });
+  afterEach(() => {
+    setVisibility('visible');
+    vi.useRealTimers();
+  });
+
+  it('hidden past the grace window → channel removed; visible again → a fresh channel that refetches on SUBSCRIBED', () => {
+    const { result } = render();
+    expect(mocks.supabaseMock.channel).toHaveBeenCalledTimes(1);
+
+    setVisibility('hidden');
+    act(() => vi.advanceTimersByTime(HIDDEN_RELEASE_MS - 1));
+    expect(mocks.supabaseMock.removeChannel).not.toHaveBeenCalled();
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(mocks.supabaseMock.removeChannel).toHaveBeenCalledTimes(1);
+    expect(result.current.connectionStatus).toBe('live'); // nothing to be behind on while hidden
+
+    setVisibility('visible');
+    expect(mocks.supabaseMock.channel).toHaveBeenCalledTimes(2);
+    fireStatus(REALTIME_SUBSCRIBE_STATES.SUBSCRIBED);
+    expect(invalidate).toHaveBeenLastCalledWith({ queryKey: queryKeys.rooms.detail(ROOM) });
+  });
+
+  it('a short hide (back before the window) never touches the channel', () => {
+    render();
+    setVisibility('hidden');
+    act(() => vi.advanceTimersByTime(HIDDEN_RELEASE_MS / 2));
+    setVisibility('visible');
+    act(() => vi.advanceTimersByTime(HIDDEN_RELEASE_MS * 2));
+    expect(mocks.supabaseMock.removeChannel).not.toHaveBeenCalled();
+    expect(mocks.supabaseMock.channel).toHaveBeenCalledTimes(1);
+  });
+
+  it('a visible tab, however idle, keeps its channel', () => {
+    render();
+    act(() => vi.advanceTimersByTime(HIDDEN_RELEASE_MS * 10));
+    expect(mocks.supabaseMock.removeChannel).not.toHaveBeenCalled();
   });
 });
