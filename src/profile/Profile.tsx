@@ -54,7 +54,7 @@ import { isProduction } from '@/config/environment';
  */
 export const Profile: React.FC = () => {
   const { user, logout } = useUser();
-  const { member, loading, canAccessLeagueOperatorFeatures } = useUserProfile();
+  const { member, loading, canAccessLeagueOperatorFeatures, hasDesignation } = useUserProfile();
 
   // Get all form state and handlers from custom hook
   const {
@@ -188,6 +188,27 @@ export const Profile: React.FC = () => {
                 <Link to="/become-league-operator">
                   <Button variant="outline" loadingText="none" className="w-full">
                     Learn More
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Become a Host CTA — gated off in production (paired with the
+              /become-host route) until the game room ships; dev/staging only.
+              Also only shown to members who aren't hosts yet. */}
+          {!isProduction && !hasDesignation('host') && (
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-foreground mb-2">
+                  Host Your Own Game Rooms?
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Become a host and invite others to play games with you online
+                </p>
+                <Link to="/become-host">
+                  <Button variant="outline" loadingText="none" className="w-full">
+                    Become a Host
                   </Button>
                 </Link>
               </CardContent>

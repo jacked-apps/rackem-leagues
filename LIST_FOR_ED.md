@@ -203,6 +203,18 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
+- **Become a Host** — self-serve purchase (`$1/mo` or `$10/yr`, mock payment)
+  that grants the `host` designation so a member can host game rooms. Built and
+  working, but the **game room itself isn't shipped yet**, so paying to become a
+  host would buy a capability with nothing to use. Gated by `!isProduction` in
+  two places: the Profile CTA (`src/profile/Profile.tsx`) AND the route
+  (`src/navigation/NavRoutes.tsx` — `become-host`). Verify on staging: the CTA
+  shows on Profile, the plan/pay flow grants host, and `member_has_designation`
+  then reports the member as a host. **Un-gate both together when the game room
+  ships AND real payments are wired** (today's payment is mock). The host
+  designation + `member_has_designation(user_id,'host')` helper are NOT gated —
+  they're always available for the room to read.
+
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
 commit. The half-gated bug that prompted it: the "Score a Match" button +
