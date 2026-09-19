@@ -11,10 +11,14 @@
 -- the screen being open, and a game author cannot forget to keep it alive.
 --
 -- Keyed on STATE (last_activity_at older than the window), never a specific
--- timestamp, so a skipped run self-heals on the next one. Hourly rather than
--- daily because a 24-hour window swept once a day would let rooms live up to
--- 48 hours; hourly keeps "24 hours" honest. The window is an argument with a
--- default so it is a dial, not a decision.
+-- timestamp, so a skipped run self-heals on the next one. DAILY at 07:00 UTC
+-- (an hour after the auto-forfeit sweep at 06:00; 3am Eastern in summer, 2am
+-- in winter — never bar time). With a 24-hour window swept once a day a room
+-- lives 24–48 hours after the last phone leaves. Ed's call, 2026-09-19: the
+-- sweep is TIDYING, not a deadline — an unfinished game should stay put for
+-- a day or two, never pressure anyone to finish. (It was hourly at first,
+-- to keep "24 hours" literal; that precision bought nothing anyone wanted.)
+-- The window is an argument with a default so it is a dial, not a decision.
 --
 -- The LOGIC lives in a function (testable directly via executeSql); pg_cron
 -- only calls it. Mirrors 20260611000000_auto_forfeit_sweep.sql.
@@ -52,9 +56,9 @@ $$;
 REVOKE EXECUTE ON FUNCTION "public"."sweep_stale_rooms"(integer) FROM PUBLIC, "anon", "authenticated";
 
 COMMENT ON FUNCTION "public"."sweep_stale_rooms"(integer) IS
-  'Game Room janitor: deletes rooms whose last_activity_at is older than p_idle_hours (default 24); children cascade. Keyed on state, so a skipped run self-heals. Called hourly by pg_cron (game-room-sweep).';
+  'Game Room janitor: deletes rooms whose last_activity_at is older than p_idle_hours (default 24); children cascade. Keyed on state, so a skipped run self-heals. Called daily at 07:00 UTC by pg_cron (game-room-sweep).';
 
--- Schedule hourly, on the hour. Unschedule any prior version first so re-running
+-- Schedule daily at 07:00 UTC. Unschedule any prior version first so re-running
 -- this migration is idempotent.
 do $$
 begin
@@ -63,4 +67,4 @@ exception
   when others then null; -- no prior job to remove
 end $$;
 
-select cron.schedule('game-room-sweep', '0 * * * *', $cron$ select sweep_stale_rooms(24); $cron$);
+select cron.schedule('game-room-sweep', '0 7 * * *', $cron$ select sweep_stale_rooms(24); $cron$);

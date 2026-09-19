@@ -265,7 +265,7 @@ room A never hears room B; delete leaves no rows; league engine untouched.
   sign-in/register funnel via the existing `redirect` param.
 - *Per-phone identity:* `room_phones.id`, keyed by the member id.
 - *Activity signal:* heartbeat RPC bumps phone + room; games contribute nothing.
-- *Sweep mechanism:* pg_cron hourly calling `sweep_stale_rooms(24)`.
+- *Sweep mechanism:* pg_cron calling `sweep_stale_rooms(24)` — hourly at first; **daily at 07:00 UTC since 2026-09-19** (an hour after the auto-forfeit sweep). A room now lives 24–48 h after the last phone leaves. Ed: the sweep is tidying, not a deadline.
 - *Table cap enforcement:* in the RPC (a constant), not a DB CHECK — it's a dial.
 - *Stale QR:* `get_room_by_token` returns `{found:false}` → "this room has ended."
 - *Host closes mid-game:* rooms row DELETE reaches guests → same ended screen.

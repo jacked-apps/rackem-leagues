@@ -101,10 +101,12 @@ describe('sweep_stale_rooms (Unit 2)', () => {
     expect(await sweep()).toBe(0);
   });
 
-  it('is scheduled hourly as game-room-sweep, exactly once, and is not callable by clients', async () => {
+  it('is scheduled daily at 07:00 UTC as game-room-sweep, exactly once, and is not callable by clients', async () => {
     const jobs = await executeSql(`SELECT schedule, command FROM cron.job WHERE jobname = 'game-room-sweep'`);
     expect(jobs).toHaveLength(1);
-    expect(jobs[0].schedule).toBe('0 * * * *');
+    // An hour after auto-forfeit-sweep (06:00). Daily + a 24 h window = a room
+    // lives 24–48 h after the last phone leaves — tidying, not a deadline.
+    expect(jobs[0].schedule).toBe('0 7 * * *');
     expect(jobs[0].command).toContain('sweep_stale_rooms');
 
     const priv = await executeSql(
