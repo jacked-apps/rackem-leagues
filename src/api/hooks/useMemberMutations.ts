@@ -63,6 +63,8 @@ function invalidateMemberEmbedders(
     // Operator access is now resolved LIVE from staff grants, so any member
     // change that could affect it (role, staffing) must refresh the grants too.
     queryKeys.permissions.all,
+    // Developer access is resolved live from the designations store.
+    queryKeys.designations.all,
     ['memberSearch'],
     ['organizationStaff'],
     ['leagueReupStatus'],

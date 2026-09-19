@@ -1516,6 +1516,79 @@ export type Database = {
           },
         ]
       }
+      designations: {
+        Row: {
+          description: string
+          name: string
+        }
+        Insert: {
+          description?: string
+          name: string
+        }
+        Update: {
+          description?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      member_designations: {
+        Row: {
+          designation: string
+          end_reason: string | null
+          ended_at: string | null
+          ends_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          member_id: string
+          source: string
+        }
+        Insert: {
+          designation: string
+          end_reason?: string | null
+          ended_at?: string | null
+          ends_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          member_id: string
+          source?: string
+        }
+        Update: {
+          designation?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          ends_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          member_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_designations_designation_fkey"
+            columns: ["designation"]
+            isOneToOne: false
+            referencedRelation: "designations"
+            referencedColumns: ["name"]
+          },
+          {
+            foreignKeyName: "member_designations_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_designations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_notification_prefs: {
         Row: {
           conversation_kind: string

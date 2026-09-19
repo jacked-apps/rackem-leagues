@@ -24,6 +24,7 @@ import { useUser } from '@/context/useUser';
 import { queryKeys } from '../queryKeys';
 import { getMemberProfile } from '../queries/members';
 import { getMemberStaffGrants } from '../queries/permissions';
+import { getMemberDesignations } from '../queries/designations';
 import { hasOperatorAccess } from '../permissions/permissions';
 import { STALE_TIME } from '../client';
 import type { Member, UserRole } from '@/types';
@@ -102,14 +103,25 @@ export function useUserProfile(): UseUserProfileResult {
     refetchOnWindowFocus: false,
   });
   const grants = grantsQuery.data ?? [];
-  // While a member's grants are still loading, callers must treat the profile as
-  // loading too — otherwise a route guard would deny an operator during the
-  // fetch window and bounce them off their own page.
-  const grantsLoading = !!member?.id && grantsQuery.isLoading;
 
-  // The developer master key (D7) still rides on members.role in Phase 1;
-  // slice 4 moves it to the designations store.
-  const isDeveloper = member?.role === 'developer';
+  // The developer master key (D7) is resolved LIVE from the designations store,
+  // not members.role — the person-level counterpart to resolving operator access
+  // from staff grants. Assigned by hand (SQL); no app write path.
+  const designationsQuery = useQuery({
+    queryKey: queryKeys.designations.byMember(member?.id || ''),
+    queryFn: () => getMemberDesignations(member!.id),
+    enabled: !!member?.id,
+    staleTime: STALE_TIME.MEMBER,
+    refetchOnWindowFocus: false,
+  });
+  const designations = designationsQuery.data ?? [];
+  const isDeveloper = designations.includes('developer');
+
+  // While grants OR designations are still loading, callers must treat the
+  // profile as loading too — otherwise a route guard would deny an operator or
+  // developer during the fetch window and bounce them off their own page.
+  const grantsLoading = !!member?.id && grantsQuery.isLoading;
+  const designationsLoading = !!member?.id && designationsQuery.isLoading;
 
   // Utility functions for role and permission checking
   const hasRole = (role: UserRole) => member?.role === role;
@@ -135,7 +147,7 @@ export function useUserProfile(): UseUserProfileResult {
 
   return {
     member,
-    loading: query.isLoading || grantsLoading,
+    loading: query.isLoading || grantsLoading || designationsLoading,
     error: query.error ? String(query.error) : null,
     needsApplication,
     hasRole,

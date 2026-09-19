@@ -49,11 +49,11 @@ interface UsePermissionsResult {
  * touch the Member type, so it is intentionally deferred.
  */
 export function usePermissions(): UsePermissionsResult {
-  const { member, loading: profileLoading } = useUserProfile();
+  const { member, loading: profileLoading, canAccessDeveloperFeatures } = useUserProfile();
 
-  // The developer master key (D7). In Phase 1 this still rides on members.role;
-  // slice 4 moves it to the designations store.
-  const isDeveloper = member?.role === 'developer';
+  // The developer master key (D7) — resolved from the designations store by the
+  // profile hook, not members.role.
+  const isDeveloper = canAccessDeveloperFeatures();
 
   const grantsQuery = useQuery({
     queryKey: queryKeys.permissions.grants(member?.id || ''),
