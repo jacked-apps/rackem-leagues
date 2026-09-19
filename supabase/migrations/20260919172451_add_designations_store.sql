@@ -70,6 +70,10 @@ CREATE INDEX member_designations_member_idx
 -- the planner cannot inline it and strip the SECURITY DEFINER context; STABLE so
 -- it is evaluated once per statement; search_path pinned against escalation.
 -- ---------------------------------------------------------------------------
+-- The developer master key (D7) satisfies EVERY designation check by
+-- definition, so an active 'developer' record answers true for any requested
+-- designation. Both the app (hasDesignation) and this helper apply that rule so
+-- SQL and TypeScript never disagree.
 CREATE OR REPLACE FUNCTION public.member_has_designation(p_user_id uuid, p_designation text)
 RETURNS boolean
 LANGUAGE plpgsql
@@ -83,7 +87,7 @@ BEGIN
     FROM public.member_designations md
     JOIN public.members m ON m.id = md.member_id
     WHERE m.user_id = p_user_id
-      AND md.designation = p_designation
+      AND md.designation IN (p_designation, 'developer')
       AND md.ended_at IS NULL
   );
 END;

@@ -48,6 +48,12 @@ interface UseUserProfileResult {
   canAccessLeagueOperatorFeatures: () => boolean;
   /** Check if member can access developer features */
   canAccessDeveloperFeatures: () => boolean;
+  /**
+   * Check if the member holds a given designation (e.g. 'host', 'developer'),
+   * resolved live from the designations store. The generic form behind the
+   * developer/host convenience checks.
+   */
+  hasDesignation: (designation: string) => boolean;
   /** Check if member record exists */
   hasMemberRecord: () => boolean;
   /** Check if user needs to complete application */
@@ -131,6 +137,11 @@ export function useUserProfile(): UseUserProfileResult {
 
   const canAccessDeveloperFeatures = () => isDeveloper;
 
+  // Generic designation check (host, developer, and future ones). The developer
+  // master key also satisfies every designation check by definition (D7).
+  const hasDesignation = (designation: string) =>
+    isDeveloper || designations.includes(designation);
+
   const hasMemberRecord = () => member !== null;
 
   const needsToCompleteApplication = () => needsApplication;
@@ -153,6 +164,7 @@ export function useUserProfile(): UseUserProfileResult {
     hasRole,
     canAccessLeagueOperatorFeatures,
     canAccessDeveloperFeatures,
+    hasDesignation,
     hasMemberRecord,
     needsToCompleteApplication,
     refreshProfile,

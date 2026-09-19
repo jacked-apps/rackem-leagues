@@ -56,9 +56,13 @@ describe('member designations store + member_has_designation()', () => {
   });
 
   async function hasDeveloper(uid: string): Promise<boolean> {
+    return hasDesignation(uid, 'developer');
+  }
+
+  async function hasDesignation(uid: string, designation: string): Promise<boolean> {
     const rows = await executeSql(
-      `SELECT public.member_has_designation($1, 'developer') AS has`,
-      [uid]
+      `SELECT public.member_has_designation($1, $2) AS has`,
+      [uid, designation]
     );
     return rows[0].has;
   }
@@ -136,5 +140,24 @@ describe('member designations store + member_has_designation()', () => {
         [memberId]
       )
     ).rejects.toThrow();
+  });
+
+  it('resolves the game-room host designation', async () => {
+    expect(await hasDesignation(userId, 'host')).toBe(false);
+    await executeSql(
+      `INSERT INTO public.member_designations (member_id, designation) VALUES ($1, 'host')`,
+      [memberId]
+    );
+    expect(await hasDesignation(userId, 'host')).toBe(true);
+  });
+
+  it('developer master key satisfies any designation check — D7', async () => {
+    // A developer holds no explicit 'host' record...
+    await executeSql(
+      `INSERT INTO public.member_designations (member_id, designation) VALUES ($1, 'developer')`,
+      [memberId]
+    );
+    // ...yet passes the host check by the master-key rule.
+    expect(await hasDesignation(userId, 'host')).toBe(true);
   });
 });
