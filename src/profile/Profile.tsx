@@ -54,7 +54,7 @@ import { isProduction } from '@/config/environment';
  */
 export const Profile: React.FC = () => {
   const { user, logout } = useUser();
-  const { member, loading } = useUserProfile();
+  const { member, loading, canAccessLeagueOperatorFeatures, hasDesignation } = useUserProfile();
 
   // Get all form state and handlers from custom hook
   const {
@@ -175,8 +175,8 @@ export const Profile: React.FC = () => {
             description="Scan the QR code or share the link to get your teammates on Rack'em Leagues."
           />
 
-          {/* Become League Operator CTA — only for regular players */}
-          {member.role === 'player' && (
+          {/* Become League Operator CTA — only for members who aren't operators yet */}
+          {!canAccessLeagueOperatorFeatures() && (
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold text-foreground mb-2">
@@ -188,6 +188,25 @@ export const Profile: React.FC = () => {
                 <Link to="/become-league-operator">
                   <Button variant="outline" loadingText="none" className="w-full">
                     Learn More
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Become a Host CTA — only for members who aren't hosts yet */}
+          {!hasDesignation('host') && (
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="font-semibold text-foreground mb-2">
+                  Host Your Own Game Rooms?
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Become a host and invite others to play games with you online
+                </p>
+                <Link to="/become-host">
+                  <Button variant="outline" loadingText="none" className="w-full">
+                    Become a Host
                   </Button>
                 </Link>
               </CardContent>

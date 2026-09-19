@@ -42,7 +42,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   redirectTo = '/login',
 }) => {
   const { user, loading: authLoading } = useUser();
-  const { member, loading: profileLoading } = useUserProfile();
+  const {
+    member,
+    loading: profileLoading,
+    hasRole,
+    canAccessLeagueOperatorFeatures,
+    canAccessDeveloperFeatures,
+  } = useUserProfile();
   const location = useLocation();
 
   // Show loading state while checking authentication or fetching member data
@@ -61,17 +67,26 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={`${redirectTo}?redirect=${attempted}`} replace />;
   }
 
-  // Second check: Role-based access control
-  if (requiredRole && member?.role !== requiredRole) {
-    // Developers have access to all roles
-    if (member?.role === 'developer') {
-      // Allow developers through
-    } else if (member?.role === 'player') {
-      // Players redirected to My Teams
+  // Second check: permission-based access control.
+  // We ask what the member MAY do, not what they ARE — operator access is
+  // resolved live from staff grants, and developers are waved through by the
+  // master key (both handled inside these gates).
+  if (requiredRole) {
+    const hasAccess =
+      requiredRole === 'developer'
+        ? canAccessDeveloperFeatures()
+        : requiredRole === 'league_operator'
+          ? canAccessLeagueOperatorFeatures()
+          : hasRole(requiredRole); // any other role guards exactly (e.g. 'player')
+
+    if (!hasAccess) {
+      // An operator who lacks the *specific* access a route needs (e.g. a
+      // developer-only page) gets the unauthorized page; a plain player falls
+      // back to their home. Preserves the pre-existing redirect behavior.
+      if (canAccessLeagueOperatorFeatures()) {
+        return <Navigate to="/unauthorized" replace />;
+      }
       return <Navigate to="/my-teams" replace />;
-    } else {
-      // Other mismatched roles get unauthorized page
-      return <Navigate to="/unauthorized" replace />;
     }
   }
 

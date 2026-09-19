@@ -23,6 +23,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/context/useUser';
 import { queryKeys } from '../queryKeys';
 import { getMemberProfile } from '../queries/members';
+import { getMemberStaffGrants } from '../queries/permissions';
+import { getMemberDesignations } from '../queries/designations';
+import { hasOperatorAccess } from '../permissions/permissions';
 import { STALE_TIME } from '../client';
 import type { Member, UserRole } from '@/types';
 
@@ -45,6 +48,12 @@ interface UseUserProfileResult {
   canAccessLeagueOperatorFeatures: () => boolean;
   /** Check if member can access developer features */
   canAccessDeveloperFeatures: () => boolean;
+  /**
+   * Check if the member holds a given designation (e.g. 'host', 'developer'),
+   * resolved live from the designations store. The generic form behind the
+   * developer/host convenience checks.
+   */
+  hasDesignation: (designation: string) => boolean;
   /** Check if member record exists */
   hasMemberRecord: () => boolean;
   /** Check if user needs to complete application */
@@ -87,13 +96,51 @@ export function useUserProfile(): UseUserProfileResult {
   const member = query.data || null;
   const needsApplication = query.error?.code === 'PGRST116';
 
+  // Operator access is resolved LIVE from the member's organization_staff grants
+  // (A3) — not from members.role — so it stays correct the moment staffing
+  // changes, with no second copy to hand-sync. Fetched separately for now;
+  // folding it into the profile query to save a round trip (A6) is a later
+  // optimization that would touch the Member type.
+  const grantsQuery = useQuery({
+    queryKey: queryKeys.permissions.grants(member?.id || ''),
+    queryFn: () => getMemberStaffGrants(member!.id),
+    enabled: !!member?.id,
+    staleTime: STALE_TIME.MEMBER,
+    refetchOnWindowFocus: false,
+  });
+  const grants = grantsQuery.data ?? [];
+
+  // The developer master key (D7) is resolved LIVE from the designations store,
+  // not members.role — the person-level counterpart to resolving operator access
+  // from staff grants. Assigned by hand (SQL); no app write path.
+  const designationsQuery = useQuery({
+    queryKey: queryKeys.designations.byMember(member?.id || ''),
+    queryFn: () => getMemberDesignations(member!.id),
+    enabled: !!member?.id,
+    staleTime: STALE_TIME.MEMBER,
+    refetchOnWindowFocus: false,
+  });
+  const designations = designationsQuery.data ?? [];
+  const isDeveloper = designations.includes('developer');
+
+  // While grants OR designations are still loading, callers must treat the
+  // profile as loading too — otherwise a route guard would deny an operator or
+  // developer during the fetch window and bounce them off their own page.
+  const grantsLoading = !!member?.id && grantsQuery.isLoading;
+  const designationsLoading = !!member?.id && designationsQuery.isLoading;
+
   // Utility functions for role and permission checking
   const hasRole = (role: UserRole) => member?.role === role;
 
   const canAccessLeagueOperatorFeatures = () =>
-    member?.role === 'league_operator' || member?.role === 'developer';
+    hasOperatorAccess({ grants, isDeveloper });
 
-  const canAccessDeveloperFeatures = () => member?.role === 'developer';
+  const canAccessDeveloperFeatures = () => isDeveloper;
+
+  // Generic designation check (host, developer, and future ones). The developer
+  // master key also satisfies every designation check by definition (D7).
+  const hasDesignation = (designation: string) =>
+    isDeveloper || designations.includes(designation);
 
   const hasMemberRecord = () => member !== null;
 
@@ -111,12 +158,13 @@ export function useUserProfile(): UseUserProfileResult {
 
   return {
     member,
-    loading: query.isLoading,
+    loading: query.isLoading || grantsLoading || designationsLoading,
     error: query.error ? String(query.error) : null,
     needsApplication,
     hasRole,
     canAccessLeagueOperatorFeatures,
     canAccessDeveloperFeatures,
+    hasDesignation,
     hasMemberRecord,
     needsToCompleteApplication,
     refreshProfile,

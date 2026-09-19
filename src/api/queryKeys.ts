@@ -243,6 +243,31 @@ export const queryKeys = {
   },
 
   /**
+   * Permission / authorization query keys.
+   * A member's staff grants (organization_staff rows) are resolved live and
+   * feed the `can(...)` check layer.
+   */
+  permissions: {
+    /** Base key for all permission queries */
+    all: ['permissions'] as const,
+
+    /** A member's staff grants across all organizations */
+    grants: (memberId: string) => [...queryKeys.permissions.all, 'grants', memberId] as const,
+  },
+
+  /**
+   * Designation query keys. A designation describes the PERSON (developer today;
+   * host / may-own-org later), resolved live from the member_designations store.
+   */
+  designations: {
+    /** Base key for all designation queries */
+    all: ['designations'] as const,
+
+    /** A member's active designations */
+    byMember: (memberId: string) => [...queryKeys.designations.all, 'member', memberId] as const,
+  },
+
+  /**
    * Operator-related query keys
    */
   operators: {

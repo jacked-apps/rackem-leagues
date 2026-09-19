@@ -67,6 +67,7 @@ beforeEach(() => {
   mockUseUserProfile.mockReturnValue({
     member: { id: 'm1', first_name: 'Pat', last_name: 'Player' },
     canAccessLeagueOperatorFeatures: () => false,
+    canAccessDeveloperFeatures: () => false,
   });
   mockUseOrganizations.mockReturnValue({ organizations: [] });
   mockUseUnreadMessageCount.mockReturnValue({ data: 0 });
