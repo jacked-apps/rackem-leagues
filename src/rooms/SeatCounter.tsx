@@ -1,5 +1,5 @@
 /**
- * @fileoverview "3 here · 1 guest seat open" — the room's seat picture, and the
+ * @fileoverview "3 here · 1 seat open" — the room's seat picture, and the
  * door to inviting. Tapping it is HOW you invite (R12): the tap opens the QR +
  * link. With no seats left, the same tap still opens and explains where the
  * seats went — they are the HOST'S, across every room they own (house model).

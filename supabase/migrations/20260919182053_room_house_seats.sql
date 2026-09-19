@@ -10,17 +10,22 @@
 --      host's payment.
 --   2. Hosts stacked: five hosts in one room = 20 seats.
 --
--- NOW: a host owns a HOUSE. The house has room_guest_seats() guest seats
--- (3). Rooms are doors inside it — open as many as you like. Guests spend
--- HOUSE seats: distinct PEOPLE present across every room the host owns. The
--- same person in two of the host's rooms is one seat. The host's own devices
--- are not guests. A friend who is also a host is just a guest in your house —
--- only the room's OWNER (rooms.host_member_id) funds anything, present or
--- not. So one paid host = at most 1 + 3 concurrent screens, and room count
--- is irrelevant to cost (no room cap needed).
+-- NOW: a host owns a HOUSE. The house has room_house_seats() seats (4).
+-- Rooms are doors inside it — open as many as you like. A SEAT IS A SCREEN:
+-- one present phone row (a device on a room page = one websocket) in ANY room
+-- the host owns — the host's own screens included. Supabase bills per
+-- connection and does not care whose it is, so neither do we: a host with
+-- thirty cheap tablets is thirty seats, not one. A guest with two tablets in
+-- two rooms is two seats. A friend who is also a host is just a screen in
+-- your house — only the room's OWNER (rooms.host_member_id) funds anything,
+-- present or not. So one paid host = at most 4 concurrent connections, and
+-- room count is irrelevant to cost (no room cap needed).
 --
--- "Present" still means a heartbeat within room_presence_grace(); a guest
--- who has been gone 2 minutes frees their seat — even from another room.
+-- "Present" still means a heartbeat within room_presence_grace(); a screen
+-- that has been gone 2 minutes frees its seat — even from another room. (A
+-- device only beats for the room page it is showing, so the host walking
+-- from room A to room B frees A's seat two minutes later — exactly when the
+-- OS or the client has let A's socket go.)
 --
 -- room_phones.is_host now means "this member OWNS the room" (the tag the
 -- phone list shows), not "passed the host gate". The gate
@@ -31,48 +36,50 @@
 -- transaction-scoped advisory lock keyed on the OWNER rather than locking the
 -- room row.
 --
--- Dial: room_guest_seats() — swap the constant, nothing else moves.
+-- Dial: room_house_seats() — swap the constant, nothing else moves.
 -- room_seats_per_host() is kept for compatibility but no longer read.
 
 -- ============================================================================
 -- 1. DIAL
 -- ============================================================================
-CREATE OR REPLACE FUNCTION "public"."room_guest_seats"() RETURNS integer
-LANGUAGE sql IMMUTABLE AS $$ SELECT 3 $$;
+-- (An earlier local draft of this migration named the dial room_guest_seats.)
+DROP FUNCTION IF EXISTS "public"."room_guest_seats"();
 
-COMMENT ON FUNCTION "public"."room_guest_seats"() IS
-  'Game Room dial: guest seats per HOST, across every room the host owns (the house model). Host''s own devices are not guests.';
+CREATE OR REPLACE FUNCTION "public"."room_house_seats"() RETURNS integer
+LANGUAGE sql IMMUTABLE AS $$ SELECT 4 $$;
+
+COMMENT ON FUNCTION "public"."room_house_seats"() IS
+  'Game Room dial: seats per HOST across every room the host owns (the house model). A seat is a SCREEN — one present device on one room page = one websocket — the host''s own screens included.';
 
 -- ============================================================================
 -- 2. HOUSE SEATS — the one place the math lives
 -- ============================================================================
--- guests = distinct members present (heartbeat within grace) in ANY room owned
---          by p_owner, excluding the owner.
--- seats  = room_guest_seats()
--- open   = seats − guests
+-- used  = present phone rows (heartbeat within grace) in ANY room owned by
+--         p_owner — every screen, the owner's included. One row = one socket.
+-- seats = room_house_seats()
+-- open  = seats − used
 CREATE OR REPLACE FUNCTION "public"."house_seats"("p_owner" uuid)
 RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
-  WITH guests AS (
-    SELECT DISTINCT rp.member_id
+  WITH screens AS (
+    SELECT rp.id
       FROM room_phones rp
       JOIN rooms r ON r.id = rp.room_id
      WHERE r.host_member_id = p_owner
-       AND rp.member_id <> p_owner
        AND rp.last_seen_at > now() - room_presence_grace()
   )
   SELECT jsonb_build_object(
-    'guests', (SELECT count(*)::int FROM guests),
-    'seats',  room_guest_seats(),
-    'open',   room_guest_seats() - (SELECT count(*)::int FROM guests)
+    'used',  (SELECT count(*)::int FROM screens),
+    'seats', room_house_seats(),
+    'open',  room_house_seats() - (SELECT count(*)::int FROM screens)
   )
 $$;
 
 -- room_seats keeps its name and callers (room_state, the pages) but now
 -- reports the ROOM's devices alongside its OWNER's house picture.
 --   devices = rows in this room seen within the grace window
---   guests / seats / open = the owner's house (see house_seats)
+--   used / seats / open = the owner's house (see house_seats)
 CREATE OR REPLACE FUNCTION "public"."room_seats"("p_room_id" uuid)
 RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
@@ -138,12 +145,10 @@ BEGIN
 END;
 $$;
 
--- join_room — the caller's DEVICE takes a seat in the OWNER's house.
---   • the owner's own devices never consume a guest seat;
---   • a member already present in another of the owner's rooms is already
---     counted — joining a second room costs nothing;
---   • otherwise the house must have an open seat.
--- Same device again = a refresh, not a new seat.
+-- join_room — the caller's DEVICE takes a seat in the OWNER's house. Every
+-- screen is a seat — the owner's second device, a guest's second room, all
+-- of it — because every one of them is a websocket. The only free path is
+-- the same device re-opening the same room (a refresh, not a new screen).
 CREATE OR REPLACE FUNCTION "public"."join_room"(
   "p_join_token" uuid,
   "p_device_id"  uuid
@@ -156,7 +161,6 @@ DECLARE
   v_room     rooms%ROWTYPE;
   v_phone    room_phones%ROWTYPE;
   v_is_owner boolean;
-  v_counted  boolean;
   v_seats    jsonb;
 BEGIN
   v_member := room_current_member();
@@ -193,25 +197,14 @@ BEGIN
     RETURN jsonb_build_object('ok', true, 'room_id', v_room.id, 'phone_id', v_phone.id, 'rejoined', true);
   END IF;
 
-  IF NOT v_is_owner THEN
-    -- Already a counted guest of this house (present in another of its rooms)?
-    SELECT EXISTS (
-      SELECT 1 FROM room_phones rp
-        JOIN rooms r ON r.id = rp.room_id
-       WHERE r.host_member_id = v_room.host_member_id
-         AND rp.member_id = v_member.id
-         AND rp.last_seen_at > now() - room_presence_grace()
-    ) INTO v_counted;
-
-    IF NOT v_counted THEN
-      v_seats := house_seats(v_room.host_member_id);
-      IF (v_seats->>'open')::int <= 0 THEN
-        RETURN jsonb_build_object(
-          'ok', false, 'reason', 'full', 'seats', room_seats(v_room.id),
-          'hint', 'a seat frees up when one of the host''s guests leaves'
-        );
-      END IF;
-    END IF;
+  -- A new screen in the house: is there a seat for it? (The owner's own
+  -- devices are screens too — the bill does not know whose they are.)
+  v_seats := house_seats(v_room.host_member_id);
+  IF (v_seats->>'open')::int <= 0 THEN
+    RETURN jsonb_build_object(
+      'ok', false, 'reason', 'full', 'seats', room_seats(v_room.id),
+      'hint', 'a seat frees up when a screen in the host''s house closes'
+    );
   END IF;
 
   INSERT INTO room_phones (room_id, member_id, device_id, display_name, is_host)
@@ -261,15 +254,15 @@ $$;
 -- ============================================================================
 -- 4. GRANTS
 -- ============================================================================
-REVOKE EXECUTE ON FUNCTION "public"."room_guest_seats"()   FROM PUBLIC, "anon";
+REVOKE EXECUTE ON FUNCTION "public"."room_house_seats"()   FROM PUBLIC, "anon";
 REVOKE EXECUTE ON FUNCTION "public"."house_seats"(uuid)    FROM PUBLIC, "anon";
-GRANT  EXECUTE ON FUNCTION "public"."room_guest_seats"()   TO "authenticated";
+GRANT  EXECUTE ON FUNCTION "public"."room_house_seats"()   TO "authenticated";
 GRANT  EXECUTE ON FUNCTION "public"."house_seats"(uuid)    TO "authenticated";
 
 COMMENT ON FUNCTION "public"."house_seats"(uuid) IS
-  'Game Room house model: {guests, seats, open} for a host — distinct people present across every room the host owns, excluding the host. The ONLY seat math.';
+  'Game Room house model: {used, seats, open} for a host — present SCREENS (phone rows) across every room the host owns, the host''s own included. The ONLY seat math.';
 COMMENT ON FUNCTION "public"."room_seats"(uuid) IS
-  'Game Room: the room''s present device count + its OWNER''s house picture ({devices, guests, seats, open}). What room_state and the seat counter read.';
+  'Game Room: the room''s present device count + its OWNER''s house picture ({devices, used, seats, open}). What room_state and the seat counter read.';
 COMMENT ON FUNCTION "public"."join_room"(uuid, uuid) IS
-  'Game Room (house model): the caller''s DEVICE takes a seat in the room owner''s house — distinct people across all the owner''s rooms, room_guest_seats() max. Owner''s devices are free; a person already present in another of the owner''s rooms is already counted. Same device = refresh. Returns {ok, reason?/room_id, phone_id, rejoined}.';
+  'Game Room (house model): the caller''s DEVICE takes a seat in the room owner''s house — every present screen across all the owner''s rooms counts (the owner''s too), room_house_seats() max. Same device in the same room = refresh. Returns {ok, reason?/room_id, phone_id, rejoined}.';
 COMMENT ON COLUMN "public"."room_phones"."is_host" IS 'Whether this member OWNS the room (rooms.host_member_id). The phone list''s "host" tag. Not the host gate.';

@@ -44,10 +44,10 @@ export function InviteSheet({ open, onOpenChange, joinToken, seats }: InviteShee
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{full ? 'No guest seats open' : 'Invite to this room'}</SheetTitle>
+          <SheetTitle>{full ? 'No seats open' : 'Invite to this room'}</SheetTitle>
           <SheetDescription>
             {full
-              ? `All ${seats.seats} of the host's guest seats are taken, across every room they have open. A seat comes back when a guest leaves.`
+              ? `All ${seats.seats} of the host's seats are taken, across every room they have open — their own screens included. A seat comes back when a screen closes.`
               : `${emptySeatsLabel(seats.open)}. Scan the code or send the link — they sign in and they're in.`}
           </SheetDescription>
         </SheetHeader>

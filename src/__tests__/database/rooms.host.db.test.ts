@@ -11,7 +11,7 @@
  * switch leaves the old game intact.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 import {
@@ -45,6 +45,11 @@ describe('host controls + reads (Unit 1)', () => {
     player = await createAuthenticatedClient('player');
     operatorMemberId = (await getCurrentMemberId(operator))!;
     playerMemberId = (await getCurrentMemberId(player))!;
+  });
+
+  // House seats span every room a host owns — start each test with an empty house.
+  beforeEach(async () => {
+    await deleteRoomsHostedBy([operatorMemberId, playerMemberId]);
   });
 
   afterAll(async () => {
@@ -158,7 +163,7 @@ describe('host controls + reads (Unit 1)', () => {
     const byToken = await rpc(player, 'get_room_by_token', { p_join_token: room.join_token });
     expect(byToken.found).toBe(true);
     expect(byToken.room).toMatchObject({ id: room.room_id, game_key: 'test_game', game_tables: [GOOD_TABLE], shared: true, host_member_id: operatorMemberId });
-    expect(byToken.seats).toEqual({ devices: 2, guests: 1, seats: 3, open: 2 });
+    expect(byToken.seats).toEqual({ devices: 2, used: 2, seats: 4, open: 2 });
     expect(byToken.phones).toHaveLength(2);
     const me = byToken.phones.find((p: Jsonb) => p.id === joined.phone_id);
     expect(me).toMatchObject({ member_id: playerMemberId, is_host: false, is_present: true });

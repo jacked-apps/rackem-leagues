@@ -27,13 +27,14 @@ export interface RoomRow {
 
 /**
  * The seat picture (house model): seats belong to the room's OWNER and span
- * every room they own. `devices` is THIS room's present devices; `guests` /
- * `seats` / `open` are the owner's house — distinct people present across all
- * their rooms, the dial (3), and what is left.
+ * every room they own. A seat is a SCREEN — one present device on one room
+ * page, one websocket — the owner's screens included. `devices` is THIS
+ * room's present screens; `used` / `seats` / `open` are the owner's house:
+ * screens present across all their rooms, the dial (4), and what is left.
  */
 export interface RoomSeats {
   devices: number;
-  guests: number;
+  used: number;
   seats: number;
   open: number;
 }

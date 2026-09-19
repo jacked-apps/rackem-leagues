@@ -24,7 +24,7 @@ const STATE: RoomState = {
     id: 'r1', host_member_id: 'm1', game_key: 'coin_flip', game_tables: ['room_coin_flips'],
     settings: {}, shared: true, join_token: 'tok', last_activity_at: '', created_at: '',
   },
-  seats: { devices: 2, guests: 1, seats: 3, open: 2 },
+  seats: { devices: 2, used: 2, seats: 4, open: 2 },
   phones: [
     { id: 'p1', member_id: 'm1', device_id: 'host-dev', display_name: 'Ed', is_host: true, is_present: true, last_seen_at: '', joined_at: '' },
   ],
@@ -50,7 +50,7 @@ describe('JoinRoomPage', () => {
   it('shows the game, the host, the seats, and one Join button', () => {
     renderAt();
     expect(screen.getByText('Coin flip')).toBeInTheDocument();
-    expect(screen.getByText(/Ed's room · 2 here · 2 guest seats open/)).toBeInTheDocument();
+    expect(screen.getByText(/Ed's room · 2 here · 2 seats open/)).toBeInTheDocument();
     expect(screen.getAllByRole('button')).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Join' })).toBeInTheDocument();
   });
@@ -72,14 +72,14 @@ describe('JoinRoomPage', () => {
 
   it('full → the house-seats explanation with the server hint; Join gives way to it', async () => {
     mockJoin.mockResolvedValue({
-      ok: false, reason: 'full', seats: { devices: 4, guests: 3, seats: 3, open: 0 },
-      hint: "a seat frees up when one of the host's guests leaves",
+      ok: false, reason: 'full', seats: { devices: 4, used: 4, seats: 4, open: 0 },
+      hint: "a seat frees up when a screen in the host's house closes",
     });
     renderAt();
     fireEvent.click(screen.getByRole('button', { name: 'Join' }));
     await waitFor(() =>
       expect(
-        screen.getByText(/guest seats are all taken — a seat frees up when one of the host's guests leaves\./)
+        screen.getByText(/seats are all taken — a seat frees up when a screen in the host's house closes./)
       ).toBeInTheDocument()
     );
     expect(screen.queryByRole('button', { name: 'Join' })).toBeNull();

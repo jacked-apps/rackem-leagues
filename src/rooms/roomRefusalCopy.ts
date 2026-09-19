@@ -33,7 +33,7 @@ export function roomRefusalCopy(r: RoomRefused): string {
     case 'not_shared':
       return 'This room is private. The host can open the door to invite people.';
     case 'full':
-      return `The host's guest seats are all taken — ${r.hint ?? 'a seat frees up when one of their guests leaves'}.`;
+      return `The host's seats are all taken — ${r.hint ?? "a seat frees up when a screen in the host's house closes"}.`;
     case 'not_in_room':
       return "This device isn't in the room yet.";
     case 'not_host':

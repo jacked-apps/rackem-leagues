@@ -65,9 +65,10 @@ self-scoring (R4 is a fence, not a wall); first tenant = two-phone coin flip.
 - R6 shared requires host gate; interim = `role in (league_operator, developer)`
 - R7 free → shared in place
 - R8–R10 seats — **HOUSE model since 2026-09-19 (Unit 8):** seats belong to the
-  room's OWNER and span every room they own; open = 3 − distinct people
-  present across those rooms; derived; door-only; owner's devices free; a
-  guest in two rooms or on two devices is one; a host-friend is just a guest.
+  room's OWNER and span every room they own; a SEAT IS A SCREEN (one present
+  phone row = one websocket), the owner's own included; open = 4 − screens
+  present across those rooms; derived; door-only; a host-friend is just a
+  screen in your house.
   (Was: distinct hosts present × 4 − devices present, per room.)
 - R11 join by link/QR; must be signed in (registered member); name from profile
 - R12 people here / empty seats; tap → QR + link
@@ -182,9 +183,11 @@ room A never hears room B; delete leaves no rows; league engine untouched.
 - **Seats belong to the house, not the room** (2026-09-19, Unit 8). The
   per-room rule let one paid host stand at twenty doors for a second each and
   leave forty people on sockets; hosts also stacked (5 in a room = 20 seats).
-  Now `house_seats(owner)` is the ONLY seat math: distinct guests present
-  across every room the owner has, `room_guest_seats()` (3) max; the owner's
-  devices are free; only the owner funds anything. `join_room` takes a
+  Now `house_seats(owner)` is the ONLY seat math: present SCREENS (phone rows)
+  across every room the owner has — the owner's own included, because Supabase
+  bills per connection and does not know whose it is ("if they count it we
+  count it"; thirty cheap tablets are thirty seats) — `room_house_seats()` (4)
+  max; only the owner funds anything. `join_room` takes a
   per-owner advisory lock so two doors of one house cannot both give away
   the last seat. `is_host` on a phone row now means "owns the room" (the
   list tag), not "passed the gate". Room count is irrelevant to cost → no
@@ -774,8 +777,8 @@ in the indexes.
 
 - [x] **Unit 8: The HOUSE model — seats belong to the host, not the room** — built 2026-09-19
 
-**Goal:** One paid host = at most 1 + 3 concurrent screens, wherever their
-guests are. Room count irrelevant to cost.
+**Goal:** One paid host = at most 4 concurrent connections, wherever their
+screens are and whoever is holding them. Room count irrelevant to cost.
 
 **Requirements:** R8, R9 as superseded 2026-09-19 (origin doc); R10 unchanged
 
@@ -783,37 +786,46 @@ guests are. Room count irrelevant to cost.
 
 **Files:**
 - Create: `supabase/migrations/20260919182053_room_house_seats.sql`
-  (`room_guest_seats()` dial, `house_seats(owner)`, `room_seats` reshaped,
+  (`room_house_seats()` dial, `house_seats(owner)`, `room_seats` reshaped,
   `create_room` / `join_room` / `set_room_shared` replaced)
-- Modify: `src/api/queries/rooms.ts` (`RoomSeats` = `{devices, guests, seats,
+- Modify: `src/api/queries/rooms.ts` (`RoomSeats` = `{devices, used, seats,
   open}`), `src/rooms/seatCopy.ts`, `InviteSheet.tsx`, `roomRefusalCopy.ts`,
   `SeatCounter.tsx` header; `src/types/database.types.ts` regenerated
-- Test: `src/__tests__/database/rooms.join.db.test.ts` (five house tests
+- Test: `src/__tests__/database/rooms.join.db.test.ts` (six house tests
   replace the three room-seat tests; `captain` + `owner` clients added; a
-  raw-inserted "stranger" phone row is the fourth distinct guest;
-  `beforeEach` empties the house because seats now span rooms),
-  `rooms.create/host/queries.db.test.ts` seat shapes, the unit fixtures
+  raw-inserted "stranger" phone row is the fourth screen; `beforeEach`
+  empties the house because seats now span rooms — likewise in
+  `rooms.host/queries` and `roomCoinFlips` db tests), seat shapes in the
+  sibling db tests and the unit fixtures
 
 **Approach:**
-- `house_seats(owner)` = distinct `member_id`s with a present phone row in any
-  room whose `host_member_id = owner`, excluding the owner. `open = 3 − that`.
-- `join_room`: owner's devices skip the check; a member already present in
-  another of the owner's rooms is already counted (free); else the house
-  must have an open seat. Lock = `pg_advisory_xact_lock(hashtext('room_house:'
+- `house_seats(owner)` = present phone rows in any room whose
+  `host_member_id = owner` — every screen, the owner's included.
+  `open = 4 − that`. A first draft counted distinct *people* and let the
+  owner's screens ride free; Ed killed it the same day: "if they count it
+  we should count it" — a host with thirty cheap tablets must be thirty
+  seats. A seat is a screen because a connection is a screen.
+- `join_room`: same device re-opening the same room is a refresh (free);
+  every other screen — the owner's second device, a guest's second room —
+  needs an open seat. Lock = `pg_advisory_xact_lock(hashtext('room_house:'
   || owner))`, not the room row — the race is across doors of one house.
 - `is_host` on `room_phones` = "owns the room". `set_room_shared` no longer
   rewrites it. The shared-room GATE (`room_member_is_host`) is unchanged.
-- `full` hint: "a seat frees up when one of the host's guests leaves".
+- `full` hint: "a seat frees up when a screen in the host's house closes".
 - Realtime is filtered per room, so a join in room B leaves room A's counter
   up to 15 s stale (poll). Accepted; a house-level channel is a later nicety.
+- Known small leak: two TABS of one device on the same room = two sockets,
+  one row (device id is per browser). Accepted for now.
 
 **Test scenarios (db, all green):**
-- Three distinct people fill the house; the fourth is `full` with the picture.
-- Owner's second device is free; a guest's second device is the same person.
-- Guests in room A count against room B; the same guest in both is one; a
-  fourth person is refused at EITHER door.
-- A host-friend is just a guest, and their own house is untouched.
-- `is_host` = owns; an aged-out guest frees their house seat.
+- Host's screen + three more fill the house; the fifth is `full` with the picture.
+- The host's own 2nd/3rd/4th screens are seats — "thirty tablets get no pass".
+- A guest's second screen is a second seat; the same screen re-opening the
+  same room is free.
+- Screens in room A count against room B; ONE device in both rooms is TWO
+  seats; a fifth is refused at EITHER door.
+- A host-friend is just a screen in your house; their own house is untouched.
+- `is_host` = owns; an aged-out screen frees its house seat.
 
 ## System-Wide Impact
 

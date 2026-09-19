@@ -4243,13 +4243,13 @@ export type Database = {
         Args: { p_member: Database["public"]["Tables"]["members"]["Row"] }
         Returns: string
       }
-      room_guest_seats: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
       room_heartbeat: {
         Args: { p_device_id: string; p_room_id: string }
         Returns: Json
+      }
+      room_house_seats: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       room_member_is_host: {
         Args: { p_member_id: string }

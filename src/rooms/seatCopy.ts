@@ -1,6 +1,6 @@
 /**
  * @fileoverview The seat picture as words — shared by the seat counter, the
- * invite sheet, and the join page so "3 here · 1 guest seat open" reads the
+ * invite sheet, and the join page so "3 here · 1 seat open" reads the
  * same everywhere it appears.
  *
  * House model (Unit 8): seats belong to the room's HOST and span every room
@@ -9,10 +9,10 @@
  */
 import type { RoomSeats } from '@/api/queries/rooms';
 
-/** "1 guest seat open" / "2 guest seats open" / "no guest seats open". */
+/** "1 seat open" / "2 seats open" / "no seats open". */
 export function emptySeatsLabel(open: number): string {
-  if (open <= 0) return 'no guest seats open';
-  return `${open} guest seat${open === 1 ? '' : 's'} open`;
+  if (open <= 0) return 'no seats open';
+  return `${open} seat${open === 1 ? '' : 's'} open`;
 }
 
 /**

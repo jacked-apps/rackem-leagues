@@ -12,7 +12,7 @@
  * `player@test.com` joins. Each is one phone; the flip is between the two.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 import {
@@ -37,6 +37,12 @@ describe('room_coin_flips + RPCs (Unit 6)', () => {
     player = await createAuthenticatedClient('player');
     operatorMemberId = (await getCurrentMemberId(operator))!;
     playerMemberId = (await getCurrentMemberId(player))!;
+  });
+
+  // House seats (Unit 8) span every room a host owns; each flip test opens a
+  // fresh 2-screen room, so start each with an empty house.
+  beforeEach(async () => {
+    await deleteRoomsHostedBy([operatorMemberId, playerMemberId]);
   });
 
   afterAll(async () => {
@@ -150,7 +156,9 @@ describe('room_coin_flips + RPCs (Unit 6)', () => {
     })).toMatchObject({ ok: false, reason: 'phone_not_in_room' });
 
     // Two of the operator's phones in room a would be fine — but the PLAYER
-    // starting a flip between two phones that are not theirs is not.
+    // starting a flip between two phones that are not theirs is not. (Room b's
+    // two screens are aged out first: the house has 4 seats and a + b fill it.)
+    await executeSql(`UPDATE public.room_phones SET last_seen_at = now() - interval '3 minutes' WHERE room_id = $1`, [b.roomId]);
     const second = await rpc(operator, 'join_room', { p_join_token: (await executeSql(
       `SELECT join_token FROM public.rooms WHERE id = $1`, [a.roomId]))[0].join_token, p_device_id: newDevice() });
     expect(second.ok).toBe(true);

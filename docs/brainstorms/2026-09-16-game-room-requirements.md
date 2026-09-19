@@ -90,25 +90,30 @@ bug, fixed in the room.
 **Seats and joining**
 - R8. ~~Every Game Room member (host) present in a shared room brings three
   guest seats…~~ **SUPERSEDED 2026-09-19 — the HOUSE model.** A host owns a
-  *house*; rooms are doors inside it. The house has **three guest seats**
-  (a dial), and they are spent by **distinct people present across every
-  room the host owns** — not per room, not per device. The same guest in
-  two of the host's rooms is one seat; a guest on phone + tablet is one
-  seat. The host's own devices are never guests. **Only the room's owner
-  funds seats** — a friend who is also a host is simply a guest in your
-  house and spends none of their own. *Ed: "my capacity should envelope my
-  house, not the room."* **Purpose of the cap, sharpened:** under the old
-  rule one host could open a room for Mike + friend, another for Steve +
-  Jim, twenty more — standing at each door for a second — and leave forty
-  people on websockets against the app's connection limit for one payment.
-  Under the house rule one paid host = at most 1 + 3 concurrent screens,
-  and **room count is irrelevant to cost, so it needs no cap.**
+  *house*; rooms are doors inside it. The house has **four seats** (a dial),
+  and **a seat is a screen**: one device on one room page — one websocket —
+  present in *any* room the host owns. **The host's own screens count.**
+  Supabase bills per connection and does not know whose it is, so neither do
+  we: a host with thirty cheap tablets is thirty seats, not one. A guest on
+  phone + tablet is two seats; one device in two of the host's rooms is two
+  seats. **Only the room's owner funds seats** — a friend who is also a host
+  is simply a screen in your house and spends none of their own. *Ed: "my
+  capacity should envelope my house, not the room… if they count it we
+  should count it."* **Purpose of the cap, sharpened:** under the old rule
+  one host could open a room for Mike + friend, another for Steve + Jim,
+  twenty more — standing at each door for a second — and leave forty people
+  on websockets against the app's connection limit for one payment; or hand
+  out tablets to a whole league. Under the house rule one paid host = at
+  most **4 concurrent connections**, and **room count is irrelevant to cost,
+  so it needs no cap.**
 - R9. ~~distinct hosts present × 4, minus devices present~~ **SUPERSEDED
-  2026-09-19:** `open = 3 − distinct guests present across the owner's
-  rooms`. Still derived, never stored. A guest who has been away past the
-  2-minute grace frees their seat, even from another of the host's rooms.
-  The seat counter on any one room shows that room's headcount plus the
-  house's open seats.
+  2026-09-19:** `open = 4 − screens present across the owner's rooms`
+  (present phone rows, owner's included). Still derived, never stored. A
+  screen that has been away past the 2-minute grace frees its seat, even
+  from another of the host's rooms — a device only beats for the page it is
+  showing, so the host walking from room A to room B frees A's seat two
+  minutes later, exactly when A's socket has gone. The seat counter on any
+  one room shows that room's headcount plus the house's open seats.
 - R10. Capacity is checked only when a phone tries to join. Once in, a phone
   is never removed because the count later dropped (a member left, a phone
   went to sleep). The rule means "may one more phone come in," never "must
@@ -350,7 +355,7 @@ whichever game implements them. The room knows nothing about any of it.
 - [Affects R1][Technical] Whether the table-list cap is a database check or a
   client rule; whether the settings slot needs a size cap given every phone
   refetches it on each room-row event.
-- [Affects R8][Product, dial] Three guest seats per member. One constant.
+- [Affects R8][Product, dial] ~~Three guest seats per member~~ → four seats per HOST'S HOUSE, a seat = a screen (2026-09-19). One constant (`room_house_seats()`).
 - [Affects R2][Product, dial] 24-hour inactivity window. One constant.
 
 ## Next Steps

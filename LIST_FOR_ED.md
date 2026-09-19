@@ -212,9 +212,10 @@ from this list when un-gated.
   (the "Rooms" link is in the drawer/sidebar next to Tournaments):
   start a room on one phone, open the door, scan the QR on a second phone
   (signed out → login → lands back on the join page), join, both see "2 here ·
-  2 guest seats open"; open a SECOND room as the same host and check its counter
-  already shows "1 here · 2 guest seats open" (seats are per HOST across rooms —
-  the house model, Unit 8);
+  2 seats open"; open a SECOND room as the same host and check its counter
+  already shows "1 here · 1 seat open" (seats are per HOST across rooms and YOUR
+  screens count too — the house model, Unit 8: 4 seats = 2 of yours + 1 guest
+  + 1 open);
   host ends the room → guest sees "This room has ended" without refreshing.
   Coin flip: guest taps Heads/Tails, host taps Throw, BOTH phones show the same
   face + winner; refresh either — same result.

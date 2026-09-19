@@ -13,7 +13,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 import { supabase } from '@/supabaseClient';
-import { TEST_USERS, createAuthenticatedClient, getCurrentMemberId, closePostgresPool, signOut } from '@/test/dbTestUtils';
+import { TEST_USERS, createAuthenticatedClient, getCurrentMemberId, closePostgresPool, signOut, executeSql } from '@/test/dbTestUtils';
 import { getMyRooms, getRoom, getRoomByToken } from '@/api/queries/rooms';
 import { createRoomFixtureTables, dropRoomFixtureTables, deleteRoomsHostedBy, newDevice, rpc, createRoomAs } from './roomsFixtures';
 
@@ -52,6 +52,9 @@ describe('room queries (Unit 3)', () => {
     const a = await createRoomAs(operator, { shared: true, game: 'race' });
     const b = await createRoomAs(operator, { shared: true, game: 'coin_flip' });
     const notMine = await createRoomAs(operator, { shared: true });
+    // The host opened three rooms and walked away — age their screens out so
+    // the player's three screens fit in the 4-seat house.
+    await executeSql(`UPDATE public.room_phones SET last_seen_at = now() - interval '3 minutes' WHERE member_id = $1`, [operatorMemberId]);
 
     // player: two devices in room a, one in room b, none in notMine
     await rpc(supabase, 'join_room', { p_join_token: a.join_token, p_device_id: newDevice() });
@@ -77,7 +80,7 @@ describe('room queries (Unit 3)', () => {
 
     const byId = await getRoom(room.room_id);
     expect(byId?.room.id).toBe(room.room_id);
-    expect(byId?.seats).toEqual({ devices: 1, guests: 0, seats: 3, open: 3 });
+    expect(byId?.seats).toEqual({ devices: 1, used: 1, seats: 4, open: 3 });
     expect(byId?.phones).toHaveLength(1);
     expect(await getRoomByToken(room.join_token)).toEqual(byId);
 
