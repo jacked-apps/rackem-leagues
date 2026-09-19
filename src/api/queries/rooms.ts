@@ -25,10 +25,16 @@ export interface RoomRow {
   created_at: string;
 }
 
-/** Derived seat picture: open = hosts × seats-per-host − devices. */
+/**
+ * The seat picture (house model): seats belong to the room's OWNER and span
+ * every room they own. `devices` is THIS room's present devices; `guests` /
+ * `seats` / `open` are the owner's house — distinct people present across all
+ * their rooms, the dial (3), and what is left.
+ */
 export interface RoomSeats {
   devices: number;
-  hosts: number;
+  guests: number;
+  seats: number;
   open: number;
 }
 

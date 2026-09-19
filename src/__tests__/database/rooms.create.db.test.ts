@@ -64,7 +64,7 @@ describe('create_room (Unit 1)', () => {
       ...over,
     });
 
-  it('a plain player can create a FREE room and becomes its first device (not a host)', async () => {
+  it('a plain player can create a FREE room and becomes its first device — and owns it (is_host)', async () => {
     const r = await create(player);
     expect(r).toMatchObject({ ok: true });
     expect(r.room_id).toBeTruthy();
@@ -79,7 +79,8 @@ describe('create_room (Unit 1)', () => {
     const phones = await executeSql(`SELECT * FROM public.room_phones WHERE room_id = $1`, [r.room_id]);
     expect(phones).toHaveLength(1);
     expect(phones[0].member_id).toBe(playerMemberId);
-    expect(phones[0].is_host).toBe(false);
+    // is_host = OWNS the room (house model, Unit 8) — not the shared-room gate.
+    expect(phones[0].is_host).toBe(true);
     expect(phones[0].display_name.length).toBeGreaterThan(0);
   });
 

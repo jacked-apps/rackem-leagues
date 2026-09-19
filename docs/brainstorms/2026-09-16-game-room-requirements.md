@@ -88,17 +88,27 @@ bug, fixed in the room.
   channel at that moment.)
 
 **Seats and joining**
-- R8. Every **Game Room member** (host) present in a shared room brings three
-  guest seats (four devices per host, including their own). Two hosts
-  present = eight devices. A signed-in account that does not hold membership
-  is a guest. Three-per-host is a starting dial, not a fixed number; nothing
-  may assume it. **Purpose of the cap:** to stop one membership from serving
-  a whole bar — and, because Supabase bills per connected device, to keep
-  the thing you limit and the thing you pay for the same.
-- R9. Seats are derived, never stored as a number: **distinct hosts present ×
-  4, minus devices present.** A host's second device (phone + tablet) takes a
-  seat and adds no allowance — "my second device is not me and is not a new
-  host." A host joining raises the count; a host leaving lowers it.
+- R8. ~~Every Game Room member (host) present in a shared room brings three
+  guest seats…~~ **SUPERSEDED 2026-09-19 — the HOUSE model.** A host owns a
+  *house*; rooms are doors inside it. The house has **three guest seats**
+  (a dial), and they are spent by **distinct people present across every
+  room the host owns** — not per room, not per device. The same guest in
+  two of the host's rooms is one seat; a guest on phone + tablet is one
+  seat. The host's own devices are never guests. **Only the room's owner
+  funds seats** — a friend who is also a host is simply a guest in your
+  house and spends none of their own. *Ed: "my capacity should envelope my
+  house, not the room."* **Purpose of the cap, sharpened:** under the old
+  rule one host could open a room for Mike + friend, another for Steve +
+  Jim, twenty more — standing at each door for a second — and leave forty
+  people on websockets against the app's connection limit for one payment.
+  Under the house rule one paid host = at most 1 + 3 concurrent screens,
+  and **room count is irrelevant to cost, so it needs no cap.**
+- R9. ~~distinct hosts present × 4, minus devices present~~ **SUPERSEDED
+  2026-09-19:** `open = 3 − distinct guests present across the owner's
+  rooms`. Still derived, never stored. A guest who has been away past the
+  2-minute grace frees their seat, even from another of the host's rooms.
+  The seat counter on any one room shows that room's headcount plus the
+  house's open seats.
 - R10. Capacity is checked only when a phone tries to join. Once in, a phone
   is never removed because the count later dropped (a member left, a phone
   went to sleep). The rule means "may one more phone come in," never "must

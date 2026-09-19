@@ -9,7 +9,7 @@
  * supabase singleton, signed in as the test users.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 import { supabase } from '@/supabaseClient';
@@ -33,6 +33,11 @@ describe('room queries (Unit 3)', () => {
     });
     if (error) throw new Error(`player sign-in failed: ${error.message}`);
     playerMemberId = (await getCurrentMemberId(supabase))!;
+  });
+
+  // House seats span every room a host owns — start each test with an empty house.
+  beforeEach(async () => {
+    await deleteRoomsHostedBy([operatorMemberId, playerMemberId]);
   });
 
   afterAll(async () => {
@@ -72,7 +77,7 @@ describe('room queries (Unit 3)', () => {
 
     const byId = await getRoom(room.room_id);
     expect(byId?.room.id).toBe(room.room_id);
-    expect(byId?.seats).toEqual({ devices: 1, hosts: 1, open: 3 });
+    expect(byId?.seats).toEqual({ devices: 1, guests: 0, seats: 3, open: 3 });
     expect(byId?.phones).toHaveLength(1);
     expect(await getRoomByToken(room.join_token)).toEqual(byId);
 

@@ -4072,6 +4072,10 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
+      house_seats: {
+        Args: { p_owner: string }
+        Returns: Json
+      }
       is_conversation_participant: {
         Args: { conv_id: string; uid: string }
         Returns: boolean
@@ -4238,6 +4242,10 @@ export type Database = {
       room_display_name: {
         Args: { p_member: Database["public"]["Tables"]["members"]["Row"] }
         Returns: string
+      }
+      room_guest_seats: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       room_heartbeat: {
         Args: { p_device_id: string; p_room_id: string }

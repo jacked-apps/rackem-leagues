@@ -11,8 +11,10 @@
  * is a dark square on a dark sheet and does not scan.
  *
  * With no open seats the sheet still opens, but the QR gives way to the
- * explanation — another host joining opens more seats. Showing a code nobody
- * can use would just produce a "full" screen on the other phone.
+ * explanation. Seats are the HOST'S, across every room they own (the house
+ * model) — so the full-house copy says where the seats went and how one comes
+ * back. Showing a code nobody can use would just produce a "full" screen on
+ * the other phone.
  */
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -42,10 +44,10 @@ export function InviteSheet({ open, onOpenChange, joinToken, seats }: InviteShee
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{full ? 'No empty seats' : 'Invite to this room'}</SheetTitle>
+          <SheetTitle>{full ? 'No guest seats open' : 'Invite to this room'}</SheetTitle>
           <SheetDescription>
             {full
-              ? `Every seat is taken (${seats.devices} here). Seats come from hosts: another host joining opens more.`
+              ? `All ${seats.seats} of the host's guest seats are taken, across every room they have open. A seat comes back when a guest leaves.`
               : `${emptySeatsLabel(seats.open)}. Scan the code or send the link — they sign in and they're in.`}
           </SheetDescription>
         </SheetHeader>

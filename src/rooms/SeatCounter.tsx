@@ -1,8 +1,8 @@
 /**
- * @fileoverview "3 here · 1 empty seat" — the room's seat picture, and the
+ * @fileoverview "3 here · 1 guest seat open" — the room's seat picture, and the
  * door to inviting. Tapping it is HOW you invite (R12): the tap opens the QR +
- * link. With no seats left, the same tap still opens and explains that
- * another host joining opens more.
+ * link. With no seats left, the same tap still opens and explains where the
+ * seats went — they are the HOST'S, across every room they own (house model).
  *
  * On a free room (`shared=false`) there is nothing to invite anyone to yet,
  * so the copy says so; the host's tap offers to open the door, a guest's tap

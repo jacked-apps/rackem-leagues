@@ -53,7 +53,7 @@ function state(over: Partial<RoomState['room']> = {}, phones = [HOST, GUEST]): R
       id: 'r1', host_member_id: 'm1', game_key: 'fake_game', game_tables: ['room_fakes'],
       settings: { ready: true }, shared: true, join_token: 'tok', last_activity_at: '', created_at: '', ...over,
     },
-    seats: { devices: phones.length, hosts: 1, open: 4 - phones.length },
+    seats: { devices: phones.length, guests: phones.length - 1, seats: 3, open: 4 - phones.length },
     phones,
   };
 }

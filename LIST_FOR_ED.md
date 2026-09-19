@@ -203,7 +203,7 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
-- **Game Room** (`feat/game-room` — ALL 7 UNITS BUILT, incl. the two-phone coin
+- **Game Room** (`feat/game-room` — ALL 8 UNITS BUILT, incl. the two-phone coin
   flip) — gated in FOUR places, one condition: `<NonProdGate>` on the three
   routes in `src/navigation/NavRoutes.tsx` (`rooms`, `rooms/join/:joinToken`,
   `rooms/:roomId`) + `!isProduction &&` on the "Rooms" link in
@@ -211,7 +211,10 @@ from this list when un-gated.
   `src/navigation/roomsGate.test.tsx` pins that all four hide together. Verify on staging
   (the "Rooms" link is in the drawer/sidebar next to Tournaments):
   start a room on one phone, open the door, scan the QR on a second phone
-  (signed out → login → lands back on the join page), join, both see "2 here";
+  (signed out → login → lands back on the join page), join, both see "2 here ·
+  2 guest seats open"; open a SECOND room as the same host and check its counter
+  already shows "1 here · 2 guest seats open" (seats are per HOST across rooms —
+  the house model, Unit 8);
   host ends the room → guest sees "This room has ended" without refreshing.
   Coin flip: guest taps Heads/Tails, host taps Throw, BOTH phones show the same
   face + winner; refresh either — same result.

@@ -8,7 +8,7 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **STATUS (2026-09-16): ALL SEVEN UNITS BUILT** on branch `feat/game-room`,
+> **STATUS (2026-09-19): ALL EIGHT UNITS BUILT** (7 + the house-model rework) on branch `feat/game-room`,
 > **GATED** non-production (routes + both nav doors behind `!isProduction`).
 > Next: Ed reviews on staging (checklist in `LIST_FOR_ED.md` → Gated section),
 > then un-gate by removing `NonProdGate` from the three `rooms/**` routes AND
@@ -64,8 +64,11 @@ self-scoring (R4 is a fence, not a wall); first tenant = two-phone coin flip.
 - R5 free = not shared = no channel, otherwise identical
 - R6 shared requires host gate; interim = `role in (league_operator, developer)`
 - R7 free → shared in place
-- R8–R10 seats: distinct hosts present × 4 − devices present; derived;
-  door-only; a host's second device takes a seat and adds no allowance
+- R8–R10 seats — **HOUSE model since 2026-09-19 (Unit 8):** seats belong to the
+  room's OWNER and span every room they own; open = 3 − distinct people
+  present across those rooms; derived; door-only; owner's devices free; a
+  guest in two rooms or on two devices is one; a host-friend is just a guest.
+  (Was: distinct hosts present × 4 − devices present, per room.)
 - R11 join by link/QR; must be signed in (registered member); name from profile
 - R12 people here / empty seats; tap → QR + link
 - R13 presence = `room_phones` row (one per **device** per room) + heartbeat
@@ -176,6 +179,16 @@ room A never hears room B; delete leaves no rows; league engine untouched.
   device is "not me" for allowance and "one more screen" for seats, so the
   cap and the bill move together. `display_name` is copied from the
   profile at join. `last_seen_at` is the heartbeat; present = seen within
+- **Seats belong to the house, not the room** (2026-09-19, Unit 8). The
+  per-room rule let one paid host stand at twenty doors for a second each and
+  leave forty people on sockets; hosts also stacked (5 in a room = 20 seats).
+  Now `house_seats(owner)` is the ONLY seat math: distinct guests present
+  across every room the owner has, `room_guest_seats()` (3) max; the owner's
+  devices are free; only the owner funds anything. `join_room` takes a
+  per-owner advisory lock so two doors of one house cannot both give away
+  the last seat. `is_host` on a phone row now means "owns the room" (the
+  list tag), not "passed the gate". Room count is irrelevant to cost → no
+  room cap. Ed: "it's the only way to prohibit abuse."
   the grace window. The room row's `last_activity_at` is bumped by the same
   heartbeat RPC, so activity is room-owned (R2) and free rooms are never
   swept mid-play.
@@ -756,6 +769,51 @@ in the indexes.
 **Verification:**
 - Production build shows no Game Room door; staging shows all of them.
 - TOC "Last Updated" and every new file listed; migration version check clean.
+
+### Phase E — after Ed's first review (2026-09-19)
+
+- [x] **Unit 8: The HOUSE model — seats belong to the host, not the room** — built 2026-09-19
+
+**Goal:** One paid host = at most 1 + 3 concurrent screens, wherever their
+guests are. Room count irrelevant to cost.
+
+**Requirements:** R8, R9 as superseded 2026-09-19 (origin doc); R10 unchanged
+
+**Dependencies:** Units 1, 3, 5
+
+**Files:**
+- Create: `supabase/migrations/20260919182053_room_house_seats.sql`
+  (`room_guest_seats()` dial, `house_seats(owner)`, `room_seats` reshaped,
+  `create_room` / `join_room` / `set_room_shared` replaced)
+- Modify: `src/api/queries/rooms.ts` (`RoomSeats` = `{devices, guests, seats,
+  open}`), `src/rooms/seatCopy.ts`, `InviteSheet.tsx`, `roomRefusalCopy.ts`,
+  `SeatCounter.tsx` header; `src/types/database.types.ts` regenerated
+- Test: `src/__tests__/database/rooms.join.db.test.ts` (five house tests
+  replace the three room-seat tests; `captain` + `owner` clients added; a
+  raw-inserted "stranger" phone row is the fourth distinct guest;
+  `beforeEach` empties the house because seats now span rooms),
+  `rooms.create/host/queries.db.test.ts` seat shapes, the unit fixtures
+
+**Approach:**
+- `house_seats(owner)` = distinct `member_id`s with a present phone row in any
+  room whose `host_member_id = owner`, excluding the owner. `open = 3 − that`.
+- `join_room`: owner's devices skip the check; a member already present in
+  another of the owner's rooms is already counted (free); else the house
+  must have an open seat. Lock = `pg_advisory_xact_lock(hashtext('room_house:'
+  || owner))`, not the room row — the race is across doors of one house.
+- `is_host` on `room_phones` = "owns the room". `set_room_shared` no longer
+  rewrites it. The shared-room GATE (`room_member_is_host`) is unchanged.
+- `full` hint: "a seat frees up when one of the host's guests leaves".
+- Realtime is filtered per room, so a join in room B leaves room A's counter
+  up to 15 s stale (poll). Accepted; a house-level channel is a later nicety.
+
+**Test scenarios (db, all green):**
+- Three distinct people fill the house; the fourth is `full` with the picture.
+- Owner's second device is free; a guest's second device is the same person.
+- Guests in room A count against room B; the same guest in both is one; a
+  fourth person is refused at EITHER door.
+- A host-friend is just a guest, and their own house is untouched.
+- `is_host` = owns; an aged-out guest frees their house seat.
 
 ## System-Wide Impact
 

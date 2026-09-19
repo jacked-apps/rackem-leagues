@@ -36,7 +36,7 @@ const STATE: RoomState = {
     id: 'r1', host_member_id: 'm1', game_key: 'coin_flip', game_tables: ['room_coin_flips'],
     settings: {}, shared: true, join_token: 'tok', last_activity_at: '', created_at: '',
   },
-  seats: { devices: 1, hosts: 1, open: 3 },
+  seats: { devices: 1, guests: 0, seats: 3, open: 3 },
   phones: [],
 };
 
