@@ -85,24 +85,26 @@ describe('PlayersChip', () => {
     expect(screen.getByText('away')).toBeInTheDocument();
   });
 
-  it('shared room: the panel offers the invite and reports the house seats', () => {
+  it('shared room: the panel offers the invite and does NOT repeat the seat count', () => {
     renderChip();
     openPanel();
-    expect(screen.getByText(/2 seats open in your house/)).toBeInTheDocument();
+    // The count is on the chip the user just tapped; twice on one screen was
+    // the thing Ed flagged.
+    expect(screen.queryByText(/seats open/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Invite someone' }));
     expect(props.onInvite).toHaveBeenCalledTimes(1);
   });
 
-  it("a guest sees the host's seats, not their own", () => {
+  it('a guest gets the same panel and the same invite', () => {
     renderChip({ isHost: false, myPhoneId: 'p2' });
     openPanel();
-    expect(screen.getByText(/2 seats open in the host's house/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Invite someone' })).toBeInTheDocument();
   });
 
   it('free room: the host is offered the door, a guest is not', () => {
     renderChip({ shared: false, phones: [ED] });
     openPanel();
-    expect(screen.getByText(/This room is private/)).toBeInTheDocument();
+    expect(screen.getByText(/Private — one screen only/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Open to others' }));
     expect(props.onOpenDoor).toHaveBeenCalledTimes(1);
 

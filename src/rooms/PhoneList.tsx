@@ -31,7 +31,7 @@ interface PhoneListProps {
 
 export function PhoneList({ phones, myPhoneId, onRemove }: PhoneListProps) {
   if (phones.length === 0) {
-    return <p className="px-1 py-2 text-sm text-muted-foreground">Nobody here yet.</p>;
+    return <p className="px-1 py-1 text-sm text-muted-foreground">Nobody here yet.</p>;
   }
 
   return (
@@ -44,7 +44,7 @@ export function PhoneList({ phones, myPhoneId, onRemove }: PhoneListProps) {
         ].filter(Boolean) as string[];
 
         return (
-          <li key={p.id} className="flex items-center justify-between gap-2 py-2">
+          <li key={p.id} className="flex items-center justify-between gap-2 py-1">
             <span className={p.is_present ? 'truncate' : 'truncate text-muted-foreground'}>
               {p.display_name}
             </span>
@@ -56,7 +56,7 @@ export function PhoneList({ phones, myPhoneId, onRemove }: PhoneListProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0"
+                  className="h-6 w-6 p-0"
                   aria-label={`Remove ${p.display_name} from the room`}
                   onClick={() => onRemove(p)}
                 >

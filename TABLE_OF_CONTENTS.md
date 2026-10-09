@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-10-09 (Game Room UI pass from Ed's first two-window review: the seat line + always-open player list collapsed into one `PlayersChip` ("Players 2 · 1 open", tap → list + invite + the host's per-row remove); `SeatCounter` deleted; new `remove_room_phone` RPC — frees the seat at once, not a ban. 12 chip tests + 3 db tests.)
+> **Last Updated**: 2026-10-09 (Game Room UI pass from Ed's first two-window review: the seat line + always-open player list collapsed into one compact `PlayersChip` ("Players 2 · 1 open", tap → tight list + invite + the host's per-row remove; seat count shown once, not twice); `SeatCounter` deleted; new `remove_room_phone` RPC — frees the seat at once, not a ban. 12 chip tests + 3 db tests.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -1142,7 +1142,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `JoinRoomPage.tsx` - `/rooms/join/:joinToken` (GATED, member route = the sign-in funnel): `get_room_by_token` → game + host + seat line → one Join → `join_room(token, deviceId)` → navigate into the room. Refusals (`full`, `not_shared`) are in-page sentences; a gone room → `RoomEnded`
 - `JoinRoomPage.test.tsx` - Card + single button; Join calls with token + device and navigates; gone → ended; `full` copy with hint replaces the button; `not_shared` copy
 - `RoomEnded.tsx` - The one "This room has ended" screen (closed / swept / stale link), with a Back-to-rooms link; optional `detail` override
-- `PlayersChip.tsx` - The room's ONE line about who is here: a small `Players 2 · 1 open` chip, tap → Popover panel with the screen list, the host's per-row × (remove), and the invite (or "Open to others" on a free room). Replaced the seat-counter button + always-open list, which said the same thing twice and left a phone no room for the game (Ed, 2026-10-09). `Players N` = THIS room; `N open` = the HOST'S house
+- `PlayersChip.tsx` - The room's ONE line about who is here: a small `Players 2 · 1 open` chip, tap → compact Popover panel with the screen list, the host's per-row × (remove), and the invite (or "Open to others" on a free room). Chip is `h-7 text-xs`; rows are `py-1`; the panel does NOT repeat the seat count (it is on the chip you just tapped). Replaced the seat-counter button + always-open list, which said the same thing twice and left a phone no room for the game (Ed, 2026-10-09). `Players N` = THIS room; `N open` = the HOST'S house
 - `PlayersChip.test.tsx` - 12 tests: label for every seat state (incl. "full" and a free room); panel lists screens with their words; invite + door taps; host can remove others but never their own row; a guest gets no remove at all
 - `seatCopy.ts` - `emptySeatsLabel`, `seatLine` (join page), `playersChipLabel` (the chip) — the seat picture as words, in one place
 - `InviteSheet.tsx` - Bottom sheet: black-on-white QR of the join URL + `CopyLinkButton`. At zero seats the QR gives way to "another host joining opens more"

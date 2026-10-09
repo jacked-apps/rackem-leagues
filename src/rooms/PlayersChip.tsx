@@ -14,18 +14,22 @@
  *   - host only: an × per row to remove that screen
  *   - the invite action, or on a free room the host's "open the door"
  *
+ * The panel does NOT repeat the seat count: it is already on the chip the
+ * user just tapped (Ed, 2026-10-09 — "I don't need to see 3 seats open 2x").
+ *
  * Numbers, precisely: `Players N` is THIS room's present screens — what a
  * person at the table counts. "· N open" is the HOST'S house (seats span
  * every room they own, Unit 8), so it is the number that decides whether the
- * next person can get in. They are deliberately different things, and the
- * panel spells that out rather than leaving "2/4" to be misread.
+ * next person can get in. Two different things, which is exactly why the
+ * label is not "2/4" — with a second room open that would read as two free
+ * seats when there might be one.
  */
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { RoomPhone, RoomSeats } from '@/api/queries/rooms';
 import { PhoneList } from './PhoneList';
-import { emptySeatsLabel, playersChipLabel } from './seatCopy';
+import { playersChipLabel } from './seatCopy';
 
 interface PlayersChipProps {
   seats: RoomSeats;
@@ -63,31 +67,31 @@ export function PlayersChip({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" aria-label={`${label} — tap for the list`}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 px-2 text-xs font-normal"
+          aria-label={`${label} — tap for the list`}
+        >
           {label}
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-64 p-3">
+      <PopoverContent align="end" className="w-56 p-2">
         <PhoneList phones={phones} myPhoneId={myPhoneId} onRemove={isHost ? onRemove : undefined} />
 
-        <div className="mt-2 border-t pt-2">
+        {/* The seat count is already in the chip the user just tapped — saying
+            it again here was the same number twice on one screen. */}
+        <div className="mt-1 border-t pt-2">
           {shared ? (
-            <>
-              <p className="text-xs text-muted-foreground">
-                {emptySeatsLabel(seats.open)} in {isHost ? 'your' : "the host's"} house.
-              </p>
-              <Button variant="ghost" size="sm" className="mt-1 h-8 w-full" onClick={act(onInvite)}>
-                Invite someone
-              </Button>
-            </>
+            <Button variant="outline" size="sm" className="w-full" onClick={act(onInvite)}>
+              Invite someone
+            </Button>
           ) : (
             <>
-              <p className="text-xs text-muted-foreground">
-                This room is private — one screen only.
-              </p>
+              <p className="px-1 text-xs text-muted-foreground">Private — one screen only.</p>
               {isHost && (
-                <Button variant="ghost" size="sm" className="mt-1 h-8 w-full" onClick={act(onOpenDoor)}>
+                <Button variant="outline" size="sm" className="mt-2 w-full" onClick={act(onOpenDoor)}>
                   Open to others
                 </Button>
               )}

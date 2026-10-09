@@ -849,7 +849,10 @@ screens are and whoever is holding them. Room count irrelevant to cost.
 
 **Approach:**
 - Popover, not an inline expand — nothing reflows under the thumb that
-  tapped it.
+  tapped it. Sized down after a second look: chip `h-7 text-xs`, rows `py-1`,
+  panel `w-56 p-2`, and the seat count dropped from the panel because it is
+  already on the chip ("I don't need to see 3 seats open 2x"); the invite got
+  the space it freed.
 - **The numbers are two different things, deliberately.** `Players N` is THIS
   room's present screens (what someone at the table counts); `N open` is the
   OWNER'S house (Unit 8), which is what decides whether the next person gets
