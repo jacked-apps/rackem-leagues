@@ -29,7 +29,8 @@ export type RoomRefusal =
   | 'too_many_tables'
   | 'duplicate_table'
   | 'table_reserved'
-  | 'table_not_ready';
+  | 'table_not_ready'
+  | 'is_self';
 
 /** The refused half of any room RPC result. */
 export interface RoomRefused {
@@ -120,4 +121,14 @@ export function setRoomShared(roomId: string, shared: boolean): Promise<RoomOkRe
 /** Host: end the room. Cascade removes phones and every game table's rows. */
 export function closeRoom(roomId: string): Promise<RoomOkResult> {
   return call('close_room', { p_room_id: roomId });
+}
+
+/**
+ * Host: drop one screen from the room. Frees its house seat at once and
+ * clears it from the players list. NOT a ban — see the migration header.
+ * `deviceId` is this device, so the server can refuse "removing yourself"
+ * (leaving is just navigating away).
+ */
+export function removeRoomPhone(phoneId: string, deviceId: string): Promise<RoomOkResult> {
+  return call('remove_room_phone', { p_phone_id: phoneId, p_device_id: deviceId });
 }

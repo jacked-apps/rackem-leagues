@@ -20,6 +20,7 @@ vi.mock('@/api/hooks/useRooms', () => ({
   useSetRoomShared: () => ({ mutateAsync: vi.fn() }),
   useSetRoomGame: () => ({ mutateAsync: vi.fn() }),
   useCloseRoom: () => ({ mutateAsync: vi.fn() }),
+  useRemoveRoomPhone: () => ({ mutateAsync: vi.fn() }),
 }));
 vi.mock('./useRoomRealtime', () => ({ useRoomRealtime: (p: unknown) => mockRealtime(p) }));
 vi.mock('./useRoomHeartbeat', () => ({ useRoomHeartbeat: (...a: unknown[]) => mockHeartbeat(...a) }));
@@ -79,10 +80,9 @@ describe('RoomPage', () => {
     renderRoom();
     expect(screen.getByRole('heading', { name: 'Fake Game' })).toBeInTheDocument();
     expect(screen.getByText('FAKE PLAY host')).toBeInTheDocument();
-    expect(screen.getByText('Ed')).toBeInTheDocument();
-    expect(screen.getByText('you · host')).toBeInTheDocument();
-    expect(screen.getByText('Jack')).toBeInTheDocument();
-    expect(screen.getByText('away')).toBeInTheDocument();
+    // Names live inside the players chip's panel now — PlayersChip.test covers
+    // the list itself; here we only pin that the chip reports this room.
+    expect(screen.getByRole('button', { name: /Players 2/ })).toBeInTheDocument();
     expect(screen.getByText('Live')).toBeInTheDocument();
   });
 
@@ -143,6 +143,6 @@ describe('RoomPage', () => {
     mockUseRoom.mockReturnValue({ data: state({ shared: false }, [HOST]), isLoading: false });
     renderRoom();
     expect(screen.queryByText('Live')).toBeNull();
-    expect(screen.getByRole('button', { name: /open the door to invite/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Players 1/ })).toBeInTheDocument();
   });
 });

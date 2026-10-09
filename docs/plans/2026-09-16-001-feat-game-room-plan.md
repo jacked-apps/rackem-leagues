@@ -8,7 +8,7 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **STATUS (2026-09-19): ALL EIGHT UNITS BUILT** (7 + the house-model rework) on branch `feat/game-room`,
+> **STATUS (2026-10-09): NINE UNITS BUILT** (7 + the house-model rework + the players-chip/remove pass from Ed's first review) on branch `feat/game-room`,
 > **GATED** non-production (routes + both nav doors behind `!isProduction`).
 > Next: Ed reviews on staging (checklist in `LIST_FOR_ED.md` → Gated section),
 > then un-gate by removing `NonProdGate` from the three `rooms/**` routes AND
@@ -826,6 +826,48 @@ screens are and whoever is holding them. Room count irrelevant to cost.
   seats; a fifth is refused at EITHER door.
 - A host-friend is just a screen in your house; their own house is untouched.
 - `is_host` = owns; an aged-out screen frees its house seat.
+
+- [x] **Unit 9: One players chip, and the host's remove** — built 2026-10-09,
+  straight out of Ed's first review on two Chrome windows: *"it looks too busy
+  for a phone… the 2 here 2 seats open then the list of players seems
+  redundant… maybe a small Players 2/4 that always shows with a drop of the
+  list"*, then *"this should be where you can kick people as well."*
+
+**Goal:** The room page says who is here in ONE line, and everything about
+"who is in this room" lives behind that line.
+
+**Files:**
+- Create: `src/rooms/PlayersChip.tsx` + test,
+  `supabase/migrations/20261009175826_room_remove_phone.sql`
+- Modify: `src/rooms/PhoneList.tsx` (optional host-only `onRemove` ×; now
+  rendered only inside the chip's panel), `seatCopy.ts` (+
+  `playersChipLabel`), `RoomPage.tsx`, `roomRefusalCopy.ts` (+ `is_self`),
+  `api/mutations/rooms.ts` + `api/hooks/useRooms.ts`, types regenerated
+- Delete: `src/rooms/SeatCounter.tsx` (its job is the chip's now; its test
+  became `PlayersChip.test.tsx`)
+- Test: `rooms.host.db.test.ts` (+3 for the RPC)
+
+**Approach:**
+- Popover, not an inline expand — nothing reflows under the thumb that
+  tapped it.
+- **The numbers are two different things, deliberately.** `Players N` is THIS
+  room's present screens (what someone at the table counts); `N open` is the
+  OWNER'S house (Unit 8), which is what decides whether the next person gets
+  in. Ed first asked for `Players 2/4`; that would have been a lie the moment
+  the host had a second room open — 2 people here, 4 house seats, but maybe
+  only 1 free. Recommended the honest form and he took it.
+- `remove_room_phone(phone_id, device_id)` deletes the row: seat frees at
+  once, list clears, and the screen's game rows cascade with it. Refuses
+  non-owners and the caller's own device (`is_self`); an already-deleted row
+  returns `ok` + `already_gone` so a double-tap is silent.
+- **Not a ban, on purpose.** The removed member can rejoin with the link they
+  hold. The case this serves is a screen left on a table holding a seat, not
+  a hostile guest. A real block list = a `room_bans` table plus one check in
+  `join_room` — held until Ed asks for it.
+
+**Still open from the same review:** the host's three-button row (Switch game
+/ Open to others / End room) is also a lot of width on a phone. Offered to
+fold it into a menu in the same pass; Ed left it for now.
 
 ## System-Wide Impact
 

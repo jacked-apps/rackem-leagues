@@ -4175,6 +4175,10 @@ export type Database = {
         Args: { p_bracket_id: string; p_feature: string }
         Returns: Json
       }
+      remove_room_phone: {
+        Args: { p_device_id: string; p_phone_id: string }
+        Returns: Json
+      }
       reopen_bracket_match: {
         Args: { p_match_id: string }
         Returns: boolean

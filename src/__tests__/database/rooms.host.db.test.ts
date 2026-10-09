@@ -141,6 +141,69 @@ describe('host controls + reads (Unit 1)', () => {
     expect(host.is_host).toBe(true);
   });
 
+  const seats = async (roomId: string) =>
+    (await executeSql(`SELECT public.room_seats($1) AS s`, [roomId]))[0].s;
+
+  /** The owner's own phone row in a room, as {id, device_id}. */
+  const hostPhoneOf = async (roomId: string) =>
+    (await executeSql(
+      `SELECT id, device_id FROM public.room_phones WHERE room_id = $1 AND member_id = $2`,
+      [roomId, operatorMemberId]
+    ))[0];
+
+  it('remove_room_phone: the owner drops a guest screen — the seat frees at once and the row is gone', async () => {
+    const room = await createRoomAs(operator, { shared: true });
+    const guest = await rpc(player, 'join_room', { p_join_token: room.join_token, p_device_id: newDevice() });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 2, used: 2, open: 2 });
+
+    expect(await rpc(operator, 'remove_room_phone', { p_phone_id: guest.phone_id, p_device_id: newDevice() }))
+      .toEqual({ ok: true, already_gone: false });
+
+    expect(await seats(room.room_id)).toMatchObject({ devices: 1, used: 1, open: 3 });
+    expect(await executeSql(`SELECT 1 FROM public.room_phones WHERE id = $1`, [guest.phone_id])).toHaveLength(0);
+    // The room itself lives on — this is a removal, not an ending.
+    expect(await executeSql(`SELECT 1 FROM public.rooms WHERE id = $1`, [room.room_id])).toHaveLength(1);
+  });
+
+  it('remove_room_phone refuses a guest doing it, and the owner removing the device they are holding', async () => {
+    const room = await createRoomAs(operator, { shared: true });
+    const host = await hostPhoneOf(room.room_id);
+    const guest = await rpc(player, 'join_room', { p_join_token: room.join_token, p_device_id: newDevice() });
+    expect(guest.ok).toBe(true);
+
+    // A guest cannot drop anyone, including the host.
+    expect(await rpc(player, 'remove_room_phone', { p_phone_id: host.id, p_device_id: newDevice() }))
+      .toMatchObject({ ok: false, reason: 'not_host' });
+    // Leaving is navigating away, not a removal.
+    expect(await rpc(operator, 'remove_room_phone', { p_phone_id: host.id, p_device_id: host.device_id }))
+      .toMatchObject({ ok: false, reason: 'is_self' });
+
+    expect(await executeSql(`SELECT 1 FROM public.room_phones WHERE room_id = $1`, [room.room_id])).toHaveLength(2);
+  });
+
+  it('remove_room_phone is idempotent, takes the removed screen\u2019s game rows with it, and is not callable by anon', async () => {
+    const room = await createRoomAs(operator, { shared: true });
+    const host = await hostPhoneOf(room.room_id);
+    const guest = await rpc(player, 'join_room', { p_join_token: room.join_token, p_device_id: newDevice() });
+
+    // A flip the removed screen is part of goes with it (its FKs cascade).
+    await executeSql(
+      `INSERT INTO public.room_coin_flips (room_id, caller_phone_id, flipper_phone_id) VALUES ($1, $2, $3)`,
+      [room.room_id, guest.phone_id, host.id]
+    );
+    await rpc(operator, 'remove_room_phone', { p_phone_id: guest.phone_id, p_device_id: newDevice() });
+    expect(await executeSql(`SELECT 1 FROM public.room_coin_flips WHERE room_id = $1`, [room.room_id])).toHaveLength(0);
+
+    // A second tap on a row that is already gone is a no-op, not an error.
+    expect(await rpc(operator, 'remove_room_phone', { p_phone_id: guest.phone_id, p_device_id: newDevice() }))
+      .toEqual({ ok: true, already_gone: true });
+
+    const [grant] = await executeSql(
+      `SELECT has_function_privilege('anon', 'public.remove_room_phone(uuid,uuid)', 'EXECUTE') AS anon`
+    );
+    expect(grant.anon).toBe(false);
+  });
+
   it('close_room deletes the room and cascades to phones and game rows; reads then say found:false', async () => {
     const room = await createRoomAs(operator, { shared: true });
     await rpc(player, 'join_room', { p_join_token: room.join_token, p_device_id: newDevice() });

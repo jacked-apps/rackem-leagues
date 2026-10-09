@@ -1,6 +1,10 @@
 /**
- * @fileoverview The room (`/rooms/:roomId`): header, seats, who's here, and
+ * @fileoverview The room (`/rooms/:roomId`): a header, one players chip, and
  * the slot the game renders in.
+ *
+ * Deliberately thin. It started with a seat line AND an always-open player
+ * list, which said the same thing twice and left a phone with no room for the
+ * game itself (Ed, 2026-10-09). Both collapsed into `PlayersChip`.
  *
  * Everything on this page is DATA-DERIVED from one query (`useRoom`) that the
  * realtime hook keeps fresh and a 15 s poll backs up. The room is over when
@@ -21,16 +25,22 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import type { Json } from '@/types/database.types';
-import { useJoinRoom, useRoom, useSetRoomGame, useSetRoomShared } from '@/api/hooks/useRooms';
+import type { RoomPhone } from '@/api/queries/rooms';
+import {
+  useJoinRoom,
+  useRemoveRoomPhone,
+  useRoom,
+  useSetRoomGame,
+  useSetRoomShared,
+} from '@/api/hooks/useRooms';
 import { getDeviceId } from './deviceId';
 import { gameName } from './games/registry';
 import { GameSlot } from './GameSlot';
 import { InviteSheet } from './InviteSheet';
-import { PhoneList } from './PhoneList';
+import { PlayersChip } from './PlayersChip';
 import { RoomEnded } from './RoomEnded';
 import { RoomHostControls } from './RoomHostControls';
 import { roomRefusalCopy } from './roomRefusalCopy';
-import { SeatCounter } from './SeatCounter';
 import { useRoomHeartbeat } from './useRoomHeartbeat';
 import { useRoomRealtime } from './useRoomRealtime';
 
@@ -58,6 +68,7 @@ export function RoomPage() {
   const join = useJoinRoom();
   const setShared = useSetRoomShared(roomId ?? '');
   const setGame = useSetRoomGame(roomId ?? '');
+  const removePhone = useRemoveRoomPhone(roomId ?? '');
   const [inviting, setInviting] = useState(false);
 
   if (isLoading) {
@@ -83,6 +94,12 @@ export function RoomPage() {
     if (!r.ok) toast.error(roomRefusalCopy(r));
   };
 
+  /** Host: drop someone's screen. Their seat frees at once. */
+  const dropScreen = async (phone: RoomPhone) => {
+    const r = await removePhone.mutateAsync({ phoneId: phone.id, deviceId });
+    if (!r.ok) toast.error(roomRefusalCopy(r));
+  };
+
   const takeSeat = async () => {
     const r = await join.mutateAsync({ joinToken: room.join_token, deviceId });
     if (!r.ok) toast.error(roomRefusalCopy(r));
@@ -97,16 +114,17 @@ export function RoomPage() {
             <p className="text-xs text-muted-foreground">{STATUS_COPY[connectionStatus]}</p>
           )}
         </div>
-        <SeatCounter
+        <PlayersChip
           seats={state.seats}
+          phones={state.phones}
           shared={room.shared}
           isHost={isHost}
+          myPhoneId={myPhone?.id}
           onInvite={() => setInviting(true)}
           onOpenDoor={toggleDoor}
+          onRemove={isHost ? dropScreen : undefined}
         />
       </header>
-
-      <PhoneList phones={state.phones} myPhoneId={myPhone?.id} />
 
       {isHost && <RoomHostControls room={room} onToggleDoor={toggleDoor} />}
 

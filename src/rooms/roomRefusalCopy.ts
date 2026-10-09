@@ -36,6 +36,8 @@ export function roomRefusalCopy(r: RoomRefused): string {
       return `The host's seats are all taken — ${r.hint ?? "a seat frees up when a screen in the host's house closes"}.`;
     case 'not_in_room':
       return "This device isn't in the room yet.";
+    case 'is_self':
+      return "That's this device — leave the room instead.";
     case 'not_host':
       return 'Only the host can do that.';
     case 'not_a_host':
