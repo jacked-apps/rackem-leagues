@@ -98,9 +98,10 @@ describe('RoomPage', () => {
     expect(screen.getByText(/doesn't know \(mystery\)/)).toBeInTheDocument();
   });
 
-  it('host controls render only for the host phone', () => {
+  it('End room renders only for the host phone; Exit for everyone', () => {
     const { unmount } = renderRoom();
     expect(screen.getByRole('button', { name: 'End room' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Exit room' })).toBeInTheDocument();
     unmount();
 
     // Same room seen from the guest's device.
@@ -110,6 +111,7 @@ describe('RoomPage', () => {
     });
     renderRoom();
     expect(screen.queryByRole('button', { name: 'End room' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Exit room' })).toBeInTheDocument();
     expect(screen.getByText('FAKE PLAY guest')).toBeInTheDocument();
   });
 

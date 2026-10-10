@@ -8,7 +8,7 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **STATUS (2026-10-09): NINE UNITS BUILT** (7 + the house-model rework + the players-chip/remove pass from Ed's first review) on branch `feat/game-room`,
+> **STATUS (2026-10-10): TEN UNITS BUILT** (7 + the house-model rework + two UI passes from Ed's review) on branch `feat/game-room`,
 > **GATED** non-production (routes + both nav doors behind `!isProduction`).
 > Next: Ed reviews on staging (checklist in `LIST_FOR_ED.md` → Gated section),
 > then un-gate by removing `NonProdGate` from the three `rooms/**` routes AND
@@ -871,6 +871,44 @@ screens are and whoever is holding them. Room count irrelevant to cost.
 **Still open from the same review:** the host's three-button row (Switch game
 / Open to others / End room) is also a lot of width on a phone. Offered to
 fold it into a menu in the same pass; Ed left it for now.
+
+- [x] **Unit 10: Fewer host controls, and a way out that isn't an ending** —
+  built 2026-10-10. Ed, still reviewing: *"I don't feel like we need a switch
+  game button. You open a room and close it to start a new room… also make
+  private. Again just exit the room and make a new private one. The end room
+  should be at the bottom I think and perhaps also have an exit room. Exit
+  would leave the room running, end room would close it?"*
+
+**Goal:** The room's footer offers leaving and ending, and nothing else.
+
+**Files:**
+- Create: `src/rooms/RoomActions.tsx` + test
+- Delete: `src/rooms/RoomHostControls.tsx` + its test
+- Modify: `CreateRoomDialog.tsx` (the `switch` mode went with the button —
+  create-only now), `RoomPage.tsx`, `RoomsIndexPage.tsx` (one prop)
+
+**Approach:**
+- **Exit room** is a plain navigation. No server call: leaving already *was*
+  navigating away, and the seat ages out of the house on the next grace
+  window. Offered to everyone.
+- **End room** keeps its confirm and moves to the bottom beside Exit. Its
+  dialog now points at Exit for anyone who only meant to step away.
+- **"Switch game" and "Make private" are gone.** Both were in-place edits of
+  a room, and a room is cheap and disposable. Keeping the switch would have
+  meant carrying a wipe-and-rebuild path through every future game for a
+  convenience nobody asked for.
+- **The RPCs survive and are still used:** a game's own restart calls
+  `set_room_game` (via `GameSlot`'s `onStart`), and the players panel's
+  "Open to others" calls `set_room_shared`.
+- **One asymmetry kept on purpose:** private → shared stays available (in the
+  players panel), because "I'm playing alone and a friend walked up" is a
+  real mid-session need. Shared → private does not, because that is the case
+  Ed described as "exit and make a new private one."
+
+**Open, deliberately not built:** Exit does not free the seat instantly — it
+waits out the 2-minute grace like any other screen that stops beating. A
+`leave_room` RPC would make it immediate, which is tidier (and would stop
+the exiting person lingering as "away"), but it is beyond what was asked.
 
 ## System-Wide Impact
 

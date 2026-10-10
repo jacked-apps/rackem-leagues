@@ -1,15 +1,16 @@
 /**
- * @fileoverview Pick a game — to start a room, or to switch the game in one.
+ * @fileoverview Start a room: pick a game, decide whether anyone else can
+ * get in.
  *
- * Two modes, one dialog, because the choice is the same: which game, from the
- * registry. `create` also asks free-or-shared; `switch` does not (the door is
- * a separate host control, and a switch WIPES the old game's rows, so the
- * copy says so).
+ * It used to do double duty — the same picker switched the game in an
+ * existing room. That button is gone (Ed, 2026-10-10): a room is cheap and
+ * disposable, so a different game is a different room, and in-place
+ * switching would have meant carrying a wipe-and-rebuild path through every
+ * future game for a convenience nobody asked for.
  *
  * Dumb on purpose: it never calls an RPC. The opener owns the mutation and
  * hands back a sentence when the server refuses, which the dialog shows in
- * place. That keeps the create path (navigate to the new room) and the switch
- * path (stay put) out of here.
+ * place — that keeps "navigate into the new room" out of here.
  *
  * The shared toggle is disabled with a note unless the viewer passes the host
  * gate (`useIsOperator`). Shared rooms cost sockets; the server enforces the
@@ -35,17 +36,14 @@ import type { GameDefinition } from './games/types';
 interface CreateRoomDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: 'create' | 'switch';
-  /** The room's current game, so `switch` preselects it. */
-  currentGameKey?: string;
-  /** Do the thing; return a problem sentence to show, or null when it went through. */
+  /** Start the room; return a problem sentence to show, or null when it went through. */
   onSubmit: (game: GameDefinition, shared: boolean) => Promise<string | null>;
 }
 
-export function CreateRoomDialog({ open, onOpenChange, mode, currentGameKey, onSubmit }: CreateRoomDialogProps) {
+export function CreateRoomDialog({ open, onOpenChange, onSubmit }: CreateRoomDialogProps) {
   const games = listGames();
   const canShare = useIsOperator();
-  const [gameKey, setGameKey] = useState(currentGameKey ?? games[0]?.key ?? '');
+  const [gameKey, setGameKey] = useState(games[0]?.key ?? '');
   const [shared, setShared] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -54,7 +52,7 @@ export function CreateRoomDialog({ open, onOpenChange, mode, currentGameKey, onS
   const submit = async () => {
     if (!game) return;
     setProblem(null);
-    const result = await onSubmit(game, mode === 'create' && shared);
+    const result = await onSubmit(game, shared);
     if (result) setProblem(result);
     else onOpenChange(false);
   };
@@ -63,11 +61,9 @@ export function CreateRoomDialog({ open, onOpenChange, mode, currentGameKey, onS
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{mode === 'create' ? 'Start a room' : 'Switch game'}</DialogTitle>
+          <DialogTitle>Start a room</DialogTitle>
           <DialogDescription>
-            {mode === 'create'
-              ? 'A room is for tonight. Nothing in it counts toward stats.'
-              : 'Switching starts fresh — the current game’s progress is cleared for everyone.'}
+            A room is for tonight. Nothing in it counts toward stats.
           </DialogDescription>
         </DialogHeader>
 
@@ -91,25 +87,23 @@ export function CreateRoomDialog({ open, onOpenChange, mode, currentGameKey, onS
           </RadioGroup>
         )}
 
-        {mode === 'create' && (
-          <div className="flex items-center justify-between gap-4 rounded-md border p-3">
-            <div className="space-y-1">
-              <Label htmlFor="shared-toggle">Open to others</Label>
-              <p className="text-sm text-muted-foreground">
-                {canShare
-                  ? 'People you invite can join on their own phones.'
-                  : 'Opening a room to others is a host feature. You can still play on this device.'}
-              </p>
-            </div>
-            <Switch
-              id="shared-toggle"
-              checked={shared}
-              onCheckedChange={setShared}
-              disabled={!canShare}
-              aria-label="Open to others"
-            />
+        <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+          <div className="space-y-1">
+            <Label htmlFor="shared-toggle">Open to others</Label>
+            <p className="text-sm text-muted-foreground">
+              {canShare
+                ? 'People you invite can join on their own phones.'
+                : 'Opening a room to others is a host feature. You can still play on this device.'}
+            </p>
           </div>
-        )}
+          <Switch
+            id="shared-toggle"
+            checked={shared}
+            onCheckedChange={setShared}
+            disabled={!canShare}
+            aria-label="Open to others"
+          />
+        </div>
 
         {problem && <p className="text-sm text-destructive">{problem}</p>}
 
@@ -117,8 +111,8 @@ export function CreateRoomDialog({ open, onOpenChange, mode, currentGameKey, onS
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button loadingText={mode === 'create' ? 'Starting…' : 'Switching…'} onClick={submit} disabled={!game}>
-            {mode === 'create' ? 'Start' : 'Switch'}
+          <Button loadingText="Starting…" onClick={submit} disabled={!game}>
+            Start
           </Button>
         </DialogFooter>
       </DialogContent>

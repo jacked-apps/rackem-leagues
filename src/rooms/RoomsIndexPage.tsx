@@ -87,7 +87,7 @@ export function RoomsIndexPage() {
       </Card>
 
       {creating && (
-        <CreateRoomDialog open onOpenChange={setCreating} mode="create" onSubmit={start} />
+        <CreateRoomDialog open onOpenChange={setCreating} onSubmit={start} />
       )}
     </div>
   );

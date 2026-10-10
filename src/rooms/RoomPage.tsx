@@ -39,7 +39,7 @@ import { GameSlot } from './GameSlot';
 import { InviteSheet } from './InviteSheet';
 import { PlayersChip } from './PlayersChip';
 import { RoomEnded } from './RoomEnded';
-import { RoomHostControls } from './RoomHostControls';
+import { RoomActions } from './RoomActions';
 import { roomRefusalCopy } from './roomRefusalCopy';
 import { useRoomHeartbeat } from './useRoomHeartbeat';
 import { useRoomRealtime } from './useRoomRealtime';
@@ -126,8 +126,6 @@ export function RoomPage() {
         />
       </header>
 
-      {isHost && <RoomHostControls room={room} onToggleDoor={toggleDoor} />}
-
       {myPhone ? (
         <GameSlot room={room} myPhone={myPhone} phones={state.phones} isHost={isHost} onStart={startGame} />
       ) : (
@@ -138,6 +136,8 @@ export function RoomPage() {
           </Button>
         </div>
       )}
+
+      <RoomActions roomId={room.id} isHost={isHost} />
 
       <InviteSheet
         open={inviting}
