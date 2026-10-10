@@ -10,8 +10,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 const mockClose = vi.fn();
+const mockLeave = vi.fn();
 vi.mock('@/api/hooks/useRooms', () => ({
   useCloseRoom: () => ({ mutateAsync: mockClose }),
+  useLeaveRoom: () => ({ mutateAsync: mockLeave }),
 }));
 const toastError = vi.fn();
 vi.mock('sonner', () => ({ toast: { error: (m: string) => toastError(m), success: vi.fn() } }));
@@ -27,7 +29,7 @@ const renderActions = (isHost: boolean) =>
   render(
     <MemoryRouter initialEntries={['/rooms/r1']}>
       <Routes>
-        <Route path="/rooms/:roomId" element={<RoomActions roomId="r1" isHost={isHost} />} />
+        <Route path="/rooms/:roomId" element={<RoomActions roomId="r1" deviceId="dev-1" isHost={isHost} />} />
         <Route path="/rooms" element={<Probe />} />
       </Routes>
     </MemoryRouter>
@@ -35,15 +37,28 @@ const renderActions = (isHost: boolean) =>
 
 beforeEach(() => {
   mockClose.mockReset().mockResolvedValue({ ok: true });
+  mockLeave.mockReset().mockResolvedValue({ ok: true, left: true });
   toastError.mockReset();
 });
 
 describe('RoomActions', () => {
-  it('Exit navigates away and never touches the server — the room keeps running', () => {
+  it('Exit gives the seat back immediately, then navigates — the room keeps running', async () => {
     renderActions(false);
     fireEvent.click(screen.getByRole('button', { name: 'Exit room' }));
-    expect(screen.getByText('AT /rooms')).toBeInTheDocument();
+
+    await waitFor(() => expect(mockLeave).toHaveBeenCalledWith('dev-1'));
+    await waitFor(() => expect(screen.getByText('AT /rooms')).toBeInTheDocument());
+    // Leaving is not ending.
     expect(mockClose).not.toHaveBeenCalled();
+  });
+
+  it('a failed leave never traps you in the room — the row ages out instead', async () => {
+    mockLeave.mockRejectedValue(new Error('offline'));
+    renderActions(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Exit room' }));
+
+    await waitFor(() => expect(screen.getByText('AT /rooms')).toBeInTheDocument());
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it('a guest is offered Exit but never End', () => {

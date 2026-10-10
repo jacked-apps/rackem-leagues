@@ -21,6 +21,7 @@ vi.mock('@/api/hooks/useRooms', () => ({
   useSetRoomGame: () => ({ mutateAsync: vi.fn() }),
   useCloseRoom: () => ({ mutateAsync: vi.fn() }),
   useRemoveRoomPhone: () => ({ mutateAsync: vi.fn() }),
+  useLeaveRoom: () => ({ mutateAsync: vi.fn() }),
 }));
 vi.mock('./useRoomRealtime', () => ({ useRoomRealtime: (p: unknown) => mockRealtime(p) }));
 vi.mock('./useRoomHeartbeat', () => ({ useRoomHeartbeat: (...a: unknown[]) => mockHeartbeat(...a) }));

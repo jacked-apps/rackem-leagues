@@ -20,6 +20,7 @@ import {
   closeRoom,
   createRoom,
   joinRoom,
+  leaveRoom,
   removeRoomPhone,
   setRoomGame,
   setRoomSettings,
@@ -125,5 +126,14 @@ export function useRemoveRoomPhone(roomId: string) {
   return useMutation({
     mutationFn: (p: { phoneId: string; deviceId: string }) => removeRoomPhone(p.phoneId, p.deviceId),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.rooms.detail(roomId) }),
+  });
+}
+
+/** This device steps out of the room (frees its seat immediately). */
+export function useLeaveRoom(roomId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (deviceId: string) => leaveRoom(roomId, deviceId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.rooms.all }),
   });
 }

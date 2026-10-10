@@ -8,7 +8,7 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **STATUS (2026-10-10): TEN UNITS BUILT** (7 + the house-model rework + two UI passes from Ed's review) on branch `feat/game-room`,
+> **STATUS (2026-10-10): ELEVEN UNITS BUILT** (7 + the house-model rework + three passes from Ed's review) on branch `feat/game-room`,
 > **GATED** non-production (routes + both nav doors behind `!isProduction`).
 > Next: Ed reviews on staging (checklist in `LIST_FOR_ED.md` → Gated section),
 > then un-gate by removing `NonProdGate` from the three `rooms/**` routes AND
@@ -905,10 +905,54 @@ fold it into a menu in the same pass; Ed left it for now.
   real mid-session need. Shared → private does not, because that is the case
   Ed described as "exit and make a new private one."
 
-**Open, deliberately not built:** Exit does not free the seat instantly — it
-waits out the 2-minute grace like any other screen that stops beating. A
-`leave_room` RPC would make it immediate, which is tidier (and would stop
-the exiting person lingering as "away"), but it is beyond what was asked.
+**Followed immediately by Unit 11** — Ed read "Exit waits out the grace" and
+spotted the consequence: a screen that moved was charged a seat in both
+rooms. See Unit 11.
+
+- [x] **Unit 11: One screen is one seat — leaving frees it now** — built
+  2026-10-10. Ed, told that Exit waits out the presence grace: *"why the 2
+  minutes? That would mean I could be in 2 rooms at the same time, leaving
+  one room and entering another during the 2 min wait?"* — then *"it needs to
+  show that when I leave it triggers the socket, exits me out of the room so
+  I can enter another and I am not wasted space for the next person in
+  line."*
+
+**The flaw he found:** the grace window (2 min) exists so a phone that goes
+dark is not kicked while its owner looks at the table. But it also meant a
+screen that MOVED counted in both rooms until it aged out — one websocket,
+two seats charged against the host's four. A host bouncing between their own
+two rooms could block a guest for no reason.
+
+**Files:**
+- Create: `supabase/migrations/20261010154316_room_leave.sql`
+- Modify: `api/mutations/rooms.ts` (+`leaveRoom`), `api/hooks/useRooms.ts`
+  (+`useLeaveRoom`), `RoomActions.tsx` (+ its test), `RoomPage.tsx` (passes
+  `deviceId`), types regenerated
+- Test: `rooms.join.db.test.ts` — three added, one rewritten (see below)
+
+**Approach — two fixes, because there are two ways a screen leaves:**
+1. **On purpose.** `leave_room(room_id, device_id)` deletes the caller's OWN
+   row at once, so Exit frees the seat before the person has finished walking
+   away. It can never drop somebody else (`member_id` must match — that is
+   `remove_room_phone`, owner only), and it does NOT bump
+   `rooms.last_activity_at`: leaving is not use, and bumping it would keep an
+   abandoned room alive against the sweep. A failed call never blocks
+   leaving; the row ages out as before.
+2. **Every other way** — tab closed, back button, dead battery, a second room
+   opened without using Exit. `house_seats` now counts **DISTINCT device_id**
+   rather than rows. A screen shows one page at a time, so one device id is
+   one seat however many stale rows it owns. Rows still linger for the grace
+   window (bouncing back costs no re-join), they just cannot double-charge.
+
+**Unchanged on purpose:** the grace window itself. A sleeping phone still
+keeps its seat — that is the whole reason it exists.
+
+**The socket was never the problem:** navigating away unmounts the page,
+which removes the channel. Only the row needed dealing with.
+
+**Rewritten test:** "ONE device in both rooms is TWO seats" (Unit 8) is now
+exactly the bug, and became "ONE screen is ONE seat even with a stale row in
+the room it just left", which ends by proving the next guest in line gets in.
 
 ## System-Wide Impact
 

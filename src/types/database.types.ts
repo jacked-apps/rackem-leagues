@@ -4096,6 +4096,10 @@ export type Database = {
         Args: { p_league_id: string }
         Returns: string
       }
+      leave_room: {
+        Args: { p_device_id: string; p_room_id: string }
+        Returns: Json
+      }
       lookup_placeholder_by_system_number: {
         Args: { p_system_number: number }
         Returns: {

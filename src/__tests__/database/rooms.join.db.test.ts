@@ -7,8 +7,9 @@
  * room. A host has room_house_seats() (4) seats across every room they own,
  * and a SEAT IS A SCREEN — one present phone row (heartbeat within the grace
  * window) = one websocket — the host's own screens included, because the
- * bill does not know whose a connection is. A guest on two devices, or one
- * device in two rooms, is two seats. A friend who is also a host is just a
+ * bill does not know whose a connection is. A guest on two devices is two
+ * seats; ONE device is one seat however many rooms it has rows in, because a
+ * screen shows one page at a time. A friend who is also a host is just a
  * screen in your house. Only the room's owner funds anything.
  *
  * `operator@test.com` hosts; `player@test.com` + `captain@test.com` are guests;
@@ -163,7 +164,7 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     expect(await seats(room.room_id)).toEqual({ devices: 3, used: 3, seats: 4, open: 1 });
   });
 
-  it('seats span every room the host owns: screens in room A count against room B, and one screen in two rooms is two', async () => {
+  it('seats span every room the host owns: screens in room A count against room B', async () => {
     const a = await createRoomAs(operator, { shared: true }); // host's screen in A
     const b = await createRoomAs(operator, { shared: true }); // host's screen in B
     // Two rooms open on two of the host's screens → 2 used before any guest.
@@ -173,13 +174,11 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     await join(player, a.join_token, phone);
     expect(await seats(b.room_id)).toMatchObject({ devices: 1, used: 3, open: 1 });
 
-    // The same device walking into B is a second page → a second socket → a second seat.
-    expect(await join(player, b.join_token, phone)).toMatchObject({ ok: true, rejoined: false });
+    // A DIFFERENT guest's screen takes the last one, and then both doors are shut.
+    expect(await join(captain, b.join_token)).toMatchObject({ ok: true });
     expect(await seats(b.room_id)).toMatchObject({ devices: 2, used: 4, open: 0 });
-
-    // Full at EITHER door.
-    expect(await join(captain, b.join_token)).toMatchObject({ ok: false, reason: 'full' });
-    expect(await join(captain, a.join_token)).toMatchObject({ ok: false, reason: 'full' });
+    expect(await join(owner, b.join_token)).toMatchObject({ ok: false, reason: 'full' });
+    expect(await join(owner, a.join_token)).toMatchObject({ ok: false, reason: 'full' });
   });
 
   it('a friend who is also a host is just a screen in your house — and spends none of their own seats', async () => {
@@ -211,6 +210,65 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     const mine = state.phones.find((p: Jsonb) => p.id === r.phone_id);
     expect(mine.is_present).toBe(false);
     expect(state.phones.find((p: Jsonb) => p.member_id === operatorMemberId).is_present).toBe(true);
+  });
+
+  it('leave_room frees the seat at once, and only ever the caller\u2019s own row', async () => {
+    const room = await createRoomAs(operator, { shared: true });
+    const device = newDevice();
+    const guest = await join(player, room.join_token, device);
+    expect(await seats(room.room_id)).toEqual({ devices: 2, used: 2, seats: 4, open: 2 });
+
+    // No waiting out the grace window.
+    expect(await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device }))
+      .toEqual({ ok: true, left: true });
+    expect(await seats(room.room_id)).toEqual({ devices: 1, used: 1, seats: 4, open: 3 });
+    expect(await executeSql(`SELECT 1 FROM public.room_phones WHERE id = $1`, [guest.phone_id])).toHaveLength(0);
+
+    // Leaving twice is still "I am not in the room".
+    expect(await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device }))
+      .toEqual({ ok: true, left: false });
+
+    // It can never be used to drop somebody else: the host's row survives a
+    // guest naming the host's device.
+    const host = (await executeSql(
+      `SELECT device_id FROM public.room_phones WHERE room_id = $1 AND member_id = $2`,
+      [room.room_id, operatorMemberId]
+    ))[0];
+    expect(await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: host.device_id }))
+      .toEqual({ ok: true, left: false });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 1, used: 1 });
+  });
+
+  it('leave_room does not keep an abandoned room alive against the sweep', async () => {
+    const room = await createRoomAs(operator, { shared: true });
+    const device = newDevice();
+    await join(player, room.join_token, device);
+    await executeSql(`UPDATE public.rooms SET last_activity_at = now() - interval '30 hours' WHERE id = $1`, [room.room_id]);
+
+    await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device });
+
+    const [row] = await executeSql(`SELECT last_activity_at < now() - interval '29 hours' AS still_stale FROM public.rooms WHERE id = $1`, [room.room_id]);
+    expect(row.still_stale).toBe(true);
+  });
+
+  it('ONE screen is ONE seat even with a stale row in the room it just left', async () => {
+    const a = await createRoomAs(operator, { shared: true });
+    const b = await createRoomAs(operator, { shared: true });
+    const device = newDevice();
+
+    // The same device walks A → B without using Exit, so A's row lingers.
+    await join(player, a.join_token, device);
+    await join(player, b.join_token, device);
+
+    // Two rows for that device exist…
+    expect(await executeSql(
+      `SELECT 1 FROM public.room_phones WHERE device_id = $1`, [device]
+    )).toHaveLength(2);
+    // …but the house is charged once for it, on top of the host's two screens.
+    expect(await seats(b.room_id)).toMatchObject({ used: 3, open: 1 });
+
+    // So a guest in line still gets in — the bug Ed found.
+    expect(await join(captain, b.join_token)).toMatchObject({ ok: true });
   });
 
   it('room_heartbeat refreshes the device and bumps the room row only when it is stale', async () => {

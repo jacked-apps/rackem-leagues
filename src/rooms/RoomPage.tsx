@@ -137,7 +137,7 @@ export function RoomPage() {
         </div>
       )}
 
-      <RoomActions roomId={room.id} isHost={isHost} />
+      <RoomActions roomId={room.id} deviceId={deviceId} isHost={isHost} />
 
       <InviteSheet
         open={inviting}

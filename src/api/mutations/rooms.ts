@@ -132,3 +132,12 @@ export function closeRoom(roomId: string): Promise<RoomOkResult> {
 export function removeRoomPhone(phoneId: string, deviceId: string): Promise<RoomOkResult> {
   return call('remove_room_phone', { p_phone_id: phoneId, p_device_id: deviceId });
 }
+
+/**
+ * This device steps out of a room, now — frees its house seat and clears it
+ * from the list rather than waiting out the presence grace. Deletes only the
+ * caller's own row; dropping someone else is `removeRoomPhone` (owner only).
+ */
+export function leaveRoom(roomId: string, deviceId: string): Promise<RoomOkResult> {
+  return call('leave_room', { p_room_id: roomId, p_device_id: deviceId });
+}

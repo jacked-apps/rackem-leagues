@@ -3,9 +3,12 @@
  * the thing you do last belongs.
  *
  *   - **Exit room** — everyone. Leaves the room running; you just stop
- *     looking at it. Your screen stops beating, so your seat ages out of the
- *     host's house on its own, and the room lives until its host ends it or
- *     the sweep takes it. No server call: leaving is navigating away.
+ *     looking at it. It drops this device's row on the way out, so the seat
+ *     is free immediately rather than after the 2-minute presence grace —
+ *     Ed, 2026-10-10: "I am not wasted space for the next person in line."
+ *     (The socket closes by itself: navigating away unmounts the page, which
+ *     removes the channel.) The room lives until its host ends it or the
+ *     sweep takes it.
  *   - **End room** — the owner only, and it asks first. Deletes the room,
  *     which cascades to every screen and every game row, and flips every
  *     other phone to "this room has ended" live. No undo, hence the confirm.
@@ -32,19 +35,32 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useCloseRoom } from '@/api/hooks/useRooms';
+import { useCloseRoom, useLeaveRoom } from '@/api/hooks/useRooms';
 import { roomRefusalCopy } from './roomRefusalCopy';
 
 interface RoomActionsProps {
   roomId: string;
+  /** This device, so Exit can drop the right row. */
+  deviceId: string;
   /** Only the room's owner is offered "End room". */
   isHost: boolean;
 }
 
-export function RoomActions({ roomId, isHost }: RoomActionsProps) {
+export function RoomActions({ roomId, deviceId, isHost }: RoomActionsProps) {
   const navigate = useNavigate();
   const close = useCloseRoom(roomId);
+  const leave = useLeaveRoom(roomId);
   const [confirmClose, setConfirmClose] = useState(false);
+
+  /** Give the seat back, then go. A failed call never blocks leaving. */
+  const exitRoom = async () => {
+    try {
+      await leave.mutateAsync(deviceId);
+    } catch {
+      // The row will age out on its own; nothing the leaver needs told.
+    }
+    navigate('/rooms');
+  };
 
   const endRoom = async () => {
     const r = await close.mutateAsync();
@@ -54,7 +70,7 @@ export function RoomActions({ roomId, isHost }: RoomActionsProps) {
 
   return (
     <div className="flex items-center justify-between gap-2 border-t pt-3">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/rooms')}>
+      <Button variant="ghost" size="sm" loadingText="Leaving…" onClick={exitRoom}>
         Exit room
       </Button>
 

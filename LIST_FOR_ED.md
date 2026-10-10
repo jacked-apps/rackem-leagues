@@ -203,7 +203,7 @@ from this list when un-gated.
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
 
-- **Game Room** (`feat/game-room` — 10 UNITS BUILT, incl. the two-phone coin
+- **Game Room** (`feat/game-room` — 11 UNITS BUILT, incl. the two-phone coin
   flip) — gated in FOUR places, one condition: `<NonProdGate>` on the three
   routes in `src/navigation/NavRoutes.tsx` (`rooms`, `rooms/join/:joinToken`,
   `rooms/:roomId`) + `!isProduction &&` on the "Rooms" link in
