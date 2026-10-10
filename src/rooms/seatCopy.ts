@@ -26,16 +26,36 @@ export function seatLine(seats: RoomSeats, shared: boolean): string {
 }
 
 /**
- * The players chip's always-visible line: "Players 2 · 1 open".
+ * The players chip's always-visible line: "Players 3 of 4".
  *
- * `Players N` is THIS room's present screens — what a person at the table
- * counts. "N open" is the HOST'S house (seats span every room they own), so
- * it is the number that decides whether the next person gets in. Two
- * different things on purpose; the chip's panel spells out whose house it is.
- * A free room has no seats to offer yet, so it counts players only.
+ * Counts EVERY screen, host included. The host's own devices consume seats
+ * (house model, Unit 8), so "guests out of 3" would not be a stable number —
+ * a host with a phone and a tablet leaves guests only two. Out of four, the
+ * denominator never moves.
+ *
+ * The numerator is the HOUSE count (`used`), not just this room's screens, so
+ * the chip always answers the question that matters: can one more get in? In
+ * the ordinary one-room case it is the same number as the people in front of
+ * you; when the host has a second room open it stays correct, and the panel
+ * adds a line explaining where the others are.
+ *
+ * A free room has no seats to offer, so it counts the room and stops.
  */
 export function playersChipLabel(seats: RoomSeats, shared: boolean): string {
-  const players = `Players ${seats.devices}`;
-  if (!shared) return players;
-  return `${players} · ${seats.open > 0 ? `${seats.open} open` : 'full'}`;
+  if (!shared) return `Players ${seats.devices}`;
+  return `Players ${seats.used} of ${seats.seats}`;
+}
+
+/**
+ * "2 of these are in your other rooms." — shown in the panel only when the
+ * chip's house count is ahead of the screens in THIS room, which is the one
+ * case where the chip and the list below it disagree.
+ *
+ * @returns The sentence, or null when there is nothing to explain.
+ */
+export function elsewhereNote(seats: RoomSeats, isHost: boolean): string | null {
+  const elsewhere = seats.used - seats.devices;
+  if (elsewhere <= 0) return null;
+  const whose = isHost ? 'your other rooms' : "the host's other rooms";
+  return `${elsewhere} more ${elsewhere === 1 ? 'screen is' : 'screens are'} in ${whose}.`;
 }

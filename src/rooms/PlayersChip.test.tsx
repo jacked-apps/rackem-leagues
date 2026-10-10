@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { RoomPhone } from '@/api/queries/rooms';
 import { PlayersChip } from './PlayersChip';
-import { emptySeatsLabel, playersChipLabel, seatLine } from './seatCopy';
+import { elsewhereNote, emptySeatsLabel, playersChipLabel, seatLine } from './seatCopy';
 
 const seats = (devices: number, open: number) => ({ devices, used: 4 - open, seats: 4, open });
 
@@ -41,17 +41,35 @@ const openPanel = () => fireEvent.click(screen.getByRole('button', { name: /Play
 beforeEach(() => vi.clearAllMocks());
 
 describe('playersChipLabel', () => {
-  it('counts THIS room and reports the house seats left', () => {
-    expect(playersChipLabel(seats(2, 2), true)).toBe('Players 2 · 2 open');
-    expect(playersChipLabel(seats(1, 1), true)).toBe('Players 1 · 1 open');
+  it('counts every screen in the house, host included, out of a fixed 4', () => {
+    expect(playersChipLabel(seats(2, 2), true)).toBe('Players 2 of 4');
+    expect(playersChipLabel(seats(1, 3), true)).toBe('Players 1 of 4');
   });
 
-  it('says "full" rather than "0 open"', () => {
-    expect(playersChipLabel(seats(4, 0), true)).toBe('Players 4 · full');
+  it('a full house reads 4 of 4 — no special wording needed', () => {
+    expect(playersChipLabel(seats(4, 0), true)).toBe('Players 4 of 4');
   });
 
-  it('a free room counts players only — it has no seats to offer yet', () => {
+  it('the numerator is the HOUSE count, so a second room shows through', () => {
+    // 1 screen in this room, 3 across the house.
+    expect(playersChipLabel({ devices: 1, used: 3, seats: 4, open: 1 }, true)).toBe('Players 3 of 4');
+  });
+
+  it('a free room counts the room and stops — it has no seats to offer', () => {
     expect(playersChipLabel(seats(1, 3), false)).toBe('Players 1');
+  });
+});
+
+describe('elsewhereNote', () => {
+  it('says nothing when the chip and the list agree', () => {
+    expect(elsewhereNote(seats(2, 2), true)).toBeNull();
+  });
+
+  it('explains the gap when the host has screens in other rooms', () => {
+    expect(elsewhereNote({ devices: 1, used: 3, seats: 4, open: 1 }, true))
+      .toBe('2 more screens are in your other rooms.');
+    expect(elsewhereNote({ devices: 1, used: 2, seats: 4, open: 2 }, false))
+      .toBe("1 more screen is in the host's other rooms.");
   });
 });
 
@@ -71,7 +89,7 @@ describe('seatCopy (still used by the panel and the join page)', () => {
 describe('PlayersChip', () => {
   it('shows only the chip until it is tapped', () => {
     renderChip();
-    expect(screen.getByRole('button', { name: /Players 2 · 2 open/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Players 2 of 4/ })).toBeInTheDocument();
     expect(screen.queryByText('Jack')).toBeNull();
   });
 
@@ -124,5 +142,16 @@ describe('PlayersChip', () => {
     renderChip({ isHost: false, myPhoneId: 'p2' });
     openPanel();
     expect(screen.queryByRole('button', { name: /Remove/ })).toBeNull();
+  });
+});
+
+describe('PlayersChip — the host with a second room open', () => {
+  it('the chip counts the house and the panel says where the rest are', () => {
+    renderChip({ seats: { devices: 1, used: 3, seats: 4, open: 1 }, phones: [ED] });
+    expect(screen.getByRole('button', { name: /Players 3 of 4/ })).toBeInTheDocument();
+
+    openPanel();
+    // The list can only show this room, so the gap gets a sentence.
+    expect(screen.getByText('2 more screens are in your other rooms.')).toBeInTheDocument();
   });
 });
