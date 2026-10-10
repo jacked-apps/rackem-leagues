@@ -46,8 +46,8 @@ vi.mock('./games/registry', () => {
 
 import { RoomPage } from './RoomPage';
 
-const HOST = { id: 'p1', member_id: 'm1', device_id: 'my-dev', display_name: 'Ed', is_host: true, is_present: true, last_seen_at: '', joined_at: '' };
-const GUEST = { id: 'p2', member_id: 'm2', device_id: 'other-dev', display_name: 'Jack', is_host: false, is_present: false, last_seen_at: '', joined_at: '' };
+const HOST = { id: 'p1', member_id: 'm1', device_id: 'my-dev', display_name: 'Ed', is_host: true, is_present: true, has_left: false, last_seen_at: '', joined_at: '' };
+const GUEST = { id: 'p2', member_id: 'm2', device_id: 'other-dev', display_name: 'Jack', is_host: false, is_present: false, has_left: false, last_seen_at: '', joined_at: '' };
 
 function state(over: Partial<RoomState['room']> = {}, phones = [HOST, GUEST]): RoomState {
   return {

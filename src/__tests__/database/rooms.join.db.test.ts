@@ -212,31 +212,88 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     expect(state.phones.find((p: Jsonb) => p.member_id === operatorMemberId).is_present).toBe(true);
   });
 
-  it('leave_room frees the seat at once, and only ever the caller\u2019s own row', async () => {
+  it('leave_room frees the seat at once but KEEPS the row — the guest list is not the invitation revoked', async () => {
     const room = await createRoomAs(operator, { shared: true });
     const device = newDevice();
     const guest = await join(player, room.join_token, device);
     expect(await seats(room.room_id)).toEqual({ devices: 2, used: 2, seats: 4, open: 2 });
 
-    // No waiting out the grace window.
     expect(await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device }))
       .toEqual({ ok: true, left: true });
-    expect(await seats(room.room_id)).toEqual({ devices: 1, used: 1, seats: 4, open: 3 });
+
+    // No waiting out the grace window: the seat is free now…
+    expect(await seats(room.room_id)).toMatchObject({ used: 1, open: 3 });
+    // …but they are still on the list, marked as having left.
+    const [row] = await executeSql(
+      `SELECT left_at IS NOT NULL AS has_left FROM public.room_phones WHERE id = $1`,
+      [guest.phone_id]
+    );
+    expect(row.has_left).toBe(true);
+
+    // Which is what keeps the room in their own list of rooms.
+    const mine = await executeSql(
+      `SELECT 1 FROM public.rooms r JOIN public.room_phones p ON p.room_id = r.id
+        WHERE r.id = $1 AND p.member_id = $2`,
+      [room.room_id, playerMemberId]
+    );
+    expect(mine).toHaveLength(1);
+  });
+
+  it('after leaving, the same screen walks back in free — no new invite, no seat check', async () => {
+    const room = await createRoomAs(operator, { shared: true });
+    const device = newDevice();
+    const first = await join(player, room.join_token, device);
+    await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device });
+
+    const back = await join(player, room.join_token, device);
+    expect(back).toMatchObject({ ok: true, rejoined: true, phone_id: first.phone_id });
+    expect(await seats(room.room_id)).toMatchObject({ used: 2, open: 2 });
+
+    // Back to "here", not "left".
+    const [row] = await executeSql(
+      `SELECT left_at FROM public.room_phones WHERE id = $1`, [first.phone_id]
+    );
+    expect(row.left_at).toBeNull();
+  });
+
+  it("a guest can rejoin a FULL house they had left — their row is still the invitation", async () => {
+    const room = await createRoomAs(operator, { shared: true });
+    const device = newDevice();
+    await join(player, room.join_token, device);
+    await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device });
+
+    // The host fills every remaining seat with other screens.
+    await join(captain, room.join_token);
+    await join(owner, room.join_token);
+    await join(operator, room.join_token, newDevice());
+    expect(await seats(room.room_id)).toMatchObject({ used: 4, open: 0 });
+
+    // A brand-new screen is refused…
+    expect(await join(captain, room.join_token, newDevice())).toMatchObject({ ok: false, reason: 'full' });
+    // …but the one that left is already on the list, so it walks back in.
+    // (Its seat is the one it never really gave up — see the rejoin branch.)
+    expect(await join(player, room.join_token, device)).toMatchObject({ ok: true, rejoined: true });
+  });
+
+  it("the host's × is the REAL removal: off the guest list, and the room leaves their list too", async () => {
+    const room = await createRoomAs(operator, { shared: true });
+    const device = newDevice();
+    const guest = await join(player, room.join_token, device);
+
+    expect(await rpc(operator, 'remove_room_phone', { p_phone_id: guest.phone_id, p_device_id: newDevice() }))
+      .toEqual({ ok: true, already_gone: false });
+
+    // Row gone — unlike leaving.
     expect(await executeSql(`SELECT 1 FROM public.room_phones WHERE id = $1`, [guest.phone_id])).toHaveLength(0);
+    expect(await executeSql(
+      `SELECT 1 FROM public.rooms r JOIN public.room_phones p ON p.room_id = r.id
+        WHERE r.id = $1 AND p.member_id = $2`,
+      [room.room_id, playerMemberId]
+    )).toHaveLength(0);
 
-    // Leaving twice is still "I am not in the room".
-    expect(await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device }))
-      .toEqual({ ok: true, left: false });
-
-    // It can never be used to drop somebody else: the host's row survives a
-    // guest naming the host's device.
-    const host = (await executeSql(
-      `SELECT device_id FROM public.room_phones WHERE room_id = $1 AND member_id = $2`,
-      [room.room_id, operatorMemberId]
-    ))[0];
-    expect(await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: host.device_id }))
-      .toEqual({ ok: true, left: false });
-    expect(await seats(room.room_id)).toMatchObject({ devices: 1, used: 1 });
+    // They can still come back, but only with the invite link — and it costs
+    // a seat again, because it is a new screen on the list.
+    expect(await join(player, room.join_token, device)).toMatchObject({ ok: true, rejoined: false });
   });
 
   it('leave_room does not keep an abandoned room alive against the sweep', async () => {

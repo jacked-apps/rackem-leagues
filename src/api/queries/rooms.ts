@@ -39,7 +39,16 @@ export interface RoomSeats {
   open: number;
 }
 
-/** One device in the room. A member on two devices is two of these. */
+/**
+ * One device on the room's GUEST LIST. A member on two devices is two of
+ * these. The row means "this screen was let in" and survives leaving — which
+ * is what keeps the room on the member's /rooms list and lets them walk back
+ * in without a new invite. `is_present` is the separate question of whether
+ * the screen is looking right now; that is what holds a seat.
+ *
+ * Only the host's × (`removeRoomPhone`) deletes a row, and that is the real
+ * removal: off the list, new invite needed.
+ */
 export interface RoomPhone {
   id: string;
   member_id: string;
@@ -47,6 +56,12 @@ export interface RoomPhone {
   display_name: string;
   is_host: boolean;
   is_present: boolean;
+  /**
+   * They used Exit rather than just going quiet. Same seat behaviour — both
+   * are simply not present — but the list says "left" instead of "away".
+   * Their row survives either way: the row IS the guest list.
+   */
+  has_left: boolean;
   last_seen_at: string;
   joined_at: string;
 }

@@ -8,7 +8,7 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **STATUS (2026-10-10): ELEVEN UNITS BUILT** (7 + the house-model rework + three passes from Ed's review) on branch `feat/game-room`,
+> **STATUS (2026-10-10): TWELVE UNITS BUILT** (7 + the house-model rework + four passes from Ed's review) on branch `feat/game-room`,
 > **GATED** non-production (routes + both nav doors behind `!isProduction`).
 > Next: Ed reviews on staging (checklist in `LIST_FOR_ED.md` → Gated section),
 > then un-gate by removing `NonProdGate` from the three `rooms/**` routes AND
@@ -953,6 +953,50 @@ which removes the channel. Only the row needed dealing with.
 **Rewritten test:** "ONE device in both rooms is TWO seats" (Unit 8) is now
 exactly the bug, and became "ONE screen is ONE seat even with a stale row in
 the room it just left", which ends by proving the next guest in line gets in.
+
+- [x] **Unit 12: The guest list and "who's here" are two things** — built
+  2026-10-10. Ed, on the Exit built an hour earlier: *"exiting a room you are
+  invited to should not remove the room from your view. You were invited to
+  that room by your host — you have locked the door for me to re-enter,
+  unless I get a new invite. Once I'm invited to a room it should have a
+  guest list? Who is in the room is separate from the guest list perhaps?"*
+
+**The flaw:** Unit 11's `leave_room` DELETED the phone row, but that row is
+two facts at once — "this screen was let in" (the guest list, which is what
+puts the room in a member's `/rooms` list and lets them walk back in) and
+"this screen is looking right now" (presence, which costs a socket and holds
+a seat). Deleting it to free a seat threw the invitation away with it.
+
+**Files:**
+- Create: `supabase/migrations/20261010155926_room_guest_list.sql`
+  (`room_phones.left_at`; `leave_room`, `join_room` and `room_state` replaced)
+- Modify: `api/queries/rooms.ts` (`RoomPhone.has_left`), `PhoneList.tsx`,
+  tests + fixtures, types regenerated
+
+**Approach — the separation already existed in the data; it was being
+misused.** Leaving now retires the HEARTBEAT and keeps the ROW: it backdates
+`last_seen_at` past the grace window, which *is* "not present", so the seat
+frees on the next read with no special case anywhere — the seat math, the
+chip and the list all already work off presence. Nothing new had to learn
+about leaving.
+- Deleting a row is a different act and already had an owner:
+  `remove_room_phone`, the host's ×. That is now **the real removal** — off
+  the guest list, and back only with a new invite. Which is the line Ed drew.
+- `left_at` exists only so the list can say **left** (used Exit) vs **away**
+  (phone asleep, tab backgrounded, battery dead). Identical seat behaviour;
+  it is the wording that differs, and the wording is the whole accessibility
+  story here since nothing states a state by colour.
+- Consequence worth knowing, and now pinned by a test: a guest who left can
+  walk back into a FULL house, because their row is the invitation and the
+  rejoin branch skips the seat check. That is right — they are reclaiming a
+  seat the host never re-let — but it means a host who truly wants someone
+  out uses the ×, not a hope that they stay gone.
+
+**Test scenarios (db, all green):** leaving frees the seat but keeps the row
+and the room stays in the member's list; the same screen walks back in free
+with `left_at` cleared; a leaver rejoins a full house while a new screen is
+refused; the host's × removes the row, drops the room from their list, and
+re-entry needs the link and costs a seat.
 
 ## System-Wide Impact
 

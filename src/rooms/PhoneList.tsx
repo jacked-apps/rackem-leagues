@@ -1,14 +1,18 @@
 /**
  * @fileoverview Who's here — one line per SCREEN in the room.
  *
+ * This is the room's GUEST LIST, not just who is here. A row means "this
+ * screen was let in", and it survives leaving — that is what keeps the room
+ * on a guest's /rooms list and lets them walk back in without a new invite.
+ * Only the host's × deletes a row, and that is the real removal.
+ *
  * A member on a phone and a tablet is two lines with the same name; that is
  * honest, because each screen holds a seat. "Present" comes from the server
  * (`is_present`, computed against its own clock) so this list and the seat
- * count never disagree. Away screens stay listed until the host drops them
- * or the room dies — they have given their seat back but they are still
- * someone the host may want to see.
+ * count never disagree. An absent screen reads **left** when it used Exit and
+ * **away** when it just went quiet — same seat behaviour, honest wording.
  *
- * Every state is a word: "host", "you", "away". Nothing is colour-only.
+ * Every state is a word: "host", "you", "left", "away". Nothing is colour-only.
  *
  * Rendered inside `PlayersChip`'s panel, which is the only place it appears —
  * the room page itself shows just the chip.
@@ -37,10 +41,12 @@ export function PhoneList({ phones, myPhoneId, onRemove }: PhoneListProps) {
   return (
     <ul className="divide-y text-sm">
       {phones.map((p) => {
+        // Two kinds of absence, two words. Both hold no seat; only the
+        // wording differs, because nothing here states a state by colour.
         const tags = [
           p.id === myPhoneId && 'you',
           p.is_host && 'host',
-          !p.is_present && 'away',
+          !p.is_present && (p.has_left ? 'left' : 'away'),
         ].filter(Boolean) as string[];
 
         return (

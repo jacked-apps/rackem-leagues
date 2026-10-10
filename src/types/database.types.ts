@@ -2600,6 +2600,7 @@ export type Database = {
           is_host: boolean
           joined_at: string
           last_seen_at: string
+          left_at: string | null
           member_id: string
           room_id: string
         }
@@ -2610,6 +2611,7 @@ export type Database = {
           is_host?: boolean
           joined_at?: string
           last_seen_at?: string
+          left_at?: string | null
           member_id: string
           room_id: string
         }
@@ -2620,6 +2622,7 @@ export type Database = {
           is_host?: boolean
           joined_at?: string
           last_seen_at?: string
+          left_at?: string | null
           member_id?: string
           room_id?: string
         }

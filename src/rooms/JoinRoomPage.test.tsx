@@ -26,7 +26,7 @@ const STATE: RoomState = {
   },
   seats: { devices: 2, used: 2, seats: 4, open: 2 },
   phones: [
-    { id: 'p1', member_id: 'm1', device_id: 'host-dev', display_name: 'Ed', is_host: true, is_present: true, last_seen_at: '', joined_at: '' },
+    { id: 'p1', member_id: 'm1', device_id: 'host-dev', display_name: 'Ed', is_host: true, is_present: true, has_left: false, last_seen_at: '', joined_at: '' },
   ],
 };
 

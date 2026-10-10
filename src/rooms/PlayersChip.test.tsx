@@ -15,11 +15,12 @@ const seats = (devices: number, open: number) => ({ devices, used: 4 - open, sea
 
 const phone = (id: string, name: string, over: Partial<RoomPhone> = {}): RoomPhone => ({
   id, member_id: `m-${id}`, device_id: `d-${id}`, display_name: name,
-  is_host: false, is_present: true, last_seen_at: '', joined_at: '', ...over,
+  is_host: false, is_present: true, has_left: false, last_seen_at: '', joined_at: '', ...over,
 });
 const ED = phone('p1', 'Ed', { is_host: true });
 const JACK = phone('p2', 'Jack');
 const AWAY = phone('p3', 'Sam', { is_present: false });
+const LEFT = phone('p4', 'Mo', { is_present: false, has_left: true });
 
 const props = {
   seats: seats(2, 2),
@@ -93,14 +94,18 @@ describe('PlayersChip', () => {
     expect(screen.queryByText('Jack')).toBeNull();
   });
 
-  it('the panel lists every screen with its words', () => {
-    renderChip({ phones: [ED, JACK, AWAY] });
+  it('the panel lists every screen on the guest list, with its words', () => {
+    renderChip({ phones: [ED, JACK, AWAY, LEFT] });
     openPanel();
     expect(screen.getByText('Ed')).toBeInTheDocument();
     expect(screen.getByText('you · host')).toBeInTheDocument();
     expect(screen.getByText('Jack')).toBeInTheDocument();
+
+    // Two kinds of absence, two words — both are still ON the guest list.
     expect(screen.getByText('Sam')).toBeInTheDocument();
     expect(screen.getByText('away')).toBeInTheDocument();
+    expect(screen.getByText('Mo')).toBeInTheDocument();
+    expect(screen.getByText('left')).toBeInTheDocument();
   });
 
   it('shared room: the panel offers the invite and does NOT repeat the seat count', () => {
