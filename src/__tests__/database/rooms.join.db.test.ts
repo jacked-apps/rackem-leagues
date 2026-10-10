@@ -328,6 +328,32 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     expect(await join(captain, b.join_token)).toMatchObject({ ok: true });
   });
 
+  it('a heartbeat clears "left" — you cannot be here and have left', async () => {
+    const room = await createRoomAs(operator, { shared: true });
+    const device = newDevice();
+    const r = await join(player, room.join_token, device);
+    await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device });
+
+    const flagged = await executeSql(
+      `SELECT left_at IS NOT NULL AS has_left, last_seen_at > now() - public.room_presence_grace() AS present
+         FROM public.room_phones WHERE id = $1`, [r.phone_id]
+    );
+    expect(flagged[0]).toEqual({ has_left: true, present: false });
+
+    // The room page does NOT call join_room when a row already exists — it
+    // finds the row and just beats. So the beat has to be what un-leaves you,
+    // or the row reads "left" while its owner sits looking at the screen.
+    expect(await rpc(player, 'room_heartbeat', { p_room_id: room.room_id, p_device_id: device }))
+      .toEqual({ ok: true });
+
+    const back = await executeSql(
+      `SELECT left_at IS NOT NULL AS has_left, last_seen_at > now() - public.room_presence_grace() AS present
+         FROM public.room_phones WHERE id = $1`, [r.phone_id]
+    );
+    expect(back[0]).toEqual({ has_left: false, present: true });
+    expect(await seats(room.room_id)).toMatchObject({ used: 2 });
+  });
+
   it('room_heartbeat refreshes the device and bumps the room row only when it is stale', async () => {
     const room = await createRoomAs(operator, { shared: true });
     const device = newDevice();

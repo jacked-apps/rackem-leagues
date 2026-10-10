@@ -992,6 +992,8 @@ about leaving.
   seat the host never re-let — but it means a host who truly wants someone
   out uses the ×, not a hope that they stay gone.
 
+**Found in testing (same day), fixed in `20261010181642_room_heartbeat_clears_left.sql`:** nothing cleared `left_at` on the common path. The room page does NOT call `join_room` when a row already exists — it finds the row, starts the heartbeat and renders — so a screen that had ever used Exit stayed flagged, and read "host · left" while its owner sat looking at it. `room_heartbeat` now clears `left_at` too: the beat is the statement "this screen is here", and you cannot be here and have left. It also makes the return instant for everyone else, because `left_at` is not a column the realtime filter ignores.
+
 **Test scenarios (db, all green):** leaving frees the seat but keeps the row
 and the room stays in the member's list; the same screen walks back in free
 with `left_at` cleared; a leaver rejoins a full house while a new screen is
