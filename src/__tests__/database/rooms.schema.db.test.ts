@@ -104,7 +104,7 @@ describe('Game Room schema (Unit 1)', () => {
 
   it('no room RPC is executable by anon; the client-facing ones are by authenticated', async () => {
     const sigs = [
-      'public.create_room(text,text[],uuid,jsonb,boolean)',
+      'public.create_room(text,text[],uuid,jsonb,boolean,integer)',
       'public.join_room(uuid,uuid)',
       'public.room_heartbeat(uuid,uuid)',
       'public.set_room_game(uuid,text,text[],jsonb)',

@@ -26,24 +26,23 @@ export function seatLine(seats: RoomSeats, shared: boolean): string {
 }
 
 /**
- * The players chip's always-visible line: "Players 3 of 4".
+ * The players chip's always-visible line: "Players 1 of 2".
  *
- * Counts EVERY screen, host included. The host's own devices consume seats
- * (house model, Unit 8), so "guests out of 3" would not be a stable number —
- * a host with a phone and a tablet leaves guests only two. Out of four, the
- * denominator never moves.
+ * Both numbers describe THIS room: the screens in it, out of what its GAME
+ * seats (`room_max`). Counts everyone, host included — the host is a person
+ * in the room, and their screen holds a place like anybody's.
  *
- * The numerator is the HOUSE count (`used`), not just this room's screens, so
- * the chip always answers the question that matters: can one more get in? In
- * the ordinary one-room case it is the same number as the people in front of
- * you; when the host has a second room open it stays correct, and the panel
- * adds a line explaining where the others are.
+ * It used to read out of the HOUSE total, which Ed caught in testing: a
+ * coin-flip room holding one person announced "2 of 4", describing a
+ * different room than the one on screen and advertising space for two people
+ * who would have had nothing to do. The house figure is the host's billing
+ * concern and lives in the panel.
  *
- * A free room has no seats to offer, so it counts the room and stops.
+ * A free room cannot be joined at all, so there is nothing to count against.
  */
 export function playersChipLabel(seats: RoomSeats, shared: boolean): string {
   if (!shared) return `Players ${seats.devices}`;
-  return `Players ${seats.used} of ${seats.seats}`;
+  return `Players ${seats.devices} of ${seats.room_max}`;
 }
 
 /**

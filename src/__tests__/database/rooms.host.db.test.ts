@@ -226,7 +226,7 @@ describe('host controls + reads (Unit 1)', () => {
     const byToken = await rpc(player, 'get_room_by_token', { p_join_token: room.join_token });
     expect(byToken.found).toBe(true);
     expect(byToken.room).toMatchObject({ id: room.room_id, game_key: 'test_game', game_tables: [GOOD_TABLE], shared: true, host_member_id: operatorMemberId });
-    expect(byToken.seats).toEqual({ devices: 2, used: 2, seats: 4, open: 2 });
+    expect(byToken.seats).toMatchObject({ devices: 2, used: 2, seats: 4, open: 2, room_max: 4 });
     expect(byToken.phones).toHaveLength(2);
     const me = byToken.phones.find((p: Jsonb) => p.id === joined.phone_id);
     expect(me).toMatchObject({ member_id: playerMemberId, is_host: false, is_present: true });

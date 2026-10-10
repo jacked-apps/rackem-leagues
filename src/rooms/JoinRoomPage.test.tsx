@@ -22,9 +22,9 @@ import { JoinRoomPage } from './JoinRoomPage';
 const STATE: RoomState = {
   room: {
     id: 'r1', host_member_id: 'm1', game_key: 'coin_flip', game_tables: ['room_coin_flips'],
-    settings: {}, shared: true, join_token: 'tok', last_activity_at: '', created_at: '',
+    settings: {}, shared: true, max_screens: 2, join_token: 'tok', last_activity_at: '', created_at: '',
   },
-  seats: { devices: 2, used: 2, seats: 4, open: 2 },
+  seats: { devices: 2, room_max: 2, used: 2, seats: 4, open: 2 },
   phones: [
     { id: 'p1', member_id: 'm1', device_id: 'host-dev', display_name: 'Ed', is_host: true, is_present: true, has_left: false, last_seen_at: '', joined_at: '' },
   ],
@@ -72,7 +72,7 @@ describe('JoinRoomPage', () => {
 
   it('full → the house-seats explanation with the server hint; Join gives way to it', async () => {
     mockJoin.mockResolvedValue({
-      ok: false, reason: 'full', seats: { devices: 4, used: 4, seats: 4, open: 0 },
+      ok: false, reason: 'full', seats: { devices: 2, room_max: 2, used: 4, seats: 4, open: 0 },
       hint: "a seat frees up when a screen in the host's house closes",
     });
     renderAt();

@@ -30,7 +30,9 @@ export type RoomRefusal =
   | 'duplicate_table'
   | 'table_reserved'
   | 'table_not_ready'
-  | 'is_self';
+  | 'is_self'
+  | 'room_full'
+  | 'bad_occupancy';
 
 /** The refused half of any room RPC result. */
 export interface RoomRefused {
@@ -70,6 +72,8 @@ export interface CreateRoomParams {
   settings?: Record<string, Json>;
   /** false = free room (one device, no channel). true needs the host gate. */
   shared?: boolean;
+  /** The game's occupancy (`GameDefinition.screens.max`) — this room's cap. */
+  maxScreens: number;
 }
 
 /** The caller becomes host + first device. */
@@ -80,6 +84,7 @@ export function createRoom(p: CreateRoomParams): Promise<CreateRoomResult> {
     p_device_id: p.deviceId,
     p_settings: p.settings ?? {},
     p_shared: p.shared ?? false,
+    p_max_screens: p.maxScreens,
   });
 }
 

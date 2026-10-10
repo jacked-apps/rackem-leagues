@@ -35,6 +35,7 @@ import {
   newDevice,
   rpc,
   createRoomAs,
+  GOOD_TABLE,
   type Jsonb,
 } from './roomsFixtures';
 
@@ -128,24 +129,25 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
   }
 
   it('the house has 4 seats; the host takes one on creation; three more screens fill it; the next is full', async () => {
-    const room = await createRoomAs(operator, { shared: true }); // host's screen = 1
-    expect(await seats(room.room_id)).toEqual({ devices: 1, used: 1, seats: 4, open: 3 });
+    // maxScreens 8 so the HOUSE is the limit under test, not the room's game.
+    const room = await createRoomAs(operator, { shared: true, maxScreens: 8 }); // host's screen = 1
+    expect(await seats(room.room_id)).toMatchObject({ devices: 1, used: 1, seats: 4, open: 3 });
 
     expect(await join(player, room.join_token)).toMatchObject({ ok: true });
     expect(await join(captain, room.join_token)).toMatchObject({ ok: true });
     await seatStranger(room.room_id);
-    expect(await seats(room.room_id)).toEqual({ devices: 4, used: 4, seats: 4, open: 0 });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 4, used: 4, seats: 4, open: 0 });
 
     const fifth = await join(owner, room.join_token);
     expect(fifth).toMatchObject({ ok: false, reason: 'full' });
-    expect(fifth.seats).toEqual({ devices: 4, used: 4, seats: 4, open: 0 });
+    expect(fifth.seats).toMatchObject({ devices: 4, used: 4, seats: 4, open: 0 });
     expect(typeof fifth.hint).toBe('string');
   });
 
   it("the host's own second screen is a seat like any other — the bill does not know whose it is", async () => {
-    const room = await createRoomAs(operator, { shared: true });
+    const room = await createRoomAs(operator, { shared: true, maxScreens: 8 });
     expect(await join(operator, room.join_token, newDevice())).toMatchObject({ ok: true, rejoined: false });
-    expect(await seats(room.room_id)).toEqual({ devices: 2, used: 2, seats: 4, open: 2 });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 2, used: 2, seats: 4, open: 2 });
 
     // Thirty cheap tablets do not get a pass: the host's 3rd and 4th screens fill the house.
     await join(operator, room.join_token, newDevice());
@@ -158,10 +160,10 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     const phone = newDevice();
     await join(player, room.join_token, phone);
     await join(player, room.join_token, newDevice()); // tablet
-    expect(await seats(room.room_id)).toEqual({ devices: 3, used: 3, seats: 4, open: 1 });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 3, used: 3, seats: 4, open: 1 });
 
     expect(await join(player, room.join_token, phone)).toMatchObject({ ok: true, rejoined: true });
-    expect(await seats(room.room_id)).toEqual({ devices: 3, used: 3, seats: 4, open: 1 });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 3, used: 3, seats: 4, open: 1 });
   });
 
   it('seats span every room the host owns: screens in room A count against room B', async () => {
@@ -181,13 +183,65 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     expect(await join(owner, a.join_token)).toMatchObject({ ok: false, reason: 'full' });
   });
 
+  it('a room seats only what its GAME declared — the third screen is room_full, not full', async () => {
+    // A coin flip: two screens, no more. The host's house still has slack.
+    const room = await createRoomAs(operator, { shared: true, maxScreens: 2 });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 1, room_max: 2, open: 3 });
+
+    expect(await join(player, room.join_token)).toMatchObject({ ok: true });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 2, room_max: 2, open: 2 });
+
+    // Refused by the ROOM, with the game's own sentence — and the house is
+    // demonstrably not the thing that stopped them.
+    const third = await join(captain, room.join_token);
+    expect(third).toMatchObject({ ok: false, reason: 'room_full' });
+    expect(third.hint).toContain('2');
+    expect(third.seats).toMatchObject({ open: 2 });
+  });
+
+  it('a screen that leaves a full game makes room for the next player', async () => {
+    const room = await createRoomAs(operator, { shared: true, maxScreens: 2 });
+    const device = newDevice();
+    await join(player, room.join_token, device);
+    expect(await join(captain, room.join_token)).toMatchObject({ ok: false, reason: 'room_full' });
+
+    await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device });
+    expect(await join(captain, room.join_token)).toMatchObject({ ok: true });
+  });
+
+  it('the two limits are separate: a roomy game can still run out of HOUSE seats', async () => {
+    const room = await createRoomAs(operator, { shared: true, maxScreens: 8 });
+    await join(player, room.join_token);
+    await join(captain, room.join_token);
+    await join(owner, room.join_token);
+    // 4 screens live, and the game would happily take four more.
+    expect(await seats(room.room_id)).toMatchObject({ devices: 4, room_max: 8, open: 0 });
+
+    const fifth = await join(player, room.join_token, newDevice());
+    expect(fifth).toMatchObject({ ok: false, reason: 'full' });
+  });
+
+  it('create_room refuses an occupancy outside the ceiling', async () => {
+    for (const bad of [0, 9]) {
+      const r = await rpc(operator, 'create_room', {
+        p_game_key: 'test_game', p_tables: [GOOD_TABLE], p_device_id: newDevice(),
+        p_settings: {}, p_shared: false, p_max_screens: bad,
+      });
+      expect(r, `max_screens ${bad}`).toMatchObject({ ok: false, reason: 'bad_occupancy' });
+    }
+    expect(await executeSql(
+      `SELECT 1 FROM public.rooms WHERE host_member_id = $1 AND game_key = 'test_game'`,
+      [operatorMemberId]
+    )).toHaveLength(0);
+  });
+
   it('a friend who is also a host is just a screen in your house — and spends none of their own seats', async () => {
     const room = await createRoomAs(operator, { shared: true });
     expect(await join(owner, room.join_token)).toMatchObject({ ok: true }); // owner passes the host gate
-    expect(await seats(room.room_id)).toEqual({ devices: 2, used: 2, seats: 4, open: 2 });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 2, used: 2, seats: 4, open: 2 });
 
     const theirs = await createRoomAs(owner, { shared: true });
-    expect(await seats(theirs.room_id)).toEqual({ devices: 1, used: 1, seats: 4, open: 3 });
+    expect(await seats(theirs.room_id)).toMatchObject({ devices: 1, used: 1, seats: 4, open: 3 });
   });
 
   it('is_host on a phone row means OWNS the room, not "passed the gate"', async () => {
@@ -201,10 +255,10 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
   it('a screen whose heartbeat is older than the grace window is not present and frees its house seat', async () => {
     const room = await createRoomAs(operator, { shared: true });
     const r = await join(player, room.join_token);
-    expect(await seats(room.room_id)).toEqual({ devices: 2, used: 2, seats: 4, open: 2 });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 2, used: 2, seats: 4, open: 2 });
 
     await executeSql(`UPDATE public.room_phones SET last_seen_at = now() - interval '3 minutes' WHERE id = $1`, [r.phone_id]);
-    expect(await seats(room.room_id)).toEqual({ devices: 1, used: 1, seats: 4, open: 3 });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 1, used: 1, seats: 4, open: 3 });
 
     const state = await rpc(player, 'get_room', { p_room_id: room.room_id });
     const mine = state.phones.find((p: Jsonb) => p.id === r.phone_id);
@@ -216,7 +270,7 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     const room = await createRoomAs(operator, { shared: true });
     const device = newDevice();
     const guest = await join(player, room.join_token, device);
-    expect(await seats(room.room_id)).toEqual({ devices: 2, used: 2, seats: 4, open: 2 });
+    expect(await seats(room.room_id)).toMatchObject({ devices: 2, used: 2, seats: 4, open: 2 });
 
     expect(await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device }))
       .toEqual({ ok: true, left: true });
@@ -257,7 +311,8 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
   });
 
   it("a guest can rejoin a FULL house they had left — their row is still the invitation", async () => {
-    const room = await createRoomAs(operator, { shared: true });
+    // A roomy game, so the HOUSE is what runs out rather than the room.
+    const room = await createRoomAs(operator, { shared: true, maxScreens: 8 });
     const device = newDevice();
     await join(player, room.join_token, device);
     await rpc(player, 'leave_room', { p_room_id: room.room_id, p_device_id: device });

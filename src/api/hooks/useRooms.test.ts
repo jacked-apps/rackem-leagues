@@ -34,9 +34,9 @@ import type { RoomState } from '@/api/queries/rooms';
 const STATE: RoomState = {
   room: {
     id: 'r1', host_member_id: 'm1', game_key: 'coin_flip', game_tables: ['room_coin_flips'],
-    settings: {}, shared: true, join_token: 'tok', last_activity_at: '', created_at: '',
+    settings: {}, shared: true, max_screens: 2, join_token: 'tok', last_activity_at: '', created_at: '',
   },
-  seats: { devices: 1, used: 1, seats: 4, open: 3 },
+  seats: { devices: 1, room_max: 2, used: 1, seats: 4, open: 3 },
   phones: [],
 };
 

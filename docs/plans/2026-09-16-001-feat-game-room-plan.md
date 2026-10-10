@@ -8,7 +8,7 @@ origin: docs/brainstorms/2026-09-16-game-room-requirements.md
 
 # feat: Game Room — a generic, perishable, multi-phone room that games plug into
 
-> **STATUS (2026-10-10): TWELVE UNITS BUILT** (7 + the house-model rework + four passes from Ed's review) on branch `feat/game-room`,
+> **STATUS (2026-10-10): THIRTEEN UNITS BUILT** (7 + the house-model rework + five passes from Ed's review) on branch `feat/game-room`,
 > **GATED** non-production (routes + both nav doors behind `!isProduction`).
 > Next: Ed reviews on staging (checklist in `LIST_FOR_ED.md` → Gated section),
 > then un-gate by removing `NonProdGate` from the three `rooms/**` routes AND
@@ -999,6 +999,54 @@ and the room stays in the member's list; the same screen walks back in free
 with `left_at` cleared; a leaver rejoins a full house while a new screen is
 refused; the host's × removes the row, drops the room from their list, and
 re-entry needs the link and costs a seat.
+
+- [x] **Unit 13: A room seats what its GAME says** — built 2026-10-10. Ed,
+  looking at "Players 2 of 4" in a room holding one person: *"2 of 4 when
+  only 1 is present seems wrong… I think rooms should have an occupancy
+  allowance. For instance a coin flip only needs 2 people, one flipper one
+  caller, so having 4 people just kind of makes it weird — if there are 3 or
+  4 who is flipping against who?"*
+
+**The flaw:** the only capacity in the system was the HOUSE (4 screens per
+host, across all their rooms). That is a *billing* limit, and it was being
+shown as if it were a *room* limit — so a coin-flip room advertised space for
+four people who would have had nothing to do, and the chip's denominator
+described a different room than the one on screen.
+
+**Files:**
+- Create: `supabase/migrations/20261010225123_room_occupancy.sql`
+  (`room_occupancy_cap()` dial, `rooms.max_screens`, `room_seats` +
+  `room_state` + `create_room` + `join_room` replaced)
+- Modify: `games/types.ts` (`GameDefinition.screens: {min,max}`),
+  `games/registry.ts` (`MAX_ROOM_SCREENS`), `coinflip/definition.ts` (2/2),
+  `api/queries/rooms.ts`, `api/mutations/rooms.ts`, `seatCopy.ts`,
+  `PlayersChip.tsx`, `roomRefusalCopy.ts`, `RoomsIndexPage.tsx`, fixtures
+- Test: 4 db + reworked chip-label tests + a registry contract check
+
+**Approach — two capacities, two questions, one each:**
+- `rooms.max_screens` — what the GAME seats. Declared by the game, written at
+  creation **exactly like `game_tables`**: the client says what shape the game
+  is, the server validates it (1..`room_occupancy_cap()`, else
+  `bad_occupancy`) and stores it, and from then on the server enforces it
+  without knowing anything about games.
+- `house_seats()` — what the HOST may have live anywhere. Unchanged.
+- `join_room` clears both, **room first**, because "this game seats two" is
+  more useful than "the host is out of seats" when both are true. Separate
+  reasons (`room_full` vs `full`) so the copy can differ.
+- A rejoin on a device already on the guest list skips **both** checks — the
+  row is the invitation.
+- The chip now reads **"Players 1 of 2"** (this room / its game); the house
+  figure moved into the panel, where someone about to invite can act on it.
+
+**Scoreboards stay the game's job.** Ed raised them in the same breath, and
+the answer is the plug-in contract as it stands: a game with four players
+brings its own scoreboard in its own folder, like the coin flip brings its
+own screen. The room must never grow a generic one — that is the line that
+keeps the race pluggable.
+
+**Range support is declared but unused:** `screens: {min, max}` allows a game
+with a range (a round robin, say) and the create dialog would ask the host.
+Nothing declares a range yet, so there is no new UI.
 
 ## System-Wide Impact
 

@@ -1,5 +1,5 @@
 /**
- * @fileoverview "Players 2 · 1 open" — the room's one line about who is here,
+ * @fileoverview "Players 1 of 2" — the room's one line about who is here,
  * and the panel behind it.
  *
  * Replaces the old pair (a seat-counter button plus an always-open list),
@@ -14,24 +14,20 @@
  *   - host only: an × per row to remove that screen
  *   - the invite action, or on a free room the host's "open the door"
  *
- * The panel does NOT repeat the seat count: it is already on the chip the
- * user just tapped (Ed, 2026-10-09 — "I don't need to see 3 seats open 2x").
+ * The panel does not repeat the chip's number — it shows the OTHER one. The
+ * chip is this room ("Players 1 of 2", its game's occupancy); the panel is
+ * the host's house, the billing limit that spans every room they own. Two
+ * capacities, two questions, one each.
  *
- * The label counts EVERY screen in the host's house, host included —
- * "Players 3 of 4". The host's own devices consume seats (Unit 8), so
- * "guests out of 3" would be an unstable denominator, and hiding the host
- * from a guest's list would hide a person who is in the room.
- *
- * The number is the HOUSE count, so it always answers "can one more get in?".
- * In the ordinary one-room case it matches the people in front of you; with a
- * second room open it stays right and the panel says where the rest are.
+ * The label counts everyone in THIS room, host included — the host is a
+ * person in the room and their screen holds a place like anybody's.
  */
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { RoomPhone, RoomSeats } from '@/api/queries/rooms';
 import { PhoneList } from './PhoneList';
-import { elsewhereNote, playersChipLabel } from './seatCopy';
+import { elsewhereNote, emptySeatsLabel, playersChipLabel } from './seatCopy';
 
 interface PlayersChipProps {
   seats: RoomSeats;
@@ -83,13 +79,16 @@ export function PlayersChip({
       <PopoverContent align="end" className="w-56 p-2">
         <PhoneList phones={phones} myPhoneId={myPhoneId} onRemove={isHost ? onRemove : undefined} />
 
-        {/* The seat count is already in the chip the user just tapped — saying
-            it again here was the same number twice on one screen. The only
-            thing worth adding is where the screens the list CAN'T show are. */}
         <div className="mt-1 border-t pt-2">
           {shared ? (
             <>
-              {elsewhere && <p className="px-1 pb-2 text-xs text-muted-foreground">{elsewhere}</p>}
+              {/* The chip says what THIS room holds; the house figure — the
+                  host's billing limit, spanning every room they own — belongs
+                  here, where someone about to invite can act on it. */}
+              <p className="px-1 pb-2 text-xs text-muted-foreground">
+                {emptySeatsLabel(seats.open)} in {isHost ? 'your' : "the host's"} house.
+                {elsewhere ? ` ${elsewhere}` : ''}
+              </p>
               <Button variant="outline" size="sm" className="w-full" onClick={act(onInvite)}>
                 Invite someone
               </Button>

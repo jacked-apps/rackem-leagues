@@ -2652,6 +2652,7 @@ export type Database = {
           id: string
           join_token: string
           last_activity_at: string
+          max_screens: number
           settings: Json
           shared: boolean
         }
@@ -2663,6 +2664,7 @@ export type Database = {
           id?: string
           join_token?: string
           last_activity_at?: string
+          max_screens?: number
           settings?: Json
           shared?: boolean
         }
@@ -2674,6 +2676,7 @@ export type Database = {
           id?: string
           join_token?: string
           last_activity_at?: string
+          max_screens?: number
           settings?: Json
           shared?: boolean
         }
@@ -3846,6 +3849,7 @@ export type Database = {
         Args: {
           p_device_id: string
           p_game_key: string
+          p_max_screens?: number
           p_settings?: Json
           p_shared?: boolean
           p_tables: string[]
@@ -4265,6 +4269,10 @@ export type Database = {
       room_member_is_host: {
         Args: { p_member_id: string }
         Returns: boolean
+      }
+      room_occupancy_cap: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       room_phone_is_mine: {
         Args: { p_member_id: string; p_phone_id: string; p_room_id: string }

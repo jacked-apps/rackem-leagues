@@ -80,7 +80,7 @@ describe('room queries (Unit 3)', () => {
 
     const byId = await getRoom(room.room_id);
     expect(byId?.room.id).toBe(room.room_id);
-    expect(byId?.seats).toEqual({ devices: 1, used: 1, seats: 4, open: 3 });
+    expect(byId?.seats).toMatchObject({ devices: 1, used: 1, seats: 4, open: 3, room_max: 4 });
     expect(byId?.phones).toHaveLength(1);
     expect(await getRoomByToken(room.join_token)).toEqual(byId);
 

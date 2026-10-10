@@ -20,6 +20,8 @@ export interface RoomRow {
   game_tables: string[];
   settings: Record<string, Json>;
   shared: boolean;
+  /** How many screens this room's GAME seats (its occupancy). */
+  max_screens: number;
   join_token: string;
   last_activity_at: string;
   created_at: string;
@@ -28,12 +30,17 @@ export interface RoomRow {
 /**
  * The seat picture (house model): seats belong to the room's OWNER and span
  * every room they own. A seat is a SCREEN — one present device on one room
- * page, one websocket — the owner's screens included. `devices` is THIS
- * room's present screens; `used` / `seats` / `open` are the owner's house:
- * screens present across all their rooms, the dial (4), and what is left.
+ * page, one websocket — the owner's screens included.
+ *
+ * TWO capacities, answering two questions:
+ *   `devices` / `room_max` — THIS room: can the GAME take another player?
+ *   `used` / `seats` / `open` — the OWNER'S house: may they have another
+ *                              screen live anywhere? (the billing limit)
  */
 export interface RoomSeats {
   devices: number;
+  /** This room's own capacity — its game's occupancy. The chip's denominator. */
+  room_max: number;
   used: number;
   seats: number;
   open: number;

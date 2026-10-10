@@ -11,7 +11,7 @@ import type { RoomPhone } from '@/api/queries/rooms';
 import { PlayersChip } from './PlayersChip';
 import { elsewhereNote, emptySeatsLabel, playersChipLabel, seatLine } from './seatCopy';
 
-const seats = (devices: number, open: number) => ({ devices, used: 4 - open, seats: 4, open });
+const seats = (devices: number, open: number, roomMax = 2) => ({ devices, room_max: roomMax, used: 4 - open, seats: 4, open });
 
 const phone = (id: string, name: string, over: Partial<RoomPhone> = {}): RoomPhone => ({
   id, member_id: `m-${id}`, device_id: `d-${id}`, display_name: name,
@@ -42,21 +42,22 @@ const openPanel = () => fireEvent.click(screen.getByRole('button', { name: /Play
 beforeEach(() => vi.clearAllMocks());
 
 describe('playersChipLabel', () => {
-  it('counts every screen in the house, host included, out of a fixed 4', () => {
-    expect(playersChipLabel(seats(2, 2), true)).toBe('Players 2 of 4');
-    expect(playersChipLabel(seats(1, 3), true)).toBe('Players 1 of 4');
+  it('counts THIS room out of what its GAME seats, host included', () => {
+    expect(playersChipLabel(seats(1, 3), true)).toBe('Players 1 of 2');
+    expect(playersChipLabel(seats(2, 2), true)).toBe('Players 2 of 2');
   });
 
-  it('a full house reads 4 of 4 — no special wording needed', () => {
-    expect(playersChipLabel(seats(4, 0), true)).toBe('Players 4 of 4');
+  it('a bigger game gets a bigger denominator — occupancy is the game\u2019s, not the house\u2019s', () => {
+    expect(playersChipLabel(seats(3, 1, 6), true)).toBe('Players 3 of 6');
   });
 
-  it('the numerator is the HOUSE count, so a second room shows through', () => {
-    // 1 screen in this room, 3 across the house.
-    expect(playersChipLabel({ devices: 1, used: 3, seats: 4, open: 1 }, true)).toBe('Players 3 of 4');
+  it('ignores the house figure entirely: a busy house does not change this room', () => {
+    // 1 screen here, 3 across the host's rooms — the chip describes the room.
+    expect(playersChipLabel({ devices: 1, room_max: 2, used: 3, seats: 4, open: 1 }, true))
+      .toBe('Players 1 of 2');
   });
 
-  it('a free room counts the room and stops — it has no seats to offer', () => {
+  it('a free room cannot be joined, so there is nothing to count against', () => {
     expect(playersChipLabel(seats(1, 3), false)).toBe('Players 1');
   });
 });
@@ -90,7 +91,7 @@ describe('seatCopy (still used by the panel and the join page)', () => {
 describe('PlayersChip', () => {
   it('shows only the chip until it is tapped', () => {
     renderChip();
-    expect(screen.getByRole('button', { name: /Players 2 of 4/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Players 2 of 2/ })).toBeInTheDocument();
     expect(screen.queryByText('Jack')).toBeNull();
   });
 
@@ -108,12 +109,11 @@ describe('PlayersChip', () => {
     expect(screen.getByText('left')).toBeInTheDocument();
   });
 
-  it('shared room: the panel offers the invite and does NOT repeat the seat count', () => {
+  it('the panel shows the OTHER capacity — the house — and the invite', () => {
     renderChip();
     openPanel();
-    // The count is on the chip the user just tapped; twice on one screen was
-    // the thing Ed flagged.
-    expect(screen.queryByText(/seats open/)).toBeNull();
+    // The chip says this room; the panel says the host's house. Not a repeat.
+    expect(screen.getByText(/2 seats open in your house/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Invite someone' }));
     expect(props.onInvite).toHaveBeenCalledTimes(1);
   });
@@ -151,12 +151,12 @@ describe('PlayersChip', () => {
 });
 
 describe('PlayersChip — the host with a second room open', () => {
-  it('the chip counts the house and the panel says where the rest are', () => {
-    renderChip({ seats: { devices: 1, used: 3, seats: 4, open: 1 }, phones: [ED] });
-    expect(screen.getByRole('button', { name: /Players 3 of 4/ })).toBeInTheDocument();
+  it('the chip stays about this room; the panel explains the busy house', () => {
+    renderChip({ seats: { devices: 1, room_max: 2, used: 3, seats: 4, open: 1 }, phones: [ED] });
+    expect(screen.getByRole('button', { name: /Players 1 of 2/ })).toBeInTheDocument();
 
     openPanel();
-    // The list can only show this room, so the gap gets a sentence.
-    expect(screen.getByText('2 more screens are in your other rooms.')).toBeInTheDocument();
+    expect(screen.getByText(/1 seat open in your house/)).toBeInTheDocument();
+    expect(screen.getByText(/2 more screens are in your other rooms./)).toBeInTheDocument();
   });
 });

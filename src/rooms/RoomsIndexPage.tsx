@@ -36,6 +36,7 @@ export function RoomsIndexPage() {
       tables: [...game.tables],
       deviceId: getDeviceId(),
       shared,
+      maxScreens: game.screens.max,
     });
     if (!result.ok) return roomRefusalCopy(result);
     navigate(`/rooms/${result.room_id}`);

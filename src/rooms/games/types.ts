@@ -61,6 +61,19 @@ export interface GameDefinition {
   /** The tables the game's rows live in — the plug-in contract (cap 3). */
   tables: readonly string[];
   /**
+   * How many SCREENS the game can use in one room — its occupancy.
+   *
+   * The room stores `max` on the row at creation and enforces it at the door
+   * (`room_full`), so a coin flip cannot collect four people who would have
+   * nothing to do and no answer to "who is flipping whom". Fixed games set
+   * min === max; a game with a range (a round robin, say) declares one, and
+   * the create dialog asks the host — nothing does yet.
+   *
+   * Separate from the host's house seats, which is the billing limit and
+   * spans every room they own.
+   */
+  screens: { min: number; max: number };
+  /**
    * Renders when the room has this game but its settings say "not started".
    * Omit for a game with nothing to configure before play (the coin flip:
    * who calls is chosen per flip, inside `Play`, not once for the room).

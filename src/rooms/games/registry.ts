@@ -17,6 +17,13 @@ export const RESERVED_TABLES: readonly string[] = ['rooms', 'room_phones'];
 /** How many tables one game may bring. A dial; mirrors the RPC's cap. */
 export const MAX_GAME_TABLES = 3;
 
+/**
+ * The largest occupancy a game may declare for one room — mirrors
+ * `room_occupancy_cap()`. A sanity ceiling, not a product limit: in practice
+ * the binding constraint is the host's house seats.
+ */
+export const MAX_ROOM_SCREENS = 8;
+
 const GAMES: Record<string, GameDefinition> = {
   [COIN_FLIP.key]: COIN_FLIP,
 };

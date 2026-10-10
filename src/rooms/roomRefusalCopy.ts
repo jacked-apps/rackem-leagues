@@ -32,6 +32,10 @@ export function roomRefusalCopy(r: RoomRefused): string {
       return 'This room has ended.';
     case 'not_shared':
       return 'This room is private. The host can open the door to invite people.';
+    case 'room_full':
+      return `This game is full — ${r.hint ?? 'it seats everyone it can'}.`;
+    case 'bad_occupancy':
+      return `A room can seat at most ${r.max ?? 8} screens.`;
     case 'full':
       return `The host's seats are all taken — ${r.hint ?? "a seat frees up when a screen in the host's house closes"}.`;
     case 'not_in_room':

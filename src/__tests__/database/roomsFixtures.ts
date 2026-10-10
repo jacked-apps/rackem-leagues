@@ -119,7 +119,7 @@ export async function rpc(
 /** Create a room as `client`; returns {room_id, join_token}. Throws unless ok. */
 export async function createRoomAs(
   client: SupabaseClient<Database>,
-  opts: { shared?: boolean; tables?: string[]; device?: string; game?: string } = {}
+  opts: { shared?: boolean; tables?: string[]; device?: string; game?: string; maxScreens?: number } = {}
 ): Promise<{ room_id: string; join_token: string; device: string }> {
   const device = opts.device ?? newDevice();
   const r = await rpc(client, 'create_room', {
@@ -128,6 +128,9 @@ export async function createRoomAs(
     p_device_id: device,
     p_settings: {},
     p_shared: opts.shared ?? false,
+    // Tests default to a 4-screen room: the old pre-occupancy behaviour, so
+    // the house limit stays the interesting one unless a test says otherwise.
+    p_max_screens: opts.maxScreens ?? 4,
   });
   if (!r.ok) throw new Error(`create_room failed: ${JSON.stringify(r)}`);
   return { room_id: r.room_id, join_token: r.join_token, device };

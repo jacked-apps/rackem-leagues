@@ -15,6 +15,9 @@ export const COIN_FLIP: GameDefinition = {
   name: 'Coin flip',
   description: 'One phone calls, the other throws. The house picks the face.',
   tables: [COIN_FLIP_TABLE],
+  // Exactly two: one calls, one throws. A third screen would have nothing to
+  // do and no answer to "who is flipping whom".
+  screens: { min: 2, max: 2 },
   Play: RoomCoinFlip,
   isReady: () => true,
 };
