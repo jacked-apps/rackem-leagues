@@ -483,6 +483,7 @@ Developer-only, hand-run scripts for rare data-surgery tasks. Not deployed, not 
 |------|---------|
 | `database/maintenance/README.md` | What lives here and the rules for adding scripts |
 | `database/maintenance/mergeRegisteredPlayers.sql` | Merge two REAL registered accounts belonging to the same person (dup-signup). Reuses `merge_placeholder_into_member_v2`; preview + one-transaction merge + dead-login cleanup steps |
+| `database/maintenance/promoteSubToRealPlayer.sql` | Retroactively credit a roster player entered as an ANONYMOUS SUB who then played the match himself. Rewrites the lineup slot + `match_games.home/away_player_id` + `winner_player_id`; find-match + preview + one-transaction fix + verify steps. Assumes the handicap was already correct |
 
 ---
 
