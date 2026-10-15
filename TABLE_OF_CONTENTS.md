@@ -483,7 +483,18 @@ Developer-only, hand-run scripts for rare data-surgery tasks. Not deployed, not 
 |------|---------|
 | `database/maintenance/README.md` | What lives here and the rules for adding scripts |
 | `database/maintenance/mergeRegisteredPlayers.sql` | Merge two REAL registered accounts belonging to the same person (dup-signup). Reuses `merge_placeholder_into_member_v2`; preview + one-transaction merge + dead-login cleanup steps |
-| `database/maintenance/promoteSubToRealPlayer.sql` | Retroactively credit a roster player entered as an ANONYMOUS SUB who then played the match himself. Rewrites the lineup slot + `match_games.home/away_player_id` + `winner_player_id`; find-match + preview + one-transaction fix + verify steps. Assumes the handicap was already correct |
+| `database/maintenance/promoteSubToRealPlayer/README.md` | Procedure, the three-project ref warning, what step 2 changes and what it deliberately leaves alone |
+| `database/maintenance/promoteSubToRealPlayer/step0_find_match.sql` | Find the match id from two team-name fragments + the played-on date |
+| `database/maintenance/promoteSubToRealPlayer/step1_preview.sql` | Pre-flight: sentinel slot, slot count, duplicate check, games/wins to move |
+| `database/maintenance/promoteSubToRealPlayer/step1b_dump_lineups.sql` | Both lineups slot by slot with no roster assumption — for when step 1 returns no rows |
+| `database/maintenance/promoteSubToRealPlayer/step1c_where_rostered.sql` | Every team he's rostered on, and whether the season matches the match's |
+| `database/maintenance/promoteSubToRealPlayer/step1d_auth_to_member.sql` | Convert an `auth.users.id` to the `members.id` that lineups and games use |
+| `database/maintenance/promoteSubToRealPlayer/step1e_roster.sql` | The roster for that season, flagging who is already in the lineup |
+| `database/maintenance/promoteSubToRealPlayer/step2_fix.sql` | **The only writing file.** One transaction: lineup slot + `match_games.home/away_player_id` + `winner_player_id`, with four guards |
+| `database/maintenance/promoteSubToRealPlayer/step3_verify.sql` | Every game with resolved names; `still_has_sentinel` must be false throughout |
+| `database/maintenance/promoteSubToRealPlayer/step4_stats_filter.sql` | Whether the match passes the Top Shooters filter, plus his totals under it |
+| `database/maintenance/promoteSubToRealPlayer/step5_per_season.sql` | His wins/losses per season — catches a stats page scoped to the wrong season |
+| `database/maintenance/promoteSubToRealPlayer/step6_rebuild_board.sql` | The whole Top Shooters board rebuilt in SQL — catches duplicate member accounts |
 
 ---
 
