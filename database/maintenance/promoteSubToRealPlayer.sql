@@ -64,6 +64,19 @@
 --   * `matches` — untouched, because the handicap is unchanged, so every
 --     threshold and point total already computed is still correct.
 --
+-- THE CASE THIS IS FILLED IN FOR (Oct 2026). Both ids are already in every
+-- step below; change them to reuse the script for someone else.
+--   member_id  552891c9-47f9-4562-9007-75a3390351de   <- members.id, the PLAYER
+--   auth uuid  bee0d3c8-a1c2-4168-95ea-eb027fbcfa30   <- members.user_id, his LOGIN
+--   match_id   27d7bfe6-13c0-435c-bd28-dfe48a57a186   Leftovers (home) v Fluff
+--                                                     3v3, week of 2026-10-04,
+--                                                     played 2026-10-11
+--   The anonymous sub sits at HOME position 3, handicap 2.0.
+--
+--   Note which id is which: lineups, games and stats all reference `members.id`.
+--   The auth uuid appears nowhere except `members.user_id`, so it is useless for
+--   this fix — STEP 1d converts one to the other if you only have the login id.
+--
 -- HOW TO USE (four steps):
 --   0. Run STEP 0 to find the match id from the two team names + the date.
 --   1. Paste the member id + match id into STEP 1 (read-only) and check:
@@ -136,8 +149,8 @@ ORDER BY m.completed_at NULLS LAST;
 --   wins_as_sentinel    how many of those he won (his new W-L for the night).
 WITH input AS (
   SELECT
-    'bee0d3c8-a1c2-4168-95ea-eb027fbcfa30'::uuid AS member_id,
-    'MATCH_ID_HERE'::uuid                        AS match_id
+    '552891c9-47f9-4562-9007-75a3390351de'::uuid AS member_id,
+    '27d7bfe6-13c0-435c-bd28-dfe48a57a186'::uuid                        AS match_id
 ),
 -- His team in this match: the lineup row whose team he is rostered on.
 lu AS (
@@ -218,13 +231,178 @@ FROM sent s CROSS JOIN input i;
 
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- STEP 1b — DIAGNOSE AN EMPTY STEP 1  (read-only)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- STEP 1 resolves his team by looking him up in `team_players` for the match's
+-- season. If STEP 1 came back with NO ROWS, that lookup failed and the reason
+-- is one of:
+--   * he isn't on either team's roster for that season (a genuine outside sub,
+--     or his roster row carries a different season_id);
+--   * he plays under a DIFFERENT member id than the one we have (duplicate
+--     signup — see mergeRegisteredPlayers.sql);
+--   * the lineups for this match were never filled in.
+--
+-- This dumps both lineups slot by slot with no roster assumption at all, so you
+-- can see what is actually in them. Expect 10 rows (5 per team).
+--
+--   who                    resolved name, or a '** ANON SUB **' marker
+--   is_our_guy             TRUE on the slot he already holds, if any
+--   he_is_rostered_here    FALSE on both teams = the roster lookup is why
+--                          STEP 1 was empty
+WITH input AS (
+  SELECT
+    '552891c9-47f9-4562-9007-75a3390351de'::uuid AS member_id,
+    '27d7bfe6-13c0-435c-bd28-dfe48a57a186'::uuid                        AS match_id
+)
+SELECT
+  CASE WHEN ml.team_id = mt.home_team_id THEN 'HOME' ELSE 'AWAY' END AS side,
+  t.team_name,
+  s.pos        AS position,
+  s.pid        AS player_id,
+  COALESCE(
+    mem.first_name || ' ' || mem.last_name,
+    CASE s.pid
+      WHEN '00000000-0000-0000-0000-000000000001'::uuid THEN '** ANON SUB (home) **'
+      WHEN '00000000-0000-0000-0000-000000000002'::uuid THEN '** ANON SUB (away) **'
+      WHEN '00000000-0000-0000-0000-000000000011'::uuid THEN '** DOUBLE-DUTY (home) **'
+      WHEN '00000000-0000-0000-0000-000000000012'::uuid THEN '** DOUBLE-DUTY (away) **'
+    END,
+    '(empty slot)'
+  )            AS who,
+  s.hcp        AS handicap,
+  (s.pid = i.member_id) AS is_our_guy,
+  EXISTS (
+    SELECT 1 FROM team_players tp
+    WHERE tp.team_id   = ml.team_id
+      AND tp.season_id = mt.season_id
+      AND tp.member_id = i.member_id
+  )            AS he_is_rostered_here
+FROM match_lineups ml
+JOIN matches mt ON mt.id = ml.match_id
+JOIN teams   t  ON t.id  = ml.team_id
+CROSS JOIN input i
+CROSS JOIN LATERAL (VALUES
+  (1, ml.player1_id, ml.player1_handicap),
+  (2, ml.player2_id, ml.player2_handicap),
+  (3, ml.player3_id, ml.player3_handicap),
+  (4, ml.player4_id, ml.player4_handicap),
+  (5, ml.player5_id, ml.player5_handicap)
+) AS s(pos, pid, hcp)
+LEFT JOIN members mem ON mem.id = s.pid
+WHERE ml.match_id = i.match_id
+ORDER BY side DESC, s.pos;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- STEP 1c — WHERE IS HE ROSTERED?  (read-only; run if 1b showed all FALSE)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Every roster row he has, with the season each one belongs to, next to the
+-- season the match belongs to. If a team name here matches a team in the match
+-- but the season_id differs, the roster row is on the wrong season.
+WITH input AS (
+  SELECT
+    '552891c9-47f9-4562-9007-75a3390351de'::uuid AS member_id,
+    '27d7bfe6-13c0-435c-bd28-dfe48a57a186'::uuid                        AS match_id
+)
+SELECT
+  (SELECT first_name || ' ' || last_name FROM members WHERE id = i.member_id)
+                            AS player_name,
+  t.team_name,
+  tp.season_id              AS roster_season_id,
+  (SELECT season_id FROM matches WHERE id = i.match_id)
+                            AS match_season_id,
+  tp.season_id = (SELECT season_id FROM matches WHERE id = i.match_id)
+                            AS same_season,
+  tp.status,
+  tp.is_captain
+FROM team_players tp
+JOIN teams t ON t.id = tp.team_id
+CROSS JOIN input i
+WHERE tp.member_id = i.member_id
+ORDER BY same_season DESC, t.team_name;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- STEP 1d — IS THAT ID EVEN A MEMBER?  (read-only; run if 1c returned nothing)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- An id with no roster row anywhere is usually not a `members.id` at all. The
+-- two ids get confused constantly because the Auth dashboard and the app show
+-- different ones for the same human:
+--   * auth.users.id   — the LOGIN. What Supabase -> Authentication -> Users
+--                       lists, and what you get from a session/JWT.
+--   * members.id      — the PLAYER. What lineups, games and stats reference.
+--     members.user_id is the link between them, and it is NULLABLE: a
+--     placeholder player entered by a captain has no login at all.
+--
+-- This looks the id up both ways. `matched_on` tells you which it was:
+--   'members.id'      -> it IS a member; he has simply never been rostered.
+--   'members.user_id' -> you had the LOGIN id. Use the member_id column this
+--                        returns for every other step in this file.
+--   (no rows)         -> the id is neither; wrong id entirely.
+WITH input AS (
+  SELECT 'bee0d3c8-a1c2-4168-95ea-eb027fbcfa30'::uuid AS probe
+)
+SELECT 'members.id'      AS matched_on,
+       m.id              AS member_id,
+       m.user_id,
+       m.first_name || ' ' || m.last_name AS name,
+       m.email
+FROM members m CROSS JOIN input i
+WHERE m.id = i.probe
+UNION ALL
+SELECT 'members.user_id' AS matched_on,
+       m.id              AS member_id,
+       m.user_id,
+       m.first_name || ' ' || m.last_name AS name,
+       m.email
+FROM members m CROSS JOIN input i
+WHERE m.user_id = i.probe;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- STEP 1e — WHO WAS ON THAT ROSTER?  (read-only)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- The roster of the team that fielded the anonymous sub, for that match's
+-- season. The player who actually showed up is almost certainly one of these
+-- names — the three in the lineup played, so he is one of the others.
+-- Edit p_team_name if you need the other side.
+WITH input AS (
+  SELECT
+    '27d7bfe6-13c0-435c-bd28-dfe48a57a186'::uuid AS match_id,
+    '%leftover%'          AS p_team_name
+)
+SELECT
+  mem.id   AS member_id,
+  mem.first_name || ' ' || mem.last_name AS name,
+  mem.user_id,
+  tp.status,
+  tp.is_captain,
+  mem.starting_handicap_3v3,
+  -- TRUE for the three who are already in this match's lineup.
+  EXISTS (
+    SELECT 1 FROM match_lineups ml
+    WHERE ml.match_id = i.match_id
+      AND mem.id IN (ml.player1_id, ml.player2_id, ml.player3_id,
+                     ml.player4_id, ml.player5_id)
+  )        AS already_in_lineup
+FROM team_players tp
+JOIN teams   t   ON t.id   = tp.team_id
+JOIN members mem ON mem.id = tp.member_id
+JOIN matches mt  ON mt.id  = (SELECT match_id FROM input)
+CROSS JOIN input i
+WHERE t.team_name ILIKE i.p_team_name
+  AND tp.season_id = mt.season_id
+ORDER BY already_in_lineup, name;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- STEP 2 — PERFORM THE FIX  (one transaction; rolls back on any error)
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Use the SAME two ids you previewed above.
 DO $$
 DECLARE
-  v_member UUID := 'bee0d3c8-a1c2-4168-95ea-eb027fbcfa30';  -- <-- real player
-  v_match  UUID := 'MATCH_ID_HERE';                         -- <-- from STEP 0
+  v_member UUID := '552891c9-47f9-4562-9007-75a3390351de';  -- <-- real player
+  v_match  UUID := '27d7bfe6-13c0-435c-bd28-dfe48a57a186';                         -- <-- from STEP 0
 
   v_lineup_id    UUID;
   v_team_id      UUID;
@@ -369,8 +547,8 @@ END $$;
 -- remaining sentinel references anywhere in match_games for this match.
 WITH input AS (
   SELECT
-    'bee0d3c8-a1c2-4168-95ea-eb027fbcfa30'::uuid AS member_id,
-    'MATCH_ID_HERE'::uuid                        AS match_id
+    '552891c9-47f9-4562-9007-75a3390351de'::uuid AS member_id,
+    '27d7bfe6-13c0-435c-bd28-dfe48a57a186'::uuid                        AS match_id
 )
 SELECT
   g.game_number,
