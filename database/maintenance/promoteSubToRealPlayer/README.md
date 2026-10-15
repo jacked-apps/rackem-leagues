@@ -150,3 +150,35 @@ worker caches Supabase responses (`supabase-api-cache`, NetworkFirst, 24h) and
 survives a reload — and unregistering it does **not** release the page it
 already controls, so close every tab on the origin. A private window is the
 fastest way to rule caching out entirely.
+
+## The 1,000-row cap (found Oct 2026, still unfixed in app code)
+
+`step7_row_limit.sql` exists because of a false ending to this fix. Step 3
+verified clean, step 4 passed all four gates, step 6 rebuilt the board showing
+Rene at 40–14 — and the page still printed 34–14 in a private window.
+
+Cause: `fetchSeasonPlayerStats` requests **every countable game row in the
+season in one call**, with no `.range()`, no `.limit()` and no `.order()`.
+PostgREST caps rows per response (Supabase default 1000). This season has
+**1,008** countable games, so 8 are silently dropped — no error, just a short
+array — and every player's totals come out low.
+
+Two things make it nastier than a plain off-by-N:
+
+- **It is unstable.** With no `ORDER BY`, Postgres returns heap order, and an
+  `UPDATE` writes a new row version at the *end* of the heap. So step 2 pushed
+  exactly the six games it fixed past the cap. A correct fix made the page look
+  untouched.
+- **It is silent and shared.** Before this fix the cap was dropping 8 *other*
+  games and nobody noticed. `teamStats.ts` and `featsStats.ts` query the same
+  way, so Team Stats and Feats are under-reporting too. (`standings.ts` reads
+  `matches`, ~57 rows, so it has headroom.)
+
+So if a stats page disagrees with `step6`, run `step7` before assuming the data
+is wrong. And a season under 1,000 games today will cross it later — the page
+starts lying with no deploy and no error.
+
+The real fix is in app code, not here: aggregate per-player in the database (a
+function or view returning one row per player) instead of shipping ~1,000 game
+rows to the browser to be counted in a `forEach`. Raising `max_rows` only moves
+the ceiling.
