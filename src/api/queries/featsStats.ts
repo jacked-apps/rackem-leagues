@@ -9,6 +9,7 @@
 
 import { supabase } from '@/supabaseClient';
 import { SUB_SENTINEL_IDS } from '@/utils/lineup/substituteHelpers';
+import { fetchAllRows } from './fetchAllRows';
 
 /**
  * Player feat ranking
@@ -71,10 +72,27 @@ export async function fetchFeatsStats(seasonId: string): Promise<FeatsStats> {
     };
   }
 
-  // Step 2: Fetch all games for these matches (excluding tiebreakers)
-  const { data: games, error: gamesError } = await supabase
-    .from('match_games')
-    .select(`
+  // Step 2: Fetch all games for these matches (excluding tiebreakers).
+  //
+  // Paged via fetchAllRows — a season past PostgREST's 1000-row cap would come
+  // back truncated, quietly costing players break-and-runs, golden breaks and
+  // flawless nights. `.order('id')` keeps the paging stable.
+  const games = await fetchAllRows<{
+    id: string;
+    match_id: string;
+    winner_player_id: string | null;
+    break_and_run: boolean;
+    golden_break: boolean;
+    is_tiebreaker: boolean;
+    home_player_id: string | null;
+    away_player_id: string | null;
+    home_position: number | null;
+    away_position: number | null;
+  }>(
+    (from, to) =>
+      supabase
+        .from('match_games')
+        .select(`
       id,
       match_id,
       winner_player_id,
@@ -85,14 +103,14 @@ export async function fetchFeatsStats(seasonId: string): Promise<FeatsStats> {
       away_player_id,
       home_position,
       away_position
-    `)
-    .in('match_id', matchIds)
-    .eq('is_tiebreaker', false)
-    .not('winner_player_id', 'is', null);
-
-  if (gamesError) {
-    throw new Error(`Failed to fetch games: ${gamesError.message}`);
-  }
+    `, { count: 'exact' })
+        .in('match_id', matchIds)
+        .eq('is_tiebreaker', false)
+        .not('winner_player_id', 'is', null)
+        .order('id')
+        .range(from, to),
+    { label: 'feats games' }
+  );
 
   if (!games || games.length === 0) {
     return {
