@@ -1,6 +1,6 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-09-15 (FIXED the two db tests red on main since #280 made CI run them: `appendConfirmation.db.test.ts` built its `baseResult` fixture before `earlyEight` was added to `ConfirmationResult` (#276), so the insert wrote `undefined` → DB default `false`, and the exact-duplicate guard compared `false === undefined` → not a dup → a second identical vouch row. Test file is excluded from tsconfig, which is why typecheck never flagged the missing field; production callers are all typed and pass it. Also restored the `src/components/coinflip/` entries that fell out of the TOC when #279 merged, and trimmed the sandbox line's reference to the cut supplied-face prop.)
+> **Last Updated**: 2026-10-15 (New `src/api/queries/fetchAllRows.ts`: season stats queries asked for every row in one request and PostgREST silently truncated them at 1,000, so Top Shooters / Team Stats / Feats / My Stats understated EVERY player once a season passed 1,000 games (production hit 1,008). Now paged + ordered; a data fix that looked like a no-op is what exposed it. Earlier: FIXED the two db tests red on main since #280 made CI run them: `appendConfirmation.db.test.ts` built its `baseResult` fixture before `earlyEight` was added to `ConfirmationResult` (#276), so the insert wrote `undefined` → DB default `false`, and the exact-duplicate guard compared `false === undefined` → not a dup → a second identical vouch row. Test file is excluded from tsconfig, which is why typecheck never flagged the missing field; production callers are all typed and pass it. Also restored the `src/components/coinflip/` entries that fell out of the TOC when #279 merged, and trimmed the sandbox line's reference to the cut supplied-face prop.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -1449,9 +1449,10 @@ High-level business logic services
 - `operatorStats.ts` - Operator-dashboard aggregate stats.
 - `organizations.ts` - Org list/detail reads.
 - `organizationStaff.ts` - Org-staff list query.
+- `fetchAllRows.ts` - Pages a query past PostgREST's 1000-row response cap, which otherwise truncates SILENTLY and understates every season total. Stops on the largest page the server actually returned (not on `pageSize`, so a lowered `max_rows` can't reintroduce the bug); callers pass `{ count: 'exact' }` and a unique `.order()`.
 - `players.ts` - Player list/detail reads.
 - `duesRoster.ts` - `fetchLeagueDuesRoster(leagueId)` — current-season roster (players on active/upcoming-season teams) of one league with each member's `membership_paid_date`, for the Dues Roster page. League-scoped (dues sanctioning is per league).
-- `playerStats.ts` - Per-player stats aggregations.
+- `playerStats.ts` - Per-player stats aggregations. Paged via `fetchAllRows`.
 - `preferences.ts` - Org/league/season resolved-preference queries.
 - `reports.ts` - User-report queries.
 - `seasons.ts` - Season list/detail reads.
