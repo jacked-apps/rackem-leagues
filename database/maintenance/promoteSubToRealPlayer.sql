@@ -64,6 +64,25 @@
 --   * `matches` — untouched, because the handicap is unchanged, so every
 --     threshold and point total already computed is still correct.
 --
+-- ⚠ WHICH DATABASE — CHECK THE PROJECT REF BEFORE RUNNING ANYTHING.
+-- There are three Supabase projects and only one of them is live:
+--   cibboozjixxyypzchtvr  LIVE PRODUCTION (rackemleagues.com). Pinned in
+--                         .github/workflows/deploy-production.yml. THIS ONE.
+--   eahlgydddmjebcfiskmz  staging (deploy-staging.yml; the CLI links here).
+--   ouobajkpmqyqtgzcjmql  stale. Appears only as a commented-out line in the
+--                         local .env. Holds a convincing COPY of production
+--                         data, so every query below succeeds against it and
+--                         nothing looks wrong — the app just never reads it.
+-- That decoy cost a full false-positive run of this script in Oct 2026: STEP 3
+-- verified clean, STEP 4 passed all four gates, and the page still showed the
+-- old number because the fix landed in the copy. Read the ref in the dashboard
+-- URL bar, don't trust .env.
+--
+-- IDS ARE PER-DATABASE. The uuids below were resolved against the stale
+-- project. Re-run STEP 0 (match) and STEP 1d (auth uuid -> members.id) in
+-- whichever database you are actually fixing and use what they return; only
+-- assume these carry over if those two steps hand back the same values.
+--
 -- THE CASE THIS IS FILLED IN FOR (Oct 2026). Both ids are already in every
 -- step below; change them to reuse the script for someone else.
 --   member_id  552891c9-47f9-4562-9007-75a3390351de   <- members.id, the PLAYER
@@ -613,6 +632,9 @@ SELECT
       AND mm.home_team_verified_by IS NOT NULL
       AND mm.away_team_verified_by IS NOT NULL
       AND g.is_tiebreaker = false
+      -- fetchSeasonPlayerStats skips games with no winner; match that or this
+      -- count runs ahead of what the page prints for games played.
+      AND g.winner_player_id IS NOT NULL
       AND i.member_id IN (g.home_player_id, g.away_player_id))  AS his_season_games,
   (SELECT count(*) FROM match_games g JOIN matches mm ON mm.id = g.match_id
     WHERE mm.season_id = m.season_id AND mm.status = 'completed'
@@ -623,3 +645,41 @@ SELECT
   m.season_id
 FROM matches m CROSS JOIN input i
 WHERE m.id = i.match_id;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- STEP 5 — HIS TOTALS PER SEASON  (read-only)
+-- ─────────────────────────────────────────────────────────────────────────────
+-- If a stats page shows a number STEP 4 says is wrong, the next question is
+-- which season the page is actually scoped to. useTopShooters(seasonId) takes
+-- the season from the route, so a page left on last season reports last
+-- season's totals and looks stale when it is merely pointed elsewhere.
+--
+-- One row per season he has played, under the exact Top Shooters filter
+-- (completed + both verifications + non-tiebreaker). Match the row whose
+-- wins/losses equal what the page prints: that is the season it is showing.
+WITH input AS (
+  SELECT '552891c9-47f9-4562-9007-75a3390351de'::uuid AS member_id
+)
+SELECT
+  s.id          AS season_id,
+  s.season_name,
+  -- `leagues` has no name column; day + division is how a league identifies.
+  l.day_of_week || COALESCE(' ' || l.division, '') AS league,
+  count(*) FILTER (WHERE g.winner_player_id = i.member_id)  AS wins,
+  count(*) FILTER (WHERE g.winner_player_id <> i.member_id) AS losses,
+  count(*)                                                  AS games
+  -- games with no winner yet are excluded in the WHERE below, matching the page
+FROM match_games g
+JOIN matches mm ON mm.id = g.match_id
+JOIN seasons s  ON s.id  = mm.season_id
+JOIN leagues l  ON l.id  = s.league_id
+CROSS JOIN input i
+WHERE i.member_id IN (g.home_player_id, g.away_player_id)
+  AND mm.status = 'completed'
+  AND mm.home_team_verified_by IS NOT NULL
+  AND mm.away_team_verified_by IS NOT NULL
+  AND g.is_tiebreaker = false
+  AND g.winner_player_id IS NOT NULL
+GROUP BY s.id, s.season_name, l.day_of_week, l.division
+ORDER BY games DESC;
