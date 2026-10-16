@@ -147,7 +147,21 @@ export async function searchMembers(
   if (filter === 'state' && userState) {
     query = query.eq('state', userState);
   } else if (filter === 'staff') {
-    query = query.eq('role', 'league_operator');
+    // "Staff" = members holding any organization_staff grant, resolved live from
+    // the relationship table rather than a members.role flag (which is being
+    // retired). Fetch the staff member ids, then constrain the search to them.
+    const { data: staffRows, error: staffError } = await supabase
+      .from('organization_staff')
+      .select('member_id');
+
+    if (staffError) {
+      throw new Error(`Failed to fetch staff members: ${staffError.message}`);
+    }
+
+    const staffIds = [...new Set((staffRows ?? []).map((r) => r.member_id))];
+    if (staffIds.length === 0) return []; // no staff anywhere → nothing to show
+
+    query = query.in('id', staffIds);
   }
   // 'all' filter has no additional conditions
 

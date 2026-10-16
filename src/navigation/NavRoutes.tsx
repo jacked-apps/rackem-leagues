@@ -50,6 +50,7 @@ import { SpectateLiveMatches } from '../player/SpectateLiveMatches';
 import { SpectateMyLiveMatches } from '../player/SpectateMyLiveMatches';
 import { BecomeLeagueOperator } from '../leagueOperator/BecomeLeagueOperator';
 import { LeagueOperatorApplication } from '../leagueOperator/LeagueOperatorApplication';
+import { BecomeHost } from '../host/BecomeHost';
 import { Messages } from '../pages/Messages';
 import { PlayerProfile } from '../pages/PlayerProfile';
 import { AdminReports } from '../pages/AdminReports';
@@ -223,6 +224,13 @@ export const router = createBrowserRouter([
       { path: 'complete-profile', element: withAuth(<CompleteProfileForm />) },
       { path: 'new-player', element: withAuth(<NewPlayerForm />) },
       { path: 'become-league-operator', element: withAuth(<BecomeLeagueOperator />) },
+      // Become a Host — gated off in production until the game room ships.
+      // What it sells is the ability to host game rooms, which production does
+      // not have yet, and the page takes card details on a mock payment form
+      // that bills nothing. Un-gate this AND the Profile CTA together.
+      ...(!isProduction
+        ? [{ path: 'become-host', element: withAuth(<BecomeHost />) }]
+        : []),
       { path: 'league-operator-application', element: withAuth(<LeagueOperatorApplication />) },
 
       // === Authenticated Routes (wrapped in MemberLayout for shared nav) ===

@@ -29,7 +29,6 @@ import { PageHeader } from '@/components/PageHeader';
 import { useApplicationForm } from './useApplicationForm';
 import { useUserProfile } from '@/api/hooks';
 import { useCreateOrganization } from '@/api/hooks/useOrganizationMutations';
-import { useUpdateMemberRole } from '@/api/hooks/useMemberMutations';
 import { generateMockPaymentData } from '@/types/operator';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
@@ -62,9 +61,9 @@ export const LeagueOperatorApplication: React.FC = () => {
   // Get member profile data for pre-filling operator info
   const { member, refreshProfile } = useUserProfile();
 
-  // TanStack Query mutations for creating organization and updating member role
+  // TanStack Query mutation for creating the organization (which grants the
+  // creator 'owner' operator access via the create_owner_staff DB trigger).
   const createOrganization = useCreateOrganization();
-  const updateMemberRole = useUpdateMemberRole();
 
   // Get all form state and handlers from custom hook
   const {
@@ -178,16 +177,12 @@ export const LeagueOperatorApplication: React.FC = () => {
         payment_verified: mockPayment.payment_verified,
       });
 
-      // Step 2: Organization_staff record is automatically created by database trigger
-      // (create_owner_staff_trigger adds the creator as owner)
+      // Step 2: The organization_staff 'owner' record is created automatically by
+      // the create_owner_staff DB trigger. That grant IS the operator access —
+      // resolved live — so there is no members.role to write here anymore. The
+      // creator's grants are refreshed inside useCreateOrganization.
 
-      // Step 3: Update member role to league_operator using TanStack Query mutation
-      await updateMemberRole.mutateAsync({
-        memberId: member.id,
-        role: 'league_operator',
-      });
-
-      // Refresh the user profile context so the new role is immediately available
+      // Refresh the user profile so the new operator surfaces immediately.
       refreshProfile();
     } catch (error) {
       // Handle any errors from the mutations

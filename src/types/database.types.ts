@@ -1516,6 +1516,79 @@ export type Database = {
           },
         ]
       }
+      designations: {
+        Row: {
+          description: string
+          name: string
+        }
+        Insert: {
+          description?: string
+          name: string
+        }
+        Update: {
+          description?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      member_designations: {
+        Row: {
+          designation: string
+          end_reason: string | null
+          ended_at: string | null
+          ends_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          member_id: string
+          source: string
+        }
+        Insert: {
+          designation: string
+          end_reason?: string | null
+          ended_at?: string | null
+          ends_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          member_id: string
+          source?: string
+        }
+        Update: {
+          designation?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          ends_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          member_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_designations_designation_fkey"
+            columns: ["designation"]
+            isOneToOne: false
+            referencedRelation: "designations"
+            referencedColumns: ["name"]
+          },
+          {
+            foreignKeyName: "member_designations_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_designations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_notification_prefs: {
         Row: {
           conversation_kind: string
@@ -1837,6 +1910,7 @@ export type Database = {
           added_at: string | null
           added_by: string | null
           id: string
+          league_id: string | null
           member_id: string
           organization_id: string
           position: string
@@ -1845,6 +1919,7 @@ export type Database = {
           added_at?: string | null
           added_by?: string | null
           id?: string
+          league_id?: string | null
           member_id: string
           organization_id: string
           position: string
@@ -1853,6 +1928,7 @@ export type Database = {
           added_at?: string | null
           added_by?: string | null
           id?: string
+          league_id?: string | null
           member_id?: string
           organization_id?: string
           position?: string
@@ -1864,6 +1940,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_staff_league_scope_fkey"
+            columns: ["organization_id", "league_id"]
+            isOneToOne: false
+            referencedRelation: "leagues"
+            referencedColumns: ["organization_id", "id"]
           },
           {
             foreignKeyName: "organization_staff_member_id_fkey"

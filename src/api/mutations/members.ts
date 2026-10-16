@@ -9,6 +9,7 @@
 
 import { supabase } from '@/supabaseClient';
 import { isEighteenOrOlder } from '@/utils/formatters';
+import type { UserRole } from '@/types';
 
 /**
  * Parameters for creating a member
@@ -69,7 +70,7 @@ export interface DeleteMemberParams {
  */
 export interface UpdateMemberRoleParams {
   memberId: string;
-  role: 'player' | 'league_operator' | 'admin';
+  role: UserRole;
 }
 
 /**
@@ -88,7 +89,7 @@ export interface UpdateMemberProfileParams {
     city: string;
     state: string;
     zip_code: string;
-    role: 'player' | 'league_operator' | 'admin';
+    role: UserRole;
   }>;
 }
 
