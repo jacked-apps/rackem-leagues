@@ -67,8 +67,17 @@ export const queryKeys = {
     /** All teams a member is on */
     byMember: (memberId: string) => [...queryKeys.teams.all, 'member', memberId] as const,
 
-    /** Team roster (players on team) */
+    /** Team roster (players on team) — membership ids + captain flag only */
     roster: (teamId: string) => [...queryKeys.teams.detail(teamId), 'roster'] as const,
+
+    /**
+     * Team roster WITH member details (names, player numbers) for display.
+     * A separate key from `roster` on purpose: same table, different shape.
+     * Sharing one key would mean whichever query ran first decided what the
+     * other consumer got back.
+     */
+    rosterWithMembers: (teamId: string) =>
+      [...queryKeys.teams.detail(teamId), 'roster', 'members'] as const,
   },
 
   /**
