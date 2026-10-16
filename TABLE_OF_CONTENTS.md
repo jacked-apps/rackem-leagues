@@ -536,6 +536,7 @@ how to add a new test, demo recording, cleanup model).
 | `supabaseClient.test.ts` | Tests for the realtime survival heartbeat handler (worker + reconnect-on-dead-socket) |
 | `vite-env.d.ts` | Vite TypeScript definitions |
 | `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
+| `config/envBannerVisibility.ts` | Lets a page hide the staging/dev banner while open (`useHideEnvBanner`) |
 | `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
 
 ---

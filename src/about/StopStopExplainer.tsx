@@ -4,12 +4,14 @@
  *
  * Unlisted on purpose: no link to it anywhere, gated off production by
  * NonProdGate (see NavRoutes), and marked noindex so search engines skip it.
- * Reachable only on staging/dev by typing the full address.
+ * Reachable only on staging/dev by typing the full address. The staging
+ * "BETA PREVIEW" banner is hidden here: it's meant for Rackem testers.
  *
  * Content lives in stopStopContent.ts; this file only lays it out.
  */
 import { Fragment, useEffect } from 'react';
 import { PageHeader } from '@/components/PageHeader';
+import { useHideEnvBanner } from '@/config/envBannerVisibility';
 import { STOP_STOP_SECTIONS, type ExplainerBlock } from './stopStopContent';
 
 /** Renders `**bold**` spans inside a line of text. */
@@ -62,6 +64,7 @@ function useNoIndex() {
 
 export const StopStopExplainer: React.FC = () => {
   useNoIndex();
+  useHideEnvBanner();
   return (
     <div>
       <PageHeader backTo="/" backLabel="Home" title="Stop Stop" subtitle="A free safety app from Jacked Apps" />
