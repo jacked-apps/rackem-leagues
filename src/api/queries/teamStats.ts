@@ -7,6 +7,7 @@
 
 import { supabase } from '@/supabaseClient';
 import { fetchSeasonStandings, type TeamStanding } from './standings';
+import { fetchAllRows } from './fetchAllRows';
 
 /**
  * Player stats for a specific team in a season
@@ -140,10 +141,24 @@ export async function fetchTeamStats(seasonId: string): Promise<TeamWithPlayerSt
     });
   }
 
-  // Step 4: Fetch all match_lineups for these completed matches
-  const { data: lineups, error: lineupsError } = await supabase
-    .from('match_lineups')
-    .select(`
+  // Step 4: Fetch all match_lineups for these completed matches.
+  //
+  // Paged like the games below: two lineup rows per match means a long season
+  // approaches PostgREST's 1000-row cap too, and a truncated lineup list would
+  // understate `matchesPlayed` without any error surfacing.
+  const lineups = await fetchAllRows<{
+    match_id: string;
+    team_id: string | null;
+    player1_id: string | null;
+    player2_id: string | null;
+    player3_id: string | null;
+    player4_id: string | null;
+    player5_id: string | null;
+  }>(
+    (from, to) =>
+      supabase
+        .from('match_lineups')
+        .select(`
       match_id,
       team_id,
       player1_id,
@@ -151,30 +166,42 @@ export async function fetchTeamStats(seasonId: string): Promise<TeamWithPlayerSt
       player3_id,
       player4_id,
       player5_id
-    `)
-    .in('match_id', matchIds);
+    `, { count: 'exact' })
+        .in('match_id', matchIds)
+        .order('id')
+        .range(from, to),
+    { label: 'team stats lineups' }
+  );
 
-  if (lineupsError) {
-    throw new Error(`Failed to fetch lineups: ${lineupsError.message}`);
-  }
-
-  // Step 5: Fetch game stats for all players (excluding tiebreakers)
-  const { data: games, error: gamesError } = await supabase
-    .from('match_games')
-    .select(`
+  // Step 5: Fetch game stats for all players (excluding tiebreakers).
+  //
+  // Paged via fetchAllRows — past the 1000-row cap this came back truncated and
+  // understated every player's wins and losses on the team page. `.order('id')`
+  // is required for stable paging.
+  const games = await fetchAllRows<{
+    match_id: string;
+    home_player_id: string | null;
+    away_player_id: string | null;
+    winner_player_id: string | null;
+    is_tiebreaker: boolean;
+  }>(
+    (from, to) =>
+      supabase
+        .from('match_games')
+        .select(`
       match_id,
       home_player_id,
       away_player_id,
       winner_player_id,
       is_tiebreaker
-    `)
-    .in('match_id', matchIds)
-    .eq('is_tiebreaker', false)
-    .not('winner_player_id', 'is', null);
-
-  if (gamesError) {
-    throw new Error(`Failed to fetch games: ${gamesError.message}`);
-  }
+    `, { count: 'exact' })
+        .in('match_id', matchIds)
+        .eq('is_tiebreaker', false)
+        .not('winner_player_id', 'is', null)
+        .order('id')
+        .range(from, to),
+    { label: 'team stats games' }
+  );
 
   // Step 6: Update player stats from lineups and games (using roster as base)
   // Count matches played per player per team

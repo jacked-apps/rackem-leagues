@@ -115,6 +115,10 @@ export const RELEASES: Release[] = [
         kind: 'fix',
       },
       {
+        text: 'If an organiser added you to a tournament after it had already started, the tournament page stopped recognising you. Your name disappeared from it, and typing it back in was refused — all while you were in the bracket playing matches. You now appear on the sign-up list like everybody else, spelled the way you typed it.',
+        kind: 'fix',
+      },
+      {
         text: 'My Stats is real now. Every game you have played is in there: who you played, where, which table, whether you won, and how the game ended. It goes back over everything already recorded, so there is history to look at from day one.',
         kind: 'feature',
       },
@@ -133,6 +137,10 @@ export const RELEASES: Release[] = [
       {
         text: 'Fair warning: the My Stats page is brand new and has barely been tested against real games — it is going out to you to be tried properly. If a number looks wrong, or you want it to answer something it cannot, please say so. Tell your league operator, and it will get looked at.',
         kind: 'improvement',
+      },
+      {
+        text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passes about a thousand games, the app was only reading the first thousand and adding up whatever it got — so if one of your games fell outside that, it was missing from your record and you were never told. It now reads all of them. If your record has ever looked short, it is worth another look.',
+        kind: 'fix',
       },
     ],
   },
