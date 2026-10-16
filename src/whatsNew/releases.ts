@@ -127,11 +127,7 @@ export const RELEASES: Release[] = [
         kind: 'improvement',
       },
       {
-        text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passes about a thousand games, the app was only reading the first thousand and adding up whatever it got — so if one of your games fell outside that, it was missing from your record and you were never told. One season was eight games short. It now reads all of them.',
-        kind: 'fix',
-      },
-      {
-        text: 'We found this because a player who had been put in as a substitute, and then turned up and played anyway, was not getting credit for his games. Fixing his night did not change what the page showed, and chasing down why led to the counting problem above. If your record has ever looked short, it is worth another look now.',
+        text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passes about a thousand games, the app was only reading the first thousand and adding up whatever it got — so if one of your games fell outside that, it was missing from your record and you were never told. It now reads all of them. If your record has ever looked short, it is worth another look.',
         kind: 'fix',
       },
     ],
