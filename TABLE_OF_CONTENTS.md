@@ -638,6 +638,8 @@ how to add a new test, demo recording, cleanup model).
 - `about/About.tsx` - About page
 - `about/Pricing.tsx` - Pricing breakdown page
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
+- `about/StopStopExplainer.tsx` - Stop Stop explainer at `/aboutstopstop` (staging only, unlinked, noindex)
+- `about/stopStopContent.ts` - Text of the Stop Stop explainer (copied from the stop-stop repo)
 - `home/Home.tsx` - Landing/home page
 - `dashboard/Dashboard.tsx` - Main dashboard
 
