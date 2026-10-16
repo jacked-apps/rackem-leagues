@@ -11,6 +11,7 @@
 import { useMatchById } from '@/api/hooks/useMatches';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { TeamNameLink } from '@/components/TeamNameLink';
 
 interface MatchDetailCardProps {
   /** Match ID to display */
@@ -144,8 +145,20 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
           {/* Home Team Column */}
           <div className={`space-y-2 p-1.5 rounded-lg border-2 ${winner === 'home' ? 'bg-success/10 border-success/40' : 'border-border'}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className={`font-bold text-lg ${winner === 'home' ? 'text-success' : 'text-foreground'}`}>
-                🏠 {match.home_team?.team_name || 'Home TBD'}
+              {/* The winner is carried by the card's tint and the WINNER badge.
+                  The heading no longer colours itself — the away side used the
+                  link blue on text nobody could press, which is the one thing
+                  that colour is not allowed to mean. */}
+              <h3 className="font-bold text-lg">
+                🏠{' '}
+                {match.home_team?.id ? (
+                  <TeamNameLink
+                    teamId={match.home_team.id}
+                    teamName={match.home_team.team_name}
+                  />
+                ) : (
+                  'Home TBD'
+                )}
               </h3>
               {winner === 'home' && (
                 <Badge className="bg-green-600">WINNER</Badge>
@@ -193,8 +206,16 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
           {/* Away Team Column */}
           <div className={`space-y-2 p-1.5 rounded-lg border-2 ${winner === 'away' ? 'bg-info/10 border-info/40' : 'border-border'}`}>
             <div className="flex items-center justify-between mb-2">
-              <h3 className={`font-bold text-lg ${winner === 'away' ? 'text-info' : 'text-foreground'}`}>
-                ✈️ {match.away_team?.team_name || 'Away TBD'}
+              <h3 className="font-bold text-lg">
+                ✈️{' '}
+                {match.away_team?.id ? (
+                  <TeamNameLink
+                    teamId={match.away_team.id}
+                    teamName={match.away_team.team_name}
+                  />
+                ) : (
+                  'Away TBD'
+                )}
               </h3>
               {winner === 'away' && (
                 <Badge className="bg-blue-600">WINNER</Badge>
