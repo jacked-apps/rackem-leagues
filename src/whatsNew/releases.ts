@@ -107,6 +107,10 @@ export const RELEASES: Release[] = [
     summary: 'My Stats, and early 8s on the scoring page',
     entries: [
       {
+        text: 'If an organiser added you to a tournament after it had already started, the tournament page stopped recognising you. Your name disappeared from it, and typing it back in was refused — all while you were in the bracket playing matches. You now appear on the sign-up list like everybody else, spelled the way you typed it.',
+        kind: 'fix',
+      },
+      {
         text: 'My Stats is real now. Every game you have played is in there: who you played, where, which table, whether you won, and how the game ended. It goes back over everything already recorded, so there is history to look at from day one.',
         kind: 'feature',
       },
