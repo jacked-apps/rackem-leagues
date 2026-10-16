@@ -8,6 +8,9 @@
  * Copy, colors, and label text are configured in src/config/environment.ts
  * so content tweaks don't require editing this component.
  *
+ * A page can hide it while open with `useHideEnvBanner()` (see
+ * src/config/envBannerVisibility.ts); the header offset drops to 0 then.
+ *
  * Stacking with the global header: the banner publishes its rendered height
  * to the `--env-banner-height` CSS variable on the document root so the
  * sticky `<PageHeader>` can offset its `top` and sit immediately below the
@@ -19,6 +22,7 @@
  */
 import { useLayoutEffect, useRef } from 'react';
 import { env, ENV_BANNER_CONFIG } from '@/config/environment';
+import { useEnvBannerHidden } from '@/config/envBannerVisibility';
 
 /** CSS variable name; consumed by `<PageHeader>`'s sticky `top:` offset. */
 const ENV_BANNER_HEIGHT_VAR = '--env-banner-height';
@@ -29,6 +33,7 @@ const ENV_BANNER_HEIGHT_VAR = '--env-banner-height';
  */
 export const EnvironmentBanner: React.FC = () => {
   const ref = useRef<HTMLDivElement | null>(null);
+  const hidden = useEnvBannerHidden();
 
   // Synchronously measure the banner before paint and publish its height to
   // the CSS variable. ResizeObserver handles later reflows. On unmount (or
@@ -54,9 +59,9 @@ export const EnvironmentBanner: React.FC = () => {
       // and hot-reload paths don't see a stale height.
       document.documentElement.style.removeProperty(ENV_BANNER_HEIGHT_VAR);
     };
-  }, []);
+  }, [hidden]);
 
-  if (env === 'production') return null;
+  if (env === 'production' || hidden) return null;
 
   const config = ENV_BANNER_CONFIG[env];
 

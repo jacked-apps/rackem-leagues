@@ -208,6 +208,11 @@ from this list when un-gated.
   **On staging, verify:** the Profile card appears, the purchase completes, the
   card is saved on file, and the `host` designation is granted. **Un-gate both
   places together, with the game room** — not before.
+- **Stop Stop explainer** (`/aboutstopstop`) — a page about the Stop Stop app
+  for invited readers (an influencer first). **Staging-only on purpose: never
+  un-gate.** Gated by `NonProdGate` on the route in `src/navigation/NavRoutes.tsx`,
+  unlinked, and `noindex`. Content in `src/about/stopStopContent.ts` is copied
+  from `docs/public/about-stop-stop.md` in the stop-stop repo (edit there first).
 - **Scoring Workshop** — still in active development; it had shipped to production
   **un-gated** by accident. Now gated by `!isProduction` in two places:
   the dashboard card (`src/operator/OperatorDashboard.tsx`) AND the routes

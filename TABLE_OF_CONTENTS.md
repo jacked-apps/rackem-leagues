@@ -536,6 +536,7 @@ how to add a new test, demo recording, cleanup model).
 | `supabaseClient.test.ts` | Tests for the realtime survival heartbeat handler (worker + reconnect-on-dead-socket) |
 | `vite-env.d.ts` | Vite TypeScript definitions |
 | `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
+| `config/envBannerVisibility.ts` | Lets a page hide the staging/dev banner while open (`useHideEnvBanner`) |
 | `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
 
 ---
@@ -638,6 +639,8 @@ how to add a new test, demo recording, cleanup model).
 - `about/About.tsx` - About page
 - `about/Pricing.tsx` - Pricing breakdown page
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
+- `about/StopStopExplainer.tsx` - Stop Stop explainer at `/aboutstopstop` (staging only, unlinked, noindex)
+- `about/stopStopContent.ts` - Text of the Stop Stop explainer (copied from the stop-stop repo)
 - `home/Home.tsx` - Landing/home page
 - `dashboard/Dashboard.tsx` - Main dashboard
 
