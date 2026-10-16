@@ -130,6 +130,10 @@ export const RELEASES: Release[] = [
         text: 'Fair warning: the My Stats page is brand new and has barely been tested against real games — it is going out to you to be tried properly. If a number looks wrong, or you want it to answer something it cannot, please say so. Tell your league operator, and it will get looked at.',
         kind: 'improvement',
       },
+      {
+        text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passes about a thousand games, the app was only reading the first thousand and adding up whatever it got — so if one of your games fell outside that, it was missing from your record and you were never told. It now reads all of them. If your record has ever looked short, it is worth another look.',
+        kind: 'fix',
+      },
     ],
   },
   {
