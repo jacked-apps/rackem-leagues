@@ -127,7 +127,7 @@ export const RELEASES: Release[] = [
         kind: 'improvement',
       },
       {
-        text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passed about a thousand games, the app could only read the first thousand of them and counted up whatever it got — so some wins and losses were simply missing, for everyone. One season was eight games short. It now reads all of them, and the numbers you see are the full record.',
+        text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passes about a thousand games, the app was only reading the first thousand and adding up whatever it got — so if one of your games fell outside that, it was missing from your record and you were never told. One season was eight games short. It now reads all of them.',
         kind: 'fix',
       },
       {
