@@ -104,7 +104,14 @@ export const RELEASES: Release[] = [
   {
     version: UNRELEASED,
     date: null,
-    summary: 'My Stats, and early 8s on the scoring page',
+    summary: '',
+    entries: [],
+  },
+  {
+    version: '1.11.0',
+    date: '2026-10-16',
+    summary:
+      'My Stats, early 8s on the scoring page, and a fix for stats that were leaving games out',
     entries: [
       {
         text: 'Tap a team name almost anywhere now — the standings, your schedule, a match result, the season sign-up page, another player\u2019s profile — and you\u2019ll see who is on that team. It only worked in a handful of places before.',
