@@ -25,6 +25,7 @@ import { StatsNavBar } from '@/components/StatsNavBar';
 import { PageHeader } from '@/components/PageHeader';
 import { useIsOperator } from '@/api/hooks';
 import { useSeasonLockedPayouts } from '@/api/hooks/useSeasonLockedPayouts';
+import { TeamNameLink } from '@/components/TeamNameLink';
 
 /**
  * Standings Component
@@ -180,7 +181,11 @@ export function Standings() {
                 return (
                   <TableRow key={team.teamId}>
                     <TableCell className="font-medium px-1 sm:px-4 text-center text-xs sm:text-base">{rank}</TableCell>
-                    <TableCell className="px-1 sm:px-4 text-xs sm:text-base">{team.teamName}</TableCell>
+                    <TableCell className="px-1 sm:px-4 text-xs sm:text-base">
+                      {/* Tap the name to see who is on the team — the standings
+                          list ranks teams without ever saying who they are. */}
+                      <TeamNameLink teamId={team.teamId} teamName={team.teamName} />
+                    </TableCell>
                     <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base">{team.matchWins}</TableCell>
                     <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base">{team.matchLosses}</TableCell>
                     <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base">

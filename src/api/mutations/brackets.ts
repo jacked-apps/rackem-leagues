@@ -546,6 +546,8 @@ export interface LateEntryResult {
     | 'no_such_player'
     | 'not_registered'
     | 'already_in'
+    /** The name belongs to someone else's sign-up row — waiting, not playing. */
+    | 'name_waiting'
     | 'name_required'
     | 'name_too_long'
     | 'name_taken';

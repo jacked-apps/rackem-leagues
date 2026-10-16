@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, Users, Award } from 'lucide-react';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
 import { logger } from '@/utils/logger';
+import { TeamNameLink } from '@/components/TeamNameLink';
 
 interface PlayerData {
   id: string;
@@ -213,7 +214,10 @@ export function PlayerProfile() {
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="font-semibold text-foreground">
-                        {teamData.team.team_name}
+                        <TeamNameLink
+                          teamId={teamData.team.id}
+                          teamName={teamData.team.team_name}
+                        />
                         {teamData.is_captain && (
                           <span className="ml-2 text-xs bg-info/15 text-info px-2 py-0.5 rounded">
                             Captain
