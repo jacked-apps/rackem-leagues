@@ -196,6 +196,18 @@ Features merged to `main` but NOT yet live for users (see **Feature Gating
 Workflow** in `CLAUDE.md`). Reviewed on staging, then un-gated — and removed
 from this list when un-gated.
 
+- **Become a Host** (PR #287) — the self-serve `$1/mo` / `$10/yr` purchase that
+  grants the `host` designation. Gated by `!isProduction` in two places: the
+  route (`src/navigation/NavRoutes.tsx` — `become-host`) AND the Profile CTA
+  card (`src/profile/Profile.tsx`, the "Host Your Own Game Rooms?" card).
+  **Why it is gated:** what it sells is hosting game rooms, and the game room
+  is still on `feat/game-room`, unmerged — so in production it would sell a
+  feature that isn't there, and it asks for a card number on a mock payment
+  form that bills nothing. The branch's own last commit had un-gated it on the
+  assumption the game room would ship alongside; it didn't.
+  **On staging, verify:** the Profile card appears, the purchase completes, the
+  card is saved on file, and the `host` designation is granted. **Un-gate both
+  places together, with the game room** — not before.
 - **Scoring Workshop** — still in active development; it had shipped to production
   **un-gated** by accident. Now gated by `!isProduction` in two places:
   the dashboard card (`src/operator/OperatorDashboard.tsx`) AND the routes

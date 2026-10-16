@@ -194,8 +194,13 @@ export const Profile: React.FC = () => {
             </Card>
           )}
 
-          {/* Become a Host CTA — only for members who aren't hosts yet */}
-          {!hasDesignation('host') && (
+          {/* Become a Host CTA — only for members who aren't hosts yet.
+              Gated off in production alongside the `/become-host` route in
+              NavRoutes: the thing it sells is hosting game rooms, and the game
+              room itself hasn't shipped yet. Un-gate BOTH together when it
+              does — a door without its room is a 404, and this door asks for a
+              card number first. */}
+          {!isProduction && !hasDesignation('host') && (
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold text-foreground mb-2">
