@@ -588,7 +588,7 @@ empty columns.
 
 ## Next Steps
 
-→ `/ce:plan` **done** — see
+→ `/compound-engineering:ce-plan` **done** — see
 `docs/plans/2026-09-04-001-feat-tournament-paid-foundation-plan.md`. Several
 decisions **evolved during planning** (this section's earlier "persistent tagged
 results" / "player-owned placeholder" language is superseded): walk-ups are
@@ -596,4 +596,4 @@ results" / "player-owned placeholder" language is superseded): walk-ups are
 **tournaments themselves are disposable** — only the per-player **setup** is saved;
 results-persistence, if any, is a per-player handicap-history concern for roadmap
 #5. See the plan's "Resolved Decision" for the current shape. Then resume
-`/ce:brainstorm` per remaining paid feature in the parent roadmap.
+`/compound-engineering:ce-brainstorm` per remaining paid feature in the parent roadmap.

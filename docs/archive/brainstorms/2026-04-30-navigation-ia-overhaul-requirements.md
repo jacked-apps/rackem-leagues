@@ -70,4 +70,4 @@ The app's navigation relies entirely on a hamburger drawer for all destinations 
 - [Affects R2][Technical] When an operator taps the Manage tab with multiple orgs and no active org selected, should it show an org picker or default to their primary org?
 
 ## Next Steps
--> `/ce:plan` for structured implementation planning
+-> `/compound-engineering:ce-plan` for structured implementation planning

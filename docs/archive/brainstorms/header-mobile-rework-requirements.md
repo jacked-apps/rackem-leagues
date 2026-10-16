@@ -162,4 +162,4 @@ None — the brainstorm produced enough product clarity to plan.
 
 ## Next Steps
 
--> `/ce:plan` for structured implementation planning
+-> `/compound-engineering:ce-plan` for structured implementation planning

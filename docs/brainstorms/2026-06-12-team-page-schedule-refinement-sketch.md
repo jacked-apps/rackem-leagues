@@ -7,7 +7,7 @@ topic: team-page-schedule-refinement
 
 **Status:** Sketch only — NOT a complete requirements doc. Captures today's
 decisions so they aren't lost. The full brainstorm is **deliberately deferred
-until "My Match" ships** (see Sequencing below). Resume with `/ce:brainstorm`
+until "My Match" ships** (see Sequencing below). Resume with `/compound-engineering:ce-brainstorm`
 then.
 
 **Origin:** Brainstorm with Ed, 2026-06-12 — "the UI/UX for players getting
@@ -66,5 +66,5 @@ to do?"
 
 ## Next Steps
 
-- Ship `2026-05-29-live-match-jumpin-requirements.md` (My Match) → `/ce:plan`.
-- After it lands: `/ce:brainstorm` this sketch into a full requirements doc.
+- Ship `2026-05-29-live-match-jumpin-requirements.md` (My Match) → `/compound-engineering:ce-plan`.
+- After it lands: `/compound-engineering:ce-brainstorm` this sketch into a full requirements doc.

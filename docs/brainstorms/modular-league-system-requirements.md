@@ -233,7 +233,7 @@ These three combos are not currently supported. The model below shows the resolu
 
 ### Resolve Before Planning
 
-*(All previously open items have been resolved. The doc is ready for `/ce:plan`.)*
+*(All previously open items have been resolved. The doc is ready for `/compound-engineering:ce-plan`.)*
 
 **Resolved during brainstorm:**
 - **Florida-leagues sanctioning status.** The 5v5 percentage league was a "BCA-rules cash league" with no formal BCA affiliation (rules borrowed informally). The current Fargo league sends players to BCA championships, so is presumed sanctioned. The 20-year 3v3 was a fully sanctioned BCAPL operator role with annual fees, result submission, and team qualification — direct LO-side BCA experience.
@@ -254,10 +254,10 @@ These three combos are not currently supported. The model below shows the resolu
 
 ## Next Steps
 
-All blocking decisions are resolved. **Ready for `/ce:plan`.**
+All blocking decisions are resolved. **Ready for `/compound-engineering:ce-plan`.**
 
 Suggested next-step ordering:
-1. `/ce:plan` to produce the implementation plan from this requirements doc
+1. `/compound-engineering:ce-plan` to produce the implementation plan from this requirements doc
 2. Mobile-app `team_format` grep (planning-phase blocker for R17 column drop)
 3. Pre-meeting BCA research follow-up: pull BCAPL Playing Handicap Chart, confirm result-export format, verify LeagueSys ownership status (training-data findings should be re-verified against current materials before the meeting)
 4. After BCA meeting: spin up follow-up requirements docs for (a) Result Export workstream, (b) anti-sandbag rule expansion, (c) FargoRate API integration if a partnership emerges

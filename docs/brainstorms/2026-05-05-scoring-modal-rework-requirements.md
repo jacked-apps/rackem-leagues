@@ -213,4 +213,4 @@ Branch A can ship in days. Branch B has its own planning timeline.
 
 ## Next Steps
 
-`-> /ce:plan` for **Branch A** first. Branch B can be planned independently when Branch A is in flight or shipped.
+`-> /compound-engineering:ce-plan` for **Branch A** first. Branch B can be planned independently when Branch A is in flight or shipped.

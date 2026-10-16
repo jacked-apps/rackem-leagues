@@ -128,4 +128,4 @@ This work targets every step of that lifecycle — from the moment a captain typ
 
 ## Next Steps
 
--> /ce:plan for structured implementation planning
+-> /compound-engineering:ce-plan for structured implementation planning

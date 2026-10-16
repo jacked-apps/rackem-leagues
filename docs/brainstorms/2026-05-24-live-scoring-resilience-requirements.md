@@ -161,4 +161,4 @@ flowchart TB
 - [Affects R21][Technical] "Survive a refresh but clear on leave/background" needs logic to tell a reload apart from a genuine navigate-away/backgrounding (a reload momentarily looks like leaving to the browser), plus tuning of how sensitive "loses focus" is (a brief glance vs a real app-switch).
 
 ## Next Steps
--> `/ce:plan` for structured implementation planning
+-> `/compound-engineering:ce-plan` for structured implementation planning

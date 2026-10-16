@@ -152,8 +152,8 @@ tests/
 scripts/                Node scripts (e2e-setup, e2e-verify-auth, e2e-verify-factories, etc)
 
 docs/
-  brainstorms/          Requirements docs from /ce:brainstorm sessions
-  plans/                Implementation plans from /ce:plan sessions
+  brainstorms/          Requirements docs from /compound-engineering:ce-brainstorm sessions
+  plans/                Implementation plans from /compound-engineering:ce-plan sessions
   research/             Domain notes (Fargo formula, etc)
   events/               Notes for specific dev events / staging tests
 

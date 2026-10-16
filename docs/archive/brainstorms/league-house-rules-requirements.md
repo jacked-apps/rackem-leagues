@@ -176,4 +176,4 @@ topic: league-house-rules
 
 ## Next Steps
 
--> `/ce:plan` for structured implementation planning of Branch 2 (League House Rules).
+-> `/compound-engineering:ce-plan` for structured implementation planning of Branch 2 (League House Rules).

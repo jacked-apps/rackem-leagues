@@ -141,4 +141,4 @@ This brainstorm scopes the **operator** audience only. Player-facing learning (t
 
 ## Next Steps
 
-→ `/ce:plan` for Phase 1 implementation planning. Phase 2 gets its own brainstorm + plan after Phase 1 evidence.
+→ `/compound-engineering:ce-plan` for Phase 1 implementation planning. Phase 2 gets its own brainstorm + plan after Phase 1 evidence.

@@ -208,5 +208,5 @@ scoring-entry surface — not to the setup primitive itself.
   surface there.
 
 ## Next Steps
--> `/ce:plan` for structured implementation planning. All open items are
-planning/technical and can be carried into `/ce:plan`.
+-> `/compound-engineering:ce-plan` for structured implementation planning. All open items are
+planning/technical and can be carried into `/compound-engineering:ce-plan`.

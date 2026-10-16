@@ -190,7 +190,7 @@ creates-or-finds the account.
 
 ## Next Steps
 
-`-> /ce:plan` for structured implementation planning. Build first / alongside the
+`-> /compound-engineering:ce-plan` for structured implementation planning. Build first / alongside the
 onboarding cascade.
 
 ## Appendix / References

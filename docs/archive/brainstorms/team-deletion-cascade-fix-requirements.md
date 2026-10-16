@@ -534,7 +534,7 @@ _All resolved._
 
 ## Next Steps
 
-`-> /ce:plan` once the resolve-before-planning question above is
+`-> /compound-engineering:ce-plan` once the resolve-before-planning question above is
 answered. Plan should produce **three** ordered PRs:
 
 1. **`fix-team-cascade-deletion`** — PR 0: minimal cascade safety

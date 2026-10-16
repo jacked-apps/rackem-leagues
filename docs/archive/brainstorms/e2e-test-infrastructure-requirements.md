@@ -400,4 +400,4 @@ rather than duplicating the plaintext.
 
 ## Next Steps
 
-`-> /ce:plan` for structured implementation planning.
+`-> /compound-engineering:ce-plan` for structured implementation planning.

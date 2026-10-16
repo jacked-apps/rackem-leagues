@@ -175,4 +175,4 @@ Key Decisions).
   (low priority per the light posture; confirm seeds recompute live vs snapshot).
 
 ## Next Steps
--> /ce:plan for structured implementation planning.
+-> /compound-engineering:ce-plan for structured implementation planning.
