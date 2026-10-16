@@ -58,7 +58,15 @@ The format is flexible - focus on capturing valuable insights that help me work 
 
 **Update process:**
 1. Add/update/remove the file entry in the appropriate section
-2. Update the "Last Updated" date at the top of TABLE_OF_CONTENTS.md
+2. Update the "Last Updated" date at the top of TABLE_OF_CONTENTS.md — **the
+   date and nothing else.** Do not append a summary of the work, and do not
+   chain the previous one behind it. That line used to hold a running narrative
+   and reached 5,881 characters, which meant every branch rewrote the same line
+   and every parallel PR conflicted on it (four for four on 2026-10-15), each
+   resolution a hand-splice of two walls of prose. The index itself never
+   conflicted — different PRs touch different sections. What changed and why
+   goes in the commit message; anything a player would notice goes in
+   `src/whatsNew/releases.ts`.
 3. If the change affects a feature, update the "Quick Reference: Find By Feature" section
 
 The table of contents is a critical navigation tool for both you and the user. Keeping it current is mandatory.

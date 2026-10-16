@@ -1,0 +1,21 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Merge strategies
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# TABLE_OF_CONTENTS.md is a 2,000-line index that EVERY pull request appends to,
+# so two open PRs adding files in the same section collide on adjacent lines —
+# a conflict with no judgement in it, since both entries are wanted.
+#
+# `merge=union` keeps both sides instead of stopping. That is the right default
+# for an append-only list: the worst case is two entries landing in a surprising
+# order, or one duplicated, both of which are visible in review and fixed by
+# editing a line. Compare that to the cost it removes — a blocked merge on every
+# parallel PR.
+#
+# Union is safe HERE because the file is prose in a flat list. Do NOT extend it
+# to source files: combining both sides of a TypeScript conflict produces code
+# that still parses often enough to be dangerous. `src/whatsNew/releases.ts` is
+# the obvious tempting case (every PR appends an entry there too) and is
+# deliberately left to conflict — an entry silently duplicated into a release
+# note is worse than a merge that stops and asks.
+TABLE_OF_CONTENTS.md merge=union
