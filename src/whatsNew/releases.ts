@@ -126,6 +126,14 @@ export const RELEASES: Release[] = [
         text: 'Fair warning: the My Stats page is brand new and has barely been tested against real games — it is going out to you to be tried properly. If a number looks wrong, or you want it to answer something it cannot, please say so. Tell your league operator, and it will get looked at.',
         kind: 'improvement',
       },
+      {
+        text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passed about a thousand games, the app could only read the first thousand of them and counted up whatever it got — so some wins and losses were simply missing, for everyone. One season was eight games short. It now reads all of them, and the numbers you see are the full record.',
+        kind: 'fix',
+      },
+      {
+        text: 'We found this because a player who had been put in as a substitute, and then turned up and played anyway, was not getting credit for his games. Fixing his night did not change what the page showed, and chasing down why led to the counting problem above. If your record has ever looked short, it is worth another look now.',
+        kind: 'fix',
+      },
     ],
   },
   {
