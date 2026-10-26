@@ -58,7 +58,10 @@
 
 import type { HandicapThresholds } from '@/types/match';
 import { evaluatePointsSystem, type RuntimeGameRecord } from './runtime';
-import { buildPoints3ManComposition } from './compositions/points-3-man';
+import {
+  buildPoints3ManComposition,
+  SAVED_TARGET_PREF_KEYS,
+} from './compositions/points-3-man';
 import { buildPercent5ManComposition } from './compositions/percent-5-man';
 import { buildTenPointComposition } from './compositions/10-point';
 import type { PerGameAllocator, PointsSystem, ThresholdInputs } from './types';
@@ -98,7 +101,9 @@ export interface MinimalMatchGame {
  *    the cross-audit tests do; the adapter folds calculator params that the
  *    percentage composition reads from `prefs` (see below) into a copy.
  *  - `homeThresholds` / `awayThresholds` — the snapshotted per-side
- *    `HandicapThresholds`. Only `*_to_tie` is consumed, and ONLY for the
+ *    `HandicapThresholds`. Points 3-Man scores against these saved targets
+ *    (win + tie/lower edge) whenever both sides have a win target — they
+ *    are fixed at prep and never re-derived. `*_to_tie` is also the
  *    start-credit fold-in on compositions that don't award it themselves
  *    (Points 3-Man / Percentage 5-Man in points-mode).
  */
@@ -128,9 +133,9 @@ export interface ComputeMatchRunningTotalsViaEngineArgs {
    * cross-audit setup.
    */
   thresholdInputs: ThresholdInputs;
-  /** Home side's snapshotted thresholds — only `games_to_tie` is consumed. */
+  /** Home side's saved thresholds — Points 3-Man targets + start-credit. */
   homeThresholds: HandicapThresholds;
-  /** Away side's snapshotted thresholds — only `games_to_tie` is consumed. */
+  /** Away side's saved thresholds — Points 3-Man targets + start-credit. */
   awayThresholds: HandicapThresholds;
   /**
    * Per-Game Allocator Room override (Unit 5). When non-null, the prepackaged
@@ -181,6 +186,20 @@ function compositionAwardsStartCredit(pointsCalculator: string): boolean {
 }
 
 /**
+ * Whether BOTH sides carry a saved win target. When they do, the Points 3-Man
+ * composition scores against those saved targets instead of re-deriving them
+ * from the handicap diff. Targets are fixed at match prep and must never
+ * change mid-match (per Ed, 2026-10-26); re-deriving them from the locked
+ * lineups let a tiebreaker re-lock shift them and store a match WIN at −1.
+ */
+function hasSavedTargets(
+  homeThresholds: HandicapThresholds,
+  awayThresholds: HandicapThresholds,
+): boolean {
+  return homeThresholds.games_to_win != null && awayThresholds.games_to_win != null;
+}
+
+/**
  * Build the engine composition for a calculator name, mapping the legacy
  * `pointsCalculatorParams` into the composition's own param interface.
  *
@@ -201,8 +220,13 @@ function buildComposition(
   pointsCalculator: string,
   params: Record<string, unknown>,
   perGameAllocatorOverride?: PerGameAllocator | null,
+  useSavedTargets = false,
 ): PointsSystem | null {
-  const prepackaged = buildPrepackagedComposition(pointsCalculator, params);
+  const prepackaged = buildPrepackagedComposition(
+    pointsCalculator,
+    params,
+    useSavedTargets,
+  );
   if (prepackaged === null) return null;
   if (!perGameAllocatorOverride) return prepackaged;
   // Per-Game Allocator Room (Unit 5): replace ONLY the allocator slot. Triggers
@@ -224,6 +248,7 @@ function buildComposition(
 function buildPrepackagedComposition(
   pointsCalculator: string,
   params: Record<string, unknown>,
+  useSavedTargets: boolean,
 ): PointsSystem | null {
   switch (pointsCalculator) {
     case 'linear_above_threshold': {
@@ -231,9 +256,12 @@ function buildPrepackagedComposition(
         typeof params.per_extra_game_multiplier === 'number'
           ? params.per_extra_game_multiplier
           : undefined;
-      return buildPoints3ManComposition(
-        multiplier === undefined ? {} : { multiplier },
-      );
+      // Score against the match's saved targets when it has them; the chart
+      // lookup is only the fallback for a match with no saved targets.
+      return buildPoints3ManComposition({
+        ...(multiplier === undefined ? {} : { multiplier }),
+        targetSource: useSavedTargets ? 'saved' : 'chart',
+      });
     }
 
     case 'accumulate_with_milestone_jumps': {
@@ -279,7 +307,12 @@ function buildPrepackagedComposition(
  * calculator params that a composition reads from `prefs` rather than from
  * factory params.
  *
- * Only the Percentage 5-Man composition needs this bridge: it resolves
+ * Points 3-Man (`linear_above_threshold`) with saved targets: the four saved
+ * targets are copied into `prefs` under {@link SAVED_TARGET_PREF_KEYS} so the
+ * 'saved' composition scores against exactly the targets the match was
+ * prepped with (never a re-derived value).
+ *
+ * Percentage 5-Man also needs a bridge: it resolves
  * `milestone_percent` and `games_to_win` from `prefs` at match start. The
  * legacy calculator carries `milestone_percent` in its params and reads
  * `games_to_win` from the snapshotted thresholds, so the adapter copies both
@@ -293,7 +326,29 @@ function buildThresholdInputsForCalculator(
   params: Record<string, unknown>,
   thresholdInputs: ThresholdInputs,
   homeThresholds: HandicapThresholds,
+  awayThresholds: HandicapThresholds,
 ): ThresholdInputs {
+  if (
+    pointsCalculator === 'linear_above_threshold' &&
+    hasSavedTargets(homeThresholds, awayThresholds)
+  ) {
+    // Non-null asserted by hasSavedTargets. Lower edge collapses to the win
+    // target when a tie is impossible (tie target NULL), same as the chart's
+    // `games_to_tie_or_win`.
+    const homeWin = homeThresholds.games_to_win!;
+    const awayWin = awayThresholds.games_to_win!;
+    return {
+      ...thresholdInputs,
+      prefs: {
+        ...thresholdInputs.prefs,
+        [SAVED_TARGET_PREF_KEYS.homeWinTarget]: homeWin,
+        [SAVED_TARGET_PREF_KEYS.awayWinTarget]: awayWin,
+        [SAVED_TARGET_PREF_KEYS.homeLowerEdge]: homeThresholds.games_to_tie ?? homeWin,
+        [SAVED_TARGET_PREF_KEYS.awayLowerEdge]: awayThresholds.games_to_tie ?? awayWin,
+      },
+    };
+  }
+
   if (pointsCalculator !== 'accumulate_with_milestone_jumps') {
     return thresholdInputs;
   }
@@ -412,6 +467,7 @@ export function computeMatchRunningTotalsViaEngine(
           pointsCalculator,
           pointsCalculatorParams,
           perGameAllocatorOverride,
+          hasSavedTargets(homeThresholds, awayThresholds),
         );
 
   if (composition === null) {
@@ -429,6 +485,7 @@ export function computeMatchRunningTotalsViaEngine(
     pointsCalculatorParams,
     thresholdInputs,
     homeThresholds,
+    awayThresholds,
   );
 
   // 4. Map games to engine records (only the same games legacy counts) and run.
