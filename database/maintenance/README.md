@@ -21,3 +21,4 @@ self-serve features in the app.
 | File | What it does |
 |------|--------------|
 | `mergeRegisteredPlayers.sql` | Merge two **real registered accounts** that belong to the same person (e.g. a duplicate signup where both logins have since played matches). The in-app placeholder merge refuses this on purpose; this script reuses the same `merge_placeholder_into_member_v2` RPC by first demoting the discard account to a placeholder, so the merge stays undoable via `lo-undo-merge`. Read its header for the 3-step procedure. |
+| `diagnose_standings_points.sql` | **Read-only** diagnostic. For one season, lists every completed match with stored vs expected points (rule applied to the saved targets + confirmed games), flags mismatches, and totals stored vs expected per team. Changes nothing. |
