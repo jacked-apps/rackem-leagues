@@ -9,11 +9,11 @@
 --   applied to that match's own saved targets and its confirmed games.
 --
 -- The rule being checked (per team, per match)
---   W = that team's games-to-win target, T = games-to-tie target (NULL when a
---   tie is impossible). Lower edge L = T if a tie is possible, else W.
---     games won >  W  →  points = games won − W        (e.g. need 12, win 13 → +1)
---     L ≤ games ≤ W   →  points = 0                    (hit target exactly → 0)
---     games won <  L  →  points = games won − L        (need 12, got 11 → −1)
+--   par = that team's games-to-tie target when a tie is possible, else its
+--   games-to-win target (the league scoresheet's rule).
+--     points = games won − par
+--   Tie target 9 / win 10: 10–8 → +1 / −1, 12–6 → +3 / −3, 9–9 → 0 / 0.
+--   No tie possible, need 12: win 13 → +1, win 12 → 0.
 --   Only regular (non-tiebreaker) games confirmed by BOTH teams count —
 --   the same filter the app's running-totals code uses.
 --
@@ -117,19 +117,11 @@ calc as (
     -- Expected points under the rule, from the SAVED targets.
     case
       when m.home_to_win is null then null
-      when coalesce(g.home_counted,0) > m.home_to_win
-        then coalesce(g.home_counted,0) - m.home_to_win
-      when coalesce(g.home_counted,0) < coalesce(m.home_to_tie, m.home_to_win)
-        then coalesce(g.home_counted,0) - coalesce(m.home_to_tie, m.home_to_win)
-      else 0
+      else coalesce(g.home_counted,0) - coalesce(m.home_to_tie, m.home_to_win)
     end as home_expected_pts,
     case
       when m.away_to_win is null then null
-      when coalesce(g.away_counted,0) > m.away_to_win
-        then coalesce(g.away_counted,0) - m.away_to_win
-      when coalesce(g.away_counted,0) < coalesce(m.away_to_tie, m.away_to_win)
-        then coalesce(g.away_counted,0) - coalesce(m.away_to_tie, m.away_to_win)
-      else 0
+      else coalesce(g.away_counted,0) - coalesce(m.away_to_tie, m.away_to_win)
     end as away_expected_pts,
     l.lineup_diff,
     coalesce(l.locked_lineups, 0) as locked_lineups

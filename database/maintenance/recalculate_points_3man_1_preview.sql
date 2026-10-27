@@ -3,21 +3,26 @@
 -- =============================================================================
 --
 -- Why this exists
---   Before fix 559959d ("score Points 3-Man against the match's saved
---   targets"), the scoring engine re-derived each match's targets from the
---   locked lineups on every scoring event instead of using the targets saved
---   at match prep. A tiebreaker re-lock could shift them, so some completed
---   matches were stored with wrong points (e.g. a match WIN at −1). The code
---   fix only affects matches scored from now on; this script corrects the
---   points already stored on completed matches.
+--   Completed Points 3-Man matches were stored with wrong points for two
+--   reasons, both fixed in the app:
+--     * 559959d — the engine re-derived targets from the locked lineups
+--       instead of using the targets saved at match prep, so a tiebreaker
+--       re-lock could shift them (e.g. a match WIN stored at −1).
+--     * 3fbf04a — the engine measured a tie-possible match's winner from the
+--       WIN target instead of the tie target, leaking −1 into the league
+--       total on every decided tie-possible match.
+--   The code fixes only affect matches scored from now on; this script
+--   corrects the points already stored on completed matches. It is safe to
+--   re-run: it only changes rows whose stored points differ from the rule.
 --
--- The rule applied (per team, per match — same as the app)
---   W = saved games-to-win target, T = saved games-to-tie target (NULL when a
---   tie is impossible), L = T if a tie is possible else W, m = the league's
---   per_extra_game_multiplier (default 1).
---     games won >  W  →  (games won − W) × m        need 12, win 13 → +1
---     L ≤ games ≤ W   →  0                          win 11 or 12   →  0
---     games won <  L  →  (games won − L) × m        win 10         → −1
+-- The rule applied (per team, per match — same as the app and the league
+-- scoresheet)
+--   par = the saved games-to-tie target when a tie is possible, else the
+--   saved games-to-win target; m = the league's per_extra_game_multiplier
+--   (default 1).
+--     points = (games won − par) × m
+--   Tie target 9 / win 10: 10–8 → +1 / −1, 12–6 → +3 / −3, 9–9 → 0 / 0.
+--   No tie possible, need 12: win 13 → +1, win 12 → 0, win 11 → −1.
 --   Games counted = regular (non-tiebreaker) games confirmed by BOTH teams.
 --
 -- What it touches
@@ -108,18 +113,9 @@ calc as (
     c.home_g as home_counted_games, c.away_g as away_counted_games,
     m.home_points_earned as home_old_pts,
     m.away_points_earned as away_old_pts,
-    case
-      when c.home_g > m.home_to_win then (c.home_g - m.home_to_win) * m.mult
-      when c.home_g < coalesce(m.home_to_tie, m.home_to_win)
-        then (c.home_g - coalesce(m.home_to_tie, m.home_to_win)) * m.mult
-      else 0
-    end as home_new_pts,
-    case
-      when c.away_g > m.away_to_win then (c.away_g - m.away_to_win) * m.mult
-      when c.away_g < coalesce(m.away_to_tie, m.away_to_win)
-        then (c.away_g - coalesce(m.away_to_tie, m.away_to_win)) * m.mult
-      else 0
-    end as away_new_pts,
+    -- points = (games won − par) × m; par = to_tie, else to_win
+    (c.home_g - coalesce(m.home_to_tie, m.home_to_win)) * m.mult as home_new_pts,
+    (c.away_g - coalesce(m.away_to_tie, m.away_to_win)) * m.mult as away_new_pts,
     (m.home_games_won = c.home_g and m.away_games_won = c.away_g) as games_agree
   from m
   join counted c on c.id = m.id

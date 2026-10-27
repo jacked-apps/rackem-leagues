@@ -85,18 +85,9 @@ calc as (
     m.id as match_id,
     m.home_points_earned as home_old_pts,
     m.away_points_earned as away_old_pts,
-    case
-      when c.home_g > m.home_to_win then (c.home_g - m.home_to_win) * m.mult
-      when c.home_g < coalesce(m.home_to_tie, m.home_to_win)
-        then (c.home_g - coalesce(m.home_to_tie, m.home_to_win)) * m.mult
-      else 0
-    end as home_new_pts,
-    case
-      when c.away_g > m.away_to_win then (c.away_g - m.away_to_win) * m.mult
-      when c.away_g < coalesce(m.away_to_tie, m.away_to_win)
-        then (c.away_g - coalesce(m.away_to_tie, m.away_to_win)) * m.mult
-      else 0
-    end as away_new_pts
+    -- points = (games won − par) × m; par = to_tie, else to_win
+    (c.home_g - coalesce(m.home_to_tie, m.home_to_win)) * m.mult as home_new_pts,
+    (c.away_g - coalesce(m.away_to_tie, m.away_to_win)) * m.mult as away_new_pts
   from m
   join counted c on c.id = m.id
   where m.calc = 'linear_above_threshold'
