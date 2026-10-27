@@ -49,6 +49,12 @@ Rules confirmed by Ed:
   pre-existing errors (e.g. `no-regex-spaces` in `scripts/`,
   `no-explicit-any` in `src/__tests__/database/`, an unknown
   `vitest/valid-title` rule referenced by disable comments).
+- [x] **Standings tie order restored to wins → points → games** (the
+  scoresheet's order; PR #98 had swapped points and games in the app
+  default). Not done yet, for when the LO sort-order option is built: the
+  wizard's `wins_first` preset (`presetMappings.ts`) and the
+  `preferences.standings_sort` DB default still store the swapped order —
+  the app doesn't read that setting today, so it's harmless until it does.
 - [ ] **Phase 6 — Duplicate week names (own branch).** The real season has
   TWO `season_weeks` rows named "Week 14" (2026-10-04 and 2026-10-11; the
   weeks after it are then labeled 15, 16). Ed believed this class of bug was
