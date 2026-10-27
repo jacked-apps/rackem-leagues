@@ -462,22 +462,19 @@ export function getCompletedGamesCount(gameResults: Map<number, MatchGame>): num
  * unchanged. Once Phase 5 Unit 5.5 ships, callers will read the running
  * total from the match row directly and this shim can be deleted.
  *
- * Points calculation logic (preserved from the original):
- * - Above-win band: (wins - games_to_win) * multiplier  [multiplier=1 here]
- * - Tie band: T <= wins <= W → 0 (always 0)
- * - Below-tie band: (wins - games_to_tie) * multiplier
- * - When games_to_tie is null: tie band collapses; formula reduces to
- *   (wins - games_to_win) * multiplier
+ * Points calculation logic (see the calculator for the full rule):
+ * - points = (wins - par) * multiplier  [multiplier=1 here]
+ * - par = games_to_tie when a tie is possible, else games_to_win
  *
  * @param teamId - Team's ID to calculate points for
  * @param thresholds - Handicap thresholds (win/tie/lose game counts)
  * @param gameResults - Map of game numbers to game results
- * @returns Point differential (positive = above win threshold, 0 = tie range, negative = below tie threshold)
+ * @returns Point differential (positive = above par, 0 = at par, negative = below par)
  *
  * @example
  * // With tie possible: games_to_win=10, games_to_tie=9
  * const points1 = calculatePoints('team-123', { games_to_win: 10, games_to_tie: 9, games_to_lose: 8 }, gamesMap);
- * // 11 wins = +1, 10 wins = 0, 9 wins = 0, 8 wins = -1
+ * // 11 wins = +2, 10 wins = +1, 9 wins = 0, 8 wins = -1
  *
  * @example
  * // No tie: games_to_win=10, games_to_tie=null

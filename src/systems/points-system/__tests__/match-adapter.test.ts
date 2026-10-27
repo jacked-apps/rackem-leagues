@@ -227,9 +227,9 @@ describe('Points 3-Man scores against SAVED targets, not a re-derived diff', () 
   });
 
   it('above / below bands use the saved targets', () => {
-    // 14–4: home 14 − 12 = +2; away 4 − 7 (saved tie) = −3.
+    // 14–4: home 14 − 11 (saved tie) = +3; away 4 − 7 (saved tie) = −3.
     const totals = run(14, 4);
-    expect(totals.home_points_earned).toBe(2);
+    expect(totals.home_points_earned).toBe(3);
     expect(totals.away_points_earned).toBe(-3);
   });
 

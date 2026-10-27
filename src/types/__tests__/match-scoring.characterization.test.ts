@@ -131,22 +131,22 @@ describe('calculatePoints — characterization (3v3 BCA points scoring)', () => 
       games_to_lose: 8,
     };
 
-    it('wins exactly games_to_win (10) → 0 points (just at win threshold)', () => {
+    it('wins exactly games_to_win (10) → +1 point (10 - par 9)', () => {
       const games = makeMap(
         Array.from({ length: 10 }, (_, i) =>
           game({ game_number: i + 1, winner_team_id: HOME })
         )
       );
-      expect(calculatePoints(HOME, thresholds, games)).toBe(0);
+      expect(calculatePoints(HOME, thresholds, games)).toBe(1);
     });
 
-    it('wins above games_to_win (12) → +2 points (12 - 10)', () => {
+    it('wins above games_to_win (12) → +3 points (12 - par 9)', () => {
       const games = makeMap(
         Array.from({ length: 12 }, (_, i) =>
           game({ game_number: i + 1, winner_team_id: HOME })
         )
       );
-      expect(calculatePoints(HOME, thresholds, games)).toBe(2);
+      expect(calculatePoints(HOME, thresholds, games)).toBe(3);
     });
 
     it('wins exactly games_to_tie (9) → 0 points (in tie range)', () => {

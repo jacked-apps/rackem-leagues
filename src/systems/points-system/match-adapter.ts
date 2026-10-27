@@ -332,19 +332,15 @@ function buildThresholdInputsForCalculator(
     pointsCalculator === 'linear_above_threshold' &&
     hasSavedTargets(homeThresholds, awayThresholds)
   ) {
-    // Non-null asserted by hasSavedTargets. Lower edge collapses to the win
-    // target when a tie is impossible (tie target NULL), same as the chart's
+    // Non-null asserted by hasSavedTargets. Par collapses to the win target
+    // when a tie is impossible (tie target NULL), same as the chart's
     // `games_to_tie_or_win`.
-    const homeWin = homeThresholds.games_to_win!;
-    const awayWin = awayThresholds.games_to_win!;
     return {
       ...thresholdInputs,
       prefs: {
         ...thresholdInputs.prefs,
-        [SAVED_TARGET_PREF_KEYS.homeWinTarget]: homeWin,
-        [SAVED_TARGET_PREF_KEYS.awayWinTarget]: awayWin,
-        [SAVED_TARGET_PREF_KEYS.homeLowerEdge]: homeThresholds.games_to_tie ?? homeWin,
-        [SAVED_TARGET_PREF_KEYS.awayLowerEdge]: awayThresholds.games_to_tie ?? awayWin,
+        [SAVED_TARGET_PREF_KEYS.homePar]: homeThresholds.games_to_tie ?? homeThresholds.games_to_win!,
+        [SAVED_TARGET_PREF_KEYS.awayPar]: awayThresholds.games_to_tie ?? awayThresholds.games_to_win!,
       },
     };
   }
