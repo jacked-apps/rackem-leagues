@@ -249,6 +249,41 @@ today, a trap for any future "finished" query).
 F3 (tiebreak exclusion in `completeMatch` is a caller convention, not an
 enforcement) — note only, no change.
 
+### Unit 6b — Fix `MatchWithDetails` properly (Ed, 2026-10-28: do NOT paper over)
+
+**Ed's instruction, verbatim in effect: make sure the tiebreak plan FIXES this
+and does not paper over it further.** Treat a third workaround type as a plan
+violation, not a shortcut.
+
+*The problem.* `MatchWithDetails` (`src/types/schedule.ts:113`) is the declared
+shape of a fetched match. It has drifted from what the queries actually return —
+it declares none of the verification columns, `started_at`, or the `season` /
+`league` embed, all of which `src/api/queries/matches.ts` selects.
+
+*Why it hides.* Every query finishes with `as MatchWithDetails`
+(`matches.ts:122,156,196,240,307,437`). A cast switches checking OFF, so both a
+field that arrives undeclared AND a field that never arrives pass silently —
+the second surfacing as `undefined` at runtime, usually a blank spot on screen.
+
+*The tell.* Two places have already written down that the real shape is bigger:
+`MyMatchRow = MatchWithDetails & { started_at }`
+(`useMyMatchSurfaces.ts:37`) and `MatchWithVenueDetails`
+(`schedule.ts:193`). Nobody fixed the declaration; it was worked around twice.
+
+*The fix.* Add the missing fields to `MatchWithDetails`, delete the two
+workaround types, and replace the casts with properly typed query returns where
+the shape allows. If a query genuinely returns a different shape, give it its
+own named type — do not widen `MatchWithDetails` into a grab-bag.
+
+*Why it belongs here.* This plan reads and writes match data through those same
+queries, so it will be tempted to add a third workaround type for the tiebreak
+fields. That is exactly the pattern behind both bugs this audit chased
+(`week_name`, `is_tiebreaker`): **the code's description of reality drifting
+from reality, with nothing complaining until production.**
+
+**Gate:** if implementing any unit requires a new `X & { ... }` patch type over
+`MatchWithDetails`, stop and fix the declaration instead.
+
 ---
 
 ## Unit 7 — DEFERRED: count tiebreak wins toward handicaps
