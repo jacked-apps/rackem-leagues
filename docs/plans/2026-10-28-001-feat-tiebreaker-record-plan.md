@@ -170,6 +170,21 @@ do not block on it. The only requirement is that the `manual` early-return at
 `MatchEndVerification.tsx:449` keeps working exactly as it does today — Unit 2
 rewrites that region, so leaving it intact is a test case, not an assumption.
 
+> **DECIDED 2026-10-28 (implementation, Ed): `accept_tie` is not a real
+> choice.** Found while starting this unit: today the code special-cases only
+> `manual` — every other value, `accept_tie` included, runs best-of-3. And
+> `accept_tie` was the DEFAULT in the `preferences` column, the resolved view's
+> fallback, the scoring screen's fallback, and the wizard; every stored row said
+> it without anyone choosing it. Implementing "`accept_tie` → no record" as
+> written above would have switched tiebreakers OFF for every league. Ed: it was
+> a just-in-case option suggested during an earlier plan, never meant as the
+> default, and no league he runs allows ties — take it off default; no way to
+> select it is fine. Done in migration `20261028204853_tiebreaker_default_best_of_3`
+> (default + stored rows + view fallback → best-of-3) and the wizard (option
+> removed). **Consequence for this unit:** frozen match snapshots can still
+> carry `accept_tie`; they map to best-of-3, which is exactly what they get
+> today. Do NOT implement a "no record" path for it.
+
 **`games_needed` / `game_count` have no numeric config source (review).**
 `resolved_league_preferences` carries only the `tiebreaker_format` enum. The
 enum → (games_needed, game_count, players_per_side) mapping must be written and

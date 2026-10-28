@@ -141,9 +141,10 @@ export function MatchEndVerification({
   // a tied match prompts the LO with ManualTiebreakerDialog instead of
   // auto-creating short-race tiebreaker games. Read from the snapshot
   // (frozen-at-first-score) so mid-match preference edits don't change
-  // the in-flight match's tiebreaker behavior.
+  // the in-flight match's tiebreaker behavior. Best-of-3 is the fallback —
+  // 'accept_tie' is never a default (migration 20261028204853).
   const tiebreakerFormat: string =
-    (snapshot?.tiebreaker_format as string | undefined) ?? 'accept_tie';
+    (snapshot?.tiebreaker_format as string | undefined) ?? 'best_of_3_short_race';
 
   // Fetch lineups to get lineup IDs for unlocking
   const lineupsQuery = useMatchLineups(matchId, homeTeamId, awayTeamId, false);

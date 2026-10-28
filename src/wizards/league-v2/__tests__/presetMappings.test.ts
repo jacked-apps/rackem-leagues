@@ -74,10 +74,10 @@ describe('mapTiebreaker', () => {
     });
   });
 
-  it('accept_tie → (never, accept_tie)', () => {
+  it('accept_tie is no longer a choice — falls to the best-of-3 default', () => {
     expect(mapTiebreaker('accept_tie')).toEqual({
       tiebreaker_trigger: 'never',
-      tiebreaker_format: 'accept_tie',
+      tiebreaker_format: 'best_of_3_short_race',
     });
   });
 
@@ -88,17 +88,17 @@ describe('mapTiebreaker', () => {
     });
   });
 
-  it('undefined defaults to (never, accept_tie) — safest non-tiebreaker', () => {
+  it('undefined (step skipped) defaults to (never, best_of_3) — never accept_tie', () => {
     expect(mapTiebreaker(undefined)).toEqual({
       tiebreaker_trigger: 'never',
-      tiebreaker_format: 'accept_tie',
+      tiebreaker_format: 'best_of_3_short_race',
     });
   });
 
-  it('unknown value defaults to (never, accept_tie) — graceful', () => {
+  it('unknown value defaults to (never, best_of_3) — graceful', () => {
     expect(mapTiebreaker('experimental_tiebreaker')).toEqual({
       tiebreaker_trigger: 'never',
-      tiebreaker_format: 'accept_tie',
+      tiebreaker_format: 'best_of_3_short_race',
     });
   });
 });
