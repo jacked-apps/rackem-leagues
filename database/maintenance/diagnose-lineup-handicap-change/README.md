@@ -1,6 +1,6 @@
 # Why did this match's lineup handicaps change?
 
-READ-ONLY. Three queries, run one at a time. Nothing here writes or changes
+READ-ONLY. Four queries, run one at a time. Nothing here writes or changes
 anything.
 
 Built for the "Ben vs Duff" question (match `92b799f2…`): the lineup handicaps
@@ -18,7 +18,10 @@ match, change that one line.
 
 1. `1_confirm_no_tiebreaker.sql` — confirms there really was no tiebreaker.
 2. `2_the_answer_swap_or_not.sql` — **this is the one that answers it.**
-3. `3_who_played_each_game.sql` — cross-check.
+3. `3_who_played_each_game.sql` — cross-check: did the same players play throughout?
+4. `4_targets_vs_stored_handicaps.sql` — **the proof.** The saved targets cannot
+   be rewritten; if the stored handicaps no longer explain them, the lineup row
+   changed after the match was prepped.
 
 ## Reading file 2
 
