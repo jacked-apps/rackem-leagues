@@ -373,7 +373,7 @@ export const getQuestionDefinitions = (
                         try {
                           leagueEmailSchema.parse(value);
                           e.target.setCustomValidity('');
-                        } catch (error) {
+                        } catch {
                           e.target.setCustomValidity('Please enter a valid email address');
                         }
                       } else {
@@ -397,7 +397,7 @@ export const getQuestionDefinitions = (
                     try {
                       leagueEmailSchema.parse(state.leagueEmail);
                       return null;
-                    } catch (error) {
+                    } catch {
                       return (
                         <p className="mt-1 text-sm text-destructive">
                           Please enter a valid email address
@@ -514,7 +514,7 @@ export const getQuestionDefinitions = (
                         try {
                           leaguePhoneSchema.parse(value);
                           e.target.setCustomValidity('');
-                        } catch (error) {
+                        } catch {
                           e.target.setCustomValidity('Please enter a valid phone number');
                         }
                       } else {
@@ -538,7 +538,7 @@ export const getQuestionDefinitions = (
                     try {
                       leaguePhoneSchema.parse(state.leaguePhone);
                       return null;
-                    } catch (error) {
+                    } catch {
                       return (
                         <p className="mt-1 text-sm text-destructive">
                           Please enter a valid phone number

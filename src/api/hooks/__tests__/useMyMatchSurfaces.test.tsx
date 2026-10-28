@@ -28,7 +28,7 @@ vi.mock('@/api/queries/matches', () => ({
   getMyMatchMatches: queriesMock.getMyMatchMatches,
 }));
 
-const { supabaseMock, channelMock } = vi.hoisted(() => {
+const { supabaseMock } = vi.hoisted(() => {
   const channelMock: any = { on: vi.fn(), subscribe: vi.fn() };
   channelMock.on.mockReturnValue(channelMock);
   channelMock.subscribe.mockReturnValue(channelMock);
