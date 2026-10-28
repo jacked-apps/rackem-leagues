@@ -8,7 +8,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
-import { isEighteenOrOlder } from '@/utils/formatters';
+import { isMinor } from '@/utils/age';
 import type { UserRole } from '@/types';
 
 /**
@@ -138,8 +138,8 @@ export interface UpdateProfanityFilterParams {
 /**
  * Update member's profanity filter preference
  *
- * Only allows updates for users 18+. Users under 18 have filter forced ON.
- * Validates age before allowing the update.
+ * Refuses the update for a known minor (birth date on file, under 18),
+ * whose filter is forced ON. A member with no birth date can change it.
  *
  * @param params - Update parameters (userId, enabled)
  * @throws Error if user is under 18 or database update fails
@@ -170,10 +170,10 @@ export async function updateProfanityFilter(
     throw new Error('Member not found');
   }
 
-  // Check age using helper function
-  // TODO(typed-client): date_of_birth is nullable; a member with no DOB
-  // reaches isEighteenOrOlder(null), which expects a date. Kept as-is.
-  if (!isEighteenOrOlder(member.date_of_birth as string)) {
+  // Same rule the settings screens use (useProfanityFilter): only a KNOWN
+  // minor is locked. Birth date is optional, so an unknown one is treated
+  // as an adult — otherwise the screen offers a toggle this then refuses.
+  if (isMinor(member.date_of_birth)) {
     throw new Error('Users under 18 cannot modify profanity filter settings');
   }
 

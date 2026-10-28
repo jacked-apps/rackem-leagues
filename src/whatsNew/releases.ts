@@ -160,6 +160,10 @@ export const RELEASES: Release[] = [
         kind: 'fix',
         forOperators: true,
       },
+      {
+        text: 'If you hadn\u2019t put your birth date on your profile, switching the language filter on or off in your settings always failed with an error. It works now.',
+        kind: 'fix',
+      },
     ],
   },
   {
