@@ -24,6 +24,16 @@ import type { GameType, DayOfWeek } from '@/types/league';
 import type { MatchWithDetails } from '@/types';
 import { SpectateMatchCard } from './SpectateMatchCard';
 
+/**
+ * The live-match queries also embed `season → league` (for the league label),
+ * which MatchWithDetails doesn't declare.
+ */
+type MatchWithSeasonLeague = MatchWithDetails & {
+  season?: {
+    league?: { id: string; game_type?: string; day_of_week?: string; division?: string | null } | null;
+  } | null;
+};
+
 function composeLeagueLabel(league: {
   game_type?: string;
   day_of_week?: string;
@@ -49,7 +59,7 @@ export function SpectateMyLiveMatches() {
   // Week numbers are DERIVED per season from position, never the stored week_name.
   // This feed spans multiple leagues/seasons, so the hook builds a per-season map.
   const weekLabels = useWeekLabelsForSeasons(
-    matches.map((m) => (m as any).season_id),
+    matches.map((m) => m.season_id),
   );
 
   // Group matches by league. If a member is on teams in multiple leagues
@@ -57,7 +67,7 @@ export function SpectateMyLiveMatches() {
   const groups: LeagueGroup[] = useMemo(() => {
     const byLeague = new Map<string, LeagueGroup>();
     for (const m of matches) {
-      const league = (m as any).season?.league;
+      const league = (m as MatchWithSeasonLeague).season?.league;
       const leagueId = league?.id ?? 'unknown';
       if (!byLeague.has(leagueId)) {
         byLeague.set(leagueId, {
@@ -131,10 +141,11 @@ export function SpectateMyLiveMatches() {
               </h2>
               {g.matches.map((m) => {
                 const weekName =
-                  weekLabels.get((m as any).season_week?.id) ||
-                  (m as any).season_week?.week_name ||
+                  // A missing week id just misses the map (get(undefined) → undefined).
+                  weekLabels.get(m.season_week?.id as string) ||
+                  m.season_week?.week_name ||
                   '';
-                const weekDate = (m as any).season_week?.scheduled_date || '';
+                const weekDate = m.season_week?.scheduled_date || '';
                 const subLabel = [weekName, weekDate].filter(Boolean).join(' — ');
                 return (
                   <div key={m.id}>

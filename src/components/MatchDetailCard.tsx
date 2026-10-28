@@ -12,6 +12,16 @@ import { useMatchById } from '@/api/hooks/useMatches';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TeamNameLink } from '@/components/TeamNameLink';
+import type { MatchWithDetails } from '@/types';
+
+/**
+ * getMatchById selects `*`, so the verification columns are on the row even
+ * though MatchWithDetails doesn't declare them.
+ */
+type MatchWithVerification = MatchWithDetails & {
+  home_team_verified_by?: string | null;
+  away_team_verified_by?: string | null;
+};
 
 interface MatchDetailCardProps {
   /** Match ID to display */
@@ -53,7 +63,7 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
   const { data: match, isLoading, error } = useMatchById(matchId);
 
   // Helper: Determine match winner
-  const getWinner = (match: any) => {
+  const getWinner = (match: MatchWithVerification) => {
     // Check match_result field first (authoritative)
     if (match.match_result === 'home_win') return 'home';
     if (match.match_result === 'away_win') return 'away';
@@ -129,10 +139,10 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
         {/* Verification ticks — operator/debug only. */}
         {!playerView && (
           <div className="ml-auto flex gap-2">
-            {(match as any).home_team_verified_by && (
+            {(match as MatchWithVerification).home_team_verified_by && (
               <Badge variant="outline" className="text-xs">Home ✓</Badge>
             )}
-            {(match as any).away_team_verified_by && (
+            {(match as MatchWithVerification).away_team_verified_by && (
               <Badge variant="outline" className="text-xs">Away ✓</Badge>
             )}
           </div>

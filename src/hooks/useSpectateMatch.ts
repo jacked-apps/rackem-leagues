@@ -95,19 +95,19 @@ export function useSpectateMatch(matchId: string | null | undefined) {
   // See useMatchScoring.ts for the matching scoring-side fix.
   const memberIdsToFetch = useMemo(() => {
     const ids = new Set<string>();
-    const collect = (lineup: any) => {
+    const collect = (lineup: object | null) => {
       if (!lineup) return;
       for (let n = 1; n <= 5; n++) {
-        const id = lineup[`player${n}_id`];
+        const id = (lineup as Record<string, unknown>)[`player${n}_id`];
         if (typeof id === 'string' && id.length > 0) ids.add(id);
       }
     };
     collect(homeLineup);
     collect(awayLineup);
-    homeTeamQuery.data?.team_players?.forEach((tp: any) => {
+    homeTeamQuery.data?.team_players?.forEach((tp) => {
       if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
     });
-    awayTeamQuery.data?.team_players?.forEach((tp: any) => {
+    awayTeamQuery.data?.team_players?.forEach((tp) => {
       if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
     });
     return Array.from(ids);
@@ -117,7 +117,7 @@ export function useSpectateMatch(matchId: string | null | undefined) {
 
   const players = useMemo(() => {
     const map = new Map<string, Player>();
-    membersQuery.data?.forEach((m: any) => {
+    membersQuery.data?.forEach((m) => {
       map.set(m.id, {
         id: m.id,
         nickname: m.nickname,
@@ -210,8 +210,8 @@ export function useSpectateMatch(matchId: string | null | undefined) {
   // type guard, which would silently return 0 for any future non-Fargo
   // per-game calculator.
   const fargoWinnerPoints =
-    typeof (fargoOverrides as any).winner_points === 'number'
-      ? (fargoOverrides as any).winner_points
+    typeof (fargoOverrides as { winner_points?: unknown }).winner_points === 'number'
+      ? (fargoOverrides as { winner_points: number }).winner_points
       : 10;
   const getPlayerPoints = (
     playerId: string,
