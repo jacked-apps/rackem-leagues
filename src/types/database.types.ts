@@ -3661,6 +3661,7 @@ export type Database = {
           points_calculator: string | null
           points_calculator_params: Json | null
           points_system: string | null
+          profanity_filter_enabled: boolean | null
           race_length: number | null
           standings_sort: string[] | null
           team_handicap_variant: string | null
