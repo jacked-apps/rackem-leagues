@@ -61,7 +61,50 @@ number. That is what makes it safe to land the architecture before the rule.
 legacy all-zeros form), then confirm the duplicate-version check comes back
 empty. Regenerate `src/types/database.types.ts`; update `TABLE_OF_CONTENTS.md`.
 
-**Approach:** two tables, mirroring the match / `match_lineups` pair.
+**Approach:** two NEW tables, mirroring the match / `match_lineups` pair.
+
+### Why new tables and not a `kind` column on `match_lineups`
+
+Asked by Ed, 2026-10-28: would it be easier to reuse the existing tables with a
+discriminator column? **No — separate tables.**
+
+*The concrete failure.* `engineRunningTotals.ts:133-147` fetches every locked
+lineup for a match and then picks home and away with `.find()` on `team_id`,
+having checked only `length >= 2`. With a discriminator, a tied match has FOUR
+locked rows carrying the same two team ids, and `.find()` takes whichever
+Postgres returns first — an order that is not guaranteed. It would sometimes
+compute the match's running totals from the TIEBREAK handicaps. No error, no
+crash, occasionally wrong points.
+
+That is one site. **22 app read sites touch `match_lineups`, plus 22 migration
+files.** Each becomes a place where a forgotten filter is a silent bug.
+
+*The pattern.* This audit chased two bugs of exactly that shape — `week_name`
+(shared column, two writers disagreeing) and `is_tiebreaker` (write side sets
+it, read side discards it, silently disabling the anti-sandbagging rule).
+Finding F3 records that the tiebreak exclusion is "a convention, not an
+enforcement." A `kind` column would be the third instance of the same pattern.
+
+*It also undercuts D0.* The guarantee is "the match lineup is never touched."
+In one table that holds only while every query remembers the filter — a promise.
+In separate tables a query against `match_lineups` **cannot see** a tiebreak
+lineup — impossible rather than disciplined. D0 asked for structural separation;
+a discriminator gives the shape without the protection.
+
+*Fair to the other side.* Reuse wins when two things are read TOGETHER and share
+a lifecycle, since splitting then forces constant joins. Not the case here:
+tiebreak lineups are read only by the tiebreak flow, created later, locked
+separately, frozen. The real cost of splitting is duplicated shape (5 slots +
+5 handicaps defined twice) — a genuine cost, but it lives in the table
+definition, not the UI; the lineup picker and lock controls are shared.
+`match_lineups` also carries 5 swap columns that are meaningless for a
+tiebreak, and reuse would inherit them.
+
+*Sub-question: header columns on `matches` instead of a table?* More defensible
+than sharing `match_lineups`, since nullable columns add no rows and break
+nothing. Still going with the small table: `matches` is already wide, a
+tiebreaker is rare and optional, and redoing one becomes deleting a row rather
+than nulling four columns.
 
 `match_tiebreakers` — one row per tied match:
 
