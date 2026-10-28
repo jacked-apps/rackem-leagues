@@ -64,3 +64,23 @@ Rules confirmed by Ed:
   this season's labels, and add a guard so a season can never hold two
   regular weeks with the same name (e.g. a DB unique constraint or
   renumber-on-write, plus a regression test).
+
+## Where we are (handoff, 2026-10-27)
+
+- **Phases 1 + 2 done**, plus the sort fix. All in PR #291 (this branch).
+  Production rescored twice (5 matches, then 27). After #291 deploys, Ed
+  re-runs `_1_preview.sql`; apply only if rows show up.
+- **Ed's chosen order for what's next:** Phase 5 → Phase 6 (investigation
+  ONLY, no fix) → Phase 3 (audit). Fixes for the duplicate week and the
+  tiebreaker wait until both investigations are in.
+- **Phase 5 is bigger than expected:** 348 errors + 22 warnings in 130
+  files. By rule: `no-explicit-any` 289, `no-unused-vars` 27,
+  `react-refresh/only-export-components` 17, `vitest/valid-title` 4,
+  `no-regex-spaces` 3, `no-empty-object-type` 3, `rules-of-hooks` 3,
+  `no-constant-binary-expression` 1, `prefer-as-const` 1. Warnings:
+  `exhaustive-deps` 18. Area: app 286, tests 59, scripts 3.
+- **Recommended Phase 5 approach (awaiting Ed's yes):** PR 1 = the 4
+  possible real bugs (`rules-of-hooks` ×3, `no-constant-binary-expression`)
+  plus the ~55 quick mechanical fixes. Then the 289 `any`s in several PRs,
+  one app area at a time. Do NOT downgrade `any` to a warning.
+- Branch `chore/lint-cleanup` exists (off main), nothing on it yet.
