@@ -1,52 +1,72 @@
 # PLAN — Tiebreaker as its own record
 
-Date: 2026-10-28. Branch: `audit/tiebreaker-phase3` (rename or branch off for
-implementation). Status: **drafted, not approved.**
+Date: 2026-10-28. Branch: `audit/tiebreaker-phase3` (branch off for
+implementation). Status: **revised after document review; drafted, not
+approved.**
 
 Requirements: `docs/brainstorms/2026-10-28-tiebreaker-requirements.md`
 Evidence: `docs/audits/2026-10-28-tiebreaker-audit.md`
+
+## Revision note — read this before anything else
+
+The first draft of this plan rested on a **false premise**: that tiebreak games
+do not count toward handicaps, which made the handicap work safe to defer. That
+was wrong. A four-persona document review caught it, and two reviewers found it
+independently.
+
+**Ed's anti-sandbagging rule WORKS in production today.** `calculatePlayerHandicap`
+imports `fetchPlayerGameHistory` from `@/api/queries/matchGames` (NOT the
+same-named function in `playerGameHistory.ts`), and that function carries an
+explicit "TIEBREAKER HANDICAP RULE" block keeping tiebreak wins and dropping
+tiebreak losses.
+
+Two consequences, both structural:
+
+1. **The three-game overwrite is load-bearing.** It produces the credited wins
+   the handicap counts. Deleting it without a replacement switches the rule off.
+2. **The handicap work is IN SCOPE** (Ed, 2026-10-28: "if we should bring it in
+   bring it in"). It is no longer a deferred Unit 7 — it ships with the unit
+   that removes the overwrite, because they are one change.
+
+A second P0 also came out of review: the lineup unlock this plan removes is a
+**signal three other code paths depend on**, two of which were in no unit.
 
 ## Goal
 
 Give the tiebreaker its own record — a parallel mini-match carrying its own
 lineups, handicaps and games-needed — so a tie never touches the match record or
-its lineups (requirement D0).
-
-## Scope call (Ed, 2026-10-28)
-
-**The handicap counting fix is OUT of this plan.** Tiebreaker games continue not
-to count toward handicaps, which is today's behaviour and is acceptable for now.
-It is deferred to Unit 7, documented but not built.
-
-The plan's obligation is that **recording is complete enough that Unit 7 needs no
-schema change** — Ed: *"if we are just solid on how we are recording the tiebreak
-games then we can figure out how to add it to the handicap calculator later."*
-Unit 1 is designed against that constraint and Unit 7 states the check.
-
-**These changes are invisible to players.** Both the handicap calculator and the
-personal game history filter `is_tiebreaker = false` today
-(`playerGameHistory.ts:119`), so nothing in Units 1–6 alters a single displayed
-number. That is what makes it safe to land the architecture before the rule.
+its lineups (requirement D0), **while preserving the anti-sandbagging rule
+exactly**.
 
 ## What exists today
 
 - A tie **unlocks both match lineups** so captains can pick a tiebreak order
-  (`MatchEndVerification.tsx:492-501`). That unlock is the root of audit finding
-  F1.
+  (`MatchEndVerification.tsx:490-504`). Root of audit finding F1.
+- **Three other paths read that unlock as a signal** (found in review; see
+  Unit 2):
+  - `MatchEndVerification.tsx:534-554` polls up to 10s for both lineups to be
+    UNLOCKED, then throws `Timeout waiting for lineups to be unlocked`.
+  - `useMatchPreparation.ts` auto-navigates to `/score` when both lineups are
+    locked and games exist — which is always true in a tiebreak.
+  - `ScoreMatch.tsx:924-925` requires `bothLineupsLocked` for its tiebreak mode.
 - The tiebreak order is stored on the tiebreak `match_games` rows by
-  `useTiebreakerLineup`, while the lineup row keeps the regular-game order.
-- `MatchLineup.tsx` enters tiebreak mode on `matchData.match_result === 'tie'`
-  and swaps its handlers; the handicap column is hidden by rendering only.
-- **"First to 2" is hardcoded** — `TiebreakerScoreboard.tsx:73` computes
-  `matchComplete` as `homeWins >= 2 || awayWins >= 2` and passes literal `2`
-  thresholds into `MatchEndVerification`.
+  `useTiebreakerLineup`; the lineup row keeps the regular-game order.
+- `MatchLineup.tsx:289` enters tiebreak mode on `match_result === 'tie'`.
+- **"First to 2" is hardcoded** (`TiebreakerScoreboard.tsx:73`), and so is the
+  game geometry: `useTiebreakerLineup.ts` computes `18 + position` in three
+  places with exactly three setters, and `ScoreMatch.tsx:931` filters
+  `gameNumber >= 19 && gameNumber <= 21`. `src/utils/tiebreaker/gameNumbers.ts`
+  already exists for this and is used only by `MatchEndVerification`.
 - On resolution, **all three games are overwritten** as won by the winning
-  team's players (`MatchEndVerification.tsx:409-442`) — the only way the "all
-  three winners get credit" rule is expressed today, and the cause of the
-  fabricated head-to-head record.
-- The tiebreaker's own winner is counted from the REAL results before that
-  overwrite (`TiebreakerScoreboard.tsx:60-69`), so removing the overwrite does
-  not break winner determination.
+  team's players (`MatchEndVerification.tsx:409-443`). This is what makes the
+  handicap rule work, and also what makes a per-game record untrue.
+- The tiebreaker's own winner is counted from the REAL results *before* that
+  overwrite (`TiebreakerScoreboard.tsx:60-69`) — verified in review, so removing
+  the overwrite does not disturb winner determination.
+- `tiebreaker_format` has **four** values (`resolvedSystemConfig.ts:92`):
+  `best_of_3_short_race`, `single_short_race`, `accept_tie`, `manual`. Only the
+  first is the flow described above. `manual` returns early at
+  `MatchEndVerification.tsx:449` before any of it.
 
 ---
 
@@ -56,87 +76,57 @@ number. That is what makes it safe to land the architecture before the rule.
 
 **Dependencies:** none.
 
-**Files:** new migration in `supabase/migrations/` — use
-`supabase migration new tiebreak_records` for a REAL UTC timestamp (never the
-legacy all-zeros form), then confirm the duplicate-version check comes back
-empty. Regenerate `src/types/database.types.ts`; update `TABLE_OF_CONTENTS.md`.
+**Files:** new migration via `supabase migration new tiebreak_records` (REAL UTC
+timestamp, never the legacy all-zeros form); confirm the duplicate-version check
+is empty. Regenerate `src/types/database.types.ts`; update `TABLE_OF_CONTENTS.md`.
 
 **Approach:** two NEW tables, mirroring the match / `match_lineups` pair.
-
-### Why new tables and not a `kind` column on `match_lineups`
-
-Asked by Ed, 2026-10-28: would it be easier to reuse the existing tables with a
-discriminator column? **No — separate tables.**
-
-*The concrete failure.* `engineRunningTotals.ts:133-147` fetches every locked
-lineup for a match and then picks home and away with `.find()` on `team_id`,
-having checked only `length >= 2`. With a discriminator, a tied match has FOUR
-locked rows carrying the same two team ids, and `.find()` takes whichever
-Postgres returns first — an order that is not guaranteed. It would sometimes
-compute the match's running totals from the TIEBREAK handicaps. No error, no
-crash, occasionally wrong points.
-
-That is one site. **22 app read sites touch `match_lineups`, plus 22 migration
-files.** Each becomes a place where a forgotten filter is a silent bug.
-
-*The pattern.* This audit chased two bugs of exactly that shape — `week_name`
-(shared column, two writers disagreeing) and `is_tiebreaker` (write side sets
-it, read side discards it, silently disabling the anti-sandbagging rule).
-Finding F3 records that the tiebreak exclusion is "a convention, not an
-enforcement." A `kind` column would be the third instance of the same pattern.
-
-*It also undercuts D0.* The guarantee is "the match lineup is never touched."
-In one table that holds only while every query remembers the filter — a promise.
-In separate tables a query against `match_lineups` **cannot see** a tiebreak
-lineup — impossible rather than disciplined. D0 asked for structural separation;
-a discriminator gives the shape without the protection.
-
-*Fair to the other side.* Reuse wins when two things are read TOGETHER and share
-a lifecycle, since splitting then forces constant joins. Not the case here:
-tiebreak lineups are read only by the tiebreak flow, created later, locked
-separately, frozen. The real cost of splitting is duplicated shape (5 slots +
-5 handicaps defined twice) — a genuine cost, but it lives in the table
-definition, not the UI; the lineup picker and lock controls are shared.
-`match_lineups` also carries 5 swap columns that are meaningless for a
-tiebreak, and reuse would inherit them.
-
-*Sub-question: header columns on `matches` instead of a table?* More defensible
-than sharing `match_lineups`, since nullable columns add no rows and break
-nothing. Still going with the small table: `matches` is already wide, a
-tiebreaker is rare and optional, and redoing one becomes deleting a row rather
-than nulling four columns.
 
 `match_tiebreakers` — one row per tied match:
 
 - `id`, `match_id` (FK, UNIQUE — one tiebreaker per match)
-- `games_needed` int NOT NULL — wins required. Frozen at creation, **not**
-  hardcoded 2. This is the column that makes a 4v4 tiebreaker needing 3 wins a
-  number rather than a branch.
+- `games_needed` int NOT NULL — wins required. Frozen at creation.
 - `game_count` int NOT NULL — how many games the tiebreaker lays out.
-- `winning_team_id` uuid NULL until resolved.
-- `resolved_at` timestamptz NULL — **required by Unit 7** to place a credited
-  win inside the handicap's lookback window.
+- `players_per_side` int NOT NULL — **how many players the tiebreaker credits.**
+  Added in review: for a 5v5 match with a best-of-3 tiebreaker, seeding copies
+  five players but only three take part, so "non-null slots" cannot tell the
+  handicap step who to credit.
+- `game_type` NOT NULL — **added in review.** Handicaps are per game type
+  (`matchGames.ts:88` filters `.eq('game_type', gameType)`), so a credited win
+  with no game type cannot be routed. Known at creation; `match_games` already
+  denormalizes it for the same reason.
+- `winning_team_id` uuid NULL until resolved
+- `resolved_at` timestamptz NULL — places a credited win in the handicap
+  lookback window.
 - `created_at`, `updated_at`
 
 `match_tiebreaker_lineups` — one row per side, mirroring `match_lineups`:
 
 - `id`, `tiebreaker_id` (FK), `team_id`
-- `player1_id`..`player5_id`, `player1_handicap`..`player5_handicap`
-  (5 slots so larger formats need no migration; handicaps **snapshotted** here
-  so a later hand-edit of `match_lineups` cannot move them — the Ben vs Duff
-  failure mode)
+- `player1_id`..`player5_id` + handicaps. Five slots **mirrors the existing
+  `match_lineups` shape**, and 4v4/5v5 already exist in this codebase
+  (games-needed-4v4/5v5 formulas, wizard format steps) — verified in review.
+  This is consistency with shipped schema, not speculative generality.
 - `locked`, `locked_at`
 - UNIQUE `(tiebreaker_id, team_id)`
 
-**Why this satisfies the Unit 7 constraint.** The deferred handicap fix needs
-exactly four things, all present: which team won (`winning_team_id`), the
-credited players (the winning side's lineup row), when (`resolved_at`), and the
-match (`match_id`). No later migration.
+**Realtime + access (added in review).** `match_games` and `match_lineups` are
+in the `supabase_realtime` publication
+(`supabase/migrations/20251212000000_enable_realtime.sql:38-40`) and subscribed
+by `useMatchRealtime.ts`. That is how one captain's pick reaches the other's
+phone. **Add both new tables to the publication** using the existing idempotent
+guard pattern, and state the RLS/grants posture explicitly.
 
-**Test scenarios:** a tiebreaker row and its two lineup rows insert and read
-back; the `match_id` uniqueness constraint rejects a second tiebreaker; deleting
-a match cascades. Place under `src/__tests__/database/` (sequential, jsdom) per
-the testing conventions.
+**Open — decide at implementation:** per-slot handicaps on the tiebreak lineup
+have no reader in this plan (a credited win is a win regardless of rating).
+Review flagged them as ten columns defending a path they are not on. Keep them
+only if a reader is identified; otherwise drop them and keep player ids.
+
+**Test scenarios:** rows insert and read back; `match_id` uniqueness rejects a
+second tiebreaker; deleting a match cascades; **the one historical tiebreak
+`match_games` set has no record and nothing assumes one** (folded in from the
+old Unit 5, which review correctly called a checklist item, not a unit). Place
+under `src/__tests__/database/`.
 
 ---
 
@@ -146,24 +136,45 @@ the testing conventions.
 
 **Dependencies:** Unit 1.
 
-**Files:** `src/components/scoring/MatchEndVerification.tsx`; new mutation module
-(e.g. `src/api/mutations/tiebreakers.ts`).
+**Files:** `src/components/scoring/MatchEndVerification.tsx`; new
+`src/api/mutations/tiebreakers.ts`; **and the three unlock-dependent paths found
+in review** — `src/components/scoring/MatchEndVerification.tsx:534-554`
+(the unlock poll), `src/hooks/lineup/useMatchPreparation.ts` (auto-navigate),
+`src/player/ScoreMatch.tsx:924-925` (`bothLineupsLocked`).
 
-**Approach:** replace the two `updateLineupMutation` unlock calls with creation
-of the tiebreaker row plus its two lineup rows, seeded from the match lineups
-(same players, same handicaps, order initially unset). Compute `games_needed` and
-`game_count` from the league's resolved configuration at creation and freeze
-them. Keep the existing "skip if already created" guard — the tie effect re-fires
-on re-mount and realtime.
+**Approach:** replace the two unlock calls with creation of the tiebreaker row
+plus its two lineup rows, seeded from the match lineups. Seed **only the
+participating slots** (`players_per_side`), leaving the rest null.
 
-**This is where F1 dies.** With no unlock there is no re-lock, so nothing can
-recalculate handicaps or re-derive the team bonus. The guard in `2534033`
-(PR #291) stops being load-bearing — leave it in place, it becomes dead weight
-rather than a risk.
+**The unlock is a signal, not just a hazard — this is the P0 from review.**
+Removing it without re-pointing these three breaks the feature outright:
 
-**Test scenarios:** a tie creates one tiebreaker + two lineup rows; match lineups
-keep `locked = true` and their original `locked_at`; re-firing the effect creates
-nothing further.
+1. The poll waits for an unlock that never comes → throws after 10s → the tie
+   never completes and captains never reach the lineup page. **Re-point it at
+   the tiebreak record existing.**
+2. `useMatchPreparation` would bounce captains straight to `/score` before they
+   could choose an order. **Must exclude the tiebreak case.**
+3. `ScoreMatch`'s `bothLineupsLocked` flips true the instant tiebreak games
+   exist, changing the surface mid-tie. **Re-point at the record.**
+
+**Keep writing `match_result = 'tie'`.** `MatchPhaseGuard.computePhaseRedirect`
+still routes on it; a later tidy-up that stops writing it would strand captains.
+
+**`tiebreaker_format` is four-valued (review).** State behaviour for each:
+`best_of_3_short_race` → record as described; `single_short_race` → record with
+`games_needed = 1`, `players_per_side = 1`; `accept_tie` → **no record**;
+`manual` → LO names a winner with no lineup, so either no record or a record
+with `winning_team_id` and no credited players. **That last choice decides
+whether a manual tiebreaker credits anyone — resolve it before coding Unit 5.**
+
+**`games_needed` / `game_count` have no numeric config source (review).**
+`resolved_league_preferences` carries only the `tiebreaker_format` enum. The
+enum → (games_needed, game_count, players_per_side) mapping must be written and
+given a home; it is an architectural decision this plan owes.
+
+**Test scenarios:** a tie creates one tiebreaker + two lineup rows; match
+lineups keep `locked = true` and their original `locked_at`; re-firing creates
+nothing further; a tie still navigates both captains to the lineup page.
 
 ---
 
@@ -174,22 +185,25 @@ nothing further.
 **Dependencies:** Unit 2.
 
 **Files:** `src/player/MatchLineup.tsx`, `src/hooks/lineup/useTiebreakerLineup.ts`,
-`src/hooks/lineup/useLineupPersistence.ts`.
+`src/hooks/lineup/useLineupPersistence.ts`, `src/realtime/useMatchRealtime.ts`.
 
 **Approach:** the page asks *"is a tiebreak lineup being requested?"* rather than
-reading match lock state. Order is written to the tiebreak lineup row; its
-`locked` / `locked_at` are the tiebreak's own.
+reading match lock state. Order writes to the tiebreak lineup row; `locked` /
+`locked_at` are the tiebreak's own. Add realtime subscriptions for the new
+tables so the two-device handshake still propagates.
 
-**The player pool comes from the MATCH LINEUP rows, not the team roster** — so
-only players who actually played are selectable, enforced by where the data comes
-from rather than by a check. (Today's equivalent is a filter in the render path,
-`MatchLineup.tsx:961-965`.)
+**The player pool comes from the MATCH LINEUP rows, not the team roster** — only
+players who actually played are selectable, enforced by where the data comes
+from.
 
-**Watch:** `isTiebreakerMode` currently keys off `matchData.match_result === 'tie'`
-(`MatchLineup.tsx:289`) and drives roughly a dozen branches. Re-point it at the
-presence of a tiebreak record and re-check every one; the handicap column is
-hidden by rendering (`hideHandicap`), which stops mattering once the match lineup
-is untouchable.
+**Replace the hardcoded geometry (review).** `useTiebreakerLineup.ts` computes
+`18 + position` in three places with three fixed setters. Use
+`tiebreakerGameNumbers` / `tiebreakerGameToPosition` from
+`src/utils/tiebreaker/gameNumbers.ts` and an indexed slot array sized by the
+record. Without this, `games_needed` is a column nothing downstream honours.
+
+**Watch:** `isTiebreakerMode` (`MatchLineup.tsx:289`) drives roughly a dozen
+branches. See "Unit 3 is the one real risk" below.
 
 **Test scenarios:** picking an order writes the tiebreak lineup only; the match
 lineup row is byte-identical before and after; a player not in the match lineup
@@ -197,25 +211,27 @@ cannot be selected.
 
 ---
 
-## Unit 4 — Resolve from the record; stop overwriting the games
+## Unit 4 — Resolve from the record, replace the overwrite, keep the rule
 
-**Goal:** The tiebreaker completes against its own `games_needed`, and the game
-rows keep their real results.
+**Goal:** The tiebreaker completes against its own `games_needed`, the game rows
+keep their real results, **and the anti-sandbagging rule keeps working across
+the change.**
 
-**Dependencies:** Units 1–3.
+**Dependencies:** Units 1–3. **Ships together with Unit 5 — not before.**
 
 **Files:** `src/components/scoring/TiebreakerScoreboard.tsx`,
-`src/components/scoring/MatchEndVerification.tsx`.
+`src/components/scoring/MatchEndVerification.tsx`, `src/player/ScoreMatch.tsx`
+(the `19..21` filter).
 
-**Approach:** replace the hardcoded `2` with `games_needed` from the record (both
-the `matchComplete` test and the thresholds passed down). On resolution write
-`winning_team_id` and `resolved_at`, and **delete the three-game overwrite
-block** — credit now lives on the record, so fabricating game results is
-unnecessary. An unplayed game keeps a null winner, which is the honest record of
-a game that never happened.
+**Approach:** replace the hardcoded `2` with `games_needed`. On resolution write
+`winning_team_id` and `resolved_at`. **Delete the three-game overwrite** — but
+only in the same change that lands Unit 5, because the overwrite is the only
+producer of the credited wins the handicap currently reads.
 
-**Safe to land without Unit 7:** every read path still filters tiebreak games
-out, so no displayed number changes.
+An unplayed game keeps a null winner. Note the overwrite is also the only writer
+of `confirmed_by_home` / `confirmed_by_away` on tiebreak rows, and today it puts
+member-id strings into boolean columns — removing it is an improvement, but
+record that those rows will now sit unconfirmed.
 
 **Test scenarios:** a 2–1 leaves the losing game recorded as a loss for the
 winning team's player; a 2–0 leaves game 3 with a null winner; `games_needed = 3`
@@ -223,135 +239,142 @@ does not complete at 2 wins.
 
 ---
 
-## Unit 5 — Backfill decision
+## Unit 5 — Credit tiebreak wins from the record (was the deferred Unit 7)
 
-**Goal:** Decide what happens to the one historical tiebreaker set.
+**Goal:** Preserve Ed's rule exactly, sourced from the record instead of from
+fabricated game rows.
 
-**Dependencies:** Unit 1.
+**Dependencies:** Units 1–4. **Must ship with Unit 4.**
 
-**Approach:** D5 says forward-only, no backfill. Confirm no code path assumes
-every tiebreak `match_games` row has a matching record, so old matches keep
-working untouched. Likely zero code; written down so it is a decision rather than
-an oversight.
+**Files:** `src/utils/calculatePlayerHandicap.ts`,
+`src/api/queries/matchGames.ts`.
 
----
-
-## Unit 6 — Audit cleanup
-
-**Goal:** Clear the small findings while the code is open.
-
-**Files:** `src/hooks/lineup/useLineupPersistence.ts` (delete the dead
-`autoSaveLineup`, F5 — it writes handicaps for slots 1–3 only with no lock or
-tiebreak guard, and is never called); `MatchEndVerification.tsx` (F4 — a tied
-match is stamped `completed_at` while `status` stays `in_progress`; harmless
-today, a trap for any future "finished" query).
-
-F3 (tiebreak exclusion in `completeMatch` is a caller convention, not an
-enforcement) — note only, no change.
-
-### Unit 6b — Fix `MatchWithDetails` properly (Ed, 2026-10-28: do NOT paper over)
-
-**Ed's instruction, verbatim in effect: make sure the tiebreak plan FIXES this
-and does not paper over it further.** Treat a third workaround type as a plan
-violation, not a shortcut.
-
-*The problem.* `MatchWithDetails` (`src/types/schedule.ts:113`) is the declared
-shape of a fetched match. It has drifted from what the queries actually return —
-it declares none of the verification columns, `started_at`, or the `season` /
-`league` embed, all of which `src/api/queries/matches.ts` selects.
-
-*Why it hides.* Every query finishes with `as MatchWithDetails`
-(`matches.ts:122,156,196,240,307,437`). A cast switches checking OFF, so both a
-field that arrives undeclared AND a field that never arrives pass silently —
-the second surfacing as `undefined` at runtime, usually a blank spot on screen.
-
-*The tell.* Two places have already written down that the real shape is bigger:
-`MyMatchRow = MatchWithDetails & { started_at }`
-(`useMyMatchSurfaces.ts:37`) and `MatchWithVenueDetails`
-(`schedule.ts:193`). Nobody fixed the declaration; it was worked around twice.
-
-*The fix.* Add the missing fields to `MatchWithDetails`, delete the two
-workaround types, and replace the casts with properly typed query returns where
-the shape allows. If a query genuinely returns a different shape, give it its
-own named type — do not widen `MatchWithDetails` into a grab-bag.
-
-*Why it belongs here.* This plan reads and writes match data through those same
-queries, so it will be tempted to add a third workaround type for the tiebreak
-fields. That is exactly the pattern behind both bugs this audit chased
-(`week_name`, `is_tiebreaker`): **the code's description of reality drifting
-from reality, with nothing complaining until production.**
-
-**Gate:** if implementing any unit requires a new `X & { ... }` patch type over
-`MatchWithDetails`, stop and fix the declaration instead.
-
----
-
-## Unit 7 — DEFERRED: count tiebreak wins toward handicaps
-
-**Not in this plan.** Ed, 2026-10-28: current behaviour is acceptable; revisit
-later.
-
-When it happens, per requirement D1:
+**Approach**, per requirement D1:
 
     wins   = regular wins + credited tiebreak wins
     losses = regular losses ONLY
     weeks  = (wins + losses) / 6
     handicap = (wins - losses) / weeks
 
-- Credited players are the winning side's tiebreak lineup on the record.
+- Credited players are the winning side's tiebreak lineup on the record, capped
+  at `players_per_side`.
+- **Avoid the double count (review).** D3 keeps tiebreak rows in `match_games`,
+  and `matchGames.fetchPlayerGameHistory` currently KEEPS tiebreak wins. The
+  regular tally must now filter `is_tiebreaker = false`, so credited wins come
+  solely from the record. A player who played and won must gain exactly one win,
+  not two. **Add a parity test asserting that.**
 - `losses` can no longer be shortcut as `gamesPlayed - wins`
   (`calculatePlayerHandicap.ts:85`), because credited wins are not rows.
+- Scope by `game_type` and league using the record's `game_type` and
+  `match_id` → `matches` → `seasons`.
 - `weeks = games / 6` is **deliberate** — real week-counting was tried, 6-vs-7
-  games got messy and did not work. Do not "fix" it.
-- Open: the lookback window. Handicaps take the last 200 games; the credited wins
-  need a matching window, which is what `resolved_at` is for.
+  got messy and did not work. Do not "fix" it.
 
-**Gate before building Unit 7:** confirm Unit 1 shipped all four facts it needs.
-If any is missing, that is a plan defect, not a Unit 7 problem.
+**The acceptance bar is parity.** For a tiebreaker resolved before and after this
+change, every affected player's handicap must come out **identical**. That is
+the whole point: the rule does not change, only where the credit comes from.
+
+---
+
+## Unit 6 — Deploy cutover for a tie in flight
+
+**Goal:** A match that is already tied when this ships must not be stranded.
+
+**Dependencies:** Units 1–5.
+
+**Approach:** D5 says forward-only for *resolved history*, and that stands. But
+review found the dangerous direction is a tie that is **unresolved at deploy**:
+`match_result='tie'`, three tiebreak `match_games` rows, both match lineups
+already UNLOCKED, and no record. After Unit 3 that match renders the lineup page
+in NORMAL mode against unlocked match lineups — captains then write straight into
+`match_lineups` through the four unguarded writers (audit F2). That is the exact
+D0 violation this plan exists to prevent, caused by the deploy itself. After
+Unit 4 its `games_needed` is undefined, so it can never complete.
+
+Pick one and write it down: a one-off repair script creating records for
+in-flight ties; a lazy create-on-read in Unit 3; or a release step requiring all
+ties resolved before deploy. **Given one league and rare ties, the release step
+is probably sufficient and cheapest — but it must be explicit, not assumed.**
+
+---
+
+## Unit 7 — Cleanup
+
+**Goal:** Clear the small findings while the code is open.
+
+- **Rename one `fetchPlayerGameHistory`.** Two exported functions with the same
+  name and opposite tiebreaker semantics produced this plan's central wrong
+  claim. Cheap insurance; the natural home is here.
+- Delete the dead `autoSaveLineup` (`useLineupPersistence.ts:282`, audit F5).
+- F4: a tied match is stamped `completed_at` while `status` stays
+  `in_progress` — harmless today, a trap for any future "finished" query.
+- F3 (tiebreak exclusion in `completeMatch` is a caller convention, not an
+  enforcement) — note only, no change.
+
+### Unit 7b — Fix `MatchWithDetails` properly (Ed: do NOT paper over)
+
+**Ed's instruction:** make sure this plan FIXES this rather than adding to it. A
+third workaround type is a plan violation, not a shortcut.
+
+*The problem.* `MatchWithDetails` (`src/types/schedule.ts:113`) declares none of
+the verification columns, `started_at`, or the `season`/`league` embed that
+`src/api/queries/matches.ts` selects. Every query ends in `as MatchWithDetails`
+(`:122,156,196,240,307,437`), and a cast switches checking OFF — so a field that
+never arrives reads `undefined` at runtime with no warning. Two places already
+encode that the real shape is bigger: `MyMatchRow`
+(`useMyMatchSurfaces.ts:37`) and `MatchWithVenueDetails` (`schedule.ts:193`).
+
+*Split it (review).* The halves are not the same size:
+
+- **Safe half:** add the missing fields; delete `MyMatchRow`.
+- **Risky half:** remove the six casts, and `MatchWithVenueDetails` is not a
+  pure duplicate — it narrows `street_address` from optional to required, so
+  deleting it changes its consumers' contract. Size this separately.
+
+**Gate:** if implementing any unit requires a new `X & { ... }` patch type over
+`MatchWithDetails`, stop and fix the declaration instead.
 
 ---
 
 ## Sequencing and risk
 
-Units 1→4 are a chain. Units 5 and 6 are independent and can ride along.
+Units 1→2→3 are a chain. **Units 4 and 5 ship together** — splitting them
+switches off the anti-sandbagging rule for the gap. Unit 6 gates the deploy.
+Unit 7 can ride along.
 
 ### Unit 3 is the one real risk
 
-Everything about tiebreak mode on the lineup page hangs off one boolean. Today
-it is "the match result says tie"; Unit 3 re-points it at "a tiebreak record
-exists." That switch drives roughly a dozen branches — which handler a dropdown
-calls, where the lock button writes, whether the handicap column renders, which
-players are offered — scattered through a 1,200-line file.
+Tiebreak mode on the lineup page hangs off one boolean driving roughly a dozen
+branches in a 1,200-line file, and Unit 3 re-points what feeds it.
 
-What it risks, worst first:
+Worst first:
 
 1. **A player-change branch still in normal mode writes to `match_lineups`** —
-   the exact thing D0 exists to prevent. The bug being removed would return
-   through the screen rewritten to remove it.
-2. **A timing gap.** The flag currently flips when the tie is recorded;
-   afterwards it flips when the record exists. If those are not the same instant
-   (realtime not yet delivered, say), the page renders in the wrong mode briefly
-   and a fast tap lands in the wrong path.
-3. **A missed branch** leaves half the page in tiebreak mode. Visibly wrong
-   rather than silently wrong, so the least dangerous of the three.
+   the exact thing D0 exists to prevent, returning through the screen rewritten
+   to remove it.
+2. **A timing gap.** The flag flips on record existence rather than on
+   `match_result`; if realtime has not delivered the record, the page renders in
+   the wrong mode briefly. Review notes the "one derived value" mitigation
+   addresses re-derivation, not propagation delay — the realtime subscription in
+   Unit 3 is what actually closes it.
+3. **A missed branch** leaves half the page in tiebreak mode — visibly wrong,
+   so least dangerous.
 
-Mitigation:
+Mitigation: inventory the branches before editing; one derived value computed
+once; land Unit 3 alone; **assert the match lineup row is byte-identical across
+the whole tiebreak flow** — it fires whichever branch leaked.
 
-- **Inventory the branches before editing, not during.** A dozen call sites is
-  small enough to enumerate properly first.
-- **One derived value, computed once** — not re-derived per branch, so there is
-  exactly one thing to get right instead of twelve.
-- **Land Unit 3 alone** and exercise a real tie end-to-end before Unit 4, so a
-  regression has one suspect.
-- **The test that actually catches it:** assert the match lineup row is
-  byte-identical before and after the whole tiebreak flow. It fires regardless
-  of which branch leaked.
+**Reproducing a tie (review).** Unit 3's mitigation assumes a tie can be produced
+on demand. A tie is rare, multi-device and realtime-gated. Confirm there is seed
+data or a dev path for it, or the end-to-end check cannot actually be run.
 
-Two things work in our favour: Units 1–6 change nothing a player sees, and with
-Unit 3 landed before Unit 4 the old overwrite is still running, so results stay
-consistent while it is shaken out.
+### Honest scope of what this fixes
 
-**Unrelated but still live:** PR #291 carries the F1 guard for the code as it
-exists today. This plan eventually makes that guard redundant; until the plan
-ships, production still rewrites handicaps on a tiebreak re-lock, so #291 remains
-the urgent item.
+This closes the **unlock instance** of "a locked lineup is not protected" (F1).
+It does NOT close F2 — the four unguarded writers in `MatchLineup.tsx` remain,
+by decision D6 (no DB-level lock; swaps and LO corrections are routine). A
+reader should not come away thinking lineups are now immutable.
+
+**Do-nothing baseline (review).** PR #291 already guards the re-lock path. Once
+it merges, the live damage from F1 is contained, and everything here becomes
+improvement rather than repair. That remains a legitimate option.

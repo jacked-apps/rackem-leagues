@@ -32,6 +32,20 @@ Confirmed safe:
   `teamStats.ts:199`, `featsStats.ts:108`, `playerGameHistory.ts:119` all filter
   `is_tiebreaker = false`. Standings read match-level totals, which already
   exclude them.
+
+> **CORRECTION 2026-10-28 (document review).** The bullet above is accurate for
+> the surfaces it names, but it was read as covering HANDICAPS too. It does not.
+> **The handicap calculator deliberately counts tiebreak WINS.**
+> `calculatePlayerHandicap.ts:17` imports `fetchPlayerGameHistory` from
+> `@/api/queries/matchGames` — a DIFFERENT function with the same name as the
+> one in `playerGameHistory.ts`. It carries an explicit "TIEBREAKER HANDICAP
+> RULE" block (`matchGames.ts:128-141`) that keeps tiebreak wins and drops
+> tiebreak losses, which is Ed's anti-sandbagging rule working as intended.
+> `playerGameHistory.ts` has one caller: the My Stats page.
+>
+> Consequence: the three-game overwrite is **load-bearing**, not merely
+> cosmetic — it is what produces the credited wins the handicap then counts.
+> Removing it without a replacement switches the rule off.
 - **Targets survive.** The client skips prep once games exist, and `prep_match`
   only writes while `status='scheduled'`.
 - **Ordering is correct.** `match_result='tie'` is written *before* the games are

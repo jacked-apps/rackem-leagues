@@ -36,14 +36,43 @@ once); usually it is not.
 
 ## The defect this has to fix
 
-**The anti-sandbagging rule is currently switched off.** The scoring path writes
-the three credited wins correctly (`MatchEndVerification.tsx`, comment:
-"Anti-sandbagging rule for tiebreaker"), but every read path filters them away.
-`calculatePlayerHandicap` → `fetchPlayerGameHistory` carries a hard
-`.eq('is_tiebreaker', false)` (`playerGameHistory.ts:119`), so the winning
-team's three players receive nothing and the original exploit is open again.
+> **CORRECTED 2026-10-28 (document review).** This section previously claimed
+> "the anti-sandbagging rule is currently switched off." **That was wrong.** The
+> rule WORKS in production today. The error was mine: there are two exported
+> functions named `fetchPlayerGameHistory`, and I read the wrong one. Both the
+> feasibility and adversarial reviewers caught it independently. Everything
+> below is the corrected account.
 
-Nobody has exploited it — the current players do not know, and it is one season.
+**The rule works today — but only because the game rows are fabricated.**
+
+- `calculatePlayerHandicap.ts:17` imports `fetchPlayerGameHistory` from
+  **`@/api/queries/matchGames`**, NOT from `playerGameHistory.ts`.
+- That function (`matchGames.ts:128-141`) carries an explicit block commented
+  **"TIEBREAKER HANDICAP RULE"**: keep every non-tiebreak game, keep a tiebreak
+  game the player WON, drop a tiebreak game the player LOST. That is exactly
+  Ed's rule.
+- The credited wins exist because `MatchEndVerification.tsx:409-443` overwrites
+  all three tiebreak games as won by the winning side. The overwrite is the
+  **producer**; the filter above is the **consumer**.
+- `playerGameHistory.ts:119` (which does filter every tiebreak game out) has
+  exactly one caller: `src/stats/gameHistorySource.ts`, the My Stats page.
+
+**So the real defect is not a broken rule — it is a working rule expressed by
+writing results that did not happen.** That is what makes a personal record
+against an opponent untrustworthy, and it is why the overwrite has to be
+replaced rather than simply deleted.
+
+**Consequence for sequencing (the thing this error nearly cost us):** deleting
+the overwrite without a replacement in place would silently switch the rule OFF.
+Any unit that removes it must ship together with the unit that credits wins from
+the tiebreak record. They are one change, not two.
+
+## The two-name trap, for the record
+
+Two exported functions named `fetchPlayerGameHistory`, in different files, with
+**opposite** tiebreaker semantics, is what produced the wrong claim above. This
+is the third instance of the same pattern in one session (`week_name`,
+`updateReportStatus`, this). Renaming one of them is cheap insurance.
 
 ## Decisions
 
