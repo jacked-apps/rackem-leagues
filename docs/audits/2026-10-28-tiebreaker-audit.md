@@ -173,19 +173,40 @@ reassigns the slot, recredits the games, and leaves a record of who changed it.
 It also undercuts the audit trail generally: while SQL surgery is the only way
 to fix a common situation, lineup history will have holes in it.
 
-## Recommendation
+## Outcome — brainstormed same day, requirements agreed
 
-Brainstorm before Phase 4. The audit changed the question: the problem is not
-"the tiebreaker is wired wrong" but "a locked lineup is not actually protected,
-and nothing records who changed it." Giving the tiebreaker its own table fixes the
-tiebreaker and leaves F2 standing. Open design questions worth settling together:
+**→ `docs/brainstorms/2026-10-28-tiebreaker-requirements.md`** is the live
+document. This audit is the evidence behind it; the requirements supersede the
+questions this section originally posed.
 
-- Does a locked lineup become immutable (DB-enforced), with swap as the only
-  sanctioned edit?
-- Do tiebreaker games keep living in `match_games`? Many stats queries filter
-  `is_tiebreaker`; moving them is a wide blast radius.
-- Is lineup history worth recording, so "the handicaps changed" is answerable
-  next time instead of a forensic exercise? (Honest scope: it covers app-path
-  changes only — see the Ben vs Duff caveat.)
-- Does F6 come first? While hand-editing SQL is the only way to fix a sub slot,
-  any audit trail we add will have holes in it.
+How each open question resolved:
+
+- **Does a locked lineup become DB-immutable?** **No.** Ed: player swaps happen
+  a few times a season and LO corrections are needed on top, so a hard lock
+  becomes permission plumbing and every exception is a new way to be wrong.
+  Direction inverted from *preventing* lineup changes to *recording* them.
+- **Do tiebreaker games stay in `match_games`?** **Yes**, with the
+  `is_tiebreaker` flag — that is what lets head-to-head include them while
+  handicaps discount them. No blast radius.
+- **Is lineup history worth recording?** Largely **overtaken**. The keystone
+  decision (D0) means a tiebreaker never unlocks the match lineup at all, so the
+  motivating exposure disappears structurally rather than being audited.
+- **Does F6 come first?** **No** — parked as a low-priority TODO in
+  `LIST_FOR_ED.md` per Ed: one league, rare, he can repair it by hand.
+
+What the audit's findings became:
+
+- **F1** (re-lock fix unmerged) — stands, and stays urgent until PR #291 merges.
+  D0 eventually makes the fix redundant, not unnecessary in the meantime.
+- **F2** (`locked` is a flag) — dissolved for the tiebreaker by D0; the four
+  unguarded writers in `MatchLineup.tsx` remain as-is, accepted.
+- **F3** (tiebreaker exclusion is convention) — unchanged, still worth a glance
+  during implementation.
+- **F4** (`completed_at` on a tied match) — unchanged, harmless, still a trap
+  for any future "finished" query.
+- **F5** (dead `autoSaveLineup`) — delete during implementation.
+- **F6** (sub slot earns no stats credit) — parked, see above.
+
+Phase 3 of `memory-bank/plans/PLAN-standings-points-fix.md` is complete. That
+plan file lives on PR #291's branch, so flip its Phase 3 and Phase 6 checkboxes
+when #291 merges.
