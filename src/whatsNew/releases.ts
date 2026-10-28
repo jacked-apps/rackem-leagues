@@ -155,6 +155,11 @@ export const RELEASES: Release[] = [
         kind: 'fix',
         forOperators: true,
       },
+      {
+        text: 'Setting up a league\u2019s first season on a different night than you picked for the league offers to move the league to that night. Saying yes always failed with an error. It works now.',
+        kind: 'fix',
+        forOperators: true,
+      },
     ],
   },
   {
