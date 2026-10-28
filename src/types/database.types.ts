@@ -1310,6 +1310,170 @@ export type Database = {
           },
         ]
       }
+      match_tiebreaker_lineups: {
+        Row: {
+          created_at: string
+          id: string
+          locked: boolean
+          locked_at: string | null
+          player1_handicap: number | null
+          player1_id: string | null
+          player2_handicap: number | null
+          player2_id: string | null
+          player3_handicap: number | null
+          player3_id: string | null
+          player4_handicap: number | null
+          player4_id: string | null
+          player5_handicap: number | null
+          player5_id: string | null
+          team_id: string
+          tiebreaker_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          locked?: boolean
+          locked_at?: string | null
+          player1_handicap?: number | null
+          player1_id?: string | null
+          player2_handicap?: number | null
+          player2_id?: string | null
+          player3_handicap?: number | null
+          player3_id?: string | null
+          player4_handicap?: number | null
+          player4_id?: string | null
+          player5_handicap?: number | null
+          player5_id?: string | null
+          team_id: string
+          tiebreaker_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          locked?: boolean
+          locked_at?: string | null
+          player1_handicap?: number | null
+          player1_id?: string | null
+          player2_handicap?: number | null
+          player2_id?: string | null
+          player3_handicap?: number | null
+          player3_id?: string | null
+          player4_handicap?: number | null
+          player4_id?: string | null
+          player5_handicap?: number | null
+          player5_id?: string | null
+          team_id?: string
+          tiebreaker_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_tiebreaker_lineups_player1_id_fkey"
+            columns: ["player1_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_tiebreaker_lineups_player2_id_fkey"
+            columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_tiebreaker_lineups_player3_id_fkey"
+            columns: ["player3_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_tiebreaker_lineups_player4_id_fkey"
+            columns: ["player4_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_tiebreaker_lineups_player5_id_fkey"
+            columns: ["player5_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_tiebreaker_lineups_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_tiebreaker_lineups_tiebreaker_id_fkey"
+            columns: ["tiebreaker_id"]
+            isOneToOne: false
+            referencedRelation: "match_tiebreakers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_tiebreakers: {
+        Row: {
+          created_at: string
+          game_count: number
+          game_type: string
+          games_needed: number
+          id: string
+          match_id: string
+          players_per_side: number
+          resolved_at: string | null
+          updated_at: string
+          winning_team_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          game_count: number
+          game_type: string
+          games_needed: number
+          id?: string
+          match_id: string
+          players_per_side: number
+          resolved_at?: string | null
+          updated_at?: string
+          winning_team_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          game_count?: number
+          game_type?: string
+          games_needed?: number
+          id?: string
+          match_id?: string
+          players_per_side?: number
+          resolved_at?: string | null
+          updated_at?: string
+          winning_team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_tiebreakers_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: true
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_tiebreakers_winning_team_id_fkey"
+            columns: ["winning_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           actual_venue_id: string | null
