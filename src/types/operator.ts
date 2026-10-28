@@ -167,7 +167,7 @@ export interface LeagueOperatorInsertData {
 export interface OperatorBlackoutPreference {
   // Identity
   id: string;
-  operator_id: string;  // References organizations.id (previously league_operators.id)
+  organization_id: string;  // References organizations.id
 
   // Preference Type
   preference_type: 'holiday' | 'championship' | 'custom';
@@ -188,8 +188,8 @@ export interface OperatorBlackoutPreference {
   auto_apply: boolean;
 
   // Timestamps
-  created_at: string;  // ISO timestamp
-  updated_at: string;  // ISO timestamp
+  created_at: string | null;  // ISO timestamp
+  updated_at: string | null;  // ISO timestamp
 }
 
 /**

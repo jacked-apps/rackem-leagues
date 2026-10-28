@@ -62,7 +62,8 @@ export async function getLeaguesByOperator(operatorId: string): Promise<League[]
     throw new Error(`Failed to fetch leagues: ${error.message}`);
   }
 
-  return data || [];
+  // Narrow the text columns (day of week, game type, …) to League's unions.
+  return (data || []) as League[];
 }
 
 /**
@@ -115,7 +116,8 @@ export async function getLeagueById(leagueId: string): Promise<League> {
     throw new Error(`Failed to fetch league: ${error.message}`);
   }
 
-  return data;
+  // Narrow the text columns (day of week, game type, …) to League's unions.
+  return data as League;
 }
 
 /**
@@ -323,5 +325,8 @@ export async function getOperatorProfanityFilter(leagueId: string): Promise<bool
     throw new Error(`Failed to fetch resolved preferences: ${error?.message || 'League not found'}`);
   }
 
-  return data.profanity_filter_enabled ?? false;
+  // TODO(typed-client): resolved_league_preferences has no
+  // profanity_filter_enabled column, so PostgREST rejects this select and the
+  // function throws above on every call. Cast keeps today's behavior.
+  return (data as unknown as { profanity_filter_enabled: boolean | null }).profanity_filter_enabled ?? false;
 }

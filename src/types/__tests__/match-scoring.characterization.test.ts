@@ -55,8 +55,8 @@ function game(overrides: Partial<MatchGame>): MatchGame {
     away_action: 'racks',
     break_and_run: false,
     golden_break: false,
-    confirmed_by_home: true,
-    confirmed_by_away: true,
+    confirmed_by_home: 'confirmer-id',
+    confirmed_by_away: 'confirmer-id',
     is_tiebreaker: false,
     break_fouled: false,
     runout: false,
@@ -96,7 +96,7 @@ describe('getTeamStats — characterization', () => {
 
   it('skips games not confirmed by home', () => {
     const games = makeMap([
-      game({ game_number: 1, winner_team_id: HOME, confirmed_by_home: false }),
+      game({ game_number: 1, winner_team_id: HOME, confirmed_by_home: null }),
       game({ game_number: 2, winner_team_id: HOME }),
     ]);
     expect(getTeamStats(HOME, games)).toEqual({ wins: 1, losses: 0 });
@@ -104,7 +104,7 @@ describe('getTeamStats — characterization', () => {
 
   it('skips games not confirmed by away', () => {
     const games = makeMap([
-      game({ game_number: 1, winner_team_id: HOME, confirmed_by_away: false }),
+      game({ game_number: 1, winner_team_id: HOME, confirmed_by_away: null }),
       game({ game_number: 2, winner_team_id: HOME }),
     ]);
     expect(getTeamStats(HOME, games)).toEqual({ wins: 1, losses: 0 });

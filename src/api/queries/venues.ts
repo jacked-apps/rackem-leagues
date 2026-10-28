@@ -37,7 +37,9 @@ export async function getVenuesByOrganization(organizationId: string): Promise<V
     throw new Error(`Failed to fetch venues: ${error.message}`);
   }
 
-  return data || [];
+  // Generated types mark the table-count columns nullable; the app type
+  // treats them as always set (they default to 0 / []), as it did before.
+  return (data || []) as Venue[];
 }
 
 /**
@@ -72,7 +74,9 @@ export async function getVenueById(venueId: string): Promise<Venue> {
     throw new Error(`Failed to fetch venue: ${error.message}`);
   }
 
-  return data;
+  // Generated types mark the table-count columns nullable; the app type
+  // treats them as always set (they default to 0 / []), as it did before.
+  return data as Venue;
 }
 
 /**
@@ -100,7 +104,9 @@ export async function getLeagueVenues(leagueId: string): Promise<LeagueVenue[]> 
     throw new Error(`Failed to fetch league venues: ${error.message}`);
   }
 
-  return data || [];
+  // Generated types mark the table-count columns nullable; the app type
+  // treats them as always set (they default to 0 / []), as it did before.
+  return (data || []) as LeagueVenue[];
 }
 
 /**

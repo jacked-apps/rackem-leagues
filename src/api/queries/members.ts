@@ -38,7 +38,8 @@ export async function getMemberProfile(userId: string): Promise<Member> {
     .single();
 
   if (error) throw error;
-  return data;
+  // `role` is nullable in the generated type but defaults to 'player'.
+  return data as Member;
 }
 
 /**
@@ -62,7 +63,8 @@ export async function getMemberById(memberId: string): Promise<Member> {
     .single();
 
   if (error) throw error;
-  return data;
+  // `role` is nullable in the generated type but defaults to 'player'.
+  return data as Member;
 }
 
 /**
@@ -315,5 +317,6 @@ export async function getMemberProfanitySettings(
 
   if (error) throw error;
 
-  return data;
+  // Column is nullable but defaults to false.
+  return data as MemberProfanitySettings;
 }

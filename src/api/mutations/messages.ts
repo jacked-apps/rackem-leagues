@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import type { TablesInsert } from '@/types/database.types';
 
 /**
  * Parameters for sending a message
@@ -226,11 +227,13 @@ export async function blockUser(params: BlockUserParams) {
   const { error } = await supabase
     .from('blocked_users')
     .insert([
+      // TODO(typed-client): the column is `blocked_id`, not `blocked_user_id`,
+      // so this insert is rejected by the database. Kept as-is.
       {
         blocker_id: blockerId,
         blocked_user_id: blockedUserId,
         blocked_at: new Date().toISOString(),
-      },
+      } as unknown as TablesInsert<'blocked_users'>,
     ]);
 
   if (error) {

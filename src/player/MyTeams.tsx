@@ -20,6 +20,8 @@ import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { queryKeys } from '@/api/queryKeys';
 import { TeamEditorModal } from '@/operator/TeamEditorModal';
+import type { Venue, LeagueVenue } from '@/types/venue';
+import type { TeamWithQueryDetails } from '@/types/team';
 import {
   Accordion,
   AccordionContent,
@@ -482,11 +484,13 @@ export function MyTeams() {
           seasonId={editData.seasonId}
           rosterSize={editData.rosterSize}
           lineupSize={editData.lineupSize}
-          venues={editData.venues}
-          leagueVenues={editData.leagueVenues}
+          // Raw rows: a few columns (table counts / number arrays, team stat
+          // counters) are schema-nullable but the editor's app types aren't.
+          venues={editData.venues as Venue[]}
+          leagueVenues={editData.leagueVenues as LeagueVenue[]}
           members={editData.members}
           defaultTeamName={editData.team.team_name}
-          allTeams={editData.allTeams}
+          allTeams={editData.allTeams as TeamWithQueryDetails[]}
           existingTeam={{
             id: editData.team.id,
             team_name: editData.team.team_name,

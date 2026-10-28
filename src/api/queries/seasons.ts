@@ -40,7 +40,8 @@ export async function getSeasonsByLeague(leagueId: string): Promise<Season[]> {
     throw new Error(`Failed to fetch seasons: ${error.message}`);
   }
 
-  return data || [];
+  // `status` is plain text in the DB; seasons_status_check keeps it to SeasonStatus.
+  return (data || []) as Season[];
 }
 
 /**
@@ -67,7 +68,8 @@ export async function getSeasonById(seasonId: string): Promise<Season> {
     throw new Error(`Failed to fetch season: ${error.message}`);
   }
 
-  return data;
+  // `status` is plain text in the DB; seasons_status_check keeps it to SeasonStatus.
+  return data as Season;
 }
 
 /**
@@ -100,7 +102,8 @@ export async function getMostRecentSeason(leagueId: string): Promise<Season | nu
     throw new Error(`Failed to fetch most recent season: ${error.message}`);
   }
 
-  return data;
+  // `status` is plain text in the DB; seasons_status_check keeps it to SeasonStatus.
+  return data as Season | null;
 }
 
 /**
@@ -133,7 +136,8 @@ export async function getActiveSeason(leagueId: string): Promise<Season | null> 
     throw new Error(`Failed to fetch active season: ${error.message}`);
   }
 
-  return data;
+  // `status` is plain text in the DB; seasons_status_check keeps it to SeasonStatus.
+  return data as Season | null;
 }
 
 /**

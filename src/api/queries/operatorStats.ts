@@ -57,5 +57,6 @@ export async function getOperatorStats(operatorId: string): Promise<OperatorStat
     throw new Error('No data returned from operator stats query');
   }
 
-  return data as OperatorStats;
+  // The RPC returns jsonb, typed as plain Json; the SQL function builds this shape.
+  return data as unknown as OperatorStats;
 }

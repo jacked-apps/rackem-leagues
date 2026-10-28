@@ -17,6 +17,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/supabaseClient';
+import type { Json } from '@/types/database.types';
 import type {
   PerGameAllocator,
   SideConfig,
@@ -93,8 +94,8 @@ export function useAllocatorRoom(currentMemberId: string | null): UseAllocatorRo
           description: source.description,
           scope: 'user',
           author_id: currentMemberId,
-          winner_side: source.winner_side as unknown,
-          loser_side: source.loser_side as unknown,
+          winner_side: source.winner_side as unknown as Json,
+          loser_side: source.loser_side as unknown as Json,
         })
         .select('id')
         .single();
@@ -116,8 +117,8 @@ export function useAllocatorRoom(currentMemberId: string | null): UseAllocatorRo
           description: row.description,
           scope: 'user',
           author_id: currentMemberId,
-          winner_side: row.winner_side as unknown,
-          loser_side: row.loser_side as unknown,
+          winner_side: row.winner_side as unknown as Json,
+          loser_side: row.loser_side as unknown as Json,
         });
       if (upsertErr) return false;
       await refresh();

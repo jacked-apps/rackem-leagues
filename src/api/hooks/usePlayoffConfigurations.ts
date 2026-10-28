@@ -112,7 +112,8 @@ export const usePlayoffConfigurations = (
         throw new Error(`Failed to fetch playoff configurations: ${error.message}`);
       }
 
-      return data || [];
+      // Union-typed columns are plain text in the DB (CHECK-constrained).
+      return (data || []) as PlayoffConfiguration[];
     },
     enabled: !!entityId,
     // Refetch when mounting if data is stale (important after cache invalidation)
@@ -171,7 +172,9 @@ export const useResolvedPlayoffConfig = (leagueId: string | undefined) => {
         throw new Error(`Failed to fetch resolved playoff config: ${error.message}`);
       }
 
-      return data;
+      // View columns are always nullable in the generated types; the view
+      // resolves every field through league → organization → global defaults.
+      return data as ResolvedPlayoffConfig;
     },
     enabled: !!leagueId,
     // Refetch when mounting if data is stale (important for inheritance chain updates)
@@ -212,7 +215,8 @@ export const usePlayoffConfiguration = (configId: string | undefined) => {
         throw new Error(`Failed to fetch playoff configuration: ${error.message}`);
       }
 
-      return data;
+      // Union-typed columns are plain text in the DB (CHECK-constrained).
+      return data as PlayoffConfiguration;
     },
     enabled: !!configId,
   });

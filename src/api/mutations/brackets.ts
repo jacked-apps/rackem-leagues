@@ -245,7 +245,8 @@ export async function joinHopper(
     p_via: via,
   });
   if (error) throw new Error(`Failed to join: ${error.message}`);
-  return data as JoinHopperResult;
+  // jsonb result: generated types only know `Json`, the shape is the RPC's contract.
+  return data as unknown as JoinHopperResult;
 }
 
 export interface SelfWalkupResult {
@@ -275,7 +276,8 @@ export async function addSelfAsWalkup(
     p_display_name: displayName,
   });
   if (error) throw new Error(`Could not add your name: ${error.message}`);
-  return data as SelfWalkupResult;
+  // jsonb result: generated types only know `Json`, the shape is the RPC's contract.
+  return data as unknown as SelfWalkupResult;
 }
 
 /**
@@ -349,7 +351,8 @@ export async function addRegisteredToHopper(
   });
   if (error) throw new Error(`Could not add that player: ${error.message}`);
   await touchBracket(bracketId);
-  return data as AddRegisteredResult;
+  // jsonb result: generated types only know `Json`, the shape is the RPC's contract.
+  return data as unknown as AddRegisteredResult;
 }
 
 /**
@@ -430,7 +433,8 @@ export async function addPremiumFeature(
     p_feature: feature,
   });
   if (error) throw new Error(`Could not add that feature: ${error.message}`);
-  return data as AddFeatureResult;
+  // jsonb result: generated types only know `Json`, the shape is the RPC's contract.
+  return data as unknown as AddFeatureResult;
 }
 
 export interface RemoveFeatureResult {
@@ -461,7 +465,8 @@ export async function removePremiumFeature(
     p_feature: feature,
   });
   if (error) throw new Error(`Could not remove that feature: ${error.message}`);
-  return data as RemoveFeatureResult;
+  // jsonb result: generated types only know `Json`, the shape is the RPC's contract.
+  return data as unknown as RemoveFeatureResult;
 }
 
 /** The settings an organizer can change before a tournament starts. */
@@ -574,7 +579,8 @@ export async function addLateEntry(
     p_display_name: entrant.displayName ?? undefined,
   });
   if (error) throw new Error(`Could not add the player: ${error.message}`);
-  return data as LateEntryResult;
+  // jsonb result: generated types only know `Json`, the shape is the RPC's contract.
+  return data as unknown as LateEntryResult;
 }
 
 /**

@@ -34,6 +34,7 @@
  *   the worker.
  */
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database.types';
 
 /**
  * Heartbeat status values realtime-js passes to `heartbeatCallback`.
@@ -108,7 +109,7 @@ const supportsWebWorker =
  *
  * Import this instance throughout the app for all Supabase operations
  */
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   realtime: {
     // Run the heartbeat in a (background-throttle-immune) Web Worker when the
     // platform supports one; otherwise fall back to the normal heartbeat.

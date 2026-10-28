@@ -171,7 +171,9 @@ export async function updateProfanityFilter(
   }
 
   // Check age using helper function
-  if (!isEighteenOrOlder(member.date_of_birth)) {
+  // TODO(typed-client): date_of_birth is nullable; a member with no DOB
+  // reaches isEighteenOrOlder(null), which expects a date. Kept as-is.
+  if (!isEighteenOrOlder(member.date_of_birth as string)) {
     throw new Error('Users under 18 cannot modify profanity filter settings');
   }
 
