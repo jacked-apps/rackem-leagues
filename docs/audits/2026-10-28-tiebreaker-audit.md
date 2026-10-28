@@ -96,23 +96,51 @@ IDs and handicaps for positions 1–3 only, with no lock or tiebreaker guard. It
 defined and returned but **never called anywhere**. Delete it — if it were ever
 wired up it would bypass every guard in F2 and silently ignore players 4–5.
 
-## Ben vs Duff (`92b799f2…`) — not explainable from code alone
+## Ben vs Duff (`92b799f2…`) — most likely Ed's own beta-era data repair
 
-Reported: lineup handicaps changed in a match with **no** tiebreaker, so the
-re-lock path (F1) is ruled out. The code leaves exactly three candidates:
+Queried 2026-10-28 (read-only). What the data says:
 
-1. Someone had the lineup screen open and changed a pick or edited a handicap —
-   F2's writers fire live, per change, with no lock check.
-2. An unlock → re-lock before the match started (handicaps recompute on re-lock).
-3. The `swap_player_in_lineup` RPC — the legitimate path, which is audited:
-   `swap_requested_by_member_id` and `swap_last_resolution` on the lineup row.
+- **No tiebreaker.** `tiebreaker_games = 0`, result is a decisive `home_win`
+  11–7 (a full 18-game BCA 3v3 round robin). The re-lock path (F1) is ruled out.
+- **No swap.** `swap_last_resolution` is NULL on both lineup rows. Not a false
+  negative: `swap_player_in_lineup` stamps that column in the *same
+  transaction* as the swap, and the columns have existed since
+  `20260602000000` — this match is 2026-07-19.
+- **No app-path lineup write after the match started.** Every app route that
+  writes a lineup also stamps `locked_at` (`handleLockLineup`, and the
+  gate-free `loSaveLineups`). Both rows still carry their pre-match locks
+  (home 22:31, away 22:46; match completed 01:34). Neither was bumped.
+- **`home_team_modifier = 0` is not a clue** — the team bonus is hardcoded to 0
+  today (`useLineupPersistence.ts:139`), so 0 is correct everywhere.
+- Both sides total the same handicap now (home −1+0+2 = 1, away 1+0+0 = 1).
 
-Candidate 3 is self-identifying — if `swap_last_resolution` is populated, it was a
-swap and the change was legitimate. If it is NULL, the change came from 1 or 2 and
-there is **no audit trail at all** to say which, who, or when.
+**Conclusion.** Every app-level mechanism is excluded, and the remaining
+explanation matches what Ed describes doing during the beta: hand-repairing
+match data directly in SQL. He recalls fixing a match where a slot held a
+*substitute* when Rene Enciso had actually played, editing it so Rene got credit
+in his record — the handicap unchanged, the player corrected. A raw SQL edit
+bypasses `locked_at` and every audit column, which is exactly the fingerprint
+here. No app bug is indicated.
 
-Needs a read of the match's two `match_lineups` rows. Pending Ed's go-ahead on
-which database.
+**Caveat on F2's remedy.** Lineup history would record changes made *through the
+app*. It would not have caught this one. Do not sell it as a defence against
+direct SQL.
+
+## F6 — A player in a substitute slot earns no stats credit
+
+Surfaced by the Rene case above, and it will recur.
+
+Substitutes share one sentinel member id per side, and `playerStats.ts:164`
+deletes the sentinels from the results — correctly, since they are fictional
+placeholders. The consequence is that a real person who played in a sub slot
+gets **zero** games in their record, and the only repair today is an operator
+editing `match_lineups` by hand in SQL.
+
+That is a product gap, not a data accident: every season will produce "it was
+actually this player" corrections. Worth a supported correction path — one that
+reassigns the slot, recredits the games, and leaves a record of who changed it.
+It also undercuts the audit trail generally: while SQL surgery is the only way
+to fix a common situation, lineup history will have holes in it.
 
 ## Recommendation
 
@@ -126,4 +154,7 @@ tiebreaker and leaves F2 standing. Open design questions worth settling together
 - Do tiebreaker games keep living in `match_games`? Many stats queries filter
   `is_tiebreaker`; moving them is a wide blast radius.
 - Is lineup history worth recording, so "the handicaps changed" is answerable
-  next time instead of a forensic exercise?
+  next time instead of a forensic exercise? (Honest scope: it covers app-path
+  changes only — see the Ben vs Duff caveat.)
+- Does F6 come first? While hand-editing SQL is the only way to fix a sub slot,
+  any audit trail we add will have holes in it.
