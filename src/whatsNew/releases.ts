@@ -164,6 +164,11 @@ export const RELEASES: Release[] = [
         text: 'The language filter in your settings is now your choice, whatever your age. It was locked on for players under 18, and anyone without a birth date on their profile got an error every time they tried to change it.',
         kind: 'fix',
       },
+      {
+        text: 'Opening a player\u2019s details in Player Management listed their leagues without the night they play on. The night is back.',
+        kind: 'fix',
+        forOperators: true,
+      },
     ],
   },
   {
