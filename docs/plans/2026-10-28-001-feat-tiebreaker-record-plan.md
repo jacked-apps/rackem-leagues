@@ -163,9 +163,12 @@ still routes on it; a later tidy-up that stops writing it would strand captains.
 **`tiebreaker_format` is four-valued (review).** State behaviour for each:
 `best_of_3_short_race` → record as described; `single_short_race` → record with
 `games_needed = 1`, `players_per_side = 1`; `accept_tie` → **no record**;
-`manual` → LO names a winner with no lineup, so either no record or a record
-with `winning_team_id` and no credited players. **That last choice decides
-whether a manual tiebreaker credits anyone — resolve it before coding Unit 5.**
+`manual` → **OUT OF SCOPE (Ed, 2026-10-28).** The LO has the result on paper;
+how a manual tiebreaker credits handicaps is a rules question for later and
+"realistically it only matters for specific instances." Do not design for it,
+do not block on it. The only requirement is that the `manual` early-return at
+`MatchEndVerification.tsx:449` keeps working exactly as it does today — Unit 2
+rewrites that region, so leaving it intact is a test case, not an assumption.
 
 **`games_needed` / `game_count` have no numeric config source (review).**
 `resolved_league_preferences` carries only the `tiebreaker_format` enum. The
