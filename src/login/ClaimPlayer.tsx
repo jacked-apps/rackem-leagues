@@ -120,32 +120,25 @@ export const ClaimPlayer: React.FC = () => {
           return;
         }
 
-        // TODO(typed-client): get_invite_details returns is_valid + error_message,
-        // NOT `status` — so the status checks below never fire, and a claimed /
-        // cancelled invite (is_valid=false, member_id NULL) falls through as
-        // valid. Cast kept to preserve current behavior until that's fixed.
-        const details = data[0] as unknown as InviteDetails;
-
-        // Check status
-        if (details.status === 'claimed') {
-          setClaimState('already_claimed');
-          setInviteDetails(details);
-          return;
-        }
-
-        // Check expiration
-        const expiresAt = new Date(details.expires_at);
-        if (expiresAt < new Date() || details.status === 'expired') {
-          setClaimState('expired');
-          setInviteDetails(details);
-          return;
-        }
-
-        if (details.status === 'cancelled') {
+        // get_invite_details() is the authority on whether the invite can be
+        // used: it checks claimed / expired / cancelled / rejected server-side
+        // and returns is_valid=false with a readable reason. On an invalid
+        // invite every other column is NULL, so there's nothing else to show.
+        const row = data[0];
+        if (!row.is_valid) {
           setClaimState('invalid');
-          setErrorMessage('This invite has been cancelled by the team captain.');
+          setErrorMessage(row.error_message ?? 'This invite link is invalid.');
           return;
         }
+
+        const details: InviteDetails = {
+          member_id: row.member_id,
+          placeholder_first_name: row.placeholder_first_name,
+          placeholder_last_name: row.placeholder_last_name,
+          team_name: row.team_name,
+          captain_name: row.captain_name,
+          expires_at: row.expires_at,
+        };
 
         // Valid invite - now fetch all teams this PP belongs to
         setInviteDetails(details);
