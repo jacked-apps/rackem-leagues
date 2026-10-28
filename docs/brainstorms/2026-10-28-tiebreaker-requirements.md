@@ -47,6 +47,39 @@ Nobody has exploited it — the current players do not know, and it is one seaso
 
 ## Decisions
 
+**D0 — ARCHITECTURAL KEYSTONE: the tiebreak record is a parallel mini-match
+record, and the match record is never touched.** (Ed, 2026-10-28. Everything
+below hangs off this.)
+
+The tiebreak record **mirrors the shape of the match record** — its own lineup
+order per side, its own handicaps, its own games-needed threshold. It is a
+self-contained mini-match sitting alongside the real one.
+
+What that buys, in Ed's words: *"there would be no reason to unlock the match
+record at all."*
+
+- **The match lineups are NEVER unlocked.** Today a tie unlocks both so captains
+  can choose a tiebreak order, and that unlock is the root of F1: re-locking
+  recalculates handicaps from data that now includes tonight's games,
+  re-derives the team bonus, and can clear a double-duty player's slots. With a
+  separate record there is nothing to unlock, so **the entire bug class becomes
+  structurally impossible rather than guarded against.** The guard shipped in
+  `2534033` (PR #291) stops being load-bearing.
+- **The lineup page asks a different question.** It does not need to read the
+  match as unlocked; it can tell a *tiebreak lineup* is asking rather than a
+  *match lineup*. Lock state on the match is left alone entirely.
+- **No new player can appear.** The tiebreak lineup's choices derive from the
+  **match lineup records**, not the team roster — so only players who actually
+  played the match are selectable. Enforced by where the data comes from, not
+  by a check that can be forgotten.
+- **Format-agnostic by construction.** Games-needed lives ON the record, so a
+  4v4 or 5v5 tiebreaker needing 3 wins is a different number, not a new branch.
+  Consistent with the house rule that match operations never switch on format —
+  they read what the record declares.
+- **Frozen handicaps.** Mirroring the handicaps onto the record snapshots them
+  at resolution time, so a later hand-edit of `match_lineups` (see the Ben vs
+  Duff investigation) cannot retroactively move them.
+
 **D1 — The handicap math.** (Ed, 2026-10-28, corrected twice. Read the
 `weeksPlayed` note below before touching any of this.)
 
@@ -79,20 +112,22 @@ game result, which made "how did I play against John in the tiebreaker"
 unanswerable. Second pass derived the credit from the winning team's lineup.
 Ed improved on both: store the credited players ON the tiebreak record.)
 
-- **Tiebreak record** — which match, which team won, and **the three credited
-  player ids**, frozen that night.
+- **Tiebreak record** — the parallel mini-match of D0: both tiebreak lineups,
+  handicaps, games-needed, and which side won. **The credited players need no
+  separate list** — they ARE the winning side's tiebreak lineup on this record,
+  and the record is frozen, so they stay immune to any later edit of
+  `match_lineups`.
 - **Game rows** — what actually happened. Lost to John → it says you lost to
   John. Never played → no winner, null.
 - **Handicap** — regular games plus the credited tiebreak wins (D1).
 - **Head-to-head** — reads the game rows, so a personal record is what happened
   at the table.
 
-**Why the credited players are STORED, not derived.** Deriving them from the
-winning team's lineup means reading `match_lineups`, which this same audit
-proved can be hand-edited months later with no trace (see the Ben vs Duff
-investigation). A later lineup edit could silently change who was credited for a
-tiebreaker a season ago. Recording the three ids at resolution time makes the
-credit immutable.
+**Why the credit lives on the tiebreak record, not on `match_lineups`.** This
+same audit proved `match_lineups` can be hand-edited months later with no trace
+(see the Ben vs Duff investigation), so deriving credit from it would let a
+later edit silently change who was credited for a tiebreaker a season ago. The
+tiebreak record is written at resolution time and not touched again.
 
 The overwrite that currently rewrites all three games as won by the winning team
 **goes away**. It only ever existed to smuggle the credit into a column; once the
@@ -143,9 +178,11 @@ or when.)
 
 ## Open questions
 
-- Shape of the tiebreak record. It must hold the match, the winning team and
-  three credited player ids (D2), which points at its own table rather than
-  columns on `matches`. Confirm at planning time.
+- Shape of the tiebreak record. D0 makes it a mini-match — two lineups,
+  handicaps, games-needed, winning side — so it is its own table (or small set
+  of them), not columns on `matches`. Exact shape at planning time.
+- How much of the match record it mirrors, and whether any of that structure
+  can be shared rather than duplicated.
 - The window. Handicaps look at the last 200 games; the credited tiebreak wins
   need a matching window so both halves cover the same period.
 - Does anything need to *show* a tiebreaker once records exist, or is retention
