@@ -52,22 +52,36 @@ tiebreaker *losses*. A win always counts; a loss counts only when it is not a
 tiebreaker. One expression delivers the whole rule: winners credited, losers
 untouched, nothing special-cased by team.
 
-**D2 — The credited result IS the result.** All three games are marked won by
-the winning team's players, and that stands as the league's record for both
-handicaps and head-to-head. Rejected the alternative of storing the table result
-alongside the credited one: the third game frequently never happens, so there is
-no "actual result" to preserve in the common case, and dual bookkeeping buys
-nothing today.
+**D2 — Two separate facts: the games stay truthful, the credit is derived.**
+(Revised 2026-10-28 after Ed raised the head-to-head problem. The first pass had
+the credited result overwrite the game result; that made "how did I play against
+John in the tiebreaker" unanswerable, because the row said you beat him when you
+had not.)
 
-*Known consequence:* in a 2–1, the winning-team player who actually lost shows a
-**win** against that opponent in head-to-head. Accepted. A second field can be
-added later if anyone ever cares.
+- **Game rows record what actually happened.** Lost to John → it says you lost to
+  John. Never played → no winner, null. An unplayed game has no result, and that
+  is the honest record of it.
+- **Handicap credit is DERIVED from which team won the tiebreaker**, not written
+  onto any game. All three winning players are credited — including the one who
+  lost his game and the one who never shot — because the credit follows the team
+  outcome, not a game row he does not appear in.
+- **Head-to-head reads the game rows**, so a personal record is what happened at
+  the table.
+
+The overwrite that currently rewrites all three games as won by the winning team
+**goes away**. It only ever existed to smuggle the credit into a column; once the
+credit has its own home it is unnecessary, and it is the sole cause of the
+fabricated-record problem.
+
+This is also the load-bearing reason for D4. The tiebreaker record is not just
+future-proofing for BCA/Fargo — it is the fact the handicap rule derives credit
+from, and without it the rule cannot work without lying about the games.
 
 **D3 — Tiebreaker games stay in `match_games` with the `is_tiebreaker` flag.** A
 game result is a game result; the flag is the only difference. This is what lets
 head-to-head include tiebreakers while handicaps discount them.
 
-**D4 — Keep durable tiebreaker records.** Nothing displays a tiebreaker today,
+**D4 — Keep durable tiebreaker records (now load-bearing, see D2).** Nothing displays a tiebreaker today,
 but players will ask, and it is unknown what BCA or Fargo will want. Retaining
 the record also gives "did this match end in a tiebreaker" a direct answer
 instead of an inference.
@@ -103,7 +117,7 @@ or when.)
 ## Open questions
 
 - Where does the "which team won the tiebreaker" fact live — a column on
-  `matches`, or its own table? D4 wants durable records; the shape is a planning
-  decision, not a requirements one.
+  `matches`, or its own table? D2 makes this REQUIRED rather than optional: the
+  handicap rule derives credit from it. The shape is still a planning decision.
 - Does anything need to *show* a tiebreaker once records exist, or is retention
   purely for future use? Ed: "not at the moment," but expects questions.
