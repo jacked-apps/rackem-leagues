@@ -51,6 +51,8 @@ import {
   useTiebreakerLineup,
 } from '@/hooks/lineup';
 import { usePreparationStatus } from '@/hooks/lineup/useMatchPreparation';
+import { useMatchTiebreaker } from '@/api/hooks/useMatchTiebreaker';
+import { tiebreakLineupFor } from '@/api/queries/tiebreakers';
 import {
   calculateSubstituteHandicap,
   isAnonSubSentinel,
@@ -287,6 +289,14 @@ function MatchLineupBody() {
 
   // Detect tiebreaker mode
   const isTiebreakerMode = matchData?.match_result === 'tie';
+
+  // Tiebreak record: each side's tiebreak lineup carries its own lock.
+  const { data: tiebreakRecord } = useMatchTiebreaker(matchId);
+  const myTiebreakLineup = tiebreakLineupFor(tiebreakRecord, userTeamData?.team_id);
+  const opponentTiebreakLineup = tiebreakLineupFor(
+    tiebreakRecord,
+    isHomeTeam ? matchData?.away_team_id : matchData?.home_team_id,
+  );
 
   // Tiebreaker lineup management (for best-of-3 games 19-21)
   const {
@@ -559,9 +569,19 @@ function MatchLineupBody() {
 
   // Match preparation and auto-navigation. For Fargo matches, gated on
   // both-captains-confirmed via the negotiation above.
+  //
+  // During a tiebreaker this hook is ALSO what sends both teams to scoring
+  // once their tiebreak order is set (anyone on a team can set it, not just
+  // the captain): games already exist, so its "games
+  // exist → navigate" short-circuit fires as soon as both lock signals are
+  // true, and match prep never runs. The match lineups stay locked throughout
+  // a tiebreaker now (requirement D0), so feeding their flags would bounce
+  // players to scoring before they chose an order — feed the TIEBREAK
+  // lineups' own locks instead. The match-prep blocker is about preparing
+  // the match, which is long done, so it does not apply.
   useMatchPreparation({
-    lineupLocked: lineup.lineupLocked,
-    opponentLineup,
+    lineupLocked: isTiebreakerMode ? !!myTiebreakLineup?.locked : lineup.lineupLocked,
+    opponentLineup: isTiebreakerMode ? opponentTiebreakLineup : opponentLineup,
     matchId,
     matchData,
     isHomeTeam,
@@ -570,7 +590,7 @@ function MatchLineupBody() {
     winCondition: (leaguePrefs?.win_condition as 'games' | 'points' | undefined) ?? 'games',
     mechanism: leaguePrefs?.mechanism,
     systemOverrides: leaguePrefs?.system_overrides,
-    blockedReason: prepBlockedReason,
+    blockedReason: isTiebreakerMode ? null : prepBlockedReason,
     gameGeneration: leaguePrefs?.game_generation,
     currentGamesCount: allGames.length,
     player1Id: lineup.player1Id,

@@ -214,6 +214,36 @@ tables so the two-device handshake still propagates.
 players who actually played are selectable, enforced by where the data comes
 from.
 
+> **TIGHTENED 2026-10-28 (Ed, during implementation).** "Selectable from the
+> players who played" was still too loose. The rule: **the same players who
+> played the match MUST play the tiebreaker; the only thing that may change is
+> the order.** John, Joe and Sara tied in that order → the tiebreak lineup is
+> John, Joe and Sara, starting in that order (Unit 2 seeds it exactly so).
+>
+> **How (Ed): change the LIST, not the page.** The lineup page's dropdowns
+> already take "the players allowed to play" and already drop a player from
+> the other dropdowns once picked — so nobody plays twice (double duty is its
+> own thing; out of scope here). For a tiebreaker, feed those SAME dropdowns
+> the players from the match lineup record instead of the team roster. Same
+> page, same controls — no new screen for players to learn. Do NOT build a
+> separate "reorder" UI (an earlier draft of this note proposed one).
+>
+> **Double duty and subs (Ed).** Both are settled at the start of the match.
+> A resolved double duty is the SAME member id in two slots — so the
+> tiebreak list is the lineup's SLOTS, not its unique players. Do NOT dedupe:
+> that person plays twice in the tiebreaker too. The existing "remove once
+> picked" filtering must therefore count — a player listed twice stays
+> available until picked twice.
+>
+> **No math (Ed).** Handicaps are copied from the lineup record, never looked
+> up or recalculated. The number of games is preset by the format
+> (`getTiebreakerShape`), never derived from thresholds.
+>
+> **And it is not a captain action.** Anyone on the team can set the lineup —
+> captains are often absent, exactly as anyone on the team can score. The
+> lineup page is not captain-gated today; keep it that way. Wherever this plan
+> says "captain", read "someone from that team".
+
 **Replace the hardcoded geometry (review).** `useTiebreakerLineup.ts` computes
 `18 + position` in three places with three fixed setters. Use
 `tiebreakerGameNumbers` / `tiebreakerGameToPosition` from
