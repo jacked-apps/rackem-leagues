@@ -1571,7 +1571,7 @@ High-level business logic services
 - `usePlayoffConfigurations.ts` - Playoff config query hooks.
 - `usePreferenceMutations.ts` - Preference CRUD hooks.
 - `usePreferences.ts` - Preference query hooks (resolved + raw).
-- `useReportMutations.ts` - User-report CRUD hooks.
+- `useReportMutations.ts` - User-report creation hook (`useCreateUserReport`). The status-update hook was removed 2026-10-28 as superseded dead code — operator status changes go through `utils/reportingQueries`.
 - `useReportQueries.ts` - User-report query hooks.
 - `useResolvedLeaguePrefs.ts` - Resolved-preference reader (the single shared resolver for org→league→season inheritance).
 - `useScheduleMutations.ts` - Schedule CRUD hooks.

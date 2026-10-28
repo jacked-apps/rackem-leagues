@@ -18,23 +18,35 @@ Verified against `main` on 2026-10-28 unless noted.
   importer anywhere. (Sits next to the New Message work in PR #304; check that PR
   before deleting, in case it is the intended replacement.)
 
-### Unreachable AND broken — read this one before deleting
+### ✅ DONE 2026-10-28 — removed the superseded `updateReportStatus`
 
-**`updateReportStatus` in `src/api/mutations/reports.ts`** plus its hook
-`useUpdateReportStatus` (`src/api/hooks/useReportMutations.ts`).
+Ed chose to deal with this immediately rather than park it. Removed:
+`updateReportStatus` + `UpdateReportStatusParams` from
+`src/api/mutations/reports.ts`, the `useUpdateReportStatus` hook, and its
+re-export from `src/api/hooks/index.ts`.
 
-- **There are TWO functions with this name.** The live one is in
-  `src/utils/reportingQueries` and takes positional arguments; that is what
-  `ReportsManagement.tsx:125` actually calls. The mutations-layer one takes an
-  options object and is only re-exported through `src/api/hooks/index.ts:119`
-  with no consumer.
-- **It also writes columns that do not exist.** It targets `user_reports`, which
-  has `status` and `reviewed_at` but NOT `review_notes` or `reviewed_by`. Passing
-  either optional field would fail at runtime.
+**Why it was safe to delete, not fix.** It was an earlier design of the
+reporting feature that `src/utils/reportingQueries.ts` replaced and nobody
+removed:
 
-So it is dead code that would break if it were ever wired up, with a name that
-collides with the working version. Worth removing rather than fixing, unless the
-notes/reviewer feature is still wanted — in which case the columns are missing.
+- **Unreachable.** Zero consumers; only re-exported through `hooks/index.ts`.
+- **Would have failed if wired up.** It wrote `review_notes` and `reviewed_by`,
+  neither of which exists on `user_reports`.
+- **Knew the wrong statuses.** It allowed four (`pending`, `investigating`,
+  `resolved`, `dismissed`); the live path uses six (`pending`, `under_review`,
+  `escalated`, `action_taken`, `resolved`, `dismissed`) and never uses
+  `investigating` at all.
+- **Name collision.** It shadowed the working positional-argument version in
+  `utils/reportingQueries`, which is what `ReportsManagement.tsx` actually calls.
+
+**Evidence it changed nothing.** Full unit suite run before and after:
+**254 files / 5127 tests passing, identical both times.** `tsc -b` clean (which
+is the real proof — it catches every dangling import; no test covered this code,
+so a green suite alone would have proved little). Lint errors also dropped
+348 → 347.
+
+`createUserReport`, `useCreateUserReport` and `ReportCategory` are all live and
+were left alone.
 
 ### NOT dead — correcting the earlier note
 

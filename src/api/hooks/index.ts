@@ -116,7 +116,6 @@ export type { UsePushSubscriptionResult } from './usePushSubscription';
 // Report mutations
 export {
   useCreateUserReport,
-  useUpdateReportStatus,
 } from './useReportMutations';
 
 // League queries
