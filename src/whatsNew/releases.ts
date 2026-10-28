@@ -161,7 +161,7 @@ export const RELEASES: Release[] = [
         forOperators: true,
       },
       {
-        text: 'If you hadn\u2019t put your birth date on your profile, switching the language filter on or off in your settings always failed with an error. It works now.',
+        text: 'The language filter in your settings is now your choice, whatever your age. It was locked on for players under 18, and anyone without a birth date on their profile got an error every time they tried to change it.',
         kind: 'fix',
       },
     ],

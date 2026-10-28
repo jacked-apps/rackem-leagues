@@ -8,7 +8,6 @@
  */
 
 import { supabase } from '@/supabaseClient';
-import { isMinor } from '@/utils/age';
 import type { UserRole } from '@/types';
 
 /**
@@ -138,8 +137,7 @@ export interface UpdateProfanityFilterParams {
 /**
  * Update member's profanity filter preference
  *
- * Refuses the update for a known minor (birth date on file, under 18),
- * whose filter is forced ON. A member with no birth date can change it.
+ * Any member can change it — the under-18 lock is paused (see TODO below).
  *
  * @param params - Update parameters (userId, enabled)
  * @throws Error if user is under 18 or database update fails
@@ -155,29 +153,9 @@ export async function updateProfanityFilter(
 ): Promise<void> {
   const { userId, enabled } = params;
 
-  // First check if user is 18+
-  const { data: member, error: fetchError } = await supabase
-    .from('members')
-    .select('date_of_birth')
-    .eq('user_id', userId)
-    .single();
-
-  if (fetchError) {
-    throw new Error(`Failed to fetch member data: ${fetchError.message}`);
-  }
-
-  if (!member) {
-    throw new Error('Member not found');
-  }
-
-  // Same rule the settings screens use (useProfanityFilter): only a KNOWN
-  // minor is locked. Birth date is optional, so an unknown one is treated
-  // as an adult — otherwise the screen offers a toggle this then refuses.
-  if (isMinor(member.date_of_birth)) {
-    throw new Error('Users under 18 cannot modify profanity filter settings');
-  }
-
-  // Update filter preference
+  // TODO(under-18-filter): the under-18 lock is paused — the filter is a
+  // plain personal choice for everyone until Ed revisits it. When it comes
+  // back, re-check `isMinor(date_of_birth)` here AND in useProfanityFilter.
   const { error: updateError } = await supabase
     .from('members')
     .update({ profanity_filter_enabled: enabled })
