@@ -48,8 +48,8 @@ interface QuestionConfig {
   placeholder?: string;
   formatter?: (value: string) => string;
   validator?: (value: string) => { isValid: boolean; error?: string };
-  getValue: () => any;
-  setValue: (value: any) => void;
+  getValue: () => string;
+  setValue: (value: string) => void;
   infoTitle?: string;
   infoContent?: React.ReactNode;
   choices?: Array<{

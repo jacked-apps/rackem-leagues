@@ -15,13 +15,13 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Trash2, Award } from 'lucide-react';
 import type { IndividualAward } from '@/utils/finances';
+import { newAwardId } from './individualAwards';
 
 interface IndividualAwardsEditorProps {
   awards: IndividualAward[];
   onChange: (awards: IndividualAward[]) => void;
 }
 
-const newAwardId = () => `award-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 export function IndividualAwardsEditor({ awards, onChange }: IndividualAwardsEditorProps) {
   const [adding, setAdding] = useState(false);
@@ -145,12 +145,4 @@ export function IndividualAwardsEditor({ awards, onChange }: IndividualAwardsEdi
       )}
     </div>
   );
-}
-
-/** Default starter awards seeded into a new calculator session. */
-export function defaultIndividualAwards(): IndividualAward[] {
-  return [
-    { id: newAwardId(), label: '🏆 Top Shooter', amount: 100, loFunded: false },
-    { id: newAwardId(), label: '🎁 Outstanding Achievement', amount: 50, loFunded: true },
-  ];
 }

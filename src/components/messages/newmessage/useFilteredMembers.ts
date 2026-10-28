@@ -18,7 +18,11 @@ export function useFilteredMembers(currentUserId: string, searchQuery: string) {
 
   // Fetch blocked users with TanStack Query
   const { data: blockedUsersData = [] } = useBlockedUsers(currentUserId);
-  const blockedUserIds = blockedUsersData.map((block: any) => block.blocked_id);
+  // TODO(typed-client): getBlockedUsers already returns the blocked IDs as
+  // strings, so `.blocked_id` is always undefined and blocked people are NOT
+  // filtered out here. Fix: use blockedUsersData directly. Cast keeps today's
+  // behaviour until that fix lands.
+  const blockedUserIds = blockedUsersData.map((block) => (block as unknown as { blocked_id: string }).blocked_id);
 
   // Filter out blocked users
   const members = useMemo(() => {

@@ -33,4 +33,14 @@ export default defineConfig([
       ],
     },
   },
+  {
+    // Fast-refresh only matters for files you edit with the dev server open.
+    // These export non-components on purpose: shadcn/ui pairs each component
+    // with its variants helper (upstream convention), test utils re-export
+    // testing-library, and NavRoutes exports the router instance itself.
+    files: ['src/components/ui/**', 'src/test/**', 'src/navigation/NavRoutes.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

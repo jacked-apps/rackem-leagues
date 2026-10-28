@@ -118,6 +118,8 @@ export function getSeasonWizardSteps(
 
   const formData = getStoredData();
 
+  // The championship steps build keys from the org name (e.g. `bcaChoice`), so
+  // TypeScript sees a computed string key; callers cast back to the real shape.
   const saveData = (updates: Partial<SeasonFormData>) => {
     const newData = { ...formData, ...updates };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
@@ -203,7 +205,7 @@ export function getSeasonWizardSteps(
         ],
         getValue: () => (formData[choiceField] as string) || '',
         setValue: (value: string) => {
-          saveData({ [choiceField]: value } as any);
+          saveData({ [choiceField]: value } as Partial<SeasonFormData>);
 
           // Handle different choice types
           if (value === 'ignore') {
@@ -211,10 +213,10 @@ export function getSeasonWizardSteps(
               [ignoredField]: true,
               [startField]: '',
               [endField]: ''
-            } as any);
+            } as Partial<SeasonFormData>);
           } else if (value === 'custom') {
             // User will enter dates in next step
-            saveData({ [ignoredField]: false } as any);
+            saveData({ [ignoredField]: false } as Partial<SeasonFormData>);
           } else {
             // User selected a found date option
             const selectedOption = dateOptions?.find(opt => opt.id === value);
@@ -223,7 +225,7 @@ export function getSeasonWizardSteps(
                 [ignoredField]: false,
                 [startField]: selectedOption.start_date,
                 [endField]: selectedOption.end_date
-              } as any);
+              } as Partial<SeasonFormData>);
             }
           }
         },
@@ -274,7 +276,7 @@ export function getSeasonWizardSteps(
           saveData({
             [startField]: startDate || '',
             [endField]: endDate || ''
-          } as any);
+          } as Partial<SeasonFormData>);
         },
         infoTitle: 'Why Schedule Around Major Tournaments?',
         infoContent: (

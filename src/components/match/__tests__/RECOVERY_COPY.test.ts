@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { RECOVERY_COPY, type RecoveryReason } from '../MatchTransitionRecovery';
+import { RECOVERY_COPY, type RecoveryReason } from '../matchRecoveryCopy';
 
 const ALL_REASONS: RecoveryReason[] = [
   'connection',

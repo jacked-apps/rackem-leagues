@@ -111,13 +111,13 @@ export default function RLSTestPage() {
       try {
         await deleteMember.mutateAsync({ memberId: member.id });
         result.deleteSuccess = true;
-      } catch (deleteErr: any) {
+      } catch (deleteErr) {
         result.deleteSuccess = false;
-        result.deleteError = deleteErr.message;
+        result.deleteError = (deleteErr as Error).message;
       }
-    } catch (insertErr: any) {
+    } catch (insertErr) {
       result.insertSuccess = false;
-      result.insertError = insertErr.message;
+      result.insertError = (insertErr as Error).message;
       result.deleteSuccess = false; // Can't delete if INSERT failed
     }
 
@@ -179,13 +179,13 @@ export default function RLSTestPage() {
       try {
         await deleteVenue.mutateAsync({ venueId: venue.id });
         result.deleteSuccess = true;
-      } catch (deleteErr: any) {
+      } catch (deleteErr) {
         result.deleteSuccess = false;
-        result.deleteError = deleteErr.message;
+        result.deleteError = (deleteErr as Error).message;
       }
-    } catch (insertErr: any) {
+    } catch (insertErr) {
       result.insertSuccess = false;
-      result.insertError = insertErr.message;
+      result.insertError = (insertErr as Error).message;
       result.deleteSuccess = false;
     }
 
@@ -269,13 +269,13 @@ export default function RLSTestPage() {
         await deleteChampionshipDate.mutateAsync({ championshipDateId: championshipId });
 
         result.deleteSuccess = true;
-      } catch (deleteErr: any) {
+      } catch (deleteErr) {
         result.deleteSuccess = false;
-        result.deleteError = deleteErr.message;
+        result.deleteError = (deleteErr as Error).message;
       }
-    } catch (insertErr: any) {
+    } catch (insertErr) {
       result.insertSuccess = false;
-      result.insertError = insertErr.message;
+      result.insertError = (insertErr as Error).message;
       result.deleteSuccess = false;
 
       // Attempt cleanup if we got partway through
@@ -371,13 +371,13 @@ export default function RLSTestPage() {
       try {
         await deleteTeam.mutateAsync({ teamId });
         result.deleteSuccess = true;
-      } catch (deleteErr: any) {
+      } catch (deleteErr) {
         result.deleteSuccess = false;
-        result.deleteError = deleteErr.message;
+        result.deleteError = (deleteErr as Error).message;
       }
-    } catch (insertErr: any) {
+    } catch (insertErr) {
       result.insertSuccess = false;
-      result.insertError = insertErr.message;
+      result.insertError = (insertErr as Error).message;
       result.deleteSuccess = false;
 
       // Cleanup if INSERT succeeded but something else failed
@@ -453,13 +453,13 @@ export default function RLSTestPage() {
       try {
         await deleteLeague.mutateAsync({ leagueId });
         result.deleteSuccess = true;
-      } catch (deleteErr: any) {
+      } catch (deleteErr) {
         result.deleteSuccess = false;
-        result.deleteError = deleteErr.message;
+        result.deleteError = (deleteErr as Error).message;
       }
-    } catch (insertErr: any) {
+    } catch (insertErr) {
       result.insertSuccess = false;
-      result.insertError = insertErr.message;
+      result.insertError = (insertErr as Error).message;
       result.deleteSuccess = false;
 
       // Cleanup if INSERT succeeded but something else failed
@@ -547,9 +547,9 @@ export default function RLSTestPage() {
       try {
         await deletePreference.mutateAsync({ preferenceId });
         result.deleteSuccess = true;
-      } catch (deleteErr: any) {
+      } catch (deleteErr) {
         result.deleteSuccess = false;
-        result.deleteError = deleteErr.message;
+        result.deleteError = (deleteErr as Error).message;
       }
 
       // Cleanup test league
@@ -560,9 +560,9 @@ export default function RLSTestPage() {
           logger.error('League cleanup failed', { error: cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr) });
         }
       }
-    } catch (insertErr: any) {
+    } catch (insertErr) {
       result.insertSuccess = false;
-      result.insertError = insertErr.message;
+      result.insertError = (insertErr as Error).message;
       result.deleteSuccess = false;
 
       // Cleanup if INSERT succeeded but something else failed

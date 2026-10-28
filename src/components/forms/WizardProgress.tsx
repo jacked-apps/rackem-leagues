@@ -56,13 +56,3 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
     </div>
   );
 };
-
-/**
- * Utility function to calculate progress percentage
- * @param currentStep - Current step (0-indexed)
- * @param totalSteps - Total number of steps
- * @returns Progress percentage (0-100)
- */
-export const calculateProgress = (currentStep: number, totalSteps: number): number => {
-  return ((currentStep + 1) / totalSteps) * 100;
-};

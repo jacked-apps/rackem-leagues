@@ -18,7 +18,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 
 interface QueryState {
-  query: UseQueryResult<any, any>;
+  query: UseQueryResult<unknown, Error>;
   name: string;
   required?: boolean; // If true, null data returns error. Default: true
 }

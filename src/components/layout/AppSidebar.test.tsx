@@ -8,7 +8,7 @@
  * error. Mirrors the bottom-nav tab's behavior on the desktop surface.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { renderWithProviders, screen, fireEvent } from '@/test/utils';
 
 const mockUseUserProfile = vi.fn();
@@ -34,7 +34,7 @@ vi.mock('@/api/hooks/useMyMatchSurfaces', () => ({
 }));
 
 const { toastMock } = vi.hoisted(() => {
-  const fn: any = vi.fn();
+  const fn = vi.fn() as Mock & { error: Mock };
   fn.error = vi.fn();
   return { toastMock: fn };
 });

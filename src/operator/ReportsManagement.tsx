@@ -21,6 +21,7 @@ import {
   escalateReport,
   REPORT_CATEGORIES
 } from '@/utils/reportingQueries';
+import type { Json } from '@/types/database.types';
 import { PageHeader } from '@/components/PageHeader';
 import {
   Card,
@@ -48,29 +49,29 @@ interface Report {
   id: string;
   category: string;
   description: string;
-  severity: string;
+  severity: string | null;
   created_at: string;
-  evidence_snapshot: any;
-  context_data: any;
+  evidence_snapshot: Json | null;
+  context_data: Json | null;
   reporter: {
     id: string;
     first_name: string;
     last_name: string;
-    system_player_number: string;
+    system_player_number: number;
   };
   reported_user: {
     id: string;
     first_name: string;
     last_name: string;
-    system_player_number: string;
+    system_player_number: number;
   };
 }
 
-interface ReportDetails {
-  report: any;
-  updates: any[];
-  actions: any[];
-}
+/** Exactly what getReportDetails returns on success (report + history). */
+type ReportDetails = NonNullable<Awaited<ReturnType<typeof getReportDetails>>['data']>;
+
+/** The action kinds takeReportAction accepts (the Select holds them as strings). */
+type ReportActionType = Parameters<typeof takeReportAction>[3];
 
 export function ReportsManagement() {
   const { orgId } = useParams<{ orgId: string }>();
@@ -106,7 +107,7 @@ export function ReportsManagement() {
     setLoading(true);
     const { data, error } = await getPendingReportsForOperator(orgId);
     if (data && !error) {
-      setReports(data as any);
+      setReports(data as Report[]);
     }
     setLoading(false);
   };
@@ -148,7 +149,7 @@ export function ReportsManagement() {
       selectedReport.report.id,
       memberId,
       'operator',
-      actionType as any,
+      actionType as ReportActionType,
       actionNotes.trim()
     );
 
@@ -253,7 +254,7 @@ export function ReportsManagement() {
   /**
    * Get badge color based on severity
    */
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: string | null) => {
     switch (severity) {
       case 'critical': return 'destructive';
       case 'high': return 'destructive';
@@ -266,7 +267,7 @@ export function ReportsManagement() {
   /**
    * Get status icon
    */
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string | null) => {
     switch (status) {
       case 'pending': return <Clock className="h-4 w-4" />;
       case 'under_review': return <AlertCircle className="h-4 w-4" />;
@@ -324,7 +325,7 @@ export function ReportsManagement() {
                             {new Date(report.created_at).toLocaleDateString()}
                           </div>
                         </div>
-                        <Badge variant={getSeverityColor(report.severity) as any}>
+                        <Badge variant={getSeverityColor(report.severity)}>
                           {report.severity}
                         </Badge>
                       </div>
@@ -353,7 +354,7 @@ export function ReportsManagement() {
                         Submitted {new Date(selectedReport.report.created_at).toLocaleString()}
                       </CardDescription>
                     </div>
-                    <Badge variant={getSeverityColor(selectedReport.report.severity) as any}>
+                    <Badge variant={getSeverityColor(selectedReport.report.severity)}>
                       {selectedReport.report.severity} severity
                     </Badge>
                   </div>
@@ -423,7 +424,7 @@ export function ReportsManagement() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Status Updates */}
-                    {selectedReport.updates.map((update: any) => (
+                    {selectedReport.updates.map((update) => (
                       <div key={update.id} className="text-sm border-l-2 pl-3 py-1">
                         <div className="font-medium">
                           Status changed: {update.old_status} → {update.new_status}
@@ -439,7 +440,7 @@ export function ReportsManagement() {
                     ))}
 
                     {/* Actions Taken */}
-                    {selectedReport.actions.map((action: any) => (
+                    {selectedReport.actions.map((action) => (
                       <div key={action.id} className="text-sm border-l-2 border-destructive pl-3 py-1">
                         <div className="font-medium">
                           Action: {action.action_type.replace('_', ' ')}

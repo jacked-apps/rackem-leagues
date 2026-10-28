@@ -123,7 +123,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     setGameHistoryLimit(prefs.game_history_limit ?? SYSTEM_DEFAULTS.game_history_limit);
     // Roster: null at league level means "inherit org default". Store as
     // empty string in the input when inheriting so the placeholder shows.
-    const rosterRaw = (prefs as any).max_roster_size;
+    const rosterRaw = prefs.max_roster_size;
     setMaxRosterSize(rosterRaw == null ? '' : String(rosterRaw));
     setUseOrgDefaultMaxRoster(rosterRaw == null);
     // Map boolean/null to our three-way setting
@@ -425,9 +425,9 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
           saving={saving}
           maxRosterSize={maxRosterSize}
           useOrgDefaultMaxRoster={useOrgDefaultMaxRoster}
-          maxRosterSizeDisplay={getRosterDisplay((preferences as any).max_roster_size)}
+          maxRosterSizeDisplay={getRosterDisplay(preferences.max_roster_size)}
           lineupSizeDisplay={
-            isLeague ? getLineupDisplay((preferences as any).lineup_size) : undefined
+            isLeague ? getLineupDisplay(preferences.lineup_size) : undefined
           }
           onMaxRosterSizeChange={setMaxRosterSize}
           onUseOrgDefaultChange={setUseOrgDefaultMaxRoster}

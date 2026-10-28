@@ -82,7 +82,7 @@ export const SponsorLogos: React.FC<SponsorLogosProps> = ({
 /**
  * Predefined sponsor configurations for easy swapping
  */
-export const sponsorConfigs = {
+const sponsorConfigs = {
   predator: {
     src: '/assets/logos/predator-logo.png',
     alt: 'Predator Cues',
