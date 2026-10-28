@@ -21,7 +21,6 @@ describe('glossary drift audit', () => {
     if (!result.ok) {
       // Surface the actual violations in the failure output so the
       // implementer can see WHICH entries are broken without re-running.
-      // eslint-disable-next-line no-console
       console.error(
         'Glossary drift audit failed:',
         JSON.stringify(result.violations, null, 2),

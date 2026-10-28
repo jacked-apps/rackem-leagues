@@ -4,6 +4,53 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🧹 2026-10-28 — Dead / broken code found during the typing sweep (Ed to triage)
+
+**Ed asked for this listed, not cleaned** — he wants to work out which items were
+started-and-abandoned vs finished-and-cut-off before anything is deleted.
+Verified against `main` on 2026-10-28 unless noted.
+
+### Confirmed unused
+
+- **`src/components/operator/ContentModerationCard.tsx`** — component defined, no
+  importer anywhere.
+- **`src/components/messages/newmessage/useFilteredMembers.ts`** — hook defined, no
+  importer anywhere. (Sits next to the New Message work in PR #304; check that PR
+  before deleting, in case it is the intended replacement.)
+
+### Unreachable AND broken — read this one before deleting
+
+**`updateReportStatus` in `src/api/mutations/reports.ts`** plus its hook
+`useUpdateReportStatus` (`src/api/hooks/useReportMutations.ts`).
+
+- **There are TWO functions with this name.** The live one is in
+  `src/utils/reportingQueries` and takes positional arguments; that is what
+  `ReportsManagement.tsx:125` actually calls. The mutations-layer one takes an
+  options object and is only re-exported through `src/api/hooks/index.ts:119`
+  with no consumer.
+- **It also writes columns that do not exist.** It targets `user_reports`, which
+  has `status` and `reviewed_at` but NOT `review_notes` or `reviewed_by`. Passing
+  either optional field would fail at runtime.
+
+So it is dead code that would break if it were ever wired up, with a name that
+collides with the working version. Worth removing rather than fixing, unless the
+notes/reviewer feature is still wanted — in which case the columns are missing.
+
+### NOT dead — correcting the earlier note
+
+- **`isEighteenOrOlder`** (`src/utils/formatters.ts`) is **live**, called at
+  `src/api/mutations/members.ts:174`. An earlier handoff listed it as unused; that
+  was wrong. Ed also wants it kept regardless, as the age feature will likely
+  come back. Related: the paused `TODO(under-18-filter)` work in PR #298.
+- **`src/utils/venueDuplicates.ts`** — already gone; nothing to do.
+
+### Reported earlier, NOT re-verified today
+
+Carried over from the typing-sweep handoff; confirm before acting:
+
+- an unreachable insert in `src/hooks/useMatchScoringMutations.ts`
+- unreachable `expired` / `already_claimed` claim screens
+
 ## 🧪 2026-09-05 — Database tests are not run by CI, and three files have rotted
 
 CI (`.github/workflows/checks.yml`) runs the vitest **unit** project only. The
