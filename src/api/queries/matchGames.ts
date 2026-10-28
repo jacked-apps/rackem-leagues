@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import type { Tables } from '@/types/database.types';
 
 /**
  * Match game record with winner information
@@ -25,8 +26,8 @@ export interface MatchGame {
   away_action: 'breaks' | 'racks';
   break_and_run: boolean;
   golden_break: boolean;
-  confirmed_by_home: boolean;
-  confirmed_by_away: boolean;
+  confirmed_by_home: string | null; // member id of the confirmer, not a flag
+  confirmed_by_away: string | null;
   confirmed_at: string | null;
   is_tiebreaker: boolean;
   created_at: string;
@@ -76,7 +77,7 @@ export async function fetchPlayerGameHistory(
   // Tiebreakers are rare, so 250 games ensures we have 200+ after filtering
   const fetchLimit = Math.ceil(limit * 1.25);
 
-  let leagueGames: any[] = [];
+  let leagueGames: Tables<'match_games'>[] = [];
 
   // Step 1: If leagueId provided, get all games from ALL SEASONS in that league
   if (leagueId) {
@@ -101,7 +102,7 @@ export async function fetchPlayerGameHistory(
   const threshold = Math.ceil(limit * 0.25); // 25% threshold (50 games for limit=200)
   const needsExpansion = leagueGames.length < threshold;
 
-  let allGames: any[] = leagueGames;
+  let allGames: Tables<'match_games'>[] = leagueGames;
 
   if (needsExpansion) {
     // Fetch all games of this game type (across all leagues)
@@ -129,7 +130,7 @@ export async function fetchPlayerGameHistory(
   // - Keep all non-tiebreaker games
   // - Keep tiebreaker games where player WON (counts toward handicap)
   // - Exclude tiebreaker games where player LOST (prevents anti-sandbagging penalty)
-  const filteredData = allGames.filter((game: any) => {
+  const filteredData = allGames.filter((game) => {
     const isTiebreaker = game.is_tiebreaker === true;
     const playerWon = game.winner_player_id === playerId;
 
@@ -140,6 +141,8 @@ export async function fetchPlayerGameHistory(
     return playerWon;
   });
 
-  // Return up to 'limit' games after filtering
-  return filteredData.slice(0, limit);
+  // Return up to 'limit' games after filtering. MatchGame narrows a few
+  // nullable columns (e.g. home_position) that are always set on a completed
+  // league game, which is all these filters return.
+  return filteredData.slice(0, limit) as MatchGame[];
 }

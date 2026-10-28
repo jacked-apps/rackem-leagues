@@ -234,16 +234,16 @@ export async function getAllMembers(
 
   // Defensive client-side BCA# trim — empty strings shouldn't count as a
   // BCA#. PostgREST `not.is.null` doesn't catch ''.
-  const rows = (data ?? []) as PartialMember[];
-  if (!organizationId) return rows;
+  // Filter on the raw rows (they carry organization_id; PartialMember doesn't).
+  const rows = data ?? [];
+  if (!organizationId) return rows as PartialMember[];
 
   return rows.filter((m) => {
     if (m.user_id) return true;
-    // deno-lint-ignore no-explicit-any
-    if ((m as any).organization_id === organizationId) return true;
+    if (m.organization_id === organizationId) return true;
     const bca = m.bca_member_number?.trim();
     return !!bca;
-  });
+  }) as PartialMember[];
 }
 
 /**

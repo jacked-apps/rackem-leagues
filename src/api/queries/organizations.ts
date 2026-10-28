@@ -89,13 +89,14 @@ export async function getOrganizationsByMember(
     return [];
   }
 
-  // Flatten the nested structure
-  return data.map((staff: any) => ({
+  // Flatten the nested structure. Cast: `position` is a text column narrowed
+  // to OrganizationWithPosition's union, and added_at is always filled by its now() default.
+  return data.map((staff) => ({
     ...staff.organizations,
     position: staff.position,
     staff_id: staff.id,
     added_at: staff.added_at,
-  }));
+  })) as OrganizationWithPosition[];
 }
 
 /**

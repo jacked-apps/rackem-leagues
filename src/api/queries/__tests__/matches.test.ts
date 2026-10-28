@@ -50,7 +50,7 @@ const YESTERDAY = isoOffset(-1);
 const TOMORROW = isoOffset(1);
 
 /** A Supabase-shaped match row (pre-hoist: scheduled_date lives on season_week). */
-function matchRow(overrides: Record<string, any> = {}) {
+function matchRow(overrides: Record<string, unknown> = {}) {
   return {
     id: 'm-default',
     status: 'in_progress',
@@ -72,10 +72,10 @@ function matchRow(overrides: Record<string, any> = {}) {
  * team- and status-scoping that was requested.
  */
 function setup(opts: {
-  teamRows?: any[];
-  teamErr?: any;
-  matchRows?: any[];
-  matchErr?: any;
+  teamRows?: unknown[];
+  teamErr?: unknown;
+  matchRows?: unknown[];
+  matchErr?: unknown;
 } = {}) {
   const { teamRows = [{ team_id: 't1' }], teamErr = null, matchRows = [], matchErr = null } = opts;
 

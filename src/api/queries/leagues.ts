@@ -10,6 +10,7 @@
 
 import { supabase } from '@/supabaseClient';
 import type { League } from '@/types/league';
+import type { Tables } from '@/types/database.types';
 
 /**
  * League progress data structure
@@ -20,7 +21,7 @@ export interface LeagueProgress {
   teamCount: number;
   playerCount: number;
   scheduleExists: boolean;
-  activeSeason: any | null;
+  activeSeason: Tables<'seasons'> | null;
   completedWeeks: number;
   totalWeeks: number;
   /** True if this league has a season with status='scheduled' (wizard

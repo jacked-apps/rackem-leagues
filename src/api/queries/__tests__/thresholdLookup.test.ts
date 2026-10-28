@@ -61,7 +61,7 @@ describe('getGlobalChartIdByName', () => {
     vi.restoreAllMocks();
   });
 
-  function setupFromMock(response: { data: any; error: any }) {
+  function setupFromMock(response: { data: unknown; error: unknown }) {
     const maybeSingle = vi.fn().mockResolvedValue(response);
     const eqAfterEq = { maybeSingle };
     const eqFirst = { eq: vi.fn().mockReturnValue(eqAfterEq) };
