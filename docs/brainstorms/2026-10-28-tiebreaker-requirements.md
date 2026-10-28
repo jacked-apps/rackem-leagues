@@ -47,20 +47,31 @@ Nobody has exploited it — the current players do not know, and it is one seaso
 
 ## Decisions
 
-**D1 — Tiebreak wins are a SEPARATE TALLY, not entries in the game list.**
-(Revised 2026-10-28. Ed's model, taken from the Google Sheets he ran this league
-on for years: a tiebreak win went in its own cell and was added to the wins
-total. It never became an extra game, and weeks stayed weeks.)
+**D1 — The handicap math.** (Ed, 2026-10-28, corrected twice. Read the
+`weeksPlayed` note below before touching any of this.)
 
-Handicap = count the regular (non-tiebreak) games exactly as today, then ADD the
-tiebreak wins from the tiebreak records. The points formula is
-`(wins − losses) / weeksPlayed` with `weeksPlayed = gamesPlayed / 6`, so a
-separate tally reproduces the sheet precisely: **the win counts, the game count
-does not move.**
+    wins   = regular wins + tiebreak wins credited to this player
+    losses = regular losses ONLY  (a tiebreak loss never counts — it is as if
+             the game never happened)
+    weeks  = (wins + losses) / 6
+    points handicap = (wins - losses) / weeks
 
-*Supersedes the earlier "leave the divisor alone and let the extra game land in
-it" note, which reasoned from the formula instead of from the rule Ed actually
-ran. Numerator-only also bites harder, which is the point of the rule.*
+A credited tiebreak win is a **win**, so it lands in the numerator *and*, via
+`wins + losses`, in the denominator. It is not numerator-only.
+
+*Two earlier readings here were wrong and are recorded so they are not
+re-derived: (a) "let the extra game land in the divisor naturally" reasoned from
+the code instead of the rule; (b) "a separate tally keeps the game count from
+moving" mistook the separate CELL in Ed's spreadsheet — a bookkeeping device so
+he could see tiebreak wins — for separate MATH. The cell folds into wins.*
+
+### Why `weeks = games / 6` and not real weeks
+
+**This is deliberate, it is not a bug, and it has already been tried the other
+way.** When tiebreak games started counting, a week was sometimes 6 games and
+sometimes 7. Ed tried tracking the true week count: it got messy, and it did not
+work. Dividing the game total by a flat 6 is arbitrary, far simpler, and in
+practice **more accurate**. Leave it alone.
 
 **D2 — Three independent facts; nothing is rewritten.**
 (Revised twice on 2026-10-28. First pass had the credited result overwrite the
@@ -72,7 +83,7 @@ Ed improved on both: store the credited players ON the tiebreak record.)
   player ids**, frozen that night.
 - **Game rows** — what actually happened. Lost to John → it says you lost to
   John. Never played → no winner, null.
-- **Handicap** — regular games plus the tiebreak tally (D1).
+- **Handicap** — regular games plus the credited tiebreak wins (D1).
 - **Head-to-head** — reads the game rows, so a personal record is what happened
   at the table.
 
@@ -115,10 +126,15 @@ or when.)
   (`home_player_id` / `away_player_id`). The winning player who never shot is in
   neither, so he would be missed despite being credited. Easy to overlook, and
   it half-works silently.
-- **The history query no longer needs the credited-winner workaround.** The
-  earlier note about also matching a credited-winner column is obsolete under
-  D1/D2: the player who never shot is covered by the tiebreak record, not by a
-  game row he does not appear in.
+- **Truthful game rows alone cannot produce the credit — the record is
+  required.** On the winning team, a player who actually LOST has a row saying
+  he lost, and a player who never shot has no row at all. Reading games alone
+  credits neither. This is precisely why the current code overwrites all three
+  games, and why removing that overwrite obliges us to add the record.
+- **`losses` can no longer be shortcut as `gamesPlayed - wins`.**
+  `calculatePlayerHandicap.ts:85` derives losses that way today, which only
+  holds while every win is a row in the list. Credited tiebreak wins are not
+  rows, so losses must be counted explicitly.
 - **F1 is unshipped, not unwritten.** The tiebreaker re-lock fix (`2534033`)
   lives only on PR #291. Production still rewrites handicaps and the team bonus
   on re-lock.
@@ -130,7 +146,7 @@ or when.)
 - Shape of the tiebreak record. It must hold the match, the winning team and
   three credited player ids (D2), which points at its own table rather than
   columns on `matches`. Confirm at planning time.
-- The window. Handicaps look at the last 200 games; the tiebreak tally needs a
-  matching window so the two halves cover the same period.
+- The window. Handicaps look at the last 200 games; the credited tiebreak wins
+  need a matching window so both halves cover the same period.
 - Does anything need to *show* a tiebreaker once records exist, or is retention
   purely for future use? Ed: "not at the moment," but expects questions.
