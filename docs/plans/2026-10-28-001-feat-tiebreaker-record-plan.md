@@ -280,10 +280,41 @@ If any is missing, that is a plan defect, not a Unit 7 problem.
 
 Units 1→4 are a chain. Units 5 and 6 are independent and can ride along.
 
-**The one real risk is Unit 3** — `isTiebreakerMode` fans out across many
-branches in a 1,200-line component, and changing what feeds it is where a
-regression would hide. Worth landing Unit 3 on its own and exercising a real tie
-end-to-end before Unit 4.
+### Unit 3 is the one real risk
+
+Everything about tiebreak mode on the lineup page hangs off one boolean. Today
+it is "the match result says tie"; Unit 3 re-points it at "a tiebreak record
+exists." That switch drives roughly a dozen branches — which handler a dropdown
+calls, where the lock button writes, whether the handicap column renders, which
+players are offered — scattered through a 1,200-line file.
+
+What it risks, worst first:
+
+1. **A player-change branch still in normal mode writes to `match_lineups`** —
+   the exact thing D0 exists to prevent. The bug being removed would return
+   through the screen rewritten to remove it.
+2. **A timing gap.** The flag currently flips when the tie is recorded;
+   afterwards it flips when the record exists. If those are not the same instant
+   (realtime not yet delivered, say), the page renders in the wrong mode briefly
+   and a fast tap lands in the wrong path.
+3. **A missed branch** leaves half the page in tiebreak mode. Visibly wrong
+   rather than silently wrong, so the least dangerous of the three.
+
+Mitigation:
+
+- **Inventory the branches before editing, not during.** A dozen call sites is
+  small enough to enumerate properly first.
+- **One derived value, computed once** — not re-derived per branch, so there is
+  exactly one thing to get right instead of twelve.
+- **Land Unit 3 alone** and exercise a real tie end-to-end before Unit 4, so a
+  regression has one suspect.
+- **The test that actually catches it:** assert the match lineup row is
+  byte-identical before and after the whole tiebreak flow. It fires regardless
+  of which branch leaked.
+
+Two things work in our favour: Units 1–6 change nothing a player sees, and with
+Unit 3 landed before Unit 4 the old overwrite is still running, so results stay
+consistent while it is shaken out.
 
 **Unrelated but still live:** PR #291 carries the F1 guard for the code as it
 exists today. This plan eventually makes that guard redundant; until the plan
