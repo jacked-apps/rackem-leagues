@@ -30,7 +30,7 @@ Rules confirmed by Ed:
 - [x] **Phase 1 — Fix the points formula in the app.** Engine composition +
   legacy calculator switched to the par rule; tests use real matches from
   Ed's sheets; locked points docs updated (Ed: "unlock and make the changes").
-- [ ] **Phase 2 — Re-score this season.** Update
+- [x] **Phase 2 — Re-score this season.** Update
   `database/maintenance/recalculate_points_3man_1_preview.sql`,
   `_2_apply.sql` and `diagnose_standings_points.sql` to the par rule. Ed runs
   preview → spot-checks → apply. Conservation check: league total ≈ −1 per
@@ -45,7 +45,8 @@ Rules confirmed by Ed:
   regular lineup. Whether tiebreaker games also leave `match_games` is decided
   after the Phase 3 audit (many stats queries filter `is_tiebreaker`). Ships
   gated for staging review.
-- [ ] **Phase 5 — Clear the repo's lint errors.** `pnpm run lint` fails on
+- [x] **Phase 5 — Clear the repo's lint errors.** DONE 2026-10-28: 348 → 0
+  errors (PRs #292–#304; 22 warnings remain, see handoff). `pnpm run lint` fails on
   pre-existing errors (e.g. `no-regex-spaces` in `scripts/`,
   `no-explicit-any` in `src/__tests__/database/`, an unknown
   `vitest/valid-title` rule referenced by disable comments).
@@ -65,22 +66,60 @@ Rules confirmed by Ed:
   regular weeks with the same name (e.g. a DB unique constraint or
   renumber-on-write, plus a regression test).
 
-## Where we are (handoff, 2026-10-27)
+## Where we are (handoff, 2026-10-28 — Ed switching to the PC)
 
-- **Phases 1 + 2 done**, plus the sort fix. All in PR #291 (this branch).
-  Production rescored twice (5 matches, then 27). After #291 deploys, Ed
-  re-runs `_1_preview.sql`; apply only if rows show up.
-- **Ed's chosen order for what's next:** Phase 5 → Phase 6 (investigation
-  ONLY, no fix) → Phase 3 (audit). Fixes for the duplicate week and the
-  tiebreaker wait until both investigations are in.
-- **Phase 5 is bigger than expected:** 348 errors + 22 warnings in 130
-  files. By rule: `no-explicit-any` 289, `no-unused-vars` 27,
-  `react-refresh/only-export-components` 17, `vitest/valid-title` 4,
-  `no-regex-spaces` 3, `no-empty-object-type` 3, `rules-of-hooks` 3,
-  `no-constant-binary-expression` 1, `prefer-as-const` 1. Warnings:
-  `exhaustive-deps` 18. Area: app 286, tests 59, scripts 3.
-- **Recommended Phase 5 approach (awaiting Ed's yes):** PR 1 = the 4
-  possible real bugs (`rules-of-hooks` ×3, `no-constant-binary-expression`)
-  plus the ~55 quick mechanical fixes. Then the 289 `any`s in several PRs,
-  one app area at a time. Do NOT downgrade `any` to a warning.
-- Branch `chore/lint-cleanup` exists (off main), nothing on it yet.
+### Open PRs — Jack merges (don't push Ed to)
+- **#291** (this branch): points par rule + sort fix + this plan. Separate
+  from the stack below; squash is fine. Shares `MatchEndVerification.tsx`
+  and `TABLE_OF_CONTENTS.md` with #293/#303, so whichever lands second hits
+  a small conflict — resolve it then.
+- **Stack #292 → #304**, every PR based on `main`, each branch built on the
+  one before. **Merge in order with "Create a merge commit", NOT squash.** A
+  local test proved squash makes every later PR conflict; merge commits are
+  clean. Each PR body carries that warning. Review = top commit only.
+  - #292 lint quick fixes + hooks-order bugs · #293 typed Supabase client
+    (`createClient<Database>`, regenerated types) · #294 block user ·
+    #295 claim invite status · #296 profanity view (migration
+    `20261028043311`) · #297 league night write · #298 profanity filter
+    optional for everyone (under-18 lock PAUSED, Ed's call; search
+    `TODO(under-18-filter)`) · #299 `any` out of src/api · #300 operator
+    picker ambiguous embed · #301 player details night · #302 `any` out of
+    lineup+scoring (compiled JS proven byte-identical) · #303 last lint
+    errors + fast-refresh splits + `@types/pg` · #304 New Message render
+    loop (3,922 fetches/sec) + blocked filter.
+- After #291 deploys: Ed re-runs `_1_preview.sql`; apply only if rows show.
+
+### Next, in Ed's order
+1. **Phase 6 — investigate the duplicate "Week 14" ONLY. No fix** until Ed
+   has the findings. (Details in the Phase 6 bullet above.)
+2. **Phase 3 — tiebreaker audit, read-only.** Includes Ben vs Duff
+   `92b799f2…`.
+3. Then decide fixes for both.
+
+### Parked (ask Ed before doing)
+- 22 lint warnings (mostly `exhaustive-deps`) — case by case, some are
+  deliberate; #304 shows how they bite.
+- Dead code found while typing: `ContentModerationCard`,
+  `utils/venueDuplicates.ts`, the unreachable insert in
+  `useMatchScoringMutations.ts`, unreachable `expired`/`already_claimed`
+  claim screens, `mutations/reports.updateReportStatus` (writes missing
+  columns), unused `useFilteredMembers`, unused `isEighteenOrOlder`.
+- `MatchWithDetails` (`src/types/schedule.ts`) lacks the verification
+  columns + `season` embed queries return; two local types patch it.
+- ~118 type errors hide in test files: `tsc -b` excludes tests, so CI never
+  sees them.
+
+### Things only the Mac knew (Claude's memory there doesn't travel)
+- Every PR needs a `releases.ts` What's New entry OR `[no-changelog]` in
+  the body (CI-enforced). Player-facing copy, no jargon.
+- New migrations: `supabase migration new` (real UTC timestamp, never
+  zeros); check `ls supabase/migrations | sed 's/_.*//' | sort | uniq -d`.
+- Never `supabase db reset` — it wipes Ed's local test data.
+- The Mac's local DB has two unmerged race-branch migrations applied, so
+  `pnpm db:types` there emits `races`/`race_*` objects that must be stripped
+  before committing. The PC's local DB may differ — check before regenerating.
+- Unit tests need `VITE_SUPABASE_URL=http://x VITE_SUPABASE_ANON_KEY=x`.
+  The `db` vitest project writes to the local DB — ask before running it.
+- Ed is colour blind: never signal by hue alone.
+- Ed is a junior dev: plain words, define jargon once, one or two things
+  at a time, no code in chat.
