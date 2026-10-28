@@ -26,7 +26,6 @@ import {
   useUpdateMatchLineup,
   useMatchGames,
 } from '@/api/hooks';
-import { useUpdateMatchGame } from '@/api/hooks/useMatchMutations';
 import { usePlayerHandicaps } from '@/api/hooks/usePlayerHandicaps';
 import type { Player } from '@/types/match';
 import { MatchInfoCard } from '@/components/lineup/MatchInfoCard';
@@ -53,6 +52,8 @@ import {
 import { usePreparationStatus } from '@/hooks/lineup/useMatchPreparation';
 import { useMatchTiebreaker } from '@/api/hooks/useMatchTiebreaker';
 import { tiebreakLineupFor } from '@/api/queries/tiebreakers';
+import { useTiebreakerRealtime } from '@/realtime/useTiebreakerRealtime';
+import { lineupSlotIds } from '@/utils/tiebreaker/tiebreakPicks';
 import {
   calculateSubstituteHandicap,
   isAnonSubSentinel,
@@ -182,12 +183,10 @@ function MatchLineupBody() {
     }, 300);
   };
 
-  // Fetch all match games (for tiebreaker mode)
+  // Fetch all match games (prep short-circuit; tiebreak lock copies the
+  // chosen order onto the tiebreak game rows)
   const matchGamesQuery = useMatchGames(matchId);
   const allGames = matchGamesQuery.data || [];
-
-  // Get update game mutation (for tiebreaker mode)
-  const updateGameMutation = useUpdateMatchGame(matchId || '');
 
   // Extract players from team details query
   const playersWithoutHandicaps: Omit<Player, 'handicap'>[] =
@@ -298,22 +297,43 @@ function MatchLineupBody() {
     isHomeTeam ? matchData?.away_team_id : matchData?.home_team_id,
   );
 
-  // Tiebreaker lineup management (for best-of-3 games 19-21)
+  // Live updates for the tiebreak record (the other side's picks + lock).
+  useTiebreakerRealtime(matchId, tiebreakRecord?.id);
+
+  // Tiebreak mode reuses this page's dropdowns. The ONLY changes (Ed): the
+  // player list is this side's MATCH lineup instead of the roster, picks and
+  // the lock live on the tiebreak record, and double duty is counted. The
+  // match lineup itself is read, never written.
+  const myMatchLineupRow = isHomeTeam ? lineupsQuery.data?.homeLineup : lineupsQuery.data?.awayLineup;
+  const matchLineupIds = lineupSlotIds(myMatchLineupRow, playerCount);
+  const tiebreakSlotCount = tiebreakRecord?.players_per_side ?? 0;
   const {
     getTiebreakerPlayerIdByPosition,
+    getTiebreakerChoices,
     handleTiebreakerPlayerChange,
     handleClearTiebreakerPlayer,
+    handleLockTiebreak,
+    handleUnlockTiebreak,
+    tiebreakLocked,
   } = useTiebreakerLineup({
-    allGames,
-    isHomeTeam,
     matchId,
-    setPlayer1Id: lineup.setPlayer1Id,
-    setPlayer2Id: lineup.setPlayer2Id,
-    setPlayer3Id: lineup.setPlayer3Id,
-    updateGameMutation: updateGameMutation,
+    isHomeTeam,
+    myTiebreakLineup,
+    slotCount: tiebreakSlotCount,
+    myMatchLineup: myMatchLineupRow,
+    matchLineupIds,
+    tiebreakGames: allGames.filter((g) => g.is_tiebreaker),
   });
 
-  // In tiebreaker mode, use game records for validation; otherwise use lineup state
+  // Lock state the page shows and acts on: the tiebreak lineup's own lock in
+  // tiebreak mode (the match lineup stays locked throughout a tiebreaker), the
+  // match lineup's otherwise.
+  const shownLocked = isTiebreakerMode ? tiebreakLocked : lineup.lineupLocked;
+  // Slots on screen: the tiebreaker's players_per_side (0 until the record
+  // loads — no dropdowns render, so nothing can be written in the wrong mode).
+  const shownSlotCount = isTiebreakerMode ? tiebreakSlotCount : playerCount;
+
+  // In tiebreaker mode, validate the tiebreak picks; otherwise the lineup state
   const validationPlayer1Id = isTiebreakerMode ? getTiebreakerPlayerIdByPosition(1) : lineup.player1Id;
   const validationPlayer2Id = isTiebreakerMode ? getTiebreakerPlayerIdByPosition(2) : lineup.player2Id;
   const validationPlayer3Id = isTiebreakerMode ? getTiebreakerPlayerIdByPosition(3) : lineup.player3Id;
@@ -398,9 +418,9 @@ function MatchLineupBody() {
     player1Id: validationPlayer1Id,
     player2Id: validationPlayer2Id,
     player3Id: validationPlayer3Id,
-    player4Id: lineup.player4Id,
-    player5Id: lineup.player5Id,
-    playerCount,
+    player4Id: isTiebreakerMode ? getTiebreakerPlayerIdByPosition(4) : lineup.player4Id,
+    player5Id: isTiebreakerMode ? getTiebreakerPlayerIdByPosition(5) : lineup.player5Id,
+    playerCount: shownSlotCount,
     subHandicap: lineup.subHandicap,
     players,
     isTiebreakerMode,
@@ -495,7 +515,13 @@ function MatchLineupBody() {
   // on both sides AND both lineups are physically locked. Replaces the prior
   // `bothLineupsLocked` input so placeholder-contaminated ratings never leak
   // into the Fargo default computation.
+  //
+  // Never during a tiebreaker: the negotiation writes the MATCH row's targets,
+  // which a tiebreaker must not change. It used to be kept off by the tie
+  // unlocking the match lineups; they now stay locked throughout (D0), so the
+  // exclusion has to be explicit.
   const bothLineupsReadyForFargo =
+    !isTiebreakerMode &&
     lineup.lineupLocked &&
     !!opponentLineup?.locked &&
     step1CompleteBothSides;
@@ -923,10 +949,10 @@ function MatchLineupBody() {
   } = useOpponentStatus({
     matchData,
     isHomeTeam,
-    opponentLineup,
-    isTiebreakerMode,
-    allGames,
-    playerCount, // Pass player count for 5v5 support
+    // In a tiebreaker the opponent's TIEBREAK lineup says whether they are
+    // choosing or locked; their match lineup stays locked throughout.
+    opponentLineup: isTiebreakerMode ? opponentTiebreakLineup : opponentLineup,
+    playerCount: shownSlotCount, // Pass player count for 5v5 support
   });
 
   // Early return for loading/error states - consolidated into single check
@@ -944,11 +970,6 @@ function MatchLineupBody() {
   if (isByeMatch(match.home_team, match.away_team)) {
     return <ByeWeekNotice userTeamId={userTeamId} />;
   }
-
-  // Get my lineup (for tiebreaker mode player source)
-  const myLineup = isHomeTeam
-    ? lineupsQuery.data?.homeLineup
-    : lineupsQuery.data?.awayLineup;
 
   // Helper to get player display name
   const getPlayerDisplayName = (playerId: string): string => {
@@ -976,19 +997,13 @@ function MatchLineupBody() {
   };
 
   /**
-   * Get available player IDs for dropdown selection
+   * Get available player IDs for dropdown selection (normal mode)
    *
-   * In tiebreaker mode: Only players from the original locked lineup
+   * Tiebreaker mode builds its list per position via getTiebreakerChoices
+   * (the match lineup's players, double duty counted) — see the row loop.
    * In normal mode: All roster players + substitute option
    */
   const getAvailablePlayerIds = (): string[] => {
-    if (isTiebreakerMode && myLineup) {
-      // Tiebreaker: Only original lineup players can be selected
-      return Array.from({ length: playerCount }, (_, i) => {
-        const key = `player${i + 1}_id` as keyof typeof myLineup;
-        return myLineup[key];
-      }).filter(Boolean) as string[];
-    }
 
     // Normal mode: All roster players + sub options
     // TODO: check substitute_method preference to show one/both/neither
@@ -1052,12 +1067,8 @@ function MatchLineupBody() {
             {/* Available Players List */}
             <PlayerRoster
               playerIds={
-                isTiebreakerMode && myLineup
-                  ? [
-                      myLineup.player1_id,
-                      myLineup.player2_id,
-                      myLineup.player3_id,
-                    ].filter(Boolean)
+                isTiebreakerMode
+                  ? [...new Set(matchLineupIds)]
                   : players.map((p) => p.id)
               }
               handicapType={handicapType}
@@ -1112,22 +1123,23 @@ function MatchLineupBody() {
 
               <div className="space-y-2 mt-2">
                 {/* Map over positions dynamically based on player count */}
-                {Array.from({ length: playerCount }, (_, i) => i + 1).map((position) => {
+                {Array.from({ length: shownSlotCount }, (_, i) => i + 1).map((position) => {
                   // In tiebreaker mode, get player from game record; otherwise from lineup
                   const playerId = isTiebreakerMode
                     ? getTiebreakerPlayerIdByPosition(position)
                     : getPlayerIdByPosition(position);
                   const handicap = getHandicapByPosition(position);
 
+                  // Tiebreak: the match lineup's players, with a player
+                  // disabled only once picked as many times as they appear
+                  // in the match lineup (double duty plays twice).
+                  const tiebreakChoices = isTiebreakerMode
+                    ? getTiebreakerChoices(position)
+                    : null;
+
                   // Get other selected player IDs (to disable them in dropdown)
-                  const otherPlayerIds = isTiebreakerMode
-                    ? // Tiebreaker mode: get from game records
-                      [1, 2, 3]
-                        .filter((p) => p !== position)
-                        .map((p) =>
-                          getTiebreakerPlayerIdByPosition(p as 1 | 2 | 3)
-                        )
-                        .filter(Boolean)
+                  const otherPlayerIds = tiebreakChoices
+                    ? tiebreakChoices.disabled
                     : // Normal mode: get from lineup state
                       getOtherPlayerIds(position);
 
@@ -1178,9 +1190,9 @@ function MatchLineupBody() {
                       position={position}
                       playerId={playerId}
                       handicap={handicap}
-                      locked={lineup.lineupLocked}
+                      locked={shownLocked}
                       handicapType={handicapType}
-                      availablePlayerIds={getAvailablePlayerIds()}
+                      availablePlayerIds={tiebreakChoices ? tiebreakChoices.available : getAvailablePlayerIds()}
                       otherPlayerIds={otherPlayerIds}
                       getPlayerDisplayName={getPlayerDisplayName}
                       onPlayerChange={onPlayerChange}
@@ -1255,14 +1267,17 @@ function MatchLineupBody() {
             )}
 
             {/* Lock/Unlock and Status */}
+            {/* In a tiebreaker these lock/unlock the TIEBREAK lineup only —
+                never handleLockLineup, which writes the match lineup and
+                recalculates handicaps + the team bonus (audit F1). */}
             <LineupActions
-              locked={lineup.lineupLocked}
+              locked={shownLocked}
               opponentStatus={opponentStatus}
               opponentStatusText={opponentSelectionStatus}
-              canLock={validation.canLock}
+              canLock={validation.canLock && (!isTiebreakerMode || !!myTiebreakLineup)}
               canUnlock={opponentStatus !== 'ready'}
-              onLock={handleLockLineup}
-              onUnlock={handleUnlockLineup}
+              onLock={isTiebreakerMode ? handleLockTiebreak : handleLockLineup}
+              onUnlock={isTiebreakerMode ? handleUnlockTiebreak : handleUnlockLineup}
               isPreparing={isPreparingMatch}
               // No manual Proceed button — useMatchPreparation auto-navigates
               // once both lineups are locked (and for Fargo, once start-points
@@ -1277,7 +1292,9 @@ function MatchLineupBody() {
       {/* Opponent Substitute Modal - 5v5 Only */}
       {opponentLineup && (
         <OpponentSubstituteModal
-          isOpen={showOpponentSubModal}
+          // Never in a tiebreaker: its choice writes the opponent's MATCH
+          // lineup, and subs were settled at the start of the match.
+          isOpen={showOpponentSubModal && !isTiebreakerMode}
           opponentLineup={opponentLineup}
           lineupSize={playerCount}
           getPlayerDisplayName={getOpponentPlayerDisplayName}

@@ -1,170 +1,154 @@
 /**
  * @fileoverview Tiebreaker Lineup Hook
  *
- * Handles tiebreaker-specific lineup logic.
- * In tiebreaker mode, player selections are stored in match_games records
- * instead of the match_lineups table (games 19, 20, 21 for best-of-3).
+ * Runs the lineup page's tiebreak mode against the TIEBREAK RECORD
+ * (match_tiebreaker_lineups) — Unit 3 of
+ * docs/plans/2026-10-28-001-feat-tiebreaker-record-plan.md.
  *
- * Tiebreakers always use 3 positions regardless of the original match format.
+ * Ed's rules, which this hook exists to keep:
+ * - Same players who played the match, only the order changes. The page's
+ *   normal dropdowns are reused; their list is the match lineup (see
+ *   tiebreakPicks.ts), and double duty is counted, never deduped.
+ * - Handicaps are COPIED from the match lineup — never looked up or recalculated.
+ * - Anyone on the team may set it, not just the captain (no role checks here).
+ *
+ * Nothing here writes match_lineups. Previously this hook also pushed picks
+ * into the match lineup's on-screen state, which a match-lineup lock could then
+ * have written back — that path is gone.
  */
 
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { queryKeys } from '@/api/queryKeys';
+import type { MatchTiebreaker, TiebreakerLineupRow } from '@/api/queries/tiebreakers';
+import {
+  setTiebreakSlot,
+  lockTiebreakLineup,
+  unlockTiebreakLineup,
+} from '@/api/mutations/tiebreakerLineups';
+import { tiebreakChoices } from '@/utils/tiebreaker/tiebreakPicks';
+import type { Lineup } from '@/types/match';
 import { logger } from '@/utils/logger';
 
-interface TiebreakerLineupParams {
-  /** All match games */
-  allGames: any[];
-  /** Is current user on home team? */
-  isHomeTeam: boolean;
-  /** Match ID */
-  matchId: string | undefined;
-  /** Lineup state setters */
-  setPlayer1Id: (id: string) => void;
-  setPlayer2Id: (id: string) => void;
-  setPlayer3Id: (id: string) => void;
-  /** Mutation to update game records */
-  updateGameMutation: any;
-}
+type SlotKey = `player${1 | 2 | 3 | 4 | 5}`;
 
-interface TiebreakerLineupResult {
-  /** Get player ID for a tiebreaker position (1-3) */
-  getTiebreakerPlayerIdByPosition: (position: number) => string;
-  /** Handle player selection change in tiebreaker mode */
-  handleTiebreakerPlayerChange: (position: number, playerId: string) => void;
-  /** Handle clearing player selection in tiebreaker mode */
-  handleClearTiebreakerPlayer: (position: number) => void;
+interface TiebreakerLineupParams {
+  matchId: string | undefined;
+  isHomeTeam: boolean;
+  /** This side's tiebreak lineup row (undefined while the record loads). */
+  myTiebreakLineup: TiebreakerLineupRow | undefined;
+  /** Slots in the tiebreaker — the record's players_per_side. */
+  slotCount: number;
+  /** This side's MATCH lineup: the only source of players and handicaps. */
+  myMatchLineup: Lineup | undefined;
+  /** Slot ids of the match lineup (lineupSlotIds) — double duty kept twice. */
+  matchLineupIds: string[];
+  /** The match's tiebreak game rows; the lock copies the order onto them. */
+  tiebreakGames: { id: string; game_number: number }[];
 }
 
 /**
- * Hook to manage tiebreaker lineup selections
+ * Hook to manage a side's tiebreak order on the lineup page.
  *
- * Tiebreaker mode stores selections in match_games table (games 19-21)
- * instead of match_lineups table. Only uses 3 positions (best-of-3).
- *
- * @param params - Tiebreaker configuration
- * @returns Tiebreaker lineup handlers
- *
- * @example
- * const {
- *   getTiebreakerPlayerIdByPosition,
- *   handleTiebreakerPlayerChange,
- *   handleClearTiebreakerPlayer
- * } = useTiebreakerLineup({
- *   allGames,
- *   isHomeTeam,
- *   matchId,
- *   setPlayer1Id,
- *   setPlayer2Id,
- *   setPlayer3Id,
- *   updateGameMutation
- * });
+ * @param params - See TiebreakerLineupParams
+ * @returns Getters and handlers the lineup page wires into its existing controls
  */
-export function useTiebreakerLineup(
-  params: TiebreakerLineupParams
-): TiebreakerLineupResult {
-  const {
-    allGames,
-    isHomeTeam,
-    matchId,
-    setPlayer1Id,
-    setPlayer2Id,
-    setPlayer3Id,
-    updateGameMutation,
-  } = params;
+export function useTiebreakerLineup(params: TiebreakerLineupParams) {
+  const { matchId, isHomeTeam, myTiebreakLineup, slotCount, myMatchLineup, matchLineupIds, tiebreakGames } =
+    params;
+  const queryClient = useQueryClient();
+  const recordKey = queryKeys.matches.tiebreaker(matchId || '');
 
-  /**
-   * Get player ID for a tiebreaker position
-   * Maps position 1-3 to games 19-21
-   */
-  const getTiebreakerPlayerIdByPosition = (position: number): string => {
-    const gameNumber = 18 + position;
-    const game = allGames.find(
-      (g) => g.game_number === gameNumber && g.is_tiebreaker
-    );
-    if (!game) return '';
+  /** Player id in a tiebreak position ('' when empty or still loading). */
+  const getTiebreakerPlayerIdByPosition = (position: number): string =>
+    (myTiebreakLineup?.[`player${position}_id` as `${SlotKey}_id`] as string | null) ?? '';
 
-    const playerField = isHomeTeam ? 'home_player_id' : 'away_player_id';
-    return (game[playerField as keyof typeof game] as string) || '';
-  };
+  const picks = Array.from({ length: slotCount }, (_, i) => getTiebreakerPlayerIdByPosition(i + 1));
 
-  /**
-   * Handle player selection change in tiebreaker mode
-   * Updates both local state and game record
-   */
-  const handleTiebreakerPlayerChange = (
-    position: number,
-    playerId: string
-  ) => {
-    if (!matchId) return;
+  /** Dropdown options for one position (counts double duty). */
+  const getTiebreakerChoices = (position: number) => tiebreakChoices(matchLineupIds, picks, position);
 
-    // Map position to game number (1 → 19, 2 → 20, 3 → 21)
-    const gameNumber = 18 + position;
-
-    // Find the game
-    const game = allGames.find(
-      (g) => g.game_number === gameNumber && g.is_tiebreaker
-    );
-    if (!game) {
-      logger.error('Tiebreaker game not found', {
-        gameNumber,
-        matchId,
-        position
-      });
-      return;
+  /** The handicap a player carried in the match lineup — copied, never computed. */
+  const handicapFromMatchLineup = (playerId: string): number | null => {
+    for (let slot = 1; slot <= 5; slot++) {
+      if (myMatchLineup?.[`player${slot}_id` as `${SlotKey}_id`] === playerId) {
+        return (myMatchLineup[`player${slot}_handicap` as `${SlotKey}_handicap`] as number | null) ?? null;
+      }
     }
-
-    // Update local state (for UI responsiveness)
-    if (position === 1) setPlayer1Id(playerId);
-    else if (position === 2) setPlayer2Id(playerId);
-    else setPlayer3Id(playerId);
-
-    // Determine which player field to update based on team
-    const playerField = isHomeTeam ? 'home_player_id' : 'away_player_id';
-
-    // Update the game record in database
-    updateGameMutation.mutate({
-      gameId: game.id,
-      updates: {
-        [playerField]: playerId,
-      },
-    });
+    return null;
   };
 
   /**
-   * Handle clearing player selection in tiebreaker mode
-   * Clears both local state and game record
+   * Write one slot: optimistic cache update so the dropdown responds at once,
+   * then the database, then a refetch to settle on the truth.
    */
-  const handleClearTiebreakerPlayer = (position: number) => {
-    if (!matchId) return;
-
-    // Map position to game number
-    const gameNumber = 18 + position;
-
-    // Find the game
-    const game = allGames.find(
-      (g) => g.game_number === gameNumber && g.is_tiebreaker
+  const writeSlot = async (position: number, playerId: string | null) => {
+    if (!myTiebreakLineup) return;
+    const handicap = playerId ? handicapFromMatchLineup(playerId) : null;
+    queryClient.setQueryData<MatchTiebreaker | null>(recordKey, (old) =>
+      old
+        ? {
+            ...old,
+            match_tiebreaker_lineups: old.match_tiebreaker_lineups.map((l) =>
+              l.id === myTiebreakLineup.id
+                ? { ...l, [`player${position}_id`]: playerId, [`player${position}_handicap`]: handicap }
+                : l,
+            ),
+          }
+        : old,
     );
-    if (!game) return;
+    try {
+      await setTiebreakSlot(myTiebreakLineup.id, position, playerId, handicap);
+    } catch (error) {
+      logger.error('Failed to save tiebreak pick', { matchId, position, error: String(error) });
+      toast.error('Could not save that pick — please try again.');
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: recordKey });
+    }
+  };
 
-    // Clear local state
-    if (position === 1) setPlayer1Id('');
-    else if (position === 2) setPlayer2Id('');
-    else setPlayer3Id('');
+  const handleTiebreakerPlayerChange = (position: number, playerId: string) => {
+    void writeSlot(position, playerId);
+  };
 
-    // Determine which player field to clear
-    const playerField = isHomeTeam ? 'home_player_id' : 'away_player_id';
+  const handleClearTiebreakerPlayer = (position: number) => {
+    void writeSlot(position, null);
+  };
 
-    // Clear the game record in database
-    updateGameMutation.mutate({
-      gameId: game.id,
-      updates: {
-        [playerField]: null,
-      },
-    });
+  /** Lock this side's order (copies it onto the tiebreak games first). */
+  const handleLockTiebreak = async () => {
+    if (!myTiebreakLineup || picks.some((id) => !id)) return;
+    try {
+      await lockTiebreakLineup({ lineupId: myTiebreakLineup.id, isHomeTeam, order: picks, games: tiebreakGames });
+    } catch (error) {
+      logger.error('Failed to lock tiebreak lineup', { matchId, error: String(error) });
+      toast.error('Could not lock the tiebreaker lineup — please try again.');
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: recordKey });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
+    }
+  };
+
+  /** Unlock this side's order so it can be changed. */
+  const handleUnlockTiebreak = async () => {
+    if (!myTiebreakLineup) return;
+    try {
+      await unlockTiebreakLineup(myTiebreakLineup.id);
+    } catch (error) {
+      logger.error('Failed to unlock tiebreak lineup', { matchId, error: String(error) });
+      toast.error('Could not unlock the tiebreaker lineup — please try again.');
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: recordKey });
+    }
   };
 
   return {
     getTiebreakerPlayerIdByPosition,
+    getTiebreakerChoices,
     handleTiebreakerPlayerChange,
     handleClearTiebreakerPlayer,
+    handleLockTiebreak,
+    handleUnlockTiebreak,
+    tiebreakLocked: !!myTiebreakLineup?.locked,
   };
 }

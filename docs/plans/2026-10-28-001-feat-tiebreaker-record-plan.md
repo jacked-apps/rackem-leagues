@@ -253,6 +253,25 @@ record. Without this, `games_needed` is a column nothing downstream honours.
 **Watch:** `isTiebreakerMode` (`MatchLineup.tsx:289`) drives roughly a dozen
 branches. See "Unit 3 is the one real risk" below.
 
+> **AS BUILT 2026-10-28.** Recorded so the choices are not re-derived:
+> - **`isTiebreakerMode` still keys off `match_result = 'tie'`, not record
+>   existence.** `match_result` is written before the games and the record, so
+>   the page is in tiebreak mode before the record arrives; until it loads,
+>   tiebreak mode renders ZERO dropdowns (slot count comes from the record).
+>   That closes risk #1/#2 below by construction — the page can never be in
+>   normal mode during a tie and write `match_lineups`.
+> - **Lock copies the order onto the tiebreak `match_games` rows, then locks.**
+>   Scoring reads who shoots each tiebreak game from those rows; the lineup row
+>   is the credit list. Order matters: the lock is the "ready" signal.
+> - **Two writers found that the old unlock had kept quiet:** the Fargo
+>   start-points negotiation (writes the MATCH row's targets; it ran whenever
+>   both match lineups were locked) and the opponent-sub popup. Both now
+>   explicitly off in tiebreak mode.
+> - **Realtime is its own channel** (`useTiebreakerRealtime`), not more
+>   bindings on `useMatchRealtime`: the tiebreak lineup table has no match_id,
+>   so it filters by tiebreaker_id, known only once the record exists — adding
+>   that to the main channel would rebuild the scoring connection mid-flow.
+
 **Test scenarios:** picking an order writes the tiebreak lineup only; the match
 lineup row is byte-identical before and after; a player not in the match lineup
 cannot be selected.
