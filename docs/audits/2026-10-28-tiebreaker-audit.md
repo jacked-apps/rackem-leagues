@@ -114,17 +114,48 @@ Queried 2026-10-28 (read-only). What the data says:
   today (`useLineupPersistence.ts:139`), so 0 is correct everywhere.
 - Both sides total the same handicap now (home −1+0+2 = 1, away 1+0+0 = 1).
 
-**Conclusion.** Every app-level mechanism is excluded, and the remaining
-explanation matches what Ed describes doing during the beta: hand-repairing
-match data directly in SQL. He recalls fixing a match where a slot held a
-*substitute* when Rene Enciso had actually played, editing it so Rene got credit
-in his record — the handicap unchanged, the player corrected. A raw SQL edit
-bypasses `locked_at` and every audit column, which is exactly the fingerprint
-here. No app bug is indicated.
+**Proven: the lineup handicaps DID change after prep.** Step 4 returned
+`home_to_win 9 / home_to_lose 8 / home_to_tie NULL` and
+`away_to_win 10 / away_to_lose 9 / away_to_tie NULL`, against equal stored
+totals (home 1, away 1). Run those through the 3v3 games-needed formula
+(`games-needed-3v3-formula.ts`, byte-exact from Ed's 2026-05-18 formulas,
+`game_count = 18`):
 
-**Caveat on F2's remedy.** Lineup history would record changes made *through the
-app*. It would not have caught this one. Do not sell it as a defence against
-direct SQL.
+- `stronger_win = ceil((18+2)/2) + floor(|diff|/2) = 10 + floor(|diff|/2)`.
+  Stored `away_to_win = 10` forces `floor(|diff|/2) = 0`, so `|diff|` is 0 or 1.
+- Both `to_tie` are NULL, which only happens when `remaining = 18 − |diff|` is
+  ODD. So `|diff|` is odd → **`|diff| = 1`**, with AWAY the stronger side.
+- Check: `remaining = 17` → weaker `win = 9`, `lose = 8`. Exactly the stored
+  home row.
+- A diff of 0 would give `remaining = 18` (even) → `to_tie = 9`, `to_win = 10`,
+  `to_lose = 8` on BOTH sides. The stored row has `to_tie = NULL`. Impossible.
+
+At prep, away's total was exactly **1 higher** than home's. Today they are equal.
+One handicap moved by 1 after the match was prepped.
+
+**It was a handicap edit, not a player change.** Step 3 shows a perfect double
+round robin — the same six players across all 18 games, each home player meeting
+each away player twice. No substitution, and none of the six is Rene Enciso, so
+this is a *different* repair from the one Ed recalls.
+
+**Impact — small, but not nil.**
+
+- *Winner unchanged.* Home won 11–7. It needed 9 under the saved targets and
+  would have needed 10 under equal handicaps. Home wins either way.
+- *Standings points differ by 1 for the away side.* Saved targets allow no tie,
+  so par is `to_win`: home `11 − 9 = +2`, away `7 − 10 = −3`. Equal handicaps
+  would allow a tie, making par 9: away `7 − 9 = −2`. Per Ed's confirmed rule
+  the saved targets win, so **−3 is correct** and the stale handicap is cosmetic
+  for standings.
+- *The real exposure is recalculation.* `engineRunningTotals` reads thresholds
+  from the match row (safe) but recomputes `homeHandicapDiff`/`awayHandicapDiff`
+  from the CURRENT lineup handicaps (`engineRunningTotals.ts:153-162`). Any
+  system whose allocator reads the diff is no longer insulated from a later
+  lineup edit.
+
+**Still no app bug indicated.** Every app route that writes a lineup also stamps
+`locked_at`, and neither row's stamp moved. The change was made outside the
+app — consistent with Ed's beta-era SQL repairs.
 
 ## F6 — A player in a substitute slot earns no stats credit
 
