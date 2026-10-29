@@ -398,6 +398,14 @@ in-flight ties; a lazy create-on-read in Unit 3; or a release step requiring all
 ties resolved before deploy. **Given one league and rare ties, the release step
 is probably sufficient and cheapest — but it must be explicit, not assumed.**
 
+> **DECIDED 2026-10-29 (Ed): release step, no code.** The league plays Sunday
+> afternoons and ties are played out the same session. **Release this work
+> when no one is playing — never during Sunday afternoon play.** A tie left
+> half-done across the release (old flow started it, no tiebreak record) is
+> the only case that strands, and it cannot arise outside play. No repair
+> script, no self-healing create. Carry this line into the PR description so
+> whoever deploys sees it.
+
 ---
 
 ## Unit 7 — Cleanup
