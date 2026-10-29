@@ -1,9 +1,9 @@
 /**
  * @fileoverview Tests for `useProfanityFilter`.
  *
- * The hook's two-tier rule (minors forced ON, everyone else respects
- * their stored preference) is the R4 enforcement seam for messaging
- * Phase 1. These tests pin the system clock so DOB-based assertions
+ * Everyone respects their stored preference. The R4 under-18 lock is
+ * paused (TODO(under-18-filter) in the hook), and the minor block below
+ * pins that so it can't half-return. These tests pin the system clock so DOB-based assertions
  * stay deterministic regardless of when CI runs.
  *
  * Upstream hooks (`useUser`, `useMemberProfanitySettings`) are mocked at
@@ -85,27 +85,9 @@ describe('useProfanityFilter — loading + error states', () => {
   });
 });
 
-describe('useProfanityFilter — minor enforcement (R4)', () => {
-  it('forces the filter ON and disables toggle for a known minor', () => {
+describe('useProfanityFilter — under-18 lock paused', () => {
+  it('a known minor gets their stored preference and can toggle', () => {
     setSettings({ profanity_filter_enabled: false, date_of_birth: '2015-01-01' });
-    const { result } = renderHook(() => useProfanityFilter());
-    expect(result.current).toEqual({
-      shouldFilter: true,
-      canToggle: false,
-      isLoading: false,
-    });
-  });
-
-  it('forces ON even one day before the 18th birthday', () => {
-    // 18th birthday lands on 2026-05-13; today is 2026-05-12 → still a minor.
-    setSettings({ profanity_filter_enabled: false, date_of_birth: '2008-05-13' });
-    const { result } = renderHook(() => useProfanityFilter());
-    expect(result.current.shouldFilter).toBe(true);
-    expect(result.current.canToggle).toBe(false);
-  });
-
-  it('does NOT force ON the day the user turns 18 — flips to adult', () => {
-    setSettings({ profanity_filter_enabled: false, date_of_birth: '2008-05-12' });
     const { result } = renderHook(() => useProfanityFilter());
     expect(result.current).toEqual({
       shouldFilter: false,
