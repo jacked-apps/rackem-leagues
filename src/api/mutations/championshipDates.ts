@@ -111,7 +111,9 @@ export async function createChampionshipDate(
     );
   }
 
-  return data;
+  // `organization` is plain text in the generated types; a CHECK constraint
+  // limits it to 'BCA' | 'APA'.
+  return data as ChampionshipDateOption;
 }
 
 /**
@@ -195,7 +197,9 @@ export async function updateChampionshipDate(
     );
   }
 
-  return data;
+  // `organization` is plain text in the generated types; a CHECK constraint
+  // limits it to 'BCA' | 'APA'.
+  return data as ChampionshipDateOption;
 }
 
 /**

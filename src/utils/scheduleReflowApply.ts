@@ -66,7 +66,7 @@ export async function applyBlackoutReflow(
   const weeks: ReflowWeek[] = weekRows.map((r) => ({
     id: r.id,
     date: r.scheduled_date,
-    weekType: r.week_type,
+    weekType: r.week_type as ReflowWeekType, // DB CHECK limits week_type to these
     weekName: r.week_name,
     weekCompleted: r.week_completed,
   }));

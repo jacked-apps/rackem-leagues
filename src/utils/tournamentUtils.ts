@@ -115,7 +115,8 @@ export const fetchChampionshipDateOptions = async (
     return [];
   }
 
-  return data || [];
+  // `organization` is plain text in the DB; these rows were filtered by it.
+  return (data || []) as ChampionshipDateOption[];
 };
 
 /**
@@ -165,7 +166,7 @@ export const submitChampionshipDates = async (
       return null;
     }
 
-    return updated;
+    return updated as ChampionshipDateOption; // organization filtered above
   } else {
     // New dates - create new entry
     const { data: created, error: insertError } = await supabase
@@ -186,6 +187,6 @@ export const submitChampionshipDates = async (
       return null;
     }
 
-    return created;
+    return created as ChampionshipDateOption; // organization inserted above
   }
 };

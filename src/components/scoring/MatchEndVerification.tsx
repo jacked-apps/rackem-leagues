@@ -427,7 +427,8 @@ export function MatchEndVerification({
                   continue;
                 }
 
-                const winningPlayerId = winningLineup[`player${position}_id` as keyof typeof winningLineup];
+                // `player{n}_id` columns hold a member id (or null).
+                const winningPlayerId = winningLineup[`player${position}_id` as keyof typeof winningLineup] as string | null;
 
                 await updateGameMutation.mutateAsync({
                   gameId: game.id,

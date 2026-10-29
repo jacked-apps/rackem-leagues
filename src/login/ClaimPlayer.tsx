@@ -120,7 +120,11 @@ export const ClaimPlayer: React.FC = () => {
           return;
         }
 
-        const details = data[0] as InviteDetails;
+        // TODO(typed-client): get_invite_details returns is_valid + error_message,
+        // NOT `status` — so the status checks below never fire, and a claimed /
+        // cancelled invite (is_valid=false, member_id NULL) falls through as
+        // valid. Cast kept to preserve current behavior until that's fixed.
+        const details = data[0] as unknown as InviteDetails;
 
         // Check status
         if (details.status === 'claimed') {

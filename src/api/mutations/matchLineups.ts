@@ -15,6 +15,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import type { Json, Tables } from '@/types/database.types';
 import { composeMatchThresholds, type ThresholdPayload } from '@/utils/match/composeMatchThresholds';
 import type { ResolvedSystemConfig } from '@/types/resolvedSystemConfig';
 import type { Lineup } from '@/types/match';
@@ -58,24 +59,9 @@ export interface UnlockLineupParams {
 }
 
 /**
- * Match lineup database record
+ * Match lineup database record (the generated `match_lineups` row).
  */
-export interface MatchLineup {
-  id: string;
-  match_id: string;
-  team_id: string;
-  locked: boolean;
-  player1_id?: string;
-  player1_handicap?: number;
-  player2_id?: string;
-  player2_handicap?: number;
-  player3_id?: string;
-  player3_handicap?: number;
-  player4_id?: string;
-  player4_handicap?: number;
-  player5_id?: string;
-  player5_handicap?: number;
-}
+export type MatchLineup = Tables<'match_lineups'>;
 
 /**
  * Save or update a match lineup
@@ -500,7 +486,7 @@ export async function approveLineupChange(
   };
   const { error: rpcError } = await supabase.rpc('swap_player_in_lineup', {
     p_lineup_id: lineupId,
-    p_thresholds: thresholds,
+    p_thresholds: thresholds as unknown as Json, // jsonb arg
     p_resolution: resolution,
   });
   if (rpcError) {

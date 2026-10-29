@@ -10,6 +10,7 @@
 
 import { supabase } from '@/supabaseClient';
 import type { MatchWithLeagueSettings, MatchWithDetails } from '@/types';
+import type { Json } from '@/types/database.types';
 import { formatLocalDate } from '@/utils/formatters';
 
 /**
@@ -18,7 +19,6 @@ import { formatLocalDate } from '@/utils/formatters';
 export interface SeasonWeek {
   id: string;
   season_id: string;
-  week_number: number;
   scheduled_date: string;
   week_name: string;
   week_type: string;
@@ -633,12 +633,14 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
   return {
     id: data.id,
     season_id: data.season_id,
-    home_team_id: data.home_team_id,
-    away_team_id: data.away_team_id,
+    // Byes are real team rows, so a match being scored has both teams; the
+    // column is nullable only for legacy NULL-bye matches.
+    home_team_id: data.home_team_id as string,
+    away_team_id: data.away_team_id as string,
     home_lineup_id: data.home_lineup_id ?? null,
     away_lineup_id: data.away_lineup_id ?? null,
     started_at: data.started_at ?? null,
-    match_result: data.match_result ?? null,
+    match_result: (data.match_result ?? null) as MatchWithLeagueSettings['match_result'],
     scheduled_date: (seasonWeek as any)?.scheduled_date || '',
     home_team_verified_by: data.home_team_verified_by ?? null,
     away_team_verified_by: data.away_team_verified_by ?? null,
@@ -655,7 +657,9 @@ export async function getMatchWithLeagueSettings(matchId: string): Promise<Match
     home_points_earned: data.home_points_earned ?? 0,
     away_points_earned: data.away_points_earned ?? 0,
     status: (data.status ?? 'scheduled') as MatchWithLeagueSettings['status'],
-    system_snapshot: data.system_snapshot ?? null,
+    // JSONB column: the generated type is plain Json, the shape is written by
+    // populateMatchSnapshotIfNeeded.
+    system_snapshot: (data.system_snapshot ?? null) as unknown as MatchWithLeagueSettings['system_snapshot'],
     assigned_table_number: data.assigned_table_number ?? null,
     home_team: homeTeam as any,
     away_team: awayTeam as any,
@@ -978,7 +982,9 @@ export async function populateMatchSnapshotIfNeeded(
   // Conditional write â€” only set if still null (guards against simultaneous first-score races)
   const { error: writeErr } = await supabase
     .from('matches')
-    .update({ system_snapshot: snapshot })
+    // PerGameAllocator is a plain interface (no index signature), so it isn't
+    // structurally `Json` even though it serializes as JSON.
+    .update({ system_snapshot: snapshot as unknown as Json })
     .eq('id', matchId)
     .is('system_snapshot', null);
 
@@ -1142,9 +1148,11 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
   // flip the new engine is the source of truth, but legacy still runs so (a) we
   // can fall back to it if the engine path can't compute, and (b) it audits the
   // engine and logs any divergence ("two paths audit each other").
+  // Nullable only for legacy NULL-bye matches; a null id simply matches no
+  // game winner, which is what happened before the client was typed.
   const legacyTotals = computeMatchRunningTotals({
-    homeTeamId: matchRow.home_team_id,
-    awayTeamId: matchRow.away_team_id,
+    homeTeamId: matchRow.home_team_id as string,
+    awayTeamId: matchRow.away_team_id as string,
     homeThresholds,
     awayThresholds,
     games: games as Parameters<typeof computeMatchRunningTotals>[0]['games'],
@@ -1164,8 +1172,8 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     );
     const engineTotals = await computeEngineRunningTotals({
       matchId,
-      homeTeamId: matchRow.home_team_id,
-      awayTeamId: matchRow.away_team_id,
+      homeTeamId: matchRow.home_team_id as string,
+      awayTeamId: matchRow.away_team_id as string,
       homeThresholds,
       awayThresholds,
       games: games as Parameters<typeof computeEngineRunningTotals>[0]['games'],
@@ -1306,8 +1314,8 @@ export async function auditMatchScoringConsistency(
     }
 
     const expected = computeMatchRunningTotals({
-      homeTeamId: matchRow.home_team_id,
-      awayTeamId: matchRow.away_team_id,
+      homeTeamId: matchRow.home_team_id as string,
+      awayTeamId: matchRow.away_team_id as string,
       homeThresholds: {
         games_to_win: matchRow.home_to_win,
         games_to_tie: matchRow.home_to_tie,

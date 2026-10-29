@@ -389,6 +389,38 @@ export type Database = {
           },
         ]
       }
+      bracket_walkup_roster: {
+        Row: {
+          display_name: string
+          first_seen_at: string
+          handicap: string | null
+          id: string
+          organizer_member_id: string
+        }
+        Insert: {
+          display_name: string
+          first_seen_at?: string
+          handicap?: string | null
+          id?: string
+          organizer_member_id: string
+        }
+        Update: {
+          display_name?: string
+          first_seen_at?: string
+          handicap?: string | null
+          id?: string
+          organizer_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_walkup_roster_organizer_fkey"
+            columns: ["organizer_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brackets: {
         Row: {
           charge_amount_cents: number | null
@@ -596,6 +628,21 @@ export type Database = {
           scope_type?: string | null
           title?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      designations: {
+        Row: {
+          description: string
+          name: string
+        }
+        Insert: {
+          description?: string
+          name: string
+        }
+        Update: {
+          description?: string
+          name?: string
         }
         Relationships: []
       }
@@ -1335,6 +1382,7 @@ export type Database = {
           home_to_tie: number | null
           home_to_win: number | null
           id: string
+          lms_entered_at: string | null
           match_number: number
           match_result: string | null
           results_confirmed_by_away: boolean
@@ -1372,6 +1420,7 @@ export type Database = {
           home_to_tie?: number | null
           home_to_win?: number | null
           id?: string
+          lms_entered_at?: string | null
           match_number: number
           match_result?: string | null
           results_confirmed_by_away?: boolean
@@ -1409,6 +1458,7 @@ export type Database = {
           home_to_tie?: number | null
           home_to_win?: number | null
           id?: string
+          lms_entered_at?: string | null
           match_number?: number
           match_result?: string | null
           results_confirmed_by_away?: boolean
@@ -1515,21 +1565,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      designations: {
-        Row: {
-          description: string
-          name: string
-        }
-        Insert: {
-          description?: string
-          name: string
-        }
-        Update: {
-          description?: string
-          name?: string
-        }
-        Relationships: []
       }
       member_designations: {
         Row: {
@@ -1947,6 +1982,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "leagues"
             referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "organization_staff_league_scope_fkey"
+            columns: ["organization_id", "league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_playoff_config"
+            referencedColumns: ["organization_id", "league_id"]
+          },
+          {
+            foreignKeyName: "organization_staff_league_scope_fkey"
+            columns: ["organization_id", "league_id"]
+            isOneToOne: false
+            referencedRelation: "resolved_league_preferences"
+            referencedColumns: ["organization_id", "league_id"]
           },
           {
             foreignKeyName: "organization_staff_member_id_fkey"
@@ -3636,6 +3685,26 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: Json
       }
+      add_late_entry: {
+        Args: {
+          p_display_name?: string
+          p_match_id: string
+          p_member_id?: string
+        }
+        Returns: Json
+      }
+      add_premium_feature: {
+        Args: { p_bracket_id: string; p_feature: string }
+        Returns: Json
+      }
+      add_registered_to_hopper: {
+        Args: { p_bracket_id: string; p_member_id: string }
+        Returns: Json
+      }
+      add_self_as_walkup: {
+        Args: { p_display_name: string; p_join_token: string }
+        Returns: Json
+      }
       advance_bracket_winner: {
         Args: { p_match_id: string; p_winner_participant_id: string }
         Returns: boolean
@@ -3730,38 +3799,17 @@ export type Database = {
         Args: { p_season_id: string; p_team_id: string }
         Returns: string
       }
-      forget_bracket_roster_entry: {
-        Args: { p_member_id?: string; p_display_name?: string }
-        Returns: boolean
-      }
       finalize_bracket_hopper: {
         Args: { p_bracket_id: string; p_include_waiting?: boolean }
         Returns: number
       }
+      forget_bracket_roster_entry: {
+        Args: { p_display_name?: string; p_member_id?: string }
+        Returns: boolean
+      }
       get_bracket_hopper: { Args: { p_bracket_id: string }; Returns: Json }
-      get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
       get_bracket_player_view: { Args: { p_join_token: string }; Returns: Json }
-      get_my_tournaments: { Args: never; Returns: Json }
-      remove_premium_feature: {
-        Args: { p_bracket_id: string; p_feature: string }
-        Returns: Json
-      }
-      add_premium_feature: {
-        Args: { p_bracket_id: string; p_feature: string }
-        Returns: Json
-      }
-      add_late_entry: {
-        Args: { p_match_id: string; p_member_id?: string; p_display_name?: string }
-        Returns: Json
-      }
-      add_registered_to_hopper: {
-        Args: { p_bracket_id: string; p_member_id: string }
-        Returns: Json
-      }
-      add_self_as_walkup: {
-        Args: { p_join_token: string; p_display_name: string }
-        Returns: Json
-      }
+      get_bracket_roster: { Args: { p_bracket_id: string }; Returns: Json }
       get_bracket_share: { Args: { p_share_token: string }; Returns: Json }
       get_current_member_id: { Args: never; Returns: string }
       get_invite_details: {
@@ -3818,6 +3866,7 @@ export type Database = {
           token: string
         }[]
       }
+      get_my_tournaments: { Args: never; Returns: Json }
       get_operator_placeholders: { Args: { p_org_id: string }; Returns: Json }
       get_operator_player_stats: { Args: { p_org_id: string }; Returns: Json }
       get_operator_stats: { Args: { operator_id_param: string }; Returns: Json }
@@ -3921,6 +3970,10 @@ export type Database = {
         Returns: undefined
       }
       member_display_name: { Args: { p_member_id: string }; Returns: string }
+      member_has_designation: {
+        Args: { p_designation: string; p_user_id: string }
+        Returns: boolean
+      }
       merge_placeholder_into_member: {
         Args: { p_placeholder_member_id: string; p_target_member_id: string }
         Returns: {
@@ -3962,6 +4015,10 @@ export type Database = {
       }
       remove_placeholder_from_team: {
         Args: { p_member_id: string; p_org_id: string; p_team_id: string }
+        Returns: Json
+      }
+      remove_premium_feature: {
+        Args: { p_bracket_id: string; p_feature: string }
         Returns: Json
       }
       reopen_bracket_match: { Args: { p_match_id: string }; Returns: boolean }

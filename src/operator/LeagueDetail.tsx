@@ -83,7 +83,8 @@ export const LeagueDetail: React.FC = () => {
 
         if (error) throw error;
 
-        setLeague(data);
+        // Text enum columns (game_type, day_of_week…) are CHECK-limited to League's unions.
+        setLeague(data as League);
 
         // Fetch season count
         const { count: seasonCountResult } = await supabase

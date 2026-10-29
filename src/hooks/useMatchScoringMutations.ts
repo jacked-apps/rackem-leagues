@@ -15,6 +15,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import type { Lineup, MatchGame } from '@/types/match';
+import type { TablesInsert } from '@/types/database.types';
 import { queryKeys } from '@/api/queryKeys';
 import { populateMatchSnapshotIfNeeded, updateMatchRunningTotals } from '@/api/queries/matches';
 import { appendConfirmation, type ConfirmationResult } from '@/api/mutations/appendConfirmation';
@@ -818,7 +819,12 @@ export function useMatchScoringMutations({
           }
         } else {
           // Insert new game (includes game_type from league)
-          const { error } = await supabase.from('match_games').insert(gameData);
+          // TODO(typed-client): unreachable — `existingGame` is guaranteed above —
+          // and `gameData` lacks the NOT NULL `game_type`, so this
+          // insert would fail if it ever ran. Cast keeps the code as-is.
+          const { error } = await supabase
+            .from('match_games')
+            .insert(gameData as unknown as TablesInsert<'match_games'>);
 
           if (error) throw error;
         }

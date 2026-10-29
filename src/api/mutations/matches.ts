@@ -12,36 +12,20 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import type { Tables, TablesInsert, TablesUpdate } from '@/types/database.types';
 
 /**
  * Generic match update parameters
  */
 export interface UpdateMatchParams {
   matchId: string;
-  updates: Record<string, any>; // Any match field(s) to update
+  updates: TablesUpdate<'matches'>; // Any match field(s) to update
 }
 
 /**
- * Match database record (partial - only commonly used fields)
+ * Match database record (the generated `matches` row).
  */
-export interface Match {
-  id: string;
-  season_id: string;
-  home_team_id: string;
-  away_team_id: string;
-  home_lineup_id?: string | null;
-  away_lineup_id?: string | null;
-  started_at?: string | null;
-  completed_at?: string | null;
-  status?: string;
-  home_to_win?: number;
-  away_to_win?: number;
-  home_to_tie?: number;
-  away_to_tie?: number;
-  home_to_lose?: number;
-  away_to_lose?: number;
-  [key: string]: any; // Allow any other match fields
-}
+export type Match = Tables<'matches'>;
 
 /**
  * Update any field(s) on a match
@@ -125,34 +109,13 @@ export async function updateMatch(params: UpdateMatchParams): Promise<Match> {
  * Generic match game creation parameters
  */
 export interface CreateMatchGamesParams {
-  games: Array<Record<string, any>>; // Array of game objects with any fields
+  games: TablesInsert<'match_games'>[]; // Game rows to create
 }
 
 /**
- * Match game database record
+ * Match game database record (the generated `match_games` row).
  */
-export interface MatchGame {
-  id: string;
-  match_id: string;
-  game_number: number;
-  home_player_id?: string | null;
-  away_player_id?: string | null;
-  winner_team_id?: string | null;
-  winner_player_id?: string | null;
-  home_action: string;
-  away_action: string;
-  break_and_run: boolean;
-  golden_break: boolean;
-  confirmed_by_home: boolean;
-  confirmed_by_away: boolean;
-  confirmed_at?: string | null;
-  is_tiebreaker: boolean;
-  game_type: string;
-  vacate_requested_by?: string | null;
-  created_at: string;
-  updated_at: string;
-  [key: string]: any; // Allow any other fields
-}
+export type MatchGame = Tables<'match_games'>;
 
 /**
  * Create match game records
@@ -206,7 +169,7 @@ export async function createMatchGames(params: CreateMatchGamesParams): Promise<
  */
 export interface UpdateMatchGameParams {
   gameId: string;
-  updates: Record<string, any>;
+  updates: TablesUpdate<'match_games'>;
 }
 
 /**

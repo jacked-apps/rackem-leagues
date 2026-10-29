@@ -55,7 +55,7 @@ export const SeasonsCard: React.FC<SeasonsCardProps> = ({ leagueId, onCreateSeas
           .order('start_date', { ascending: false });
 
         if (error) throw error;
-        setSeasons(data || []);
+        setSeasons((data || []) as Season[]); // status is CHECK-limited text
       } catch (err) {
         logger.error('Error fetching seasons', { error: err instanceof Error ? err.message : String(err) });
       } finally {

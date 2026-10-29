@@ -463,7 +463,8 @@ function TeamCard({
                 {sumLineupHandicaps(lineup, lineupSize)}
               </div>
               <div className="font-semibold text-foreground truncate">
-                <TeamNameLink teamId={lineup.team_id} teamName={teamName} />
+                {/* team_id is schema-nullable but always set on a real lineup */}
+                <TeamNameLink teamId={lineup.team_id ?? ''} teamName={teamName} />
               </div>
               <div className="font-semibold text-foreground text-center">{wins}</div>
               <div className="font-semibold text-foreground text-center">{losses}</div>

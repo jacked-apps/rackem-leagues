@@ -119,7 +119,8 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
         .from('team_players')
         .select('*')
         .eq('team_id', userTeamId)
-        .eq('member_id', memberId)
+        // A missing memberId matches no row → the not-a-member error below.
+        .eq('member_id', memberId ?? '')
         .single();
 
       if (teamCheckError || !teamCheck) {

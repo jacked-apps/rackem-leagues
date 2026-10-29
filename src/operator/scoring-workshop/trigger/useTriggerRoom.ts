@@ -17,6 +17,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/supabaseClient';
+import type { Json } from '@/types/database.types';
 import type {
   Condition,
   ReArm,
@@ -102,8 +103,8 @@ export function useTriggerRoom(currentMemberId: string | null): UseTriggerRoom {
           scope: 'user',
           author_id: currentMemberId,
           trigger_type: source.trigger_type,
-          condition: source.condition as unknown,
-          action: source.action as unknown,
+          condition: source.condition as unknown as Json,
+          action: source.action as unknown as Json,
           rearm: source.rearm,
         })
         .select('id')
@@ -125,8 +126,8 @@ export function useTriggerRoom(currentMemberId: string | null): UseTriggerRoom {
         scope: 'user',
         author_id: currentMemberId,
         trigger_type: row.trigger_type,
-        condition: row.condition as unknown,
-        action: row.action as unknown,
+        condition: row.condition as unknown as Json,
+        action: row.action as unknown as Json,
         rearm: row.rearm,
       });
       if (upsertErr) return false;

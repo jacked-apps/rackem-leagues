@@ -169,12 +169,12 @@ export interface PlayerDetails {
   nickname: string | null;
   system_player_number: number;
   bca_member_number: string | null;
-  role: string;
-  phone: string;
-  email: string;
+  role: string | null;
+  phone: string | null;
+  email: string | null;
   membership_paid_date: string | null;
-  starting_handicap_3v3: number;
-  starting_handicap_5v5: number;
+  starting_handicap_3v3: number | null;
+  starting_handicap_5v5: number | null;
   teams: Array<{
     id: string;
     team_name: string;
