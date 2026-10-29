@@ -548,12 +548,12 @@ how to add a new test, demo recording, cleanup model).
 | `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
 | `config/envBannerVisibility.ts` | Lets a page hide the staging/dev banner while open (`useHideEnvBanner`) |
 | `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
-| `themes/palettes.ts` | **Colour-palette preview (GATED, non-production)** — palette list + `applyPalette` / `readPalette`; sets `data-palette` on `<html>`, independent of light/dark. Applied at boot from `main.tsx` |
+| `themes/palettes.ts` | **Custom colour schemes (GATED, non-production)** — the fourth theme choice beside Light/Dark/System: each scheme = one palette in one mode (`COLOUR_SCHEMES`); `applyScheme` sets `data-palette` on `<html>`, `ThemeToggle` switches the mode. Applied at boot from `main.tsx` |
 | `themes/palettes.css` | Imports the palette files into `index.css` |
 | `themes/high-contrast.css` | High Contrast palette — darker text + stronger borders; true black in dark mode |
 | `themes/blue-gold.css` | Blue & Gold palette — standard page, away team gold (pending highlight moves to lavender) |
 | `themes/felt.css` | Felt palette — pool-table green page, away team amber |
-| `components/PalettePicker.tsx` | Palette dropdown under the Light/Dark toggle on the Profile page (shown only when `palettesEnabled`) |
+| `components/CustomSchemePicker.tsx` | Custom colour-scheme dropdown shown by `ThemeToggle` while "Custom" is selected (non-production) |
 
 ---
 

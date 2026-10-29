@@ -1,63 +1,80 @@
 /**
- * @fileoverview Colour palettes layered on top of light / dark mode — PREVIEW.
+ * @fileoverview Custom colour schemes — the fourth theme choice beside
+ * Light / Dark / System. PREVIEW.
  *
  * Light vs dark is chosen by next-themes (the `dark` class on <html>). A
- * palette is a second, independent choice: it sets `data-palette` on <html>,
- * and the matching file in this folder overrides theme tokens from
- * src/index.css, with its own light AND dark values. So every palette can be
- * viewed in both modes.
+ * custom scheme is one palette in one mode: picking it sets `data-palette` on
+ * <html> (the matching CSS file in this folder overrides index.css tokens)
+ * AND switches next-themes to that scheme's mode. Picking Light, Dark or
+ * System clears the scheme, so those three are always the standard look.
  *
- * GATED: palettes exist so Ed (and others) can compare readability across the
- * whole app before anything is chosen. Outside production only — the picker
- * on the Profile page and the start-up sync both check `isProduction`.
- * Listed in LIST_FOR_ED.md under "Gated".
+ * GATED: schemes exist so Ed (and others) can compare readability across the
+ * whole app before anything is chosen. Outside production only — the Custom
+ * option in ThemeToggle and the start-up apply in main.tsx both check
+ * `palettesEnabled`. Listed in LIST_FOR_ED.md under "Gated".
  */
 
 import { isProduction } from '@/config/environment';
 
-/** One selectable palette. `id` matches the `data-palette` value in its CSS file. */
-export interface Palette {
+/** One selectable custom scheme: a palette shown in one mode. */
+export interface ColourScheme {
+  /** Stored id, e.g. 'felt-dark'. */
   id: string;
+  /** The `data-palette` value its CSS file targets. */
+  palette: string;
+  /** The next-themes mode it switches to. */
+  mode: 'light' | 'dark';
   label: string;
   /** One line shown under the picker, so testers know what to look for. */
   description: string;
 }
 
-/** Every palette. 'standard' means no override: the plain index.css tokens. */
-export const PALETTES: readonly Palette[] = [
-  { id: 'standard', label: 'Standard', description: 'The current look.' },
-  { id: 'high-contrast', label: 'High Contrast', description: 'Black buttons (white in dark), darker text, black home and white away panels.' },
-  { id: 'blue-gold', label: 'Blue & Gold', description: 'Gold buttons, navy home and gold away panels; navy page in dark mode.' },
-  { id: 'felt', label: 'Felt', description: 'Green buttons, felt-green home and cue-ball away panels; felt-green page in dark mode.' },
-];
+const PALETTE_INFO = [
+  { palette: 'high-contrast', label: 'High Contrast', description: 'Black and white: black home and white away panels, strongest text.' },
+  { palette: 'blue-gold', label: 'Blue & Gold', description: 'Gold buttons, navy home and gold away panels.' },
+  { palette: 'felt', label: 'Felt', description: 'Green buttons, felt-green home and cue-ball away panels.' },
+] as const;
 
-const STORAGE_KEY = 'rackem-palette';
+/** Every custom scheme: each palette in light, then dark. */
+export const COLOUR_SCHEMES: readonly ColourScheme[] = PALETTE_INFO.flatMap((p) =>
+  (['light', 'dark'] as const).map((mode) => ({
+    id: `${p.palette}-${mode}`,
+    palette: p.palette,
+    mode,
+    label: `${p.label} — ${mode === 'light' ? 'Light' : 'Dark'}`,
+    description: p.description,
+  })),
+);
 
-/** Palettes are a preview: switched off entirely in production. */
+const STORAGE_KEY = 'rackem-colour-scheme';
+
+/** Custom schemes are a preview: switched off entirely in production. */
 export const palettesEnabled = !isProduction;
 
-/** The stored palette id, or 'standard' when none is stored or storage is blocked. */
-export function readPalette(): string {
+/** The stored custom scheme, or null when Light / Dark / System is in use. */
+export function readScheme(): ColourScheme | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return PALETTES.some((p) => p.id === stored) ? (stored as string) : 'standard';
+    return COLOUR_SCHEMES.find((s) => s.id === stored) ?? null;
   } catch {
-    return 'standard';
+    return null;
   }
 }
 
 /**
- * Show a palette now and remember it on this device.
+ * Show a custom scheme's colours now (or clear them with null) and remember
+ * the choice on this device. The caller switches next-themes to `scheme.mode`.
  *
- * @param id - A palette id from PALETTES
+ * @param scheme - A scheme from COLOUR_SCHEMES, or null for the standard look
  */
-export function applyPalette(id: string): void {
+export function applyScheme(scheme: ColourScheme | null): void {
   const root = document.documentElement;
-  if (id === 'standard') delete root.dataset.palette;
-  else root.dataset.palette = id;
+  if (scheme) root.dataset.palette = scheme.palette;
+  else delete root.dataset.palette;
   try {
-    localStorage.setItem(STORAGE_KEY, id);
+    if (scheme) localStorage.setItem(STORAGE_KEY, scheme.id);
+    else localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // Storage blocked (private window): the palette still shows, just isn't remembered.
+    // Storage blocked (private window): the colours still show, just aren't remembered.
   }
 }
