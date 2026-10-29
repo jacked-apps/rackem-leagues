@@ -31,13 +31,17 @@ export interface ColourScheme {
   description: string;
 }
 
-/** Every custom scheme, in picker order. One CSS file each in this folder. */
+/**
+ * Every custom scheme, in picker order. One CSS file each in this folder.
+ * Pastel first — it's what "Custom" opens on (the first entry), and the
+ * favourite so far; High Contrast last as the harshest, for specific needs.
+ */
 export const COLOUR_SCHEMES: readonly ColourScheme[] = [
-  { id: 'high-contrast', mode: 'light', label: 'High Contrast', description: 'Black and white: black home and white away panels, strongest text.' },
+  { id: 'pastel', mode: 'light', label: 'Pastel', description: 'Soft blush page, lavender buttons, periwinkle home and peach away panels.' },
   { id: 'blue-gold', mode: 'dark', label: 'Blue & Gold', description: 'Navy page, gold buttons, navy home and gold away panels.' },
   { id: 'felt', mode: 'dark', label: 'Felt', description: 'Felt-green page, green buttons, felt-green home and cue-ball away panels.' },
-  { id: 'pastel', mode: 'light', label: 'Pastel', description: 'Soft blush page, lavender buttons, periwinkle home and peach away panels.' },
   { id: 'crimson-cream', mode: 'light', label: 'Crimson & Cream', description: 'Cream page, crimson buttons, crimson home and cream away panels.' },
+  { id: 'high-contrast', mode: 'light', label: 'High Contrast', description: 'Black and white: black home and white away panels, strongest text.' },
 ];
 
 const STORAGE_KEY = 'rackem-colour-scheme';
