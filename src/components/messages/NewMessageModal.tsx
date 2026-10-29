@@ -10,7 +10,7 @@
  * - Creates DM (1 person) or Group (2+ people)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -49,8 +49,13 @@ export function NewMessageModal({
   const [groupName, setGroupName] = useState('');
 
   // Fetch blocked users with TanStack Query
-  const { data: blockedUsersData = [] } = useBlockedUsers(currentUserId);
-  const blockedUserIds = blockedUsersData.map((block: any) => block.blocked_id);
+  const { data: blockedUsersData } = useBlockedUsers(currentUserId);
+  // getBlockedUsers already returns the blocked member IDs as plain strings.
+  // Memoized so the array keeps its identity between renders: the fetch
+  // effect below depends on it, and a fresh array every render (as the old
+  // `.map(...)` — or a `= []` default — produced) re-ran the fetch, whose
+  // setMembers re-rendered, which re-ran the fetch… an endless refetch loop.
+  const blockedUserIds = useMemo(() => blockedUsersData ?? [], [blockedUsersData]);
 
   // Fetch members (excluding current user and blocked users)
   useEffect(() => {

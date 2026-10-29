@@ -63,8 +63,7 @@ export const AttachPlaceholderDialog: React.FC<AttachPlaceholderDialogProps> = (
     enabled: open,
   });
 
-  // deno-lint-ignore no-explicit-any
-  const registeredMembers: PartialMember[] = (allMembers as any[]).filter(
+  const registeredMembers: PartialMember[] = allMembers.filter(
     (m) => m?.user_id,
   );
 

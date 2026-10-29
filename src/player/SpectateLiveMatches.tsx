@@ -58,7 +58,7 @@ export function SpectateLiveMatches() {
   // Compose league label from the first match's joined league data. Every
   // match in this list belongs to the same league (the query filters on it),
   // so any match's league_* fields are correct.
-  const firstLeague = (matches[0] as any)?.season?.league;
+  const firstLeague = matches[0]?.season?.league;
   const leagueLabel = firstLeague ? composeLeagueLabel(firstLeague) : '';
 
   return (

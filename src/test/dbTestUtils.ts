@@ -115,11 +115,14 @@ export async function getCurrentMemberId(
   return member?.id ?? null;
 }
 
+/** The error fields these helpers read — satisfied by PostgrestError. */
+type TestQueryError = { message: string; code?: string };
+
 /**
  * Test helper: Expect query to succeed and return data
  */
 export async function expectQueryToSucceed<T>(
-  queryPromise: Promise<{ data: T | null; error: any }>
+  queryPromise: PromiseLike<{ data: T | null; error: TestQueryError | null }>
 ): Promise<T> {
   const { data, error } = await queryPromise;
 
@@ -138,7 +141,7 @@ export async function expectQueryToSucceed<T>(
  * Test helper: Expect query to fail with optional error code check
  */
 export async function expectQueryToFail(
-  queryPromise: Promise<{ data: any; error: any }>,
+  queryPromise: PromiseLike<{ data: unknown; error: TestQueryError | null }>,
   expectedErrorCode?: string
 ): Promise<void> {
   const { data, error } = await queryPromise;
@@ -158,7 +161,7 @@ export async function expectQueryToFail(
  * Test helper: Expect operation to succeed (insert/update/delete)
  */
 export async function expectOperationToSucceed(
-  operationPromise: Promise<{ error: any }>
+  operationPromise: PromiseLike<{ error: TestQueryError | null }>
 ): Promise<void> {
   const { error } = await operationPromise;
 
@@ -171,7 +174,7 @@ export async function expectOperationToSucceed(
  * Test helper: Expect operation to fail
  */
 export async function expectOperationToFail(
-  operationPromise: Promise<{ error: any }>,
+  operationPromise: PromiseLike<{ error: TestQueryError | null }>,
   expectedErrorCode?: string
 ): Promise<void> {
   const { error } = await operationPromise;
@@ -195,7 +198,7 @@ export async function expectOperationToFail(
  * const result = await client.from('table').insert({...}).select();
  * const item = getSingleResult(result);
  */
-export function getSingleResult<T>(result: { data: T[] | null; error: any }): T | null {
+export function getSingleResult<T>(result: { data: T[] | null; error: TestQueryError | null }): T | null {
   if (result.error) return null;
   if (!result.data || !Array.isArray(result.data) || result.data.length === 0) {
     return null;
@@ -232,7 +235,11 @@ export function getPostgresPool(): Pool {
  * @example
  * await executeSql('INSERT INTO members (email, first_name) VALUES ($1, $2)', ['test@example.com', 'Test']);
  */
-export async function executeSql(sql: string, params: any[] = []): Promise<any> {
+// Raw SQL rows have no fixed shape — each caller annotates the columns it
+// SELECTs (e.g. `(r: { id: string }) => ...`). pg's own QueryResultRow can't
+// be narrowed that way, so this one return stays `any` on purpose.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
+export async function executeSql(sql: string, params: unknown[] = []): Promise<any[]> {
   const pool = getPostgresPool();
   const result = await pool.query(sql, params);
   return result.rows;

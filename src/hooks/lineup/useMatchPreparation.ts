@@ -18,6 +18,8 @@ import { computeGameCount } from '@/systems/team-geometry';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import type { MatchPhase } from '@/api/queries/matches';
+import type { Lineup, MatchWithLeagueSettings } from '@/types/match';
+import type { Tables } from '@/types/database.types';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import { isDoubleDutySentinel, type PrepBlockedReason } from '@/utils/lineup';
 
@@ -28,9 +30,17 @@ export function usePreparationStatus() {
 
 interface MatchPreparationParams {
   lineupLocked: boolean;
-  opponentLineup: any;
+  /**
+   * Whether the OTHER side is locked — the second half of the "both locked →
+   * go to scoring" signal. Separate from `opponentLineup` because in a
+   * tiebreaker it is the opponent's TIEBREAK lineup lock (match_tiebreaker_lineups),
+   * while `opponentLineup` stays the match lineup that match prep reads.
+   */
+  opponentLocked: boolean;
+  /** The opponent's MATCH lineup — read by match prep (thresholds, Fargo). */
+  opponentLineup: Tables<'match_lineups'> | null | undefined;
   matchId: string | undefined;
-  matchData: any;
+  matchData: MatchWithLeagueSettings | undefined;
   isHomeTeam: boolean;
   lineupSize: number;
   handicapType: string;
@@ -84,12 +94,13 @@ interface MatchPreparationParams {
   player4Handicap?: number; // 5v5 only
   player5Handicap?: number; // 5v5 only
   setIsPreparingMatch?: (preparing: boolean) => void;
-  refetchLineups?: () => Promise<any>;
+  refetchLineups?: () => Promise<unknown>;
 }
 
 export function useMatchPreparation(params: MatchPreparationParams) {
   const {
     lineupLocked,
+    opponentLocked,
     opponentLineup,
     matchId,
     matchData,
@@ -142,7 +153,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
   useEffect(() => {
     // Gate: blockedReason covers completeness + sub resolution + Fargo consensus.
     if (blockedReason !== null && blockedReason !== undefined) return;
-    if (!lineupLocked || !opponentLineup?.locked) return;
+    if (!lineupLocked || !opponentLocked) return;
     if (matchPreparedRef.current) return;
     if (!matchId) return;
 
@@ -265,10 +276,10 @@ export function useMatchPreparation(params: MatchPreparationParams) {
           const homeLineupForFargo = isHomeTeam ? myLineup : opponentLineup;
           const awayLineupForFargo = isHomeTeam ? opponentLineup : myLineup;
           const homeRatings = [1, 2, 3, 4, 5]
-            .map((n) => (homeLineupForFargo as any)[`player${n}_handicap`])
+            .map((n) => (homeLineupForFargo as Record<string, unknown>)[`player${n}_handicap`])
             .filter((h): h is number => typeof h === 'number');
           const awayRatings = [1, 2, 3, 4, 5]
-            .map((n) => (awayLineupForFargo as any)[`player${n}_handicap`])
+            .map((n) => (awayLineupForFargo as Record<string, unknown>)[`player${n}_handicap`])
             .filter((h): h is number => typeof h === 'number');
 
           const totalGames = computeGameCount(
@@ -291,8 +302,10 @@ export function useMatchPreparation(params: MatchPreparationParams) {
           };
         } else {
           const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
-            myLineup as any,
-            opponentLineup,
+            // myLineup is built above from this hook's params with the Lineup
+            // shape; the opponent's row is a locked lineup (checked above).
+            myLineup as unknown as Lineup,
+            opponentLineup as Lineup,
             matchData.home_team_id,
             matchData.away_team_id,
             matchData.season_id,
@@ -324,11 +337,11 @@ export function useMatchPreparation(params: MatchPreparationParams) {
         const awayLineupSource = isHomeTeam ? opponentLineup : myLineup;
         const homeLineupArr = Array.from(
           { length: lineupSize },
-          (_, i) => (homeLineupSource as any)[`player${i + 1}_id`] as string,
+          (_, i) => (homeLineupSource as Record<string, unknown>)[`player${i + 1}_id`] as string,
         );
         const awayLineupArr = Array.from(
           { length: lineupSize },
-          (_, i) => (awayLineupSource as any)[`player${i + 1}_id`] as string,
+          (_, i) => (awayLineupSource as Record<string, unknown>)[`player${i + 1}_id`] as string,
         );
 
         const allSlots = generatePairings({
@@ -446,13 +459,13 @@ export function useMatchPreparation(params: MatchPreparationParams) {
         toast.error('Match setup failed — please try again.');
         setIsPreparingMatch?.(false);
         matchPreparedRef.current = false;
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error('Error preparing match', {
           error: error instanceof Error ? error.message : String(error),
           matchId,
           isHomeTeam,
         });
-        toast.error(`Failed to prepare match: ${error.message ?? 'unknown error'}`);
+        toast.error(`Failed to prepare match: ${(error as { message?: string }).message ?? 'unknown error'}`);
         setIsPreparingMatch?.(false);
         matchPreparedRef.current = false;
       }
@@ -463,6 +476,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
   }, [
     blockedReason,
     lineupLocked,
+    opponentLocked,
     opponentLineup,
     matchId,
     currentGamesCount,

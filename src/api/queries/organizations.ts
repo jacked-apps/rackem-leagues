@@ -89,13 +89,14 @@ export async function getOrganizationsByMember(
     return [];
   }
 
-  // Flatten the nested structure
-  return data.map((staff: any) => ({
+  // Flatten the nested structure. Cast: `position` is a text column narrowed
+  // to OrganizationWithPosition's union, and added_at is always filled by its now() default.
+  return data.map((staff) => ({
     ...staff.organizations,
     position: staff.position,
     staff_id: staff.id,
     added_at: staff.added_at,
-  }));
+  })) as OrganizationWithPosition[];
 }
 
 /**
@@ -124,7 +125,9 @@ export async function getOrganizationById(
     throw new Error(`Failed to fetch organization: ${error.message}`);
   }
 
-  return data;
+  // Visibility columns are plain text in the DB; CHECK constraints keep them
+  // to the union the app type declares.
+  return data as Organization;
 }
 
 /**
@@ -159,5 +162,6 @@ export async function getMemberPosition(
     throw new Error(`Failed to fetch member position: ${error.message}`);
   }
 
-  return data?.position || null;
+  // Plain text in the DB; a CHECK constraint keeps it to these three values.
+  return (data?.position || null) as 'owner' | 'admin' | 'league_rep' | null;
 }

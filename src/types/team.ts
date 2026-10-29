@@ -109,15 +109,16 @@ export interface TeamWithDetails extends Team {
  * Used when querying teams with captain, roster, and venue details
  */
 export interface TeamWithQueryDetails extends Team {
+  // null when the team has no captain (embedded FK join returns null).
   captain?: {
     id: string;
     first_name: string;
     last_name: string;
-    phone: string;
-    email: string;
+    phone: string | null;
+    email: string | null;
     system_player_number: number;
     bca_member_number: string | null;
-  };
+  } | null;
   team_players?: Array<{
     count?: number;
     member_id?: string;
@@ -130,6 +131,7 @@ export interface TeamWithQueryDetails extends Team {
       bca_member_number: string | null;
     };
   }>;
+  // null when the team has no home venue.
   venue?: {
     id: string;
     name: string;
@@ -137,7 +139,7 @@ export interface TeamWithQueryDetails extends Team {
     street_address?: string;
     city?: string;
     state?: string;
-  };
+  } | null;
 }
 
 /**

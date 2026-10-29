@@ -10,6 +10,7 @@
 
 import { supabase } from '@/supabaseClient';
 import type { League } from '@/types/league';
+import type { Tables } from '@/types/database.types';
 
 /**
  * League progress data structure
@@ -20,7 +21,7 @@ export interface LeagueProgress {
   teamCount: number;
   playerCount: number;
   scheduleExists: boolean;
-  activeSeason: any | null;
+  activeSeason: Tables<'seasons'> | null;
   completedWeeks: number;
   totalWeeks: number;
   /** True if this league has a season with status='scheduled' (wizard
@@ -62,7 +63,8 @@ export async function getLeaguesByOperator(operatorId: string): Promise<League[]
     throw new Error(`Failed to fetch leagues: ${error.message}`);
   }
 
-  return data || [];
+  // Narrow the text columns (day of week, game type, …) to League's unions.
+  return (data || []) as League[];
 }
 
 /**
@@ -115,7 +117,8 @@ export async function getLeagueById(leagueId: string): Promise<League> {
     throw new Error(`Failed to fetch league: ${error.message}`);
   }
 
-  return data;
+  // Narrow the text columns (day of week, game type, …) to League's unions.
+  return data as League;
 }
 
 /**

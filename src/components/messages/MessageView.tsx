@@ -94,7 +94,7 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
 
         // DMs have exactly 2 participants
         if (participants && participants.length === 2) {
-          const otherParticipant = participants?.find((p: any) => p.user_id !== currentUserId);
+          const otherParticipant = participants?.find((p) => p.user_id !== currentUserId);
           if (otherParticipant) {
             setOtherUserId(otherParticipant.user_id);
           }

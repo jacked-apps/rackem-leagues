@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import type { Json } from '@/types/database.types';
 
 /**
  * Report categories
@@ -31,8 +32,8 @@ export interface CreateReportParams {
   reportedUserId: string;
   category: ReportCategory;
   description: string;
-  evidenceSnapshot?: Record<string, any>;
-  contextData?: Record<string, any>;
+  evidenceSnapshot?: { [key: string]: Json | undefined };
+  contextData?: { [key: string]: Json | undefined };
 }
 
 /**
@@ -114,7 +115,12 @@ export async function createUserReport(params: CreateReportParams) {
 export async function updateReportStatus(params: UpdateReportStatusParams) {
   const { reportId, status, reviewNotes, reviewedBy } = params;
 
-  const updateData: Record<string, any> = {
+  // TODO(typed-client): this writes columns user_reports doesn't have
+  // (review_notes, reviewed_by) and allows 'investigating', which isn't a
+  // report_status — every call would fail. Nothing calls it today
+  // (useUpdateReportStatus has no callers; the report screens use
+  // utils/reportingQueries.updateReportStatus). Kept as-is.
+  const updateData: Record<string, string> = {
     status,
     reviewed_at: new Date().toISOString(),
   };

@@ -40,6 +40,7 @@ import {
 import { usePlayerHandicaps } from '@/api/hooks/usePlayerHandicaps';
 // getAllGames no longer needed - all game data comes from database
 import { getCompletedGamesCount } from '@/types/match';
+import type { MatchWithLeagueSettings } from '@/types/match';
 import { useMatchScoring } from '@/hooks/useMatchScoring';
 import { useMatchScoringMutations } from '@/hooks/useMatchScoringMutations';
 import { getPlayerStatsByPosition } from '@/hooks/usePlayerStatsByPosition';
@@ -231,7 +232,7 @@ function ScoreMatchBody() {
       : (leaguePrefs?.points_calculator_params as Record<string, unknown> | null | undefined) ?? null;
 
   // Get handicaps for roster players (for lineup change requests)
-  const rosterPlayerIds = teamRoster.map((tp: any) => tp.member_id).filter(Boolean);
+  const rosterPlayerIds = teamRoster.map((tp) => tp.member_id).filter(Boolean);
   const { handicaps: rosterHandicaps } = usePlayerHandicaps({
     playerIds: rosterPlayerIds,
     handicapType,
@@ -446,7 +447,7 @@ function ScoreMatchBody() {
       // Optimistically update the UI immediately
       const queryKey = [...queryKeys.matches.detail(matchId), 'leagueSettings'];
 
-      queryClient.setQueryData(queryKey, (oldData: any) => {
+      queryClient.setQueryData(queryKey, (oldData: MatchWithLeagueSettings | undefined) => {
         if (!oldData) return oldData;
         return {
           ...oldData,
@@ -464,9 +465,9 @@ function ScoreMatchBody() {
 
       // Don't refetch - realtime subscription will handle it for all users
       // This prevents race condition where refetch gets stale data
-    } catch (err: any) {
+    } catch (err) {
       logger.error('Error verifying scores', { error: err instanceof Error ? err.message : String(err) });
-      toast.error(`Failed to verify scores: ${err.message}`);
+      toast.error(`Failed to verify scores: ${(err as Error).message}`);
       // Rollback optimistic update on error
       queryClient.invalidateQueries({
         queryKey: [...queryKeys.matches.detail(matchId), 'leagueSettings'],
@@ -1441,9 +1442,9 @@ function ScoreMatchBody() {
 
             // Force refetch to update UI immediately (real-time subscription suppresses own updates)
             queryClient.invalidateQueries({ queryKey: queryKeys.matches.games(matchId || '') });
-          } catch (err: any) {
+          } catch (err) {
             logger.error('Error requesting reset', { error: err instanceof Error ? err.message : String(err) });
-            toast.error(`Failed to request reset: ${err.message}`);
+            toast.error(`Failed to request reset: ${(err as Error).message}`);
           }
         }}
         onClose={() => setEditingGame(null)}
@@ -1473,10 +1474,10 @@ function ScoreMatchBody() {
         requestingTeamName={isHomeTeam ? (match.away_team?.team_name || 'Opponent') : (match.home_team?.team_name || 'Opponent')}
         position={opponentLineup?.swap_position || 0}
         oldPlayerName={opponentLineup?.swap_position
-          ? getPlayerFullNameById((opponentLineup as any)[`player${opponentLineup.swap_position}_id`], players)
+          ? getPlayerFullNameById((opponentLineup as unknown as Record<string, string>)[`player${opponentLineup.swap_position}_id`], players)
           : ''}
         oldPlayerHandicap={opponentLineup?.swap_position
-          ? ((opponentLineup as any)[`player${opponentLineup.swap_position}_handicap`] ?? null)
+          ? ((opponentLineup as unknown as Record<string, number | null>)[`player${opponentLineup.swap_position}_handicap`] ?? null)
           : null}
         newPlayerName={opponentLineup?.swap_new_player_id
           ? getPlayerFullNameById(opponentLineup.swap_new_player_id, players)

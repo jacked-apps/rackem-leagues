@@ -92,7 +92,7 @@ export const PlayerManagement: React.FC = () => {
     queryKey: ['operatorPlayerStats', operatorId],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_operator_player_stats', {
-        p_org_id: operatorId,
+        p_org_id: operatorId!, // `enabled: !!operatorId` below guarantees it
       });
       if (error) throw error;
       return data as {

@@ -8,8 +8,9 @@
  */
 
 import { supabase } from '@/supabaseClient';
-import type { League, LeagueInsertData, DayOfWeek, GameType, HandicapVariant } from '@/types/league';
+import type { League, DayOfWeek, GameType, HandicapVariant } from '@/types/league';
 import type { SystemOverrides } from '@/types/systemOverrides';
+import type { Json, TablesInsert, TablesUpdate } from '@/types/database.types';
 
 /**
  * Parameters for creating a new league
@@ -59,7 +60,7 @@ export interface UpdateLeagueDayParams {
  * @throws Error if validation fails or database operation fails
  */
 export async function createLeague(params: CreateLeagueParams): Promise<League> {
-  const insertData: LeagueInsertData = {
+  const insertData: TablesInsert<'leagues'> = {
     organization_id: params.operatorId,
     game_type: params.gameType,
     day_of_week: params.dayOfWeek,
@@ -80,7 +81,8 @@ export async function createLeague(params: CreateLeagueParams): Promise<League> 
     throw new Error(`Failed to create league: ${error.message}`);
   }
 
-  return newLeague;
+  // DB text columns (game_type, day_of_week, status) narrow to the app's unions.
+  return newLeague as League;
 }
 
 /**
@@ -91,7 +93,7 @@ export async function createLeague(params: CreateLeagueParams): Promise<League> 
  * @throws Error if database operation fails
  */
 export async function updateLeague(params: UpdateLeagueParams): Promise<League> {
-  const updateData: Partial<League> = {};
+  const updateData: TablesUpdate<'leagues'> = {};
 
   if (params.gameType !== undefined) updateData.game_type = params.gameType;
   if (params.dayOfWeek !== undefined) updateData.day_of_week = params.dayOfWeek;
@@ -110,7 +112,8 @@ export async function updateLeague(params: UpdateLeagueParams): Promise<League> 
     throw new Error(`Failed to update league: ${error.message}`);
   }
 
-  return updatedLeague;
+  // DB text columns (game_type, day_of_week, status) narrow to the app's unions.
+  return updatedLeague as League;
 }
 
 /**
@@ -144,7 +147,8 @@ export async function deleteLeague(params: DeleteLeagueParams): Promise<void> {
  * Updates the day of week for a league in the database
  *
  * Used when operator changes the league schedule day.
- * Converts day name to numeric format (0-6) for database storage.
+ * Stores the lowercase day name ('wednesday') — the leagues_day_of_week_check
+ * constraint accepts nothing else.
  *
  * @param params - League ID and new day name
  * @returns The updated day of week as lowercase string
@@ -162,24 +166,12 @@ export async function updateLeagueDayOfWeek(
 ): Promise<DayOfWeek> {
   const { leagueId, newDay } = params;
 
-  // Convert day name to number (0 = Sunday, 6 = Saturday)
-  const dayMap: Record<string, number> = {
-    Sunday: 0,
-    Monday: 1,
-    Tuesday: 2,
-    Wednesday: 3,
-    Thursday: 4,
-    Friday: 5,
-    Saturday: 6,
-  };
-
-  const newDayNumber = dayMap[newDay];
   const newDayString = newDay.toLowerCase() as DayOfWeek;
 
   // Update the league's day_of_week in database
   const { error } = await supabase
     .from('leagues')
-    .update({ day_of_week: newDayNumber })
+    .update({ day_of_week: newDayString })
     .eq('id', leagueId);
 
   if (error) {
@@ -255,7 +247,7 @@ export async function updateLeagueSystemOverrides(params: {
 
   const { error } = await supabase
     .from('leagues')
-    .update({ system_overrides: params.overrides })
+    .update({ system_overrides: params.overrides as unknown as Json }) // jsonb column
     .eq('id', params.leagueId);
 
   if (error) {

@@ -27,7 +27,7 @@ import {
   unlockTiebreakLineup,
 } from '@/api/mutations/tiebreakerLineups';
 import { tiebreakChoices } from '@/utils/tiebreaker/tiebreakPicks';
-import type { Lineup } from '@/types/match';
+import type { Tables } from '@/types/database.types';
 import { logger } from '@/utils/logger';
 
 type SlotKey = `player${1 | 2 | 3 | 4 | 5}`;
@@ -40,7 +40,7 @@ interface TiebreakerLineupParams {
   /** Slots in the tiebreaker — the record's players_per_side. */
   slotCount: number;
   /** This side's MATCH lineup: the only source of players and handicaps. */
-  myMatchLineup: Lineup | undefined;
+  myMatchLineup: Tables<'match_lineups'> | null | undefined;
   /** Slot ids of the match lineup (lineupSlotIds) — double duty kept twice. */
   matchLineupIds: string[];
   /** The match's tiebreak game rows; the lock copies the order onto them. */

@@ -12,6 +12,7 @@ import { useMatchById } from '@/api/hooks/useMatches';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TeamNameLink } from '@/components/TeamNameLink';
+import type { MatchWithDetails } from '@/types';
 
 interface MatchDetailCardProps {
   /** Match ID to display */
@@ -53,7 +54,7 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
   const { data: match, isLoading, error } = useMatchById(matchId);
 
   // Helper: Determine match winner
-  const getWinner = (match: any) => {
+  const getWinner = (match: MatchWithDetails) => {
     // Check match_result field first (authoritative)
     if (match.match_result === 'home_win') return 'home';
     if (match.match_result === 'away_win') return 'away';

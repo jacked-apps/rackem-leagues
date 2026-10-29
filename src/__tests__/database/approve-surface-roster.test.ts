@@ -26,7 +26,7 @@ import {
   destroyOnboardingFixture,
   type OnboardingFixture,
 } from '@/test/onboardingFixtures';
-import type { PoolClient } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
 
 async function inTx(fn: (c: PoolClient) => Promise<void>): Promise<void> {
   const c = await getPostgresPool().connect();
@@ -45,12 +45,12 @@ async function setJwt(c: PoolClient, sub: string | null): Promise<void> {
   ]);
 }
 
-async function roster(c: PoolClient, teamId: string): Promise<any[]> {
+async function roster(c: PoolClient, teamId: string): Promise<QueryResultRow[]> {
   const res = await c.query(`SELECT get_team_roster_for_approver($1) AS r`, [teamId]);
   return res.rows[0].r;
 }
 
-async function feed(c: PoolClient): Promise<any[]> {
+async function feed(c: PoolClient): Promise<QueryResultRow[]> {
   const res = await c.query(`SELECT get_join_requests_for_approver() AS f`);
   return res.rows[0].f;
 }
@@ -66,7 +66,6 @@ describe('Approve surface Unit 1 — roster RPC + feed captain summary', () => {
   // case + the "captain only in teams.captain_id" robustness case).
   let phTeam: string | null = null;
   let phStaffUser: string | null = null;
-  let phStaffMember: string | null = null;
 
   // An outsider registered user (not captain, not staff of either fixture org).
   let outsiderUser: string | null = null;
@@ -88,7 +87,6 @@ describe('Approve surface Unit 1 — roster RPC + feed captain summary', () => {
 
     phFixture = await createOnboardingFixture({ captain: 'placeholder' });
     phTeam = phFixture.teamId;
-    phStaffMember = phFixture.staffMemberId;
     phStaffUser = phFixture.staffUserId;
 
     // An outsider: registered, and staff of neither fixture's organization.
@@ -183,7 +181,7 @@ describe('Approve surface Unit 1 — roster RPC + feed captain summary', () => {
         [phTeam, joinerUser, joinerMember]
       );
       await setJwt(c, phStaffUser);
-      const row = (await feed(c)).find((r) => r.team_id === phTeam);
+      const row = (await feed(c)).find((r) => r.team_id === phTeam)!;
       expect(row).toBeTruthy();
       expect(row.captain_is_placeholder).toBe(true);
       expect(typeof row.captain_name).toBe('string');
@@ -199,7 +197,7 @@ describe('Approve surface Unit 1 — roster RPC + feed captain summary', () => {
         [regTeam, joinerUser, joinerMember]
       );
       await setJwt(c, regCaptainUser);
-      const row = (await feed(c)).find((r) => r.team_id === regTeam);
+      const row = (await feed(c)).find((r) => r.team_id === regTeam)!;
       expect(row).toBeTruthy();
       expect(row.captain_is_placeholder).toBe(false);
       expect(row.captain_name.length).toBeGreaterThan(0);

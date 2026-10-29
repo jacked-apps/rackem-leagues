@@ -7,6 +7,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import type { Json } from '@/types/database.types';
 import type { LockedTeamPayout, LockedIndividualAward } from '../queries/seasonLockedPayouts';
 
 export interface LockSeasonPayoutsParams {
@@ -31,8 +32,9 @@ export async function lockSeasonPayouts(params: LockSeasonPayoutsParams): Promis
     app_fee: params.appFee,
     lo_cut_amount: params.loCutAmount,
     final_prize_pool: params.finalPrizePool,
-    team_payouts: params.teamPayouts,
-    individual_awards: params.individualAwards,
+    // jsonb columns: the generated types only know `Json`.
+    team_payouts: params.teamPayouts as unknown as Json,
+    individual_awards: params.individualAwards as unknown as Json,
     locked_by_member_id: params.lockedByMemberId ?? null,
   });
 

@@ -4,7 +4,7 @@
  * Purpose: Verify the wizard renders without crashing and basic UI elements are present.
  * This is a lightweight test that catches "oops, I broke the whole wizard" errors.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test/utils';
 import { SeasonCreationWizard } from '@/operator/SeasonCreationWizard';
@@ -12,8 +12,8 @@ import * as useOperatorIdModule from '@/api/hooks';
 
 // Mock the Supabase client with chainable query builder
 vi.mock('@/supabaseClient', () => {
-  const createChainableQuery = (finalData: any) => {
-    const chain: any = {
+  const createChainableQuery = (finalData: unknown) => {
+    const chain: Record<string, Mock> = {
       select: vi.fn(() => chain),
       eq: vi.fn(() => chain),
       gte: vi.fn(() => chain),
@@ -69,7 +69,7 @@ vi.spyOn(useOperatorIdModule, 'useOperatorId').mockReturnValue({
   data: { id: 'test-operator-id' },
   isLoading: false,
   error: null,
-} as any);
+} as unknown as ReturnType<typeof useOperatorIdModule.useOperatorId>);
 
 // Mock date-holidays package (used by holidayUtils)
 vi.mock('date-holidays', () => {

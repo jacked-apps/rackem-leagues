@@ -41,6 +41,7 @@ import { appendConfirmation, type ConfirmationResult } from '@/api/mutations/app
 import type { LineupPlayer } from '@/api/mutations/matchLineups';
 import type { SystemOverrides } from '@/types/systemOverrides';
 import { logger } from '@/utils/logger';
+import type { Json, TablesInsert } from '@/types/database.types';
 
 /** Parameters for {@link loSaveLineups}. */
 export interface LoSaveLineupsParams {
@@ -129,7 +130,8 @@ export async function loSaveLineups(params: LoSaveLineupsParams): Promise<void> 
     const row = buildLineupRow(matchId, side.teamId, side.players, side.modifier, lockedAt);
     const { error } = await supabase
       .from('match_lineups')
-      .upsert(row, { onConflict: 'match_id,team_id' });
+      // Built with dynamic `playerN_*` keys, so the row is typed at the call.
+      .upsert(row as TablesInsert<'match_lineups'>, { onConflict: 'match_id,team_id' });
     if (error) {
       throw new Error(`Failed to save LO lineup for team ${side.teamId}: ${error.message}`);
     }
@@ -221,8 +223,10 @@ export async function loSetupMatch(params: LoSetupMatchParams): Promise<void> {
     winCondition: params.winCondition,
     mechanism: params.mechanism,
     systemOverrides: params.systemOverrides,
-    homeTeamId: match.home_team_id,
-    awayTeamId: match.away_team_id,
+    // Non-null here: a bye (null team) has no saved lineup, so the lineup
+    // check above has already thrown for it.
+    homeTeamId: match.home_team_id!,
+    awayTeamId: match.away_team_id!,
     seasonId: match.season_id,
     gameType: params.gameType,
   });
@@ -230,8 +234,9 @@ export async function loSetupMatch(params: LoSetupMatchParams): Promise<void> {
   // 4. Transactional prep: thresholds + game rows, status → in_progress.
   const { error: rpcErr } = await supabase.rpc('prep_match', {
     p_match_id: matchId,
-    p_thresholds: payload.thresholds,
-    p_game_rows: payload.gameRows,
+    // jsonb args: the generated types only know `Json`.
+    p_thresholds: payload.thresholds as unknown as Json,
+    p_game_rows: payload.gameRows as unknown as Json,
   });
   if (rpcErr) {
     throw new Error(`prep_match failed: ${rpcErr.message}`);

@@ -48,8 +48,8 @@ interface QuestionConfig {
   placeholder?: string;
   formatter?: (value: string) => string;
   validator?: (value: string) => { isValid: boolean; error?: string };
-  getValue: () => any;
-  setValue: (value: any) => void;
+  getValue: () => string;
+  setValue: (value: string) => void;
   infoTitle?: string;
   infoContent?: React.ReactNode;
   choices?: Array<{
@@ -373,7 +373,7 @@ export const getQuestionDefinitions = (
                         try {
                           leagueEmailSchema.parse(value);
                           e.target.setCustomValidity('');
-                        } catch (error) {
+                        } catch {
                           e.target.setCustomValidity('Please enter a valid email address');
                         }
                       } else {
@@ -397,7 +397,7 @@ export const getQuestionDefinitions = (
                     try {
                       leagueEmailSchema.parse(state.leagueEmail);
                       return null;
-                    } catch (error) {
+                    } catch {
                       return (
                         <p className="mt-1 text-sm text-destructive">
                           Please enter a valid email address
@@ -514,7 +514,7 @@ export const getQuestionDefinitions = (
                         try {
                           leaguePhoneSchema.parse(value);
                           e.target.setCustomValidity('');
-                        } catch (error) {
+                        } catch {
                           e.target.setCustomValidity('Please enter a valid phone number');
                         }
                       } else {
@@ -538,7 +538,7 @@ export const getQuestionDefinitions = (
                     try {
                       leaguePhoneSchema.parse(state.leaguePhone);
                       return null;
-                    } catch (error) {
+                    } catch {
                       return (
                         <p className="mt-1 text-sm text-destructive">
                           Please enter a valid phone number

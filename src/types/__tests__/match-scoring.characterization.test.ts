@@ -55,8 +55,8 @@ function game(overrides: Partial<MatchGame>): MatchGame {
     away_action: 'racks',
     break_and_run: false,
     golden_break: false,
-    confirmed_by_home: true,
-    confirmed_by_away: true,
+    confirmed_by_home: 'confirmer-id',
+    confirmed_by_away: 'confirmer-id',
     is_tiebreaker: false,
     break_fouled: false,
     runout: false,
@@ -96,7 +96,7 @@ describe('getTeamStats — characterization', () => {
 
   it('skips games not confirmed by home', () => {
     const games = makeMap([
-      game({ game_number: 1, winner_team_id: HOME, confirmed_by_home: false }),
+      game({ game_number: 1, winner_team_id: HOME, confirmed_by_home: null }),
       game({ game_number: 2, winner_team_id: HOME }),
     ]);
     expect(getTeamStats(HOME, games)).toEqual({ wins: 1, losses: 0 });
@@ -104,7 +104,7 @@ describe('getTeamStats — characterization', () => {
 
   it('skips games not confirmed by away', () => {
     const games = makeMap([
-      game({ game_number: 1, winner_team_id: HOME, confirmed_by_away: false }),
+      game({ game_number: 1, winner_team_id: HOME, confirmed_by_away: null }),
       game({ game_number: 2, winner_team_id: HOME }),
     ]);
     expect(getTeamStats(HOME, games)).toEqual({ wins: 1, losses: 0 });
@@ -131,22 +131,22 @@ describe('calculatePoints — characterization (3v3 BCA points scoring)', () => 
       games_to_lose: 8,
     };
 
-    it('wins exactly games_to_win (10) → 0 points (just at win threshold)', () => {
+    it('wins exactly games_to_win (10) → +1 point (10 - par 9)', () => {
       const games = makeMap(
         Array.from({ length: 10 }, (_, i) =>
           game({ game_number: i + 1, winner_team_id: HOME })
         )
       );
-      expect(calculatePoints(HOME, thresholds, games)).toBe(0);
+      expect(calculatePoints(HOME, thresholds, games)).toBe(1);
     });
 
-    it('wins above games_to_win (12) → +2 points (12 - 10)', () => {
+    it('wins above games_to_win (12) → +3 points (12 - par 9)', () => {
       const games = makeMap(
         Array.from({ length: 12 }, (_, i) =>
           game({ game_number: i + 1, winner_team_id: HOME })
         )
       );
-      expect(calculatePoints(HOME, thresholds, games)).toBe(2);
+      expect(calculatePoints(HOME, thresholds, games)).toBe(3);
     });
 
     it('wins exactly games_to_tie (9) → 0 points (in tie range)', () => {

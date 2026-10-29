@@ -75,7 +75,6 @@ describe('isMinor', () => {
   });
 });
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // Surface the fake-date constant so the file remains self-documenting
 // even when read in isolation by future maintainers.
 const _ = FIXED_TODAY;

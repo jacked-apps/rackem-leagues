@@ -30,8 +30,9 @@ interface TiebreakerScoreboardProps {
     {
       id: string;
       winner_team_id: string | null;
-      confirmed_by_home: boolean;
-      confirmed_by_away: boolean;
+      /** Confirmer's member id per side; null = not confirmed yet */
+      confirmed_by_home: string | null;
+      confirmed_by_away: string | null;
     }
   >;
   /** Is current user on home team? */

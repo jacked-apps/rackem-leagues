@@ -10,9 +10,18 @@
  * not by checking if lineup ID exists.
  */
 
+import type { MatchWithLeagueSettings } from '@/types/match';
+import type { Tables } from '@/types/database.types';
+
+/** The slot + lock fields a match lineup and a tiebreak lineup share. */
+type LineupSlotsAndLock = Pick<
+  Tables<'match_lineups'>,
+  'player1_id' | 'player2_id' | 'player3_id' | 'player4_id' | 'player5_id' | 'locked'
+>;
+
 interface OpponentStatusParams {
   /** Match data */
-  matchData: any;
+  matchData: MatchWithLeagueSettings | undefined;
   /** Is current user on home team? */
   isHomeTeam: boolean;
   /**
@@ -21,7 +30,7 @@ interface OpponentStatusParams {
    * so the same counting applies. (Tiebreak picks used to be read off the
    * 19-21 game rows here; the tiebreak record replaced that.)
    */
-  opponentLineup: any;
+  opponentLineup: LineupSlotsAndLock | null | undefined;
   /** Player count (3 for 3v3, 5 for 5v5) */
   playerCount?: number;
 }
@@ -30,7 +39,7 @@ export type OpponentStatus = 'absent' | 'choosing' | 'ready';
 
 interface OpponentStatusResult {
   /** Opponent team info */
-  opponentTeam: any;
+  opponentTeam: MatchWithLeagueSettings['home_team'] | null;
   /** Opponent status: absent, choosing, or ready */
   status: OpponentStatus;
   /** Detailed selection status string for display */

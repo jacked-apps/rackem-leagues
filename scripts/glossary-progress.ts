@@ -37,7 +37,7 @@ function parseEntries(content: string, file: string): EntryRecord[] {
   const records: EntryRecord[] = [];
   // Split on the start of each top-level entry. The lookahead keeps the
   // delimiter with the following chunk.
-  const segments = content.split(/(?=^  ['"]?[a-zA-Z0-9_-]+['"]?:\s*\{)/m);
+  const segments = content.split(/(?=^ {2}['"]?[a-zA-Z0-9_-]+['"]?:\s*\{)/m);
   for (const seg of segments) {
     const slugMatch = seg.match(/slug:\s*['"]([^'"]+)['"]/);
     const nameMatch = seg.match(/canonicalName:\s*['"]([^'"]+)['"]/);

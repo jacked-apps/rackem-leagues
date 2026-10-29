@@ -25,55 +25,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import type { WizardStepProps } from '@/components/wizard';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
-
-type SourceClass =
-  | 'tested_preset_3v3'
-  | 'tested_preset_5v5'
-  | 'fargo_start_points'
-  | 'fargo_games_won'
-  | 'manual_entry';
-
-function classifyThresholdSource(formData: LeagueWizardFormData): SourceClass {
-  const handicapType = formData['handicap-system'];
-  const winCondition = formData['win-condition'] ?? 'games';
-  const mechanism = formData['mechanism'];
-  const lineupSize = formData['lineup-size'];
-  const matchFormat = formData['match-format'];
-
-  // Tested Preset: BCA 3v3 (lineup=3, points handicap, double_round_robin)
-  if (
-    lineupSize === 3 &&
-    matchFormat === 'double_round_robin' &&
-    handicapType === 'points' &&
-    mechanism === 'extra_games'
-  ) {
-    return 'tested_preset_3v3';
-  }
-
-  // Tested Preset: BCA 5v5 (lineup=5, percentage, single_round_robin)
-  if (
-    lineupSize === 5 &&
-    matchFormat === 'single_round_robin' &&
-    handicapType === 'percentage' &&
-    mechanism === 'extra_games'
-  ) {
-    return 'tested_preset_5v5';
-  }
-
-  // Fargo + start_points + win_condition='points' (start-points-credit flow)
-  if (handicapType === 'fargo' && (mechanism === 'start_points' || winCondition === 'points')) {
-    return 'fargo_start_points';
-  }
-
-  // Fargo + games-won + extra_games (the formula from Unit 3.2)
-  if (handicapType === 'fargo' && winCondition === 'games') {
-    return 'fargo_games_won';
-  }
-
-  // Anything else: no calibrated source — captains adjust at lineup
-  // lock or the LO opts into mechanism='none'.
-  return 'manual_entry';
-}
+import { classifyThresholdSource, type SourceClass } from './thresholdSourceClassifier';
 
 interface SourceDescription {
   badge: string;
@@ -180,5 +132,4 @@ export function ThresholdSourceStep({
 }
 
 // Re-export for tests + useCreateLeagueV2 to consume.
-export { classifyThresholdSource };
 export type { SourceClass };

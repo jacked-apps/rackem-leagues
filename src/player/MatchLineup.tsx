@@ -190,7 +190,7 @@ function MatchLineupBody() {
 
   // Extract players from team details query
   const playersWithoutHandicaps: Omit<Player, 'handicap'>[] =
-    teamDetailsQuery.data?.team_players?.map((tp: any) => ({
+    teamDetailsQuery.data?.team_players?.map((tp) => ({
       id: tp.members.id,
       nickname: tp.members.nickname,
       first_name: tp.members.first_name,
@@ -217,7 +217,7 @@ function MatchLineupBody() {
 
   // Extract opponent players from opponent team details query
   const opponentPlayersWithoutHandicaps: Omit<Player, 'handicap'>[] =
-    opponentTeamDetailsQuery.data?.team_players?.map((tp: any) => ({
+    opponentTeamDetailsQuery.data?.team_players?.map((tp) => ({
       id: tp.members.id,
       nickname: tp.members.nickname,
       first_name: tp.members.first_name,
@@ -454,6 +454,8 @@ function MatchLineupBody() {
     onLockedChange: lineup.setLineupLocked,
     matchData,
     refetchLineups: lineupsQuery.refetch,
+    // Tiebreaker lock/unlock must not touch players, handicaps or team bonus.
+    isTiebreakerMode,
   });
 
   // Note: Lineups are now auto-created by database trigger when match is inserted
@@ -607,7 +609,8 @@ function MatchLineupBody() {
   // the match, which is long done, so it does not apply.
   useMatchPreparation({
     lineupLocked: isTiebreakerMode ? !!myTiebreakLineup?.locked : lineup.lineupLocked,
-    opponentLineup: isTiebreakerMode ? opponentTiebreakLineup : opponentLineup,
+    opponentLocked: isTiebreakerMode ? !!opponentTiebreakLineup?.locked : !!opponentLineup?.locked,
+    opponentLineup,
     matchId,
     matchData,
     isHomeTeam,
@@ -1087,7 +1090,7 @@ function MatchLineupBody() {
               leagueId={matchData?.league?.id}
               hidePlayerNumber
               hideHandicap={isTiebreakerMode}
-              captainId={teamDetailsQuery.data?.captain_id}
+              captainId={teamDetailsQuery.data?.captain_id ?? undefined}
             />
 
             {/* Fargo manual entry banner */}

@@ -261,17 +261,19 @@ flatten:
 
 A common pattern: compute a side's match points once at match end from its final
 games-won, rather than accumulating per-game. Per side, two `match_end` triggers
-reproduce a three-band points formula with no compound condition, no nesting, and
-no `else`:
+reproduce a linear points line through `par` (the games-won total that scores
+exactly 0) with no compound condition, no nesting, and no `else`:
 
 ```
-type: match_end   IF home_wins > winTarget   THEN home_points = (home_wins - winTarget) * multiplier
-type: match_end   IF home_wins < tieTarget   THEN home_points = (home_wins - tieTarget) * multiplier
-(tie band: neither fires → home_points keeps its default 0)
+type: match_end   IF home_wins > par   THEN home_points = (home_wins - par) * multiplier
+type: match_end   IF home_wins < par   THEN home_points = (home_wins - par) * multiplier
+(at par: neither fires → home_points keeps its default 0)
 ```
 
-(Per-side: declare the matching pair for the away side.) The win/tie targets are
-thresholds; the tie band is the default-0 of `home_points`.
+(Per-side: declare the matching pair for the away side.) `par` is a threshold:
+the side's tie target when a tie is possible, else its win target. Example, tie
+possible with tie target 9 / win target 10: 10–8 → +1 / −1; 12–6 → +3 / −3;
+9–9 → 0 / 0. Being exactly at par is the default-0 of `home_points`.
 
 ## The per-game allocator stays a distinct primitive
 

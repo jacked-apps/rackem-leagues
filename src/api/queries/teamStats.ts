@@ -102,7 +102,7 @@ export async function fetchTeamStats(seasonId: string): Promise<TeamWithPlayerSt
   });
 
   // Populate roster with all team players (zero stats initially)
-  teamPlayers?.forEach((tp: any) => {
+  teamPlayers?.forEach((tp) => {
     const playerMap = teamRosterMap.get(tp.team_id);
     if (playerMap && tp.members) {
       playerMap.set(tp.member_id, {
