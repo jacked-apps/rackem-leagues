@@ -39,10 +39,12 @@ export const HOME_TEAM_COLORS = {
   borderDark: 'border-home-team-border-strong',
   /** Body text (scores, player rows) on the team background */
   text: 'text-home-team-foreground',
-  /** Secondary labels ("Wins", column headers) — the panel's text, faded */
-  mutedText: 'text-home-team-foreground/70',
-  /** Tappable names on the panel. Underlined so "pressable" never rests on colour alone. */
-  link: 'text-home-team-link hover:text-home-team-link underline underline-offset-2',
+  /** Secondary labels ("Wins", column headers). Standard: the page's muted
+   *  text, as always; under a custom scheme: the panel's own text, faded. */
+  mutedText: 'text-muted-foreground [[data-palette]_&]:text-home-team-foreground/70',
+  /** Tappable names on the panel — custom schemes only (standard keeps the
+   *  links' own colours). Underlined so "pressable" never rests on colour alone. */
+  link: '[[data-palette]_&]:text-home-team-link [[data-palette]_&]:hover:text-home-team-link [[data-palette]_&]:underline [[data-palette]_&]:underline-offset-2',
   /** Header/title text color */
   headerText: 'text-home-team-heading',
   /** Threshold/accent text color — also the team's colour on a plain background */
@@ -66,10 +68,12 @@ export const AWAY_TEAM_COLORS = {
   borderDark: 'border-away-team-border-strong',
   /** Body text (scores, player rows) on the team background */
   text: 'text-away-team-foreground',
-  /** Secondary labels ("Wins", column headers) — the panel's text, faded */
-  mutedText: 'text-away-team-foreground/70',
-  /** Tappable names on the panel. Underlined so "pressable" never rests on colour alone. */
-  link: 'text-away-team-link hover:text-away-team-link underline underline-offset-2',
+  /** Secondary labels ("Wins", column headers). Standard: the page's muted
+   *  text, as always; under a custom scheme: the panel's own text, faded. */
+  mutedText: 'text-muted-foreground [[data-palette]_&]:text-away-team-foreground/70',
+  /** Tappable names on the panel — custom schemes only (standard keeps the
+   *  links' own colours). Underlined so "pressable" never rests on colour alone. */
+  link: '[[data-palette]_&]:text-away-team-link [[data-palette]_&]:hover:text-away-team-link [[data-palette]_&]:underline [[data-palette]_&]:underline-offset-2',
   /** Header/title text color */
   headerText: 'text-away-team-heading',
   /** Threshold/accent text color — also the team's colour on a plain background */

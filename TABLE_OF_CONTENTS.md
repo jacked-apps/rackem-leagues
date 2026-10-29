@@ -556,6 +556,8 @@ how to add a new test, demo recording, cleanup model).
 | `themes/pastel.css` | Pastel scheme (light-based) — blush page, lavender buttons, periwinkle home / peach away |
 | `themes/strawberry-cream.css` | Strawberry & Cream scheme (light-based) — cream page, soft strawberry buttons, strawberry home / cream away |
 | `components/CustomSchemePicker.tsx` | Custom colour-scheme dropdown shown by `ThemeToggle` while "Custom" is selected (non-production) |
+| `themes/palettes.test.ts` | Guard: every scheme CSS rule is scoped to its own `data-palette` (so a scheme can never change Light / Dark / other schemes) + every listed scheme has its imported file |
+| `components/ThemeToggle.test.tsx` | Light / Dark / System after a custom scheme clear it completely; Custom opens on the first scheme |
 
 ---
 
