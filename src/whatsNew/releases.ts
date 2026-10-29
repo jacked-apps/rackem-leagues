@@ -107,6 +107,18 @@ export const RELEASES: Release[] = [
     summary: 'My Stats, and early 8s on the scoring page',
     entries: [
       {
+        text: 'Setting your tiebreaker order is simpler. The order starts empty, the list only has the players who played the match, and anyone on the team can set it, not just the captain. Your match lineup stays locked the whole time.',
+        kind: 'improvement',
+      },
+      {
+        text: 'If your team changed its order for a tiebreaker and won, some of the winners were not getting that win counted toward their handicap. Every player on the winning side now gets credit, whatever order you played in.',
+        kind: 'fix',
+      },
+      {
+        text: 'Tiebreaker games now keep their real results. Before, all three were recorded as wins for the team that won the tiebreaker, even a game they lost or never played.',
+        kind: 'fix',
+      },
+      {
         text: 'Standings points were being scored wrong this season. When a tie was possible, the winning team got one point less than the league scoresheet gives — and a tiebreaker could make it worse, even leaving a win at −1. Every completed match has been rescored to match the scoresheet, and new matches score correctly. Nobody’s wins or games changed.',
         kind: 'fix',
       },
