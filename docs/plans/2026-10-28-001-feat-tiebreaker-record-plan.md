@@ -3,8 +3,8 @@
 Date: 2026-10-28. Branch: `audit/tiebreaker-phase3` (branch off for
 implementation). Status: **ALL UNITS BUILT on `feat/tiebreaker-record` (2026-10-29)** —
 Units 1–5 and 7 in code, Unit 6 decided as a release step (release outside
-Sunday play). 7b's risky half is covered by the open lint stack (PR #293). Ed tested a
-real tie end to end. No PR yet.
+Sunday play). Ed tested a
+real tie end to end. **MERGED as PR #305 (2026-10-29), on staging; production release is Jack's.** 7b risky half done on `chore/match-query-casts`.
 
 Requirements: `docs/brainstorms/2026-10-28-tiebreaker-requirements.md`
 Evidence: `docs/audits/2026-10-28-tiebreaker-audit.md`
@@ -488,6 +488,14 @@ encode that the real shape is bigger: `MyMatchRow`
 >   there), so the two are complementary. Once the stack is on main and this
 >   branch is rebased onto it, removing the six casts becomes meaningful.** `MatchWithVenueDetails` left as is
 >   (its required `street_address` is a real contract difference).
+> - **7b risky half — DONE (2026-10-29, `chore/match-query-casts`).** With the
+>   client typed, removing the casts surfaced three real gaps: `teams.status`
+>   is nullable but the embed type said it never was; the team-schedule query
+>   never fetched `week_type`; the hoisted `scheduled_date` was `null` where the
+>   type said `undefined`. All fixed. The fields the database types more
+>   loosely (CHECK-constrained text, the JSON snapshot) are narrowed in one
+>   helper, `src/api/queries/matchRows.ts`, and `matchRowNarrowing.db.test.ts`
+>   fails if the app's status lists drift from the constraints.
 
 ---
 
