@@ -22,6 +22,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
+import { useMatchTiebreaker } from '@/api/hooks/useMatchTiebreaker';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -198,6 +199,9 @@ function ScoreMatchBody() {
 
   // Resolved preferences — lazy-migrates legacy leagues on first access
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
+
+  // Tiebreak record — its lineups' lock flags gate tiebreaker mode below.
+  const { data: tiebreakRecord } = useMatchTiebreaker(matchId);
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
   // Resolve the active points calculator name with live-prefs fallback.
@@ -918,18 +922,23 @@ function ScoreMatchBody() {
   // Filter games based on mode (normal vs tiebreaker)
   // Only switch to tiebreaker mode when ALL conditions are met:
   // 1. Match result is 'tie'
-  // 2. Both lineups are locked (players selected)
+  // 2. Both TIEBREAK lineups are locked (captains chose their order)
   // 3. Tiebreaker games exist
-  // This ensures MatchEndVerification stays mounted during tie verification
+  // This ensures MatchEndVerification stays mounted during tie verification.
+  //
+  // (2) reads the tiebreak record, NOT the match lineups. The match lineups
+  // are never unlocked for a tiebreaker any more (requirement D0), so their
+  // lock flags are true throughout and would flip this on the instant the
+  // tiebreak games exist — before anyone had picked an order.
   const tiebreakerGamesExist = Array.from(gameResults.values()).some(g => g.is_tiebreaker);
-  const bothLineupsLocked = homeLineup?.locked && awayLineup?.locked;
+  const tiebreakLineups = tiebreakRecord?.match_tiebreaker_lineups ?? [];
+  const bothLineupsLocked =
+    tiebreakLineups.length >= 2 && tiebreakLineups.every((l) => l.locked);
   const isTiebreakerMode = match.match_result === 'tie' && bothLineupsLocked && tiebreakerGamesExist;
+  // Tiebreak games are picked by their flag, not by game number, so any
+  // lineup geometry (not just 3v3's 19-21) works.
   const filteredGameResults = isTiebreakerMode
-    ? new Map(
-        Array.from(gameResults.entries()).filter(([gameNumber]) =>
-          gameNumber >= 19 && gameNumber <= 21
-        )
-      )
+    ? new Map(Array.from(gameResults.entries()).filter(([, game]) => game.is_tiebreaker))
     : gameResults;
 
   // Lineup size and win condition come from the resolved preferences.
@@ -1073,7 +1082,7 @@ function ScoreMatchBody() {
           tiebreaker stays separate (different game-set semantics), all
           regular play flows through UnifiedScoreboard which adapts via
           win_condition + points_calculator + lineup_size from the snapshot. */}
-      {isTiebreakerMode ? (
+      {isTiebreakerMode && tiebreakRecord ? (
         <TiebreakerScoreboard
           match={{
             ...match,
@@ -1085,6 +1094,7 @@ function ScoreMatchBody() {
           onVerify={handleVerify}
           isVerifying={isVerifying}
           gameType={gameType}
+          gamesNeeded={tiebreakRecord.games_needed}
         />
       ) : (
         <UnifiedScoreboard

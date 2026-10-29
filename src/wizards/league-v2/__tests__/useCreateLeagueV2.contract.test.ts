@@ -84,7 +84,7 @@ describe('useCreateLeagueV2 contract — preset paths', () => {
     expect(fields.points_calculator).toBe('accumulate_with_milestone_jumps');
     expect(fields.win_condition).toBe('games');
     expect(fields.mechanism).toBe('extra_games');
-    expect(fields.tiebreaker_format).toBe('accept_tie');
+    expect(fields.tiebreaker_format).toBe('best_of_3_short_race');
   });
 
   it('fargo_5v5 preset writes Fargo 10-7 preferences', () => {
@@ -109,8 +109,7 @@ describe('useCreateLeagueV2 contract — custom path with each calculator', () =
     'win-condition': 'games',
     'mechanism': 'extra_games',
     'standings-sort': 'wins_first',
-    'tiebreaker': 'accept_tie',
-  };
+      };
 
   it('custom + linear_above_threshold writes points_calculator correctly', () => {
     const fields = resolvePrefFields({
@@ -165,8 +164,7 @@ describe('useCreateLeagueV2 contract — ThresholdSourceStep override', () => {
       'mechanism': 'extra_games', // would write extra_games...
       'threshold-source': 'unhandicapped', // ...but this overrides to 'none'
       'standings-sort': 'wins_first',
-      'tiebreaker': 'accept_tie',
-    });
+          });
     expect(fields.mechanism).toBe('none');
   });
 
@@ -182,8 +180,7 @@ describe('useCreateLeagueV2 contract — ThresholdSourceStep override', () => {
       'win-condition': 'points',
       'mechanism': 'start_points',
       'standings-sort': 'wins_first',
-      'tiebreaker': 'accept_tie',
-    });
+          });
     expect(fields.mechanism).toBe('start_points');
   });
 });
@@ -205,8 +202,7 @@ describe('useCreateLeagueV2 contract — user\'s real upcoming league', () => {
       'win-condition': 'games',
       'mechanism': 'extra_games',
       'standings-sort': 'wins_first',
-      'tiebreaker': 'accept_tie',
-    });
+          });
     expect(fields.lineup_size).toBe(5);
     expect(fields.handicap_type).toBe('fargo');
     expect(fields.win_condition).toBe('games');

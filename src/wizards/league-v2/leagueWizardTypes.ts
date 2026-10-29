@@ -58,7 +58,7 @@ export interface LeagueWizardFormData {
   'mechanism'?: string;
   /** Step: StandingsSortStep — preset key for the sort priority list */
   'standings-sort'?: string;
-  /** Step: TiebreakerStep — combined trigger+format key (accept_tie / best_of_3 / single_short_race) */
+  /** Step: TiebreakerStep — combined trigger+format key (best_of_3 / single_short_race / manual) */
   'tiebreaker'?: string;
   /** Step: PairingFormatStep — race_length (only when pairing-format === 'race_to_n') */
   'race-length'?: number;

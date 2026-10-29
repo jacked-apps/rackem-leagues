@@ -14,7 +14,7 @@
  *   - 'none': No handicapping. Returns null.
  */
 
-import { fetchPlayerGameHistory } from '@/api/queries/matchGames';
+import { fetchHandicapHistory } from '@/api/queries/matchGames';
 import { supabase } from '@/supabaseClient';
 import { logger } from '@/utils/logger';
 
@@ -60,7 +60,7 @@ export async function calculatePlayerHandicap(
   }
 
   try {
-    const games = await fetchPlayerGameHistory(playerId, gameType, leagueId, gameLimit);
+    const games = await fetchHandicapHistory(playerId, gameType, leagueId, gameLimit);
 
     // Not enough history — fall back to the player's starting handicap.
     if (!games || games.length < 15) {
@@ -81,12 +81,18 @@ export async function calculatePlayerHandicap(
       return { value: player?.starting_handicap_5v5 ?? 40, stale: false };
     }
 
-    const wins = games.filter((g) => g.winner_player_id === playerId).length;
-    const gamesPlayed = games.length;
+    // Requirement D1 (anti-sandbagging): wins include credited tiebreak wins;
+    // losses are regular losses ONLY — the history already dropped every
+    // tiebreak loss, so each loss here is a real regular-game loss.
+    const wins = games.filter((g) => g.won).length;
+    const losses = games.filter((g) => !g.won).length;
+    const gamesPlayed = wins + losses;
 
     if (handicapType === 'points') {
+      // A flat 6 games a week is DELIBERATE (D1): counting real weeks was
+      // tried and failed when tiebreak weeks ran to 7 games. Do not "fix" it.
       const weeksPlayed = gamesPlayed / 6;
-      const rawHandicap = (wins - (gamesPlayed - wins)) / weeksPlayed;
+      const rawHandicap = (wins - losses) / weeksPlayed;
       return { value: roundToPointsHandicap(rawHandicap, handicapVariant), stale: false };
     }
 

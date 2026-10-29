@@ -1,148 +1,118 @@
 /**
- * @fileoverview Match Game Query Functions
+ * @fileoverview Handicap game history — the games a player's handicap is
+ * computed from.
  *
- * Pure data fetching functions for match_games table queries.
- * These functions return plain data and throw errors (no loading states).
- * Used by handicap calculations and game history tracking.
+ * Used by calculatePlayerHandicap and the player-profile game counts.
+ * (Renamed from `fetchPlayerGameHistory`: a same-named function in
+ * playerGameHistory.ts has the OPPOSITE tiebreaker semantics, and the clash
+ * produced the central wrong claim in the tiebreaker audit.)
+ *
+ * TIEBREAKER HANDICAP RULE (Ed's anti-sandbagging rule, requirement D1):
+ * a tiebreak WIN counts, a tiebreak LOSS is as if the game never happened.
+ * Where the credit comes from (Unit 5 of
+ * docs/plans/2026-10-28-001-feat-tiebreaker-record-plan.md):
+ * - A tiebreaker WITH a tiebreak record — credited from the record
+ *   (src/api/queries/tiebreakSlots.ts). Its game rows are skipped here, so a
+ *   player who played and won gains exactly one win, never two.
+ * - A tiebreaker from BEFORE the record existed (D5: no backfill) — its game
+ *   rows were overwritten as won by the winning side, so the old row rule
+ *   still applies to them: keep wins, drop losses.
  */
 
 import { supabase } from '@/supabaseClient';
-import type { Tables } from '@/types/database.types';
+import { fetchTiebreakSlots } from './tiebreakSlots';
 
-/**
- * Match game record with winner information
- */
-export interface MatchGame {
-  id: string;
-  match_id: string;
-  game_number: number;
-  home_position: number; // Which position (1-5) from home lineup plays
-  away_position: number; // Which position (1-5) from away lineup plays
-  home_player_id: string | null;
-  away_player_id: string | null;
-  winner_team_id: string | null;
-  winner_player_id: string | null;
-  home_action: 'breaks' | 'racks';
-  away_action: 'breaks' | 'racks';
-  break_and_run: boolean;
-  golden_break: boolean;
-  confirmed_by_home: string | null; // member id of the confirmer, not a flag
-  confirmed_by_away: string | null;
-  confirmed_at: string | null;
-  is_tiebreaker: boolean;
-  created_at: string;
-  updated_at: string;
+type GameType = 'eight_ball' | 'nine_ball' | 'ten_ball';
+
+/** One game in a player's handicap history. */
+export interface HandicapGame {
+  /** created_at — orders the history, newest first. */
+  at: string;
+  won: boolean;
+  /** True for a tiebreak game; its losses are dropped before counting. */
+  tiebreak: boolean;
+}
+
+/** Raw history in one scope: completed regular games + tiebreak slots, newest first. */
+async function scopedHistory(
+  playerId: string,
+  gameType: GameType,
+  leagueId: string | undefined,
+  fetchLimit: number,
+): Promise<HandicapGame[]> {
+  // The league-scoped and unscoped queries differ only by the embedded
+  // league filter. Kept as two literal selects so supabase-js can type them.
+  const base = leagueId
+    ? supabase
+        .from('match_games')
+        .select('match_id, created_at, winner_player_id, is_tiebreaker, match:matches!inner(season:seasons!inner(league_id))')
+        .eq('match.season.league_id', leagueId)
+    : supabase.from('match_games').select('match_id, created_at, winner_player_id, is_tiebreaker');
+  const { data, error } = await base
+    .or(`home_player_id.eq.${playerId},away_player_id.eq.${playerId}`)
+    .not('winner_player_id', 'is', null) // Only completed games
+    .eq('game_type', gameType)
+    .order('created_at', { ascending: false })
+    .limit(fetchLimit);
+  if (error) throw new Error(`Failed to fetch player game history: ${error.message}`);
+  const rows = data ?? [];
+
+  // Tiebreak rows whose match has a record are credited from the record instead.
+  const tiebreakMatchIds = [...new Set(rows.filter((g) => g.is_tiebreaker).map((g) => g.match_id))];
+  let recorded = new Set<string>();
+  if (tiebreakMatchIds.length > 0) {
+    const { data: records, error: recErr } = await supabase
+      .from('match_tiebreakers')
+      .select('match_id')
+      .in('match_id', tiebreakMatchIds);
+    if (recErr) throw new Error(`Failed to fetch tiebreak records: ${recErr.message}`);
+    recorded = new Set((records ?? []).map((r) => r.match_id));
+  }
+
+  const games: HandicapGame[] = rows
+    .filter((g) => !(g.is_tiebreaker && recorded.has(g.match_id)))
+    .map((g) => ({ at: g.created_at, won: g.winner_player_id === playerId, tiebreak: g.is_tiebreaker }));
+  const slots = (await fetchTiebreakSlots(playerId, gameType, leagueId)).map((s) => ({ ...s, tiebreak: true }));
+
+  return [...games, ...slots].sort((a, b) => b.at.localeCompare(a.at)).slice(0, fetchLimit);
 }
 
 /**
- * Fetch last N games for a player (for handicap calculation)
+ * Fetch the last N handicap games for a player.
  *
- * NEW LEAGUE-BASED LOOKUP LOGIC:
- * 1. If leagueId provided, get all games from ALL SEASONS in that league
- * 2. If < 50 games (or < 25% of limit), expand to ALL games of that game type (all leagues)
- * 3. Ordered by created_at (newest first)
- * 4. Only returns games with a winner (completed games)
- * 5. TIEBREAKER RULE: Excludes tiebreaker games where player lost
+ * 1. If leagueId is given, use games from ALL SEASONS in that league.
+ * 2. If that is under 25% of the limit (50 for 200), widen to ALL leagues of
+ *    this game type. 8-ball never counts toward 9-ball and vice versa.
+ * 3. Newest first; completed games only; tiebreak losses dropped (rule above).
  *
- * IMPORTANT: 8-ball stats don't count for 9-ball handicaps and vice versa.
- * Players need separate handicaps for each game type.
- *
- * TIEBREAKER HANDICAP RULE:
- * - Tiebreaker wins ARE included in handicap calculation
- * - Tiebreaker losses are EXCLUDED from handicap calculation
- * - This prevents unfair penalty from anti-sandbagging rule
- *
- * PERFORMANCE: Uses denormalized game_type field for fast filtering without joins.
- * Composite indexes (player + game_type + created_at) enable optimal query performance.
+ * The 25% fetch buffer exists for the dropped tiebreak losses: they take part
+ * in the newest-N window and are removed after — unchanged from the old rule,
+ * so handicaps come out identical.
  *
  * @param playerId - The player's member ID
- * @param gameType - Game type to filter ('eight_ball', 'nine_ball', 'ten_ball')
- * @param leagueId - Optional league ID to prioritize games from this league's seasons
+ * @param gameType - Game type to filter
+ * @param leagueId - Optional league to prioritize
  * @param limit - Maximum number of games to return (default: 200)
- * @returns Array of completed games where the player participated (tiebreaker losses excluded)
- * @throws Error if query fails
+ * @returns Up to `limit` games — wins and losses, every tiebreak entry a win
+ * @throws Error if a query fails
  *
  * @example
- * // Get 9-ball games from specific league (all seasons)
- * const games = await fetchPlayerGameHistory('player-123', 'nine_ball', 'league-456', 200);
- * const wins = games.filter(g => g.winner_player_id === 'player-123').length;
+ * const games = await fetchHandicapHistory('player-123', 'nine_ball', 'league-456');
+ * const wins = games.filter((g) => g.won).length;
  */
-export async function fetchPlayerGameHistory(
+export async function fetchHandicapHistory(
   playerId: string,
-  gameType: 'eight_ball' | 'nine_ball' | 'ten_ball',
+  gameType: GameType,
   leagueId?: string,
-  limit: number = 200
-): Promise<MatchGame[]> {
-  // Fetch extra games (25% buffer) to account for tiebreaker losses that will be filtered out
-  // Tiebreakers are rare, so 250 games ensures we have 200+ after filtering
+  limit: number = 200,
+): Promise<HandicapGame[]> {
   const fetchLimit = Math.ceil(limit * 1.25);
+  const threshold = Math.ceil(limit * 0.25);
 
-  let leagueGames: Tables<'match_games'>[] = [];
-
-  // Step 1: If leagueId provided, get all games from ALL SEASONS in that league
-  if (leagueId) {
-    const { data: leagueData, error: leagueError } = await supabase
-      .from('match_games')
-      .select('*, match:matches!inner(season:seasons!inner(league_id))')
-      .or(`home_player_id.eq.${playerId},away_player_id.eq.${playerId}`)
-      .not('winner_player_id', 'is', null) // Only completed games
-      .eq('game_type', gameType)
-      .eq('match.season.league_id', leagueId)
-      .order('created_at', { ascending: false })
-      .limit(fetchLimit);
-
-    if (leagueError) {
-      throw new Error(`Failed to fetch league game history: ${leagueError.message}`);
-    }
-
-    leagueGames = leagueData || [];
+  let history = leagueId ? await scopedHistory(playerId, gameType, leagueId, fetchLimit) : [];
+  if (history.length < threshold) {
+    history = await scopedHistory(playerId, gameType, undefined, fetchLimit);
   }
 
-  // Step 2: If < 50 games (or < 25% of limit), expand to ALL games of this game type
-  const threshold = Math.ceil(limit * 0.25); // 25% threshold (50 games for limit=200)
-  const needsExpansion = leagueGames.length < threshold;
-
-  let allGames: Tables<'match_games'>[] = leagueGames;
-
-  if (needsExpansion) {
-    // Fetch all games of this game type (across all leagues)
-    const { data, error } = await supabase
-      .from('match_games')
-      .select('*')
-      .or(`home_player_id.eq.${playerId},away_player_id.eq.${playerId}`)
-      .not('winner_player_id', 'is', null) // Only completed games
-      .eq('game_type', gameType)
-      .order('created_at', { ascending: false })
-      .limit(fetchLimit);
-
-    if (error) {
-      throw new Error(`Failed to fetch player game history: ${error.message}`);
-    }
-
-    allGames = data || [];
-  }
-
-  if (!allGames || allGames.length === 0) {
-    return [];
-  }
-
-  // TIEBREAKER HANDICAP RULE: Filter out tiebreaker games where player lost
-  // - Keep all non-tiebreaker games
-  // - Keep tiebreaker games where player WON (counts toward handicap)
-  // - Exclude tiebreaker games where player LOST (prevents anti-sandbagging penalty)
-  const filteredData = allGames.filter((game) => {
-    const isTiebreaker = game.is_tiebreaker === true;
-    const playerWon = game.winner_player_id === playerId;
-
-    // Keep all non-tiebreaker games
-    if (!isTiebreaker) return true;
-
-    // For tiebreaker games, only keep if player won
-    return playerWon;
-  });
-
-  // Return up to 'limit' games after filtering. MatchGame narrows a few
-  // nullable columns (e.g. home_position) that are always set on a completed
-  // league game, which is all these filters return.
-  return filteredData.slice(0, limit) as MatchGame[];
+  return history.filter((g) => !g.tiebreak || g.won).slice(0, limit);
 }

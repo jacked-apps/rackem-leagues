@@ -4,6 +4,61 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🌙 2026-10-29 — Dark mode: scoreboard numbers turn white on the light team panels
+
+**Found by Ed** while testing the tiebreaker. On the live scoreboard, the
+points (and other numbers) are near-white in dark mode and hard to read.
+
+**Likely cause (checked, not fixed):** the team panels use FIXED light
+backgrounds (`bg-blue-100` / `bg-orange-100` from
+`src/components/scoring/scoreboardColors.ts`), but the text on them uses
+`text-foreground`, which flips to white in dark mode — e.g.
+`src/components/scoring/UnifiedScoreboard.tsx:337` (points) and the player
+table around :462–515. Fix: fixed-colour text on fixed-colour backgrounds
+(the panel's own `headerText` colour, or a dark-mode panel colour). Check
+`TiebreakerScoreboard.tsx` too — its score uses the same pattern.
+
+---
+
+## 🗂️ 2026-10-29 — Past-match results on the schedule: show more in less room
+
+**Found by Ed.** A finished match on the schedule is two cards inside a card
+with a header, inside another card. Nicely separated, but it spends a lot of
+room for the information shown. Look at a tighter layout that shows MORE
+(not less) in less space. Start at `src/components/MatchDetailCard.tsx` (and
+`src/player/TeamSchedule.tsx`, which renders it).
+
+---
+
+## 🔧 2026-10-28 — TODO: let an LO fix a lineup on a finished match (no UI today)
+
+**Low priority — Ed's call 2026-10-28: "it's a rare thing, we have only one
+league, so I can just do it again if it comes to that for now."** Logged so it
+isn't rediscovered.
+
+**The situation.** A player recorded in a *substitute* slot earns ZERO games in
+their record — the sub placeholder ids are deliberately stripped from player
+stats (`playerStats.ts:164`). Correct behaviour for a real anonymous sub, wrong
+when a named person actually played. Ed has hand-fixed this in SQL at least once
+(a sub slot that was really Rene Enciso).
+
+**What exists today.** The LO already has a genuine match-correction surface:
+`loReopenMatch` → `loVacateGame` / `loCorrectGame` / `loRestoreGame` →
+`loRestoreCompletion`. That edits **games**. It does NOT edit **lineups**:
+`ManualScoringPage.tsx:112` only routes to the lineup Setup phase while
+`status = 'scheduled'`, so once a match starts there is no way to change who was
+in a slot or their handicap.
+
+**Why it's small.** The write path already exists and is already gate-free —
+`loSaveLineups` upserts both lineup rows locked, with no membership check
+(`loManualScoring.ts:111`). The missing pieces are a UI route into it for a
+reopened match, and guardrails (recredit the games to the corrected player,
+leave a record of who changed it).
+
+**Related.** `docs/audits/2026-10-28-tiebreaker-audit.md` finding F6, and the
+Ben vs Duff investigation in the same doc — hand-edited SQL leaves no trace, so
+any lineup audit trail we build has holes while this is the only repair route.
+
 ## 🧪 2026-09-05 — Database tests are not run by CI, and three files have rotted
 
 CI (`.github/workflows/checks.yml`) runs the vitest **unit** project only. The
@@ -651,6 +706,13 @@ through the hook deps → resubscribes → replays event → re-renders.
 the scoreboard could surface more useful context. Right now it just
 shows the regular game count (which stays at 9-9 since tiebreaker
 games are excluded by design — Phase 5 Unit 5.5 locked invariant).
+
+**2026-10-29 addition (Ed, testing the tiebreak record):** when the
+tiebreaker ends, the end-of-match score shows ONLY the tiebreaker numbers —
+you can't see what the regular match score was (e.g. 9–9). Not a big deal,
+but it would be nice to show both: the match score and the tiebreaker
+result. The end screen is `MatchEndVerification`, fed from
+`TiebreakerScoreboard.tsx` with the tiebreak wins only.
 
 **Suggestions to consider:**
 - Show "TIEBREAKER" badge / banner clearly so users know this is the

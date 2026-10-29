@@ -30,6 +30,14 @@ export function usePreparationStatus() {
 
 interface MatchPreparationParams {
   lineupLocked: boolean;
+  /**
+   * Whether the OTHER side is locked — the second half of the "both locked →
+   * go to scoring" signal. Separate from `opponentLineup` because in a
+   * tiebreaker it is the opponent's TIEBREAK lineup lock (match_tiebreaker_lineups),
+   * while `opponentLineup` stays the match lineup that match prep reads.
+   */
+  opponentLocked: boolean;
+  /** The opponent's MATCH lineup — read by match prep (thresholds, Fargo). */
   opponentLineup: Tables<'match_lineups'> | null | undefined;
   matchId: string | undefined;
   matchData: MatchWithLeagueSettings | undefined;
@@ -92,6 +100,7 @@ interface MatchPreparationParams {
 export function useMatchPreparation(params: MatchPreparationParams) {
   const {
     lineupLocked,
+    opponentLocked,
     opponentLineup,
     matchId,
     matchData,
@@ -144,7 +153,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
   useEffect(() => {
     // Gate: blockedReason covers completeness + sub resolution + Fargo consensus.
     if (blockedReason !== null && blockedReason !== undefined) return;
-    if (!lineupLocked || !opponentLineup?.locked) return;
+    if (!lineupLocked || !opponentLocked) return;
     if (matchPreparedRef.current) return;
     if (!matchId) return;
 
@@ -467,6 +476,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
   }, [
     blockedReason,
     lineupLocked,
+    opponentLocked,
     opponentLineup,
     matchId,
     currentGamesCount,

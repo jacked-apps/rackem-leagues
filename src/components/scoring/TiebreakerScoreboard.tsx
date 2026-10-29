@@ -1,8 +1,10 @@
 /**
  * @fileoverview Tiebreaker Scoreboard Component
  *
- * Minimal scoreboard for tiebreaker matches (games 19-21).
- * Shows just HOME vs AWAY win counts.
+ * Minimal scoreboard for a tiebreaker (the match's is_tiebreaker games).
+ * Shows just HOME vs AWAY win counts. The finish line is the tiebreak
+ * record's games_needed (2 for best-of-3, 1 for a single race) — it is never
+ * hardcoded here (Unit 4 of docs/plans/2026-10-28-001-feat-tiebreaker-record-plan.md).
  * Both teams see identical view - no toggles, no player details.
  */
 
@@ -41,6 +43,8 @@ interface TiebreakerScoreboardProps {
   isVerifying?: boolean;
   /** Game type for potential future tiebreakers */
   gameType: string;
+  /** Wins needed to take the tiebreaker — from the tiebreak record. */
+  gamesNeeded: number;
 }
 
 /**
@@ -53,6 +57,7 @@ export function TiebreakerScoreboard({
   onVerify,
   isVerifying = false,
   gameType,
+  gamesNeeded,
 }: TiebreakerScoreboardProps) {
   // Count wins for each team (only confirmed games)
   let homeWins = 0;
@@ -70,8 +75,8 @@ export function TiebreakerScoreboard({
   });
 
   // Check if tiebreaker is complete
-  // Match ends when either team reaches 2 wins (best of 3)
-  const matchComplete = homeWins >= 2 || awayWins >= 2;
+  // It ends when either team reaches the record's games_needed.
+  const matchComplete = homeWins >= gamesNeeded || awayWins >= gamesNeeded;
 
   // If match complete, show verification instead of scoreboard
   if (matchComplete) {
@@ -84,8 +89,8 @@ export function TiebreakerScoreboard({
         awayTeamName={match.away_team?.team_name || 'Away'}
         homeWins={homeWins}
         awayWins={awayWins}
-        homeWinThreshold={2} // First to 2 wins
-        awayWinThreshold={2}
+        homeWinThreshold={gamesNeeded}
+        awayWinThreshold={gamesNeeded}
         homeTieThreshold={null} // No ties in tiebreaker
         awayTieThreshold={null}
         homeVerifiedBy={match.home_tiebreaker_verified_by || null}
@@ -108,7 +113,7 @@ export function TiebreakerScoreboard({
               Tiebreaker
             </div>
             <div className="text-sm text-muted-foreground mt-1">
-              First to 2 Wins
+              First to {gamesNeeded} {gamesNeeded === 1 ? 'Win' : 'Wins'}
             </div>
           </div>
 

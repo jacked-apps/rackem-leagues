@@ -15,21 +15,20 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useMatchLineups, useMatchGames, useMatchWithLeagueSettings } from '@/api/hooks/useMatches';
-import { useCreateMatchGames, useUpdateMatchGame, useUpdateMatch } from '@/api/hooks/useMatchMutations';
-import { useUpdateMatchLineup } from '@/api/hooks';
+import { useMatchGames, useMatchWithLeagueSettings } from '@/api/hooks/useMatches';
+import { useCreateMatchGames, useUpdateMatch } from '@/api/hooks/useMatchMutations';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { auditMatchScoringConsistency } from '@/api/queries/matches';
 import { determineMatchResult, type MatchResultOutcome } from '@/utils/determineMatchResult';
 import { buildWinCalcConfig, decideWinner } from '@/systems/win-calculator';
 import { ManualTiebreakerDialog } from './ManualTiebreakerDialog';
 import type { ManualTiebreakerSubmission } from './ManualTiebreakerDialog';
-import {
-  tiebreakerGameNumbers,
-  tiebreakerGameToPosition,
-  tiebreakerGameSpecs,
-} from '@/utils/tiebreaker/gameNumbers';
+import { tiebreakerGameSpecs } from '@/utils/tiebreaker/gameNumbers';
 import { computeGameCount } from '@/systems/team-geometry';
+import { getTiebreakerShape } from '@/utils/tiebreaker/tiebreakerShape';
+import { createTiebreakerRecord } from '@/api/mutations/tiebreakers';
+import { getMatchTiebreaker } from '@/api/queries/tiebreakers';
+import { resolveTiebreakerRecord } from '@/api/mutations/resolveTiebreaker';
 import { logger } from '@/utils/logger';
 
 interface MatchEndVerificationProps {
@@ -103,8 +102,6 @@ export function MatchEndVerification({
   const navigate = useNavigate();
   const updateMatchMutation = useUpdateMatch();
   const createGamesMutation = useCreateMatchGames();
-  const updateLineupMutation = useUpdateMatchLineup();
-  const updateGameMutation = useUpdateMatchGame(matchId);
 
   // Fetch match data for fresh verification status
   const matchQuery = useMatchWithLeagueSettings(matchId);
@@ -141,14 +138,10 @@ export function MatchEndVerification({
   // a tied match prompts the LO with ManualTiebreakerDialog instead of
   // auto-creating short-race tiebreaker games. Read from the snapshot
   // (frozen-at-first-score) so mid-match preference edits don't change
-  // the in-flight match's tiebreaker behavior.
+  // the in-flight match's tiebreaker behavior. Best-of-3 is the fallback —
+  // 'accept_tie' is never a default (migration 20261028204853).
   const tiebreakerFormat: string =
-    (snapshot?.tiebreaker_format as string | undefined) ?? 'accept_tie';
-
-  // Fetch lineups to get lineup IDs for unlocking
-  const lineupsQuery = useMatchLineups(matchId, homeTeamId, awayTeamId, false);
-  const homeLineup = lineupsQuery.data?.homeLineup;
-  const awayLineup = lineupsQuery.data?.awayLineup;
+    (snapshot?.tiebreaker_format as string | undefined) ?? 'best_of_3_short_race';
 
   // Fetch tiebreaker games (if this is a tiebreaker)
   const gamesQuery = useMatchGames(matchId);
@@ -382,13 +375,27 @@ export function MatchEndVerification({
                   // Games-condition match (BCA-style) — may be a tie that
                   // triggers tiebreaker; status stays 'in_progress' in
                   // that case so the tiebreaker flow can complete it.
+                  // A tie is NOT finished, so it gets no completed_at either
+                  // (audit F4) — the tiebreaker's completion stamps it. A
+                  // stamped-but-in_progress tie was a trap for any "finished
+                  // matches" query keyed on completed_at.
                   winner_team_id: winnerTeamId,
                   match_result: result,
                   results_confirmed_by_home: true,
                   results_confirmed_by_away: true,
-                  completed_at: new Date().toISOString(),
+                  completed_at: winnerTeamId ? new Date().toISOString() : null,
                   status: winnerTeamId ? 'completed' : 'in_progress',
                 };
+
+          // A finished tiebreaker records its winner on the tiebreak record
+          // BEFORE the match completes. This is where the anti-sandbagging
+          // credit now comes from (Units 4–5 of the tiebreak-record plan) —
+          // the game rows are no longer overwritten, so they keep what really
+          // happened. Written first so a failure leaves the match unfinished
+          // and retryable, never completed with the credit missing.
+          if (isTiebreakerMode && winnerTeamId) {
+            await resolveTiebreakerRecord(matchId, winnerTeamId);
+          }
 
           await updateMatchMutation.mutateAsync({
             matchId,
@@ -406,52 +413,6 @@ export function MatchEndVerification({
             void auditMatchScoringConsistency(matchId);
           }
 
-          // Anti-sandbagging rule for tiebreaker: Override all game results with winning team
-          if (isTiebreakerMode && winnerTeamId) {
-
-            // Get the winning lineup
-            const winningLineup = winnerTeamId === homeTeamId ? homeLineup : awayLineup;
-
-            if (winningLineup) {
-              // Tiebreaker game numbers start at matchTotalGames + 1.
-              // For BCA 3v3 DRR (18 regular games) that's 19, 20, 21.
-              // Sourced via tiebreakerGameNumbers/tiebreakerGameToPosition so
-              // future lineup geometries (4v4 etc.) compute their own ranges.
-              for (const gameNumber of tiebreakerGameNumbers(matchTotalGames)) {
-                // 0-indexed position from the helper; lineup fields are 1-indexed
-                const position = tiebreakerGameToPosition(matchTotalGames, gameNumber) + 1;
-                const game = tiebreakerGames.find(g => g.game_number === gameNumber);
-
-                if (!game) {
-                  logger.error('Tiebreaker game not found', { gameNumber });
-                  continue;
-                }
-
-                // The tiebreaker order lives on the tiebreaker game rows
-                // (written by useTiebreakerLineup); the lineup row keeps the
-                // ORIGINAL regular-game order and is never re-ordered for the
-                // tiebreaker. Credit the player who actually played this game
-                // for the winning side; the lineup slot is only a fallback for
-                // a game row with no player recorded.
-                const winnerIsHome = winnerTeamId === homeTeamId;
-                const winningPlayerId =
-                  (winnerIsHome ? game.home_player_id : game.away_player_id) ??
-                  // `player{n}_id` columns hold a member id (or null).
-                  (winningLineup[`player${position}_id` as keyof typeof winningLineup] as string | null);
-
-                await updateGameMutation.mutateAsync({
-                  gameId: game.id,
-                  updates: {
-                    winner_team_id: winnerTeamId,
-                    winner_player_id: winningPlayerId,
-                    confirmed_by_home: homeVerifiedBy,
-                    confirmed_by_away: awayVerifiedBy,
-                  },
-                });
-              }
-            }
-          }
-
           // Handle tie result - create tiebreaker games
           // Phase 4 Unit 4.4: skip auto-tiebreaker creation when the
           // league uses manual mode. The dialog rendered below handles
@@ -466,6 +427,9 @@ export function MatchEndVerification({
           }
 
           if (result === 'tie') {
+            // Format → frozen numbers (wins needed, games, players a side).
+            // Never null here: 'manual' returned above.
+            const shape = getTiebreakerShape(tiebreakerFormat)!;
 
             // Item 15 follow-up guard: skip tiebreaker-game creation if
             // they already exist. Without this, every time the tie
@@ -486,7 +450,7 @@ export function MatchEndVerification({
               // tiebreakerGameSpecs so future lineup geometries get the
               // right numbers + alternating actions automatically.
               await createGamesMutation.mutateAsync({
-                games: tiebreakerGameSpecs(matchTotalGames).map((spec) => ({
+                games: tiebreakerGameSpecs(matchTotalGames, shape.gameCount).map((spec) => ({
                   match_id: matchId,
                   game_number: spec.game_number,
                   home_action: spec.home_action,
@@ -497,21 +461,19 @@ export function MatchEndVerification({
               });
             }
 
-            // Unlock both lineups
-            if (homeLineup?.id) {
-              await updateLineupMutation.mutateAsync({
-                lineupId: homeLineup.id,
-                updates: { locked: false, locked_at: null },
-                matchId,
-              });
-            }
-            if (awayLineup?.id) {
-              await updateLineupMutation.mutateAsync({
-                lineupId: awayLineup.id,
-                updates: { locked: false, locked_at: null },
-                matchId,
-              });
-            }
+            // Create the tiebreak record — a parallel mini-match with its own
+            // lineups (requirement D0). This REPLACES unlocking the match
+            // lineups: they stay locked with their original locked_at, so a
+            // tie can no longer re-lock them and recalculate handicaps or the
+            // team bonus (audit F1). Both tiebreak lineups start EMPTY — each
+            // team picks its order. Idempotent, so a re-fire is harmless.
+            await createTiebreakerRecord({
+              matchId,
+              gameType,
+              shape,
+              homeTeamId,
+              awayTeamId,
+            });
 
             // Wait for database writes to complete and propagate
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -520,7 +482,10 @@ export function MatchEndVerification({
 
         // Step 3: ALL devices (first verifier and second verifier) MUST verify data before navigating
         if (result === 'tie') {
-          // STEP 3A: Poll for tiebreaker games to exist
+          // STEP 3A: Poll for tiebreaker games to exist. Count comes from the
+          // format's shape; 'manual' (no shape) keeps the historical 3 — no
+          // games are created for it, exactly as before this change.
+          const expectedTiebreakGames = getTiebreakerShape(tiebreakerFormat)?.gameCount ?? 3;
           let gamesReady = false;
           let attempts = 0;
           const maxAttempts = 20; // 20 attempts = 10 seconds max
@@ -529,7 +494,7 @@ export function MatchEndVerification({
             const { data: checkGames } = await gamesQuery.refetch();
             const tiebreakerGamesCount = (checkGames || []).filter(g => g.is_tiebreaker).length;
 
-            if (tiebreakerGamesCount >= 3) {
+            if (tiebreakerGamesCount >= expectedTiebreakGames) {
               gamesReady = true;
             } else {
               attempts++;
@@ -541,26 +506,27 @@ export function MatchEndVerification({
             throw new Error('Timeout waiting for tiebreaker games to be created');
           }
 
-          // STEP 3B: Poll for both lineups to be unlocked
-          let lineupsUnlocked = false;
+          // STEP 3B: Poll for the tiebreak record (tiebreaker + both lineups).
+          // This used to wait for both MATCH lineups to be unlocked; the record
+          // is now the signal, and the match lineups are never unlocked. Both
+          // devices wait here, so the second verifier never reaches the lineup
+          // page before the first verifier's record exists.
+          let recordReady = false;
           attempts = 0;
 
-          while (!lineupsUnlocked && attempts < maxAttempts) {
-            const { data: checkLineups } = await lineupsQuery.refetch();
+          while (!recordReady && attempts < maxAttempts) {
+            const record = await getMatchTiebreaker(matchId);
 
-            if (checkLineups?.homeLineup &&
-                checkLineups?.awayLineup &&
-                !checkLineups.homeLineup.locked &&
-                !checkLineups.awayLineup.locked) {
-              lineupsUnlocked = true;
+            if (record && record.match_tiebreaker_lineups.length >= 2) {
+              recordReady = true;
             } else {
               attempts++;
               await new Promise(resolve => setTimeout(resolve, 500));
             }
           }
 
-          if (!lineupsUnlocked) {
-            throw new Error('Timeout waiting for lineups to be unlocked');
+          if (!recordReady) {
+            throw new Error('Timeout waiting for tiebreak record');
           }
 
           // STEP 3C: Final cache propagation delay
@@ -581,7 +547,7 @@ export function MatchEndVerification({
     };
 
     completeTheMatch();
-  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, homeLineup, awayLineup, updateGameMutation, updateLineupMutation, matchTotalGames]);
+  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, matchTotalGames, tiebreakerFormat]);
 
   return (
     <div className="bg-muted border-b-2 border-border">

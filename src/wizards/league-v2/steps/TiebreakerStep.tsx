@@ -3,10 +3,14 @@
  *
  * Combined trigger + format step (the two preference axes
  * `tiebreaker_trigger` and `tiebreaker_format` map deterministically
- * from a single user choice). Three options:
- *   - accept_tie:        trigger=never,                 format=accept_tie
+ * from a single user choice). Options:
  *   - best_of_3:         trigger=even_total_games_only, format=best_of_3_short_race
  *   - single_short_race: trigger=even_total_games_only, format=single_short_race
+ *   - manual:            trigger=even_total_games_only, format=manual
+ *
+ * "Accept Tie" is deliberately NOT offered (Ed, 2026-10-28): it was added as
+ * a just-in-case option and had wrongly become the default. No league he runs
+ * allows ties. See migration 20261028204853_tiebreaker_default_best_of_3.
  *
  * Conditional: only shown when the configured match-format and lineup
  * size produce an even total-game count (the only case where matches
@@ -40,16 +44,6 @@ const TIEBREAKER_OPTIONS: SelectableCardOption<string>[] = [
       title: 'Single Short Race',
       content:
         'When a match ends tied, one additional rack is played. Winner takes the match. Faster than best-of-3.',
-    },
-  },
-  {
-    value: 'accept_tie',
-    title: 'Accept Tie',
-    description: 'Tied matches stay tied',
-    infoButton: {
-      title: 'Accept Tie',
-      content:
-        'No tiebreaker is played. The match record shows a tie, and standings reflect it. Some leagues prefer this for simplicity.',
     },
   },
   {

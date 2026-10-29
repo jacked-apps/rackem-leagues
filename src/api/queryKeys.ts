@@ -180,6 +180,10 @@ export const queryKeys = {
     /** Match games/scoring */
     games: (matchId: string) => [...queryKeys.matches.detail(matchId), 'games'] as const,
 
+    /** Tiebreak record (match_tiebreakers + its lineups) */
+    tiebreaker: (matchId: string) =>
+      [...queryKeys.matches.detail(matchId), 'tiebreaker'] as const,
+
     /** Match game confirmations (many-eyes Layer-2 witness records) */
     confirmations: (matchId: string) =>
       [...queryKeys.matches.detail(matchId), 'confirmations'] as const,

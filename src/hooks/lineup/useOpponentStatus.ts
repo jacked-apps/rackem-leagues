@@ -13,17 +13,24 @@
 import type { MatchWithLeagueSettings } from '@/types/match';
 import type { Tables } from '@/types/database.types';
 
+/** The slot + lock fields a match lineup and a tiebreak lineup share. */
+type LineupSlotsAndLock = Pick<
+  Tables<'match_lineups'>,
+  'player1_id' | 'player2_id' | 'player3_id' | 'player4_id' | 'player5_id' | 'locked'
+>;
+
 interface OpponentStatusParams {
   /** Match data */
   matchData: MatchWithLeagueSettings | undefined;
   /** Is current user on home team? */
   isHomeTeam: boolean;
-  /** Opponent's lineup data */
-  opponentLineup: Tables<'match_lineups'> | null | undefined;
-  /** Is this tiebreaker mode? */
-  isTiebreakerMode?: boolean;
-  /** All games (for tiebreaker mode player counting) */
-  allGames?: Tables<'match_games'>[];
+  /**
+   * Opponent's lineup data. In a tiebreaker, pass the opponent's TIEBREAK
+   * lineup (match_tiebreaker_lineups) — it has the same slot + locked shape,
+   * so the same counting applies. (Tiebreak picks used to be read off the
+   * 19-21 game rows here; the tiebreak record replaced that.)
+   */
+  opponentLineup: LineupSlotsAndLock | null | undefined;
   /** Player count (3 for 3v3, 5 for 5v5) */
   playerCount?: number;
 }
@@ -58,9 +65,8 @@ interface OpponentStatusResult {
  * const { opponentTeam, status, selectionStatus } = useOpponentStatus({
  *   matchData,
  *   isHomeTeam,
- *   opponentLineup,
- *   isTiebreakerMode,
- *   allGames
+ *   opponentLineup: isTiebreakerMode ? opponentTiebreakLineup : opponentLineup,
+ *   playerCount,
  * });
  *
  * // status: 'absent' | 'choosing' | 'ready'
@@ -71,8 +77,6 @@ export function useOpponentStatus(params: OpponentStatusParams): OpponentStatusR
     matchData,
     isHomeTeam,
     opponentLineup,
-    isTiebreakerMode = false,
-    allGames = [],
     playerCount = 3, // Default to 3 for backward compatibility
   } = params;
 
@@ -139,26 +143,7 @@ export function useOpponentStatus(params: OpponentStatusParams): OpponentStatusR
     if (status === 'ready') return 'Locked';
 
     // Status is 'choosing' - count selected players
-    let selectedCount = 0;
-
-    // In tiebreaker mode, count players from games 19, 20, 21
-    if (isTiebreakerMode) {
-      const opponentPlayerField = isHomeTeam
-        ? 'away_player_id'
-        : 'home_player_id';
-
-      [19, 20, 21].forEach((gameNumber) => {
-        const game = allGames.find(
-          (g) => g.game_number === gameNumber && g.is_tiebreaker
-        );
-        if (game && game[opponentPlayerField as keyof typeof game]) {
-          selectedCount++;
-        }
-      });
-    } else {
-      // Normal mode - use helper function
-      selectedCount = countSelectedPlayers();
-    }
+    const selectedCount = countSelectedPlayers();
 
     if (selectedCount === 0) return 'Choosing lineup';
     return `Players chosen: ${selectedCount}`;

@@ -28,14 +28,6 @@ import { formatLocalDate, parseLocalDate } from '@/utils/formatters';
 import { isByeMatch } from '@/utils/match/isByeMatch';
 import type { MatchWithDetails } from '@/types';
 
-/**
- * A detection-query row. `getMyMatchMatches` selects `*`, so `started_at` (a
- * real `matches` column the multi-live tiebreak needs) is present at runtime
- * even though the shared `Match` type doesn't declare it — we widen locally
- * rather than ripple a change through the shared schema type.
- */
-export type MyMatchRow = MatchWithDetails & { started_at: string | null };
-
 /** Tiers 1–3 are actionable (route somewhere); Tier 4 is "nothing of yours". */
 export type MyMatchTier = 1 | 2 | 3 | 4;
 
@@ -84,7 +76,7 @@ const EMPTY_NAV: MyMatchNavState = {
  * Mirrors the detection query's intent so a stray row can't be miscounted:
  *   1 = live (`in_progress`), 2 = today's `scheduled`, 3 = past-due `scheduled`.
  */
-export function classifyTier(match: MyMatchRow, today: string): 1 | 2 | 3 | null {
+export function classifyTier(match: MatchWithDetails, today: string): 1 | 2 | 3 | null {
   // A BYE matchup is not a real match — never surface it as an actionable "My
   // Match" nav destination or drawer row, even if it's today or past-due (the
   // window before the daily auto-forfeit sweep settles it). Keys on the shared
@@ -112,7 +104,7 @@ function cmpStr(a: string, b: string): number {
  *   - Tier 2 (today): `COALESCE(started_at, scheduled_date)` ASC, then `id`.
  *   - Tier 3 (makeup): oldest past-due first (`scheduled_date` ASC), then `id`.
  */
-export function compareWithinTier(tier: 1 | 2 | 3, a: MyMatchRow, b: MyMatchRow): number {
+export function compareWithinTier(tier: 1 | 2 | 3, a: MatchWithDetails, b: MatchWithDetails): number {
   if (tier === 1) {
     const sa = a.started_at;
     const sb = b.started_at;
@@ -140,8 +132,8 @@ export function compareWithinTier(tier: 1 | 2 | 3, a: MyMatchRow, b: MyMatchRow)
 }
 
 /** Group the raw set into the three actionable tiers, each internally sorted. */
-function groupByTier(matches: MyMatchRow[], today: string): Record<1 | 2 | 3, MyMatchRow[]> {
-  const groups: Record<1 | 2 | 3, MyMatchRow[]> = { 1: [], 2: [], 3: [] };
+function groupByTier(matches: MatchWithDetails[], today: string): Record<1 | 2 | 3, MatchWithDetails[]> {
+  const groups: Record<1 | 2 | 3, MatchWithDetails[]> = { 1: [], 2: [], 3: [] };
   for (const match of matches) {
     const tier = classifyTier(match, today);
     if (tier) groups[tier].push(match);
@@ -156,7 +148,7 @@ function groupByTier(matches: MyMatchRow[], today: string): Record<1 | 2 | 3, My
  * Collapse the raw match set to the single auto-routed destination. Picks the
  * lowest tier that has any match, then that tier's "most important" one.
  */
-export function resolveMyMatchNavState(matches: MyMatchRow[], today: string): MyMatchNavState {
+export function resolveMyMatchNavState(matches: MatchWithDetails[], today: string): MyMatchNavState {
   const groups = groupByTier(matches, today);
   for (const tier of [1, 2, 3] as const) {
     if (groups[tier].length > 0) {
@@ -179,7 +171,7 @@ function formatMatchDate(isoDate: string | null | undefined): string {
 
 /** Turn one classified match into a drawer row from the member's perspective. */
 function toDrawerItem(
-  match: MyMatchRow,
+  match: MatchWithDetails,
   tier: 1 | 2 | 3,
   teamIdSet: Set<string>,
 ): MyMatchDrawerItem {
@@ -206,7 +198,7 @@ function toDrawerItem(
  * each labeled from the member's perspective ("my team vs opponent").
  */
 export function buildMyMatchDrawerItems(
-  matches: MyMatchRow[],
+  matches: MatchWithDetails[],
   teamIds: string[],
   today: string,
 ): MyMatchDrawerItem[] {
@@ -240,10 +232,10 @@ export function useMyMatchSurfaces(memberId: string | null | undefined): MyMatch
     queryKey: myMatchSurfacesKey(memberId),
     queryFn: async () => {
       // enabled:false guards this path; the guard keeps the contract explicit.
-      if (!memberId) return { matches: [] as MyMatchRow[], teamIds: [] as string[] };
+      if (!memberId) return { matches: [] as MatchWithDetails[], teamIds: [] as string[] };
       const teamIds = await getMemberTeamIds(memberId);
       const matches = teamIds.length
-        ? ((await getMyMatchMatches(memberId, teamIds)) as MyMatchRow[])
+        ? await getMyMatchMatches(memberId, teamIds)
         : [];
       return { matches, teamIds };
     },

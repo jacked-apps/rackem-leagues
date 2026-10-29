@@ -16,7 +16,6 @@ import { useLiveMatchesForLeague } from '@/api/hooks/useMatches';
 import { useWeekLabelsForSeasons } from '@/api/hooks/useWeekLabels';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
 import type { GameType, DayOfWeek } from '@/types/league';
-import type { MatchWithDetails } from '@/types';
 import { SpectateMatchCard } from './SpectateMatchCard';
 
 /**
@@ -24,16 +23,6 @@ import { SpectateMatchCard } from './SpectateMatchCard';
  * pattern used by TeamCard elsewhere in the app: game-type + day-of-week,
  * plus an optional division qualifier (e.g. "A", "B").
  */
-/**
- * The live-match queries also embed `season → league` (for the league label),
- * which MatchWithDetails doesn't declare.
- */
-type MatchWithSeasonLeague = MatchWithDetails & {
-  season?: {
-    league?: { id: string; game_type?: string; day_of_week?: string; division?: string | null } | null;
-  } | null;
-};
-
 function composeLeagueLabel(league: {
   game_type?: string;
   day_of_week?: string;
@@ -69,7 +58,7 @@ export function SpectateLiveMatches() {
   // Compose league label from the first match's joined league data. Every
   // match in this list belongs to the same league (the query filters on it),
   // so any match's league_* fields are correct.
-  const firstLeague = (matches[0] as MatchWithSeasonLeague | undefined)?.season?.league;
+  const firstLeague = matches[0]?.season?.league;
   const leagueLabel = firstLeague ? composeLeagueLabel(firstLeague) : '';
 
   return (
@@ -127,8 +116,7 @@ export function SpectateLiveMatches() {
             // Per-card week label. Makeup matches can have different weeks on
             // the same night, so each card labels its week for clarity.
             const weekName =
-              // A missing week id just misses the map (get(undefined) → undefined).
-              weekLabels.get(m.season_week?.id as string) ||
+              (m.season_week && weekLabels.get(m.season_week.id)) ||
               m.season_week?.week_name ||
               '';
             const weekDate = m.season_week?.scheduled_date || '';

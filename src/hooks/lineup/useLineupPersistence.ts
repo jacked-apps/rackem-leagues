@@ -325,45 +325,8 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
     }
   };
 
-  /**
-   * Auto-save lineup selections (without locking)
-   * Called when player selections change in the dropdowns
-   */
-  const autoSaveLineup = async () => {
-    if (!lineupId || !matchId) {
-      return;
-    }
-
-    try {
-      const lineupData = {
-        player1_id: player1Id || null,
-        player2_id: player2Id || null,
-        player3_id: player3Id || null,
-        player1_handicap: player1Handicap,
-        player2_handicap: player2Handicap,
-        player3_handicap: player3Handicap,
-        // Don't update locked status or home_team_modifier
-      };
-
-      await updateLineupMutation.mutateAsync({
-        lineupId: lineupId,
-        updates: lineupData,
-        matchId,
-      });
-
-    } catch (err: unknown) {
-      logger.error('Auto-save error', {
-        error: err instanceof Error ? err.message : String(err),
-        matchId,
-        lineupId
-      });
-      // Don't alert user - auto-save failures shouldn't be intrusive
-    }
-  };
-
   return {
     handleLockLineup,
     handleUnlockLineup,
-    autoSaveLineup,
   };
 }

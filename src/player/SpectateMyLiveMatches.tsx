@@ -24,16 +24,6 @@ import type { GameType, DayOfWeek } from '@/types/league';
 import type { MatchWithDetails } from '@/types';
 import { SpectateMatchCard } from './SpectateMatchCard';
 
-/**
- * The live-match queries also embed `season → league` (for the league label),
- * which MatchWithDetails doesn't declare.
- */
-type MatchWithSeasonLeague = MatchWithDetails & {
-  season?: {
-    league?: { id: string; game_type?: string; day_of_week?: string; division?: string | null } | null;
-  } | null;
-};
-
 function composeLeagueLabel(league: {
   game_type?: string;
   day_of_week?: string;
@@ -67,7 +57,7 @@ export function SpectateMyLiveMatches() {
   const groups: LeagueGroup[] = useMemo(() => {
     const byLeague = new Map<string, LeagueGroup>();
     for (const m of matches) {
-      const league = (m as MatchWithSeasonLeague).season?.league;
+      const league = m.season?.league;
       const leagueId = league?.id ?? 'unknown';
       if (!byLeague.has(leagueId)) {
         byLeague.set(leagueId, {
@@ -141,8 +131,7 @@ export function SpectateMyLiveMatches() {
               </h2>
               {g.matches.map((m) => {
                 const weekName =
-                  // A missing week id just misses the map (get(undefined) → undefined).
-                  weekLabels.get(m.season_week?.id as string) ||
+                  (m.season_week && weekLabels.get(m.season_week.id)) ||
                   m.season_week?.week_name ||
                   '';
                 const weekDate = m.season_week?.scheduled_date || '';
