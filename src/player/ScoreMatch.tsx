@@ -934,12 +934,10 @@ function ScoreMatchBody() {
   const bothLineupsLocked =
     tiebreakLineups.length >= 2 && tiebreakLineups.every((l) => l.locked);
   const isTiebreakerMode = match.match_result === 'tie' && bothLineupsLocked && tiebreakerGamesExist;
+  // Tiebreak games are picked by their flag, not by game number, so any
+  // lineup geometry (not just 3v3's 19-21) works.
   const filteredGameResults = isTiebreakerMode
-    ? new Map(
-        Array.from(gameResults.entries()).filter(([gameNumber]) =>
-          gameNumber >= 19 && gameNumber <= 21
-        )
-      )
+    ? new Map(Array.from(gameResults.entries()).filter(([, game]) => game.is_tiebreaker))
     : gameResults;
 
   // Lineup size and win condition come from the resolved preferences.
@@ -1083,7 +1081,7 @@ function ScoreMatchBody() {
           tiebreaker stays separate (different game-set semantics), all
           regular play flows through UnifiedScoreboard which adapts via
           win_condition + points_calculator + lineup_size from the snapshot. */}
-      {isTiebreakerMode ? (
+      {isTiebreakerMode && tiebreakRecord ? (
         <TiebreakerScoreboard
           match={{
             ...match,
@@ -1095,6 +1093,7 @@ function ScoreMatchBody() {
           onVerify={handleVerify}
           isVerifying={isVerifying}
           gameType={gameType}
+          gamesNeeded={tiebreakRecord.games_needed}
         />
       ) : (
         <UnifiedScoreboard

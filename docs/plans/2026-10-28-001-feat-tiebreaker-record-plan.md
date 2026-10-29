@@ -341,6 +341,40 @@ fabricated game rows.
 change, every affected player's handicap must come out **identical**. That is
 the whole point: the rule does not change, only where the credit comes from.
 
+> **AS BUILT 2026-10-29 (Units 4 + 5, one commit).** Recorded so the choices
+> are not re-derived:
+>
+> - **Finish line.** `TiebreakerScoreboard` takes `gamesNeeded` from the record;
+>   ScoreMatch picks tiebreak games by `is_tiebreaker`, not by number 19–21.
+> - **Overwrite → record.** `resolveTiebreakerRecord` writes `winning_team_id` +
+>   `resolved_at` (only if unresolved) BEFORE the match completes, so a failure
+>   leaves the match retryable rather than completed without credit.
+> - **Where the credit is read.** `fetchTiebreakSlots` (one entry per slot,
+>   capped at `players_per_side`, double duty twice). `fetchHandicapHistory`
+>   merges those with regular rows and SKIPS tiebreak rows whose match has a
+>   record — no double count. Losses are counted explicitly (wins + losses =
+>   games), not as games − wins.
+> - **Ties settled before the record (D5, no backfill).** Their rows still
+>   carry the overwrite and have no record, so the old row rule still applies to
+>   them. Without this, past tiebreak credit would have silently vanished.
+> - **Exact window parity.** Losing slots also take their place in the newest-N
+>   window and are dropped after, as the old loss rows were. The 25% fetch
+>   buffer and the 50-game league threshold behave identically.
+> - **Renamed** `matchGames.fetchPlayerGameHistory` → `fetchHandicapHistory`
+>   (Unit 7's first bullet, done here because the function was rewritten anyway).
+>   The profile game counts use it too, so they keep counting tiebreak wins.
+> - **ONE deliberate difference from the old code.** The old overwrite
+>   credited by the MATCH lineup's slot order, but the row's player was the
+>   TIEBREAK order. When a side reordered, a winner whose position changed got
+>   no credit at all (the row's winner was someone not on that row). The new
+>   code credits every player on the winning tiebreak lineup (D2). It is
+>   identical whenever the order was kept, and that is what the parity test
+>   pins. In 5v5, credit also follows who actually played, not slots 1–3.
+> - **Parity test** (`tiebreakHandicapParity.db.test.ts`): 2-1, 2-0 with game 3
+>   unplayed, and double duty, across three windows, against a frozen copy of
+>   the old code. Mutation-checked: dropping the credit or allowing the double
+>   count both fail it.
+
 ---
 
 ## Unit 6 — Deploy cutover for a tie in flight

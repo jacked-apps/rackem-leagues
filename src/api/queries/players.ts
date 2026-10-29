@@ -6,7 +6,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
-import { fetchPlayerGameHistory } from './matchGames';
+import { fetchHandicapHistory } from './matchGames';
 import { calculatePlayerHandicap } from '@/utils/calculatePlayerHandicap';
 import { logger } from '@/utils/logger';
 
@@ -284,11 +284,11 @@ export async function fetchPlayerDetails(
     });
   });
 
-  // Fetch game counts by game type using existing fetchPlayerGameHistory
+  // Fetch game counts by game type using fetchHandicapHistory
   // This uses the same logic as handicap calculations
-  const eightBallGames = await fetchPlayerGameHistory(playerId, 'eight_ball', undefined, 10000);
-  const nineBallGames = await fetchPlayerGameHistory(playerId, 'nine_ball', undefined, 10000);
-  const tenBallGames = await fetchPlayerGameHistory(playerId, 'ten_ball', undefined, 10000);
+  const eightBallGames = await fetchHandicapHistory(playerId, 'eight_ball', undefined, 10000);
+  const nineBallGames = await fetchHandicapHistory(playerId, 'nine_ball', undefined, 10000);
+  const tenBallGames = await fetchHandicapHistory(playerId, 'ten_ball', undefined, 10000);
 
   const gameCounts = {
     eight_ball: eightBallGames.length,
@@ -417,7 +417,7 @@ export interface AutoAuthorizeResult {
  * Fast count of total completed games for a player (across all game types)
  *
  * Uses Supabase count query instead of fetching all game records.
- * Much faster than fetchPlayerGameHistory when you only need the count.
+ * Much faster than fetchHandicapHistory when you only need the count.
  *
  * @param playerId - The player's member ID
  * @returns Promise with total game count

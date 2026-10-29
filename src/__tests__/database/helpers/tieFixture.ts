@@ -13,6 +13,7 @@ import { executeSql } from '@/test/dbTestUtils';
 
 export interface TieFixture {
   match: string;
+  league: string;
   homeTeam: string;
   awayTeam: string;
   /** Member id in each home match-lineup slot, in slot order. */
@@ -83,7 +84,7 @@ export async function createTieFixture(homePattern: string[], awaySize = 3): Pro
   }
 
   return {
-    match: ids.match, homeTeam: ids.homeTeam, awayTeam: ids.awayTeam, homeSlots, awaySlots,
+    match: ids.match, league: ids.league, homeTeam: ids.homeTeam, awayTeam: ids.awayTeam, homeSlots, awaySlots,
     matchLineupRows: async () => {
       const rows = await executeSql(
         `SELECT to_jsonb(ml) AS r FROM match_lineups ml WHERE match_id = $1 ORDER BY team_id`, [ids.match]);

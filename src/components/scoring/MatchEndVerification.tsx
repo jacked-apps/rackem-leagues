@@ -16,22 +16,19 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useMatchLineups, useMatchGames, useMatchWithLeagueSettings } from '@/api/hooks/useMatches';
-import { useCreateMatchGames, useUpdateMatchGame, useUpdateMatch } from '@/api/hooks/useMatchMutations';
+import { useCreateMatchGames, useUpdateMatch } from '@/api/hooks/useMatchMutations';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { auditMatchScoringConsistency } from '@/api/queries/matches';
 import { determineMatchResult, type MatchResultOutcome } from '@/utils/determineMatchResult';
 import { buildWinCalcConfig, decideWinner } from '@/systems/win-calculator';
 import { ManualTiebreakerDialog } from './ManualTiebreakerDialog';
 import type { ManualTiebreakerSubmission } from './ManualTiebreakerDialog';
-import {
-  tiebreakerGameNumbers,
-  tiebreakerGameToPosition,
-  tiebreakerGameSpecs,
-} from '@/utils/tiebreaker/gameNumbers';
+import { tiebreakerGameSpecs } from '@/utils/tiebreaker/gameNumbers';
 import { computeGameCount } from '@/systems/team-geometry';
 import { getTiebreakerShape } from '@/utils/tiebreaker/tiebreakerShape';
 import { createTiebreakerRecord } from '@/api/mutations/tiebreakers';
 import { getMatchTiebreaker } from '@/api/queries/tiebreakers';
+import { resolveTiebreakerRecord } from '@/api/mutations/resolveTiebreaker';
 import { logger } from '@/utils/logger';
 
 interface MatchEndVerificationProps {
@@ -105,7 +102,6 @@ export function MatchEndVerification({
   const navigate = useNavigate();
   const updateMatchMutation = useUpdateMatch();
   const createGamesMutation = useCreateMatchGames();
-  const updateGameMutation = useUpdateMatchGame(matchId);
 
   // Fetch match data for fresh verification status
   const matchQuery = useMatchWithLeagueSettings(matchId);
@@ -392,6 +388,16 @@ export function MatchEndVerification({
                   status: winnerTeamId ? 'completed' : 'in_progress',
                 };
 
+          // A finished tiebreaker records its winner on the tiebreak record
+          // BEFORE the match completes. This is where the anti-sandbagging
+          // credit now comes from (Units 4–5 of the tiebreak-record plan) —
+          // the game rows are no longer overwritten, so they keep what really
+          // happened. Written first so a failure leaves the match unfinished
+          // and retryable, never completed with the credit missing.
+          if (isTiebreakerMode && winnerTeamId) {
+            await resolveTiebreakerRecord(matchId, winnerTeamId);
+          }
+
           await updateMatchMutation.mutateAsync({
             matchId,
             updates,
@@ -406,42 +412,6 @@ export function MatchEndVerification({
           // when transitioning into a tiebreaker.
           if (winnerTeamId) {
             void auditMatchScoringConsistency(matchId);
-          }
-
-          // Anti-sandbagging rule for tiebreaker: Override all game results with winning team
-          if (isTiebreakerMode && winnerTeamId) {
-
-            // Get the winning lineup
-            const winningLineup = winnerTeamId === homeTeamId ? homeLineup : awayLineup;
-
-            if (winningLineup) {
-              // Tiebreaker game numbers start at matchTotalGames + 1.
-              // For BCA 3v3 DRR (18 regular games) that's 19, 20, 21.
-              // Sourced via tiebreakerGameNumbers/tiebreakerGameToPosition so
-              // future lineup geometries (4v4 etc.) compute their own ranges.
-              for (const gameNumber of tiebreakerGameNumbers(matchTotalGames)) {
-                // 0-indexed position from the helper; lineup fields are 1-indexed
-                const position = tiebreakerGameToPosition(matchTotalGames, gameNumber) + 1;
-                const game = tiebreakerGames.find(g => g.game_number === gameNumber);
-
-                if (!game) {
-                  logger.error('Tiebreaker game not found', { gameNumber });
-                  continue;
-                }
-
-                const winningPlayerId = winningLineup[`player${position}_id` as keyof typeof winningLineup];
-
-                await updateGameMutation.mutateAsync({
-                  gameId: game.id,
-                  updates: {
-                    winner_team_id: winnerTeamId,
-                    winner_player_id: winningPlayerId,
-                    confirmed_by_home: homeVerifiedBy,
-                    confirmed_by_away: awayVerifiedBy,
-                  },
-                });
-              }
-            }
           }
 
           // Handle tie result - create tiebreaker games
@@ -580,7 +550,7 @@ export function MatchEndVerification({
     };
 
     completeTheMatch();
-  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, homeLineup, awayLineup, updateGameMutation, matchTotalGames, tiebreakerFormat]);
+  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, homeLineup, awayLineup, matchTotalGames, tiebreakerFormat]);
 
   return (
     <div className="bg-muted border-b-2 border-border">
