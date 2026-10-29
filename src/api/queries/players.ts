@@ -270,10 +270,10 @@ export async function fetchPlayerDetails(
     if (!league || Array.isArray(league) || !season || Array.isArray(season)) return;
 
     // Add to teams array with league and season info
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    // TODO(typed-client): day_of_week is a text column ('tuesday'), never a
-    // number, so dayName is always '' and league_name drops the night.
-    const dayName = typeof league.day_of_week === 'number' ? dayNames[league.day_of_week] : '';
+    // day_of_week is stored lowercase ('tuesday'); capitalize it for display.
+    const dayName = league.day_of_week
+      ? league.day_of_week.charAt(0).toUpperCase() + league.day_of_week.slice(1)
+      : '';
     const gameTypeFormatted = league.game_type ? league.game_type.replace('_', '-').charAt(0).toUpperCase() + league.game_type.replace('_', '-').slice(1) : '';
     const division = league.division || '';
 
