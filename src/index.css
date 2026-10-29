@@ -45,6 +45,36 @@
   --info-foreground: oklch(0.99 0 0);
   --highlight: oklch(0.58 0.22 295);
   --highlight-foreground: oklch(0.99 0 0);
+
+  /* Scoreboard team tokens — home is blue, away is orange. Each surface
+     carries its own text colour, so text on a team panel never borrows the
+     page's --foreground (which flips to white in dark mode while a fixed
+     light panel stays light). Read through src/components/scoring/scoreboardColors.ts. */
+  --home-team: oklch(0.932 0.032 255.585);
+  --home-team-hover: oklch(0.882 0.059 254.128);
+  --home-team-border: oklch(0.882 0.059 254.128);
+  --home-team-border-strong: oklch(0.809 0.105 251.813);
+  --home-team-foreground: oklch(0.145 0 0);
+  --home-team-heading: oklch(0.379 0.146 265.522);
+  --home-team-accent: oklch(0.546 0.245 262.881);
+  --away-team: oklch(0.954 0.038 75.164);
+  --away-team-hover: oklch(0.901 0.076 70.697);
+  --away-team-border: oklch(0.901 0.076 70.697);
+  --away-team-border-strong: oklch(0.837 0.128 66.29);
+  --away-team-foreground: oklch(0.145 0 0);
+  --away-team-heading: oklch(0.408 0.123 38.172);
+  --away-team-accent: oklch(0.646 0.222 41.116);
+
+  /* Scored-game tokens on the scoring screen: a picked winner waiting for
+     the other side (pending), an agreed result (confirmed), and a game with
+     a vacate request open. Same own-text-colour rule as the team tokens. */
+  --game-pending: oklch(0.973 0.071 103.193);
+  --game-pending-foreground: oklch(0.145 0 0);
+  --game-confirmed: oklch(0.925 0.084 155.995);
+  --game-confirmed-foreground: oklch(0.145 0 0);
+  --game-vacate: oklch(0.936 0.032 17.717);
+  --game-vacate-foreground: oklch(0.145 0 0);
+
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -123,6 +153,26 @@ body {
   --color-info-foreground: var(--info-foreground);
   --color-highlight: var(--highlight);
   --color-highlight-foreground: var(--highlight-foreground);
+  --color-home-team: var(--home-team);
+  --color-home-team-hover: var(--home-team-hover);
+  --color-home-team-border: var(--home-team-border);
+  --color-home-team-border-strong: var(--home-team-border-strong);
+  --color-home-team-foreground: var(--home-team-foreground);
+  --color-home-team-heading: var(--home-team-heading);
+  --color-home-team-accent: var(--home-team-accent);
+  --color-away-team: var(--away-team);
+  --color-away-team-hover: var(--away-team-hover);
+  --color-away-team-border: var(--away-team-border);
+  --color-away-team-border-strong: var(--away-team-border-strong);
+  --color-away-team-foreground: var(--away-team-foreground);
+  --color-away-team-heading: var(--away-team-heading);
+  --color-away-team-accent: var(--away-team-accent);
+  --color-game-pending: var(--game-pending);
+  --color-game-pending-foreground: var(--game-pending-foreground);
+  --color-game-confirmed: var(--game-confirmed);
+  --color-game-confirmed-foreground: var(--game-confirmed-foreground);
+  --color-game-vacate: var(--game-vacate);
+  --color-game-vacate-foreground: var(--game-vacate-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -170,6 +220,30 @@ body {
   --info-foreground: oklch(0.15 0 0);
   --highlight: oklch(0.72 0.2 295);
   --highlight-foreground: oklch(0.15 0 0);
+
+  /* Team + scored-game tokens — deep tints with light text, so the panels
+     sit in the dark page instead of glowing as bright boxes. */
+  --home-team: oklch(0.3 0.07 258);
+  --home-team-hover: oklch(0.36 0.09 258);
+  --home-team-border: oklch(0.4 0.1 258);
+  --home-team-border-strong: oklch(0.48 0.12 258);
+  --home-team-foreground: oklch(0.985 0 0);
+  --home-team-heading: oklch(0.882 0.059 254.128);
+  --home-team-accent: oklch(0.809 0.105 251.813);
+  --away-team: oklch(0.32 0.07 50);
+  --away-team-hover: oklch(0.38 0.09 50);
+  --away-team-border: oklch(0.42 0.1 50);
+  --away-team-border-strong: oklch(0.5 0.12 50);
+  --away-team-foreground: oklch(0.985 0 0);
+  --away-team-heading: oklch(0.901 0.076 70.697);
+  --away-team-accent: oklch(0.837 0.128 66.29);
+  --game-pending: oklch(0.38 0.08 95);
+  --game-pending-foreground: oklch(0.985 0 0);
+  --game-confirmed: oklch(0.36 0.08 152);
+  --game-confirmed-foreground: oklch(0.985 0 0);
+  --game-vacate: oklch(0.34 0.09 25);
+  --game-vacate-foreground: oklch(0.985 0 0);
+
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);

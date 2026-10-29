@@ -10,6 +10,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { MatchEndVerification } from './MatchEndVerification';
+import { HOME_TEAM_COLORS, AWAY_TEAM_COLORS } from './scoreboardColors';
 
 interface TiebreakerScoreboardProps {
   /** Current match data */
@@ -121,11 +122,11 @@ export function TiebreakerScoreboard({
               names instead of generic HOME / AWAY labels. */}
           <div className="grid grid-cols-3 gap-6 items-center">
             {/* Home Score */}
-            <div className="text-center bg-blue-100 rounded-lg p-4">
+            <div className={`text-center rounded-lg p-4 ${HOME_TEAM_COLORS.bg} ${HOME_TEAM_COLORS.text}`}>
               <div className="text-sm font-medium text-muted-foreground mb-2 truncate">
                 {match.home_team?.team_name ?? 'Home'}
               </div>
-              <div className="text-6xl font-bold text-foreground">
+              <div className="text-6xl font-bold">
                 {homeWins}
               </div>
             </div>
@@ -138,11 +139,11 @@ export function TiebreakerScoreboard({
             </div>
 
             {/* Away Score */}
-            <div className="text-center bg-orange-100 rounded-lg p-4">
+            <div className={`text-center rounded-lg p-4 ${AWAY_TEAM_COLORS.bg} ${AWAY_TEAM_COLORS.text}`}>
               <div className="text-sm font-medium text-muted-foreground mb-2 truncate">
                 {match.away_team?.team_name ?? 'Away'}
               </div>
-              <div className="text-6xl font-bold text-foreground">
+              <div className="text-6xl font-bold">
                 {awayWins}
               </div>
             </div>

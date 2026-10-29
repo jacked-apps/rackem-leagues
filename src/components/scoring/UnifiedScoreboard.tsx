@@ -286,7 +286,7 @@ function TeamCard({
   const pointsClass = winCondition === 'points' ? 'text-3xl' : 'text-xl';
 
   return (
-    <Card className={`${colors.border} ${colors.bg} p-0`}>
+    <Card className={`${colors.border} ${colors.bg} ${colors.text} p-0`}>
       <div className="text-sm p-2">
         {/* Inline team identity (R8). Tap to toggle drawer + threshold trio
             together (revised 2026-05-04 design: thresholds are bound to the
@@ -334,7 +334,7 @@ function TeamCard({
               separate "+N start" badge needed. */}
           {showPoints && (
             <div className="flex flex-col items-center">
-              <span className={`font-bold ${pointsClass} text-foreground`}>
+              <span className={`font-bold ${pointsClass}`}>
                 {formatNumber(points)}
               </span>
               <span className="text-[10px] text-muted-foreground">Points</span>
@@ -459,17 +459,17 @@ function TeamCard({
               )}
 
               {/* Team summary row */}
-              <div className="font-semibold text-foreground">
+              <div className="font-semibold">
                 {sumLineupHandicaps(lineup, lineupSize)}
               </div>
-              <div className="font-semibold text-foreground truncate">
+              <div className="font-semibold truncate">
                 {/* team_id is schema-nullable but always set on a real lineup */}
                 <TeamNameLink teamId={lineup.team_id ?? ''} teamName={teamName} />
               </div>
-              <div className="font-semibold text-foreground text-center">{wins}</div>
-              <div className="font-semibold text-foreground text-center">{losses}</div>
+              <div className="font-semibold text-center">{wins}</div>
+              <div className="font-semibold text-center">{losses}</div>
               {getPlayerPoints && (
-                <div className="font-semibold text-foreground text-center">
+                <div className="font-semibold text-center">
                   {formatNumber(points)}
                 </div>
               )}
@@ -501,8 +501,8 @@ function TeamCard({
                   : [];
                 return (
                   <div key={`row-${player.position}`} className="contents">
-                    <div className="text-foreground">{player.handicap ?? '–'}</div>
-                    <div className="text-foreground truncate">
+                    <div>{player.handicap ?? '–'}</div>
+                    <div className="truncate">
                       <PlayerNameLink
                         playerId={player.id}
                         playerName={getPlayerDisplayName(player.id)}
@@ -510,10 +510,10 @@ function TeamCard({
                         hidePlaceholderBadge
                       />
                     </div>
-                    <div className="text-center text-foreground">{stats.wins}</div>
-                    <div className="text-center text-foreground">{stats.losses}</div>
+                    <div className="text-center">{stats.wins}</div>
+                    <div className="text-center">{stats.losses}</div>
                     {playerPoints != null && (
-                      <div className="text-center text-foreground">
+                      <div className="text-center">
                         {formatNumber(playerPoints)}
                       </div>
                     )}

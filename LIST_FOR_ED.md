@@ -4,22 +4,6 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
-## 🌙 2026-10-29 — Dark mode: scoreboard numbers turn white on the light team panels
-
-**Found by Ed** while testing the tiebreaker. On the live scoreboard, the
-points (and other numbers) are near-white in dark mode and hard to read.
-
-**Likely cause (checked, not fixed):** the team panels use FIXED light
-backgrounds (`bg-blue-100` / `bg-orange-100` from
-`src/components/scoring/scoreboardColors.ts`), but the text on them uses
-`text-foreground`, which flips to white in dark mode — e.g.
-`src/components/scoring/UnifiedScoreboard.tsx:337` (points) and the player
-table around :462–515. Fix: fixed-colour text on fixed-colour backgrounds
-(the panel's own `headerText` colour, or a dark-mode panel colour). Check
-`TiebreakerScoreboard.tsx` too — its score uses the same pattern.
-
----
-
 ## 🗂️ 2026-10-29 — Past-match results on the schedule: show more in less room
 
 **Found by Ed.** A finished match on the schedule is two cards inside a card

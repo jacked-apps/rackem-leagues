@@ -30,6 +30,7 @@ import { createTiebreakerRecord } from '@/api/mutations/tiebreakers';
 import { getMatchTiebreaker } from '@/api/queries/tiebreakers';
 import { resolveTiebreakerRecord } from '@/api/mutations/resolveTiebreaker';
 import { logger } from '@/utils/logger';
+import { HOME_TEAM_COLORS, AWAY_TEAM_COLORS } from './scoreboardColors';
 
 interface MatchEndVerificationProps {
   /** Match ID */
@@ -558,12 +559,12 @@ export function MatchEndVerification({
             Match Complete
           </div>
           {result === 'home_win' && (
-            <div className="text-lg font-bold text-blue-600 mt-1">
+            <div className={`text-lg font-bold mt-1 ${HOME_TEAM_COLORS.accentText}`}>
               Home Team Wins!
             </div>
           )}
           {result === 'away_win' && (
-            <div className="text-lg font-bold text-orange-600 mt-1">
+            <div className={`text-lg font-bold mt-1 ${AWAY_TEAM_COLORS.accentText}`}>
               Away Team Wins!
             </div>
           )}
@@ -582,13 +583,13 @@ export function MatchEndVerification({
           {/* Home Team Row */}
           <div
             className={`grid grid-cols-[1fr_auto_auto_auto] gap-2 px-3 py-2 border-b ${
-              result === 'home_win' ? 'bg-blue-50' : ''
+              result === 'home_win' ? `${HOME_TEAM_COLORS.bg} ${HOME_TEAM_COLORS.text}` : ''
             }`}
           >
             <div
               className={`truncate ${
                 result === 'home_win'
-                  ? 'text-lg font-bold text-blue-600'
+                  ? 'text-lg font-bold'
                   : 'font-medium'
               }`}
             >
@@ -597,7 +598,7 @@ export function MatchEndVerification({
             <div
               className={`text-center w-16 ${
                 result === 'home_win'
-                  ? 'text-lg font-bold text-blue-600'
+                  ? 'text-lg font-bold'
                   : 'font-medium'
               }`}
             >
@@ -606,7 +607,7 @@ export function MatchEndVerification({
             <div
               className={`text-center w-16 ${
                 result === 'home_win'
-                  ? 'text-lg font-bold text-blue-600'
+                  ? 'text-lg font-bold'
                   : 'font-medium'
               }`}
             >
@@ -620,13 +621,13 @@ export function MatchEndVerification({
           {/* Away Team Row */}
           <div
             className={`grid grid-cols-[1fr_auto_auto_auto] gap-2 px-3 py-2 ${
-              result === 'away_win' ? 'bg-orange-50' : ''
+              result === 'away_win' ? `${AWAY_TEAM_COLORS.bg} ${AWAY_TEAM_COLORS.text}` : ''
             }`}
           >
             <div
               className={`truncate ${
                 result === 'away_win'
-                  ? 'text-lg font-bold text-blue-600'
+                  ? 'text-lg font-bold'
                   : 'font-medium'
               }`}
             >
@@ -635,7 +636,7 @@ export function MatchEndVerification({
             <div
               className={`text-center w-16 ${
                 result === 'away_win'
-                  ? 'text-lg font-bold text-blue-600'
+                  ? 'text-lg font-bold'
                   : 'font-medium'
               }`}
             >
@@ -644,7 +645,7 @@ export function MatchEndVerification({
             <div
               className={`text-center w-16 ${
                 result === 'away_win'
-                  ? 'text-lg font-bold text-blue-600'
+                  ? 'text-lg font-bold'
                   : 'font-medium'
               }`}
             >

@@ -11,7 +11,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { getTeamColors } from './scoreboardColors';
+import { getTeamColors, GAME_STATE_COLORS } from './scoreboardColors';
 
 interface GameButtonRowProps {
   /** Game number */
@@ -73,7 +73,7 @@ export function GameButtonRow({
 
   // Pending state: Buttons with winner highlighted
   if (state === 'pending') {
-    const winnerClass = 'bg-yellow-100 font-semibold';
+    const winnerClass = `${GAME_STATE_COLORS.pending} font-semibold`;
     const loserClass = 'bg-card text-muted-foreground';
 
     return (
@@ -115,7 +115,7 @@ export function GameButtonRow({
 
   // Confirmed state: Divs with trophy and Vacate button
   if (state === 'confirmed') {
-    const winnerClass = 'bg-green-200 font-semibold';
+    const winnerClass = `${GAME_STATE_COLORS.confirmed} font-semibold`;
     const loserClass = 'bg-card text-muted-foreground';
 
     return (
@@ -164,7 +164,7 @@ export function GameButtonRow({
         <Button
           variant="outline"
           size="sm"
-          className={`w-full ${breakerColors.bg} ${breakerColors.bgHover}`}
+          className={`w-full ${breakerColors.button}`}
           onClick={() =>
             onPlayerClick(gameNumber, breakerPlayerId, breakerName, breakerTeamId)
           }
@@ -177,7 +177,7 @@ export function GameButtonRow({
         <Button
           variant="outline"
           size="sm"
-          className={`w-full ${rackerColors.bg} ${rackerColors.bgHover}`}
+          className={`w-full ${rackerColors.button}`}
           onClick={() =>
             onPlayerClick(gameNumber, rackerPlayerId, rackerName, rackerTeamId)
           }
