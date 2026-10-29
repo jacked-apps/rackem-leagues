@@ -325,8 +325,5 @@ export async function getOperatorProfanityFilter(leagueId: string): Promise<bool
     throw new Error(`Failed to fetch resolved preferences: ${error?.message || 'League not found'}`);
   }
 
-  // TODO(typed-client): resolved_league_preferences has no
-  // profanity_filter_enabled column, so PostgREST rejects this select and the
-  // function throws above on every call. Cast keeps today's behavior.
-  return (data as unknown as { profanity_filter_enabled: boolean | null }).profanity_filter_enabled ?? false;
+  return data.profanity_filter_enabled ?? false;
 }

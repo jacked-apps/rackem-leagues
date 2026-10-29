@@ -150,6 +150,11 @@ export const RELEASES: Release[] = [
         text: 'Opening a player invite that had already been used, cancelled or turned down always said \u201cInvite Expired\u201d \u2014 with a blank where the team name should be. It now tells you what actually happened to the invite.',
         kind: 'fix',
       },
+      {
+        text: 'The \u201cno profanity in team names\u201d setting stopped doing anything back in April \u2014 team names were never checked, whatever it was set to. It works again: if your league has it switched on, a team name with bad language is now refused.',
+        kind: 'fix',
+        forOperators: true,
+      },
     ],
   },
   {
