@@ -341,6 +341,13 @@ fabricated game rows.
 change, every affected player's handicap must come out **identical**. That is
 the whole point: the rule does not change, only where the credit comes from.
 
+> **CHANGED 2026-10-29 (Ed, while testing): the tiebreak order starts BLANK.**
+> Seeding it from the match order meant removing players just to reorder them.
+> `createTiebreakerRecord` now writes empty lineups; each pick still copies the
+> player's handicap from the match lineup, and the dropdown list is still the
+> match lineup — so no new player can appear. A later "use same order" button
+> that fills it in is Ed's idea, NOT built.
+
 > **AS BUILT 2026-10-29 (Units 4 + 5, one commit).** Recorded so the choices
 > are not re-derived:
 >

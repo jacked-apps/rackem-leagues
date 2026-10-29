@@ -15,7 +15,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useMatchLineups, useMatchGames, useMatchWithLeagueSettings } from '@/api/hooks/useMatches';
+import { useMatchGames, useMatchWithLeagueSettings } from '@/api/hooks/useMatches';
 import { useCreateMatchGames, useUpdateMatch } from '@/api/hooks/useMatchMutations';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { auditMatchScoringConsistency } from '@/api/queries/matches';
@@ -142,11 +142,6 @@ export function MatchEndVerification({
   // 'accept_tie' is never a default (migration 20261028204853).
   const tiebreakerFormat: string =
     (snapshot?.tiebreaker_format as string | undefined) ?? 'best_of_3_short_race';
-
-  // Match lineups — read (never written) to seed the tiebreak record's lineups.
-  const lineupsQuery = useMatchLineups(matchId, homeTeamId, awayTeamId, false);
-  const homeLineup = lineupsQuery.data?.homeLineup;
-  const awayLineup = lineupsQuery.data?.awayLineup;
 
   // Fetch tiebreaker games (if this is a tiebreaker)
   const gamesQuery = useMatchGames(matchId);
@@ -466,16 +461,14 @@ export function MatchEndVerification({
             // lineups (requirement D0). This REPLACES unlocking the match
             // lineups: they stay locked with their original locked_at, so a
             // tie can no longer re-lock them and recalculate handicaps or the
-            // team bonus (audit F1). Idempotent, so a re-fire is harmless.
-            if (!homeLineup || !awayLineup) {
-              throw new Error('Match lineups not loaded — cannot seed tiebreak record');
-            }
+            // team bonus (audit F1). Both tiebreak lineups start EMPTY — each
+            // team picks its order. Idempotent, so a re-fire is harmless.
             await createTiebreakerRecord({
               matchId,
               gameType,
               shape,
-              homeLineup,
-              awayLineup,
+              homeTeamId,
+              awayTeamId,
             });
 
             // Wait for database writes to complete and propagate
@@ -550,7 +543,7 @@ export function MatchEndVerification({
     };
 
     completeTheMatch();
-  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, homeLineup, awayLineup, matchTotalGames, tiebreakerFormat]);
+  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, matchTotalGames, tiebreakerFormat]);
 
   return (
     <div className="bg-muted border-b-2 border-border">

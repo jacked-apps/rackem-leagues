@@ -9,7 +9,6 @@
 import { executeSql } from '@/test/dbTestUtils';
 import { createTiebreakerRecord } from '@/api/mutations/tiebreakers';
 import { resolveTiebreakerRecord } from '@/api/mutations/resolveTiebreaker';
-import { getMatchLineups } from '@/api/queries/matches';
 import { createTieFixture, type TieFixture } from './tieFixture';
 
 export type Side = 'home' | 'away';
@@ -73,12 +72,20 @@ export async function buildScenario(homePattern: string[], results: (Side | null
           [tie.match, REGULAR + 1 + i, r ? teamOf(r) : null, r ? slotOf(r, i) : null],
         );
       }
-      const { homeLineup, awayLineup } = await getMatchLineups(tie.match, tie.homeTeam, tie.awayTeam, false);
       await createTiebreakerRecord({
         matchId: tie.match, gameType: 'eight_ball',
         shape: { gamesNeeded: 2, gameCount: 3, playersPerSide: 3 },
-        homeLineup: homeLineup!, awayLineup: awayLineup!,
+        homeTeamId: tie.homeTeam, awayTeamId: tie.awayTeam,
       });
+      // The lineups start empty; each team picks the same order it played
+      // the match in (the order the old overwrite assumed).
+      for (const side of ['home', 'away'] as const) {
+        await executeSql(
+          `UPDATE match_tiebreaker_lineups l SET player1_id = $3, player2_id = $4, player3_id = $5
+             FROM match_tiebreakers t WHERE t.id = l.tiebreaker_id AND t.match_id = $1 AND l.team_id = $2`,
+          [tie.match, teamOf(side), slotOf(side, 0), slotOf(side, 1), slotOf(side, 2)],
+        );
+      }
       await resolveTiebreakerRecord(tie.match, teamOf(winner));
     },
   };

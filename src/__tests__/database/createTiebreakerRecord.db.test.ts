@@ -6,8 +6,8 @@
  * A tie used to UNLOCK both match lineups (the root of audit F1). It now writes
  * a tiebreak record instead. These tests pin the three things that change
  * buys, against the real local database:
- *   - one tiebreaker + two lineups, seeded from the MATCH lineups, only the
- *     participating slots (players_per_side) filled
+ *   - one tiebreaker + two EMPTY lineups (Ed: the order starts blank; each
+ *     team picks it from the match lineup on the lineup page)
  *   - the match lineup rows are byte-identical afterwards — still locked, same
  *     locked_at (requirement D0: the match record is never touched)
  *   - re-firing (remount, realtime cycle, second verifier) creates nothing and
@@ -22,27 +22,24 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { executeSql, closePostgresPool } from '@/test/dbTestUtils';
 import { createTiebreakerRecord } from '@/api/mutations/tiebreakers';
-import { getMatchLineups } from '@/api/queries/matches';
 import { createTieFixture, type TieFixture } from './helpers/tieFixture';
 
 let tie: TieFixture;
 const SHAPE = { gamesNeeded: 2, gameCount: 3, playersPerSide: 3 };
 
-/** Run the mutation the way MatchEndVerification does: seeded from match lineups. */
+/** Run the mutation the way MatchEndVerification does. */
 async function fire(): Promise<string> {
-  const { homeLineup, awayLineup } = await getMatchLineups(tie.match, tie.homeTeam, tie.awayTeam, false);
   return createTiebreakerRecord({
     matchId: tie.match,
     gameType: 'eight_ball',
     shape: SHAPE,
-    homeLineup: homeLineup!,
-    awayLineup: awayLineup!,
+    homeTeamId: tie.homeTeam,
+    awayTeamId: tie.awayTeam,
   });
 }
 
 beforeAll(async () => {
-  // Home fills FOUR slots so we can prove only players_per_side (3) are seeded.
-  tie = await createTieFixture(['a', 'b', 'c', 'd']);
+  tie = await createTieFixture(['a', 'b', 'c']);
 });
 
 afterAll(async () => {
@@ -53,7 +50,7 @@ afterAll(async () => {
 describe('createTiebreakerRecord', () => {
   let before = '';
 
-  it('creates one tiebreaker and two lineups, seeded from the match lineups', async () => {
+  it('creates one tiebreaker and two EMPTY lineups — each team picks its own order', async () => {
     before = await tie.matchLineupRows();
     const tbId = await fire();
 
@@ -61,18 +58,17 @@ describe('createTiebreakerRecord', () => {
     expect(tb).toHaveLength(1);
     expect(tb[0]).toMatchObject({ id: tbId, games_needed: 2, game_count: 3, players_per_side: 3 });
 
-    const home = (await executeSql(
-      `SELECT player1_id, player3_id, player3_handicap, player4_id, locked
-         FROM match_tiebreaker_lineups WHERE tiebreaker_id = $1 AND team_id = $2`,
-      [tbId, tie.homeTeam],
-    ))[0];
-    expect(home.player1_id).toBe(tie.homeSlots[0]);
-    expect(home.player3_id).toBe(tie.homeSlots[2]);
-    // Handicap COPIED from the match lineup slot (fixture gives slot 3 a 1).
-    expect(Number(home.player3_handicap)).toBe(1);
-    // Slot 4 played the match but is beyond players_per_side → not seeded.
-    expect(home.player4_id).toBeNull();
-    expect(home.locked).toBe(false);
+    // Ed (2026-10-29): the order starts blank, not copied from the match.
+    const lineups = await executeSql(
+      `SELECT team_id, player1_id, player2_id, player3_id, player1_handicap, locked
+         FROM match_tiebreaker_lineups WHERE tiebreaker_id = $1 ORDER BY team_id`,
+      [tbId],
+    );
+    expect(lineups).toHaveLength(2);
+    for (const l of lineups) {
+      expect([l.player1_id, l.player2_id, l.player3_id, l.player1_handicap, l.locked])
+        .toEqual([null, null, null, null, false]);
+    }
   });
 
   it('leaves the match lineups byte-identical — still locked, same locked_at', async () => {

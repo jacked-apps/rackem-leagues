@@ -21,7 +21,6 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { executeSql, closePostgresPool } from '@/test/dbTestUtils';
 import { createTiebreakerRecord } from '@/api/mutations/tiebreakers';
 import { setTiebreakSlot, lockTiebreakLineup, unlockTiebreakLineup } from '@/api/mutations/tiebreakerLineups';
-import { getMatchLineups } from '@/api/queries/matches';
 import { createTieFixture, type TieFixture } from './helpers/tieFixture';
 
 let tie: TieFixture;
@@ -33,14 +32,12 @@ beforeAll(async () => {
   // Home: John (a) plays double duty in slots 1 and 3; Sara (b) in slot 2.
   tie = await createTieFixture(['a', 'b', 'a']);
   before = await tie.matchLineupRows();
-
-  const { homeLineup, awayLineup } = await getMatchLineups(tie.match, tie.homeTeam, tie.awayTeam, false);
   const tbId = await createTiebreakerRecord({
     matchId: tie.match,
     gameType: 'eight_ball',
     shape: { gamesNeeded: 2, gameCount: 3, playersPerSide: 3 },
-    homeLineup: homeLineup!,
-    awayLineup: awayLineup!,
+    homeTeamId: tie.homeTeam,
+    awayTeamId: tie.awayTeam,
   });
   homeTbLineup = (await executeSql(
     `SELECT id FROM match_tiebreaker_lineups WHERE tiebreaker_id=$1 AND team_id=$2`, [tbId, tie.homeTeam],
