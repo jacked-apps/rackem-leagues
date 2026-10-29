@@ -169,6 +169,10 @@ export const RELEASES: Release[] = [
         kind: 'fix',
         forOperators: true,
       },
+      {
+        text: 'Starting a new message showed people you\u2019d blocked, even though they were meant to be left out. It also kept reloading the whole list of players the entire time the window was open, which could make it sluggish. Both are fixed.',
+        kind: 'fix',
+      },
     ],
   },
   {
