@@ -174,9 +174,9 @@ export function useConversationMessagesRealtime(
             // gets the realtime push and dedup is a safe no-op for them).
             queryClient.setQueryData(
               queryKeys.messages.byConversation(conversationId),
-              (old: any) => {
+              (old: (typeof data)[] | undefined) => {
                 const existing = old || [];
-                if (existing.some((m: { id: string }) => m.id === data.id)) {
+                if (existing.some((m) => m.id === data.id)) {
                   return existing;
                 }
                 return [...existing, data];

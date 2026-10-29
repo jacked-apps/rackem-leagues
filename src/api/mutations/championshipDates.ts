@@ -12,6 +12,7 @@
 
 import { supabase } from '@/supabaseClient';
 import type { ChampionshipDateOption } from '@/utils/tournamentUtils';
+import type { TablesUpdate } from '@/types/database.types';
 
 /**
  * Parameters for creating a championship date option
@@ -141,7 +142,7 @@ export async function updateChampionshipDate(
   }
 
   // Build update object with only provided fields
-  const updates: Record<string, any> = {};
+  const updates: TablesUpdate<'championship_date_options'> = {};
 
   if (params.organization !== undefined) {
     if (!['BCA', 'APA'].includes(params.organization)) {

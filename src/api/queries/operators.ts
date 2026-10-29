@@ -87,8 +87,19 @@ export async function getAllLeagueOperators(): Promise<Array<{
     throw new Error(`Failed to fetch league operators: ${error.message}`);
   }
 
+  // TODO(typed-client): `members!inner` is ambiguous — organization_staff has
+  // two FKs to members (member_id, added_by), so PostgREST rejects this query
+  // with PGRST201 and this function always throws (PlayerManagement's operator
+  // list). Fix: hint `members!organization_staff_member_id_fkey`. Until then
+  // the generated type is a SelectQueryError, so cast to the intended shape.
+  type StaffRow = {
+    member_id: string;
+    organizations: { id: string; organization_name: string };
+    members: { first_name: string; last_name: string };
+  };
+
   // Flatten the nested data
-  return (data || []).map((staff: any) => ({
+  return ((data || []) as unknown as StaffRow[]).map((staff) => ({
     id: staff.organizations.id,
     organization_name: staff.organizations.organization_name,
     member_id: staff.member_id,

@@ -133,10 +133,10 @@ export async function lookupThresholdRaw(
   // version. Normalize.
   const row = Array.isArray(data) ? data[0] : data;
   return {
-    result_1: (row as any).result_1 ?? null,
-    result_2: (row as any).result_2 ?? null,
-    result_3: (row as any).result_3 ?? null,
-    was_swapped: (row as any).was_swapped ?? false,
+    result_1: row.result_1 ?? null,
+    result_2: row.result_2 ?? null,
+    result_3: row.result_3 ?? null,
+    was_swapped: row.was_swapped ?? false,
   };
 }
 

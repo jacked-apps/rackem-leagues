@@ -36,7 +36,7 @@ export async function getBlockedUsers(userId: string): Promise<string[]> {
 
   if (error) throw error;
 
-  return (data || []).map((block: any) => block.blocked_id);
+  return (data || []).map((block) => block.blocked_id);
 }
 
 /**
@@ -119,7 +119,7 @@ export async function getUserConversations(userId: string) {
 
   // For each conversation, fetch the other participant's name for DMs and filter blocked users
   const conversationsWithNames = await Promise.all(
-    (data || []).map(async (item: any) => {
+    (data || []).map(async (item) => {
       let displayName = item.conversations.title;
       let shouldHide = false;
 
@@ -138,7 +138,7 @@ export async function getUserConversations(userId: string) {
           .is('left_at', null);
 
         // Find the other participant (not current user)
-        const otherParticipant = participants?.find((p: any) => p.user_id !== userId);
+        const otherParticipant = participants?.find((p) => p.user_id !== userId);
 
         // Check if the other participant is blocked
         if (otherParticipant && blockedUserIds.includes(otherParticipant.user_id)) {
@@ -146,7 +146,7 @@ export async function getUserConversations(userId: string) {
         }
 
         if (otherParticipant?.members && !Array.isArray(otherParticipant.members)) {
-          const member = otherParticipant.members as any;
+          const member = otherParticipant.members;
           displayName = `${member.first_name} ${member.last_name}`;
         }
       }
@@ -238,7 +238,7 @@ export async function getUnreadMessageCount(userId: string): Promise<number> {
   if (error) throw error;
 
   // Sum up all unread counts
-  const total = (data || []).reduce((sum: number, item: any) => {
+  const total = (data || []).reduce((sum: number, item) => {
     return sum + (item.unread_count || 0);
   }, 0);
 

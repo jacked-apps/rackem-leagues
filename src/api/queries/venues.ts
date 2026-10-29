@@ -138,5 +138,6 @@ export async function getLeagueVenuesWithDetails(leagueId: string): Promise<Arra
     throw new Error(`Failed to fetch league venues with details: ${error.message}`);
   }
 
-  return data as any || [];
+  // Cast: generated row types are wider (text, nullable) than LeagueVenue/Venue.
+  return (data || []) as Array<LeagueVenue & { venue: Venue }>;
 }
