@@ -2,8 +2,8 @@
  * High Contrast palette — PREVIEW (see src/themes/palettes.ts).
  *
  * Built purely for readability: black buttons (white in dark mode), darker
- * body text and stronger borders, and SOLID team panels — strong blue with
- * white text for home, strong amber with black text for away.
+ * body text and stronger borders, and team panels told apart by lightness
+ * alone — black with white text for home, white with black text for away.
  *
  * Selector rule for every palette file: light values go under
  * `[data-palette=…]:not(.dark)` and dark values under `.dark[data-palette=…]`.
@@ -42,23 +42,25 @@
   --sidebar-foreground: oklch(1 0 0);
 }
 
-/* Solid team panels — the same in BOTH modes, so this one block uses
-   :root[...] on purpose (it must out-rank the base .dark block too). */
+/* Team panels — the same in BOTH modes, so this one block uses :root[...]
+   on purpose (it must out-rank the base .dark block too). Black home, white
+   away: told apart by lightness alone, no colour needed. The mid-grey home
+   border keeps the black panel visible on the black dark-mode page. */
 :root[data-palette='high-contrast'] {
-  --home-team: oklch(0.45 0.2 262);
-  --home-team-hover: oklch(0.4 0.2 262);
-  --home-team-border: oklch(0.38 0.2 262);
+  --home-team: oklch(0.13 0 0);
+  --home-team-hover: oklch(0.25 0 0);
+  --home-team-border: oklch(0.55 0 0);
   --home-team-border-strong: oklch(1 0 0 / 45%);
   --home-team-foreground: oklch(1 0 0);
   --home-team-heading: oklch(1 0 0);
-  --home-team-accent: oklch(0.95 0.12 95);
+  --home-team-accent: oklch(1 0 0);
   --home-team-link: oklch(1 0 0);
-  --away-team: oklch(0.82 0.16 78);
-  --away-team-hover: oklch(0.77 0.16 74);
-  --away-team-border: oklch(0.65 0.15 65);
-  --away-team-border-strong: oklch(0 0 0 / 35%);
+  --away-team: oklch(1 0 0);
+  --away-team-hover: oklch(0.9 0 0);
+  --away-team-border: oklch(0 0 0);
+  --away-team-border-strong: oklch(0 0 0 / 45%);
   --away-team-foreground: oklch(0 0 0);
   --away-team-heading: oklch(0 0 0);
-  --away-team-accent: oklch(0.3 0.15 262);
-  --away-team-link: oklch(0.3 0.15 262);
+  --away-team-accent: oklch(0 0 0);
+  --away-team-link: oklch(0 0 0);
 }

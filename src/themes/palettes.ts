@@ -26,9 +26,9 @@ export interface Palette {
 /** Every palette. 'standard' means no override: the plain index.css tokens. */
 export const PALETTES: readonly Palette[] = [
   { id: 'standard', label: 'Standard', description: 'The current look.' },
-  { id: 'high-contrast', label: 'High Contrast', description: 'Black buttons (white in dark), darker text, solid blue and amber team panels.' },
+  { id: 'high-contrast', label: 'High Contrast', description: 'Black buttons (white in dark), darker text, black home and white away panels.' },
   { id: 'blue-gold', label: 'Blue & Gold', description: 'Gold buttons, navy home and gold away panels; navy page in dark mode.' },
-  { id: 'felt', label: 'Felt', description: 'Green buttons, solid blue and amber team panels; felt-green page in dark mode.' },
+  { id: 'felt', label: 'Felt', description: 'Green buttons, felt-green home and cue-ball away panels; felt-green page in dark mode.' },
 ];
 
 const STORAGE_KEY = 'rackem-palette';
