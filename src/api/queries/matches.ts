@@ -12,6 +12,7 @@ import { supabase } from '@/supabaseClient';
 import type { MatchWithLeagueSettings, MatchWithDetails } from '@/types';
 import type { Json } from '@/types/database.types';
 import { formatLocalDate } from '@/utils/formatters';
+import { narrowMatchRow, narrowMatchRowWithDate } from './matchRows';
 
 /**
  * Season week with schedule info
@@ -119,7 +120,7 @@ export async function getMatchById(matchId: string): Promise<MatchWithDetails> {
     throw new Error(`Failed to fetch match: ${error.message}`);
   }
 
-  return data as MatchWithDetails;
+  return narrowMatchRow(data);
 }
 
 /**
@@ -153,7 +154,7 @@ export async function getMatchesBySeason(seasonId: string): Promise<MatchWithDet
     throw new Error(`Failed to fetch matches: ${error.message}`);
   }
 
-  return (data || []) as MatchWithDetails[];
+  return (data || []).map(narrowMatchRow);
 }
 
 /**
@@ -178,7 +179,7 @@ export async function getMatchesByTeam(teamId: string): Promise<MatchWithDetails
       home_team:teams!matches_home_team_id_fkey(id, team_name, captain_id, status),
       away_team:teams!matches_away_team_id_fkey(id, team_name, captain_id, status),
       scheduled_venue:venues!matches_scheduled_venue_id_fkey(id, name, city, state),
-      season_week:season_weeks(id, week_name, scheduled_date)
+      season_week:season_weeks(id, week_name, scheduled_date, week_type)
     `)
     .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
     .order('season_week(scheduled_date)', { ascending: true });
@@ -187,15 +188,8 @@ export async function getMatchesByTeam(teamId: string): Promise<MatchWithDetails
     throw new Error(`Failed to fetch team matches: ${error.message}`);
   }
 
-  // Transform to include scheduled_date at top level
-  const matches = (data || []).map((match) => ({
-    ...match,
-    scheduled_date: match.season_week?.scheduled_date || null,
-  }));
-
-  // season_week here omits week_type (MatchWithDetails declares it); no caller
-  // reads it from this query — TeamSchedule takes week types from season weeks.
-  return matches as unknown as MatchWithDetails[];
+  // Copy the week's date to the top level for sorting and filtering
+  return (data || []).map(narrowMatchRowWithDate);
 }
 
 /**
@@ -234,12 +228,7 @@ export async function getLiveMatchesForLeague(leagueId: string): Promise<MatchWi
     throw new Error(`Failed to fetch live matches: ${error.message}`);
   }
 
-  const matches = (data || []).map((match) => ({
-    ...match,
-    scheduled_date: match.season_week?.scheduled_date || null,
-  }));
-
-  return matches as MatchWithDetails[];
+  return (data || []).map(narrowMatchRowWithDate);
 }
 
 /**
@@ -301,12 +290,7 @@ export async function getLiveMatchesForMember(memberId: string): Promise<MatchWi
     throw new Error(`Failed to fetch live matches: ${error.message}`);
   }
 
-  const matches = (data || []).map((match) => ({
-    ...match,
-    scheduled_date: match.season_week?.scheduled_date || null,
-  }));
-
-  return matches as MatchWithDetails[];
+  return (data || []).map(narrowMatchRowWithDate);
 }
 
 /**
@@ -425,18 +409,13 @@ export async function getMyMatchMatches(
   // they're on or before today. This drops future-scheduled matches and lets
   // both today's match and past-due makeups through.
   const today = formatLocalDate(new Date());
-  const matches = (data || [])
-    .map((match) => ({
-      ...match,
-      scheduled_date: match.season_week?.scheduled_date || null,
-    }))
+  return (data || [])
+    .map(narrowMatchRowWithDate)
     .filter(
       (match) =>
         match.status === 'in_progress' ||
-        (match.scheduled_date !== null && match.scheduled_date <= today),
+        (match.scheduled_date !== undefined && match.scheduled_date <= today),
     );
-
-  return matches as MatchWithDetails[];
 }
 
 /**

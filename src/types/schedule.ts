@@ -7,18 +7,25 @@
 
 import type { SeasonWeek } from './season';
 import type { ResolvedSystemConfig } from './resolvedSystemConfig';
+import type { TeamStatus } from './team';
 
 /**
- * Match status types
+ * Match status values. Must match the `matches_status_check` constraint:
+ * the match queries trust the database to hold only these (narrowMatchRow),
+ * and matchRowNarrowing.db.test.ts fails if the two drift apart.
  */
-export type MatchStatus =
-  | 'scheduled'             // Not yet played
-  | 'updating'              // LO is hand-entering this match (manual scoring); off the players' live surfaces
-  | 'in_progress'           // Currently being played
-  | 'awaiting_verification' // Scored but needs both teams to verify
-  | 'completed'             // Finished and verified
-  | 'forfeited'             // One team forfeited
-  | 'postponed';            // Rescheduled to different date
+export const MATCH_STATUSES = [
+  'scheduled',             // Not yet played
+  'updating',              // LO is hand-entering this match (manual scoring); off the players' live surfaces
+  'in_progress',           // Currently being played
+  'awaiting_verification', // Scored but needs both teams to verify
+  'completed',             // Finished and verified
+  'forfeited',             // One team forfeited
+  'postponed',             // Rescheduled to different date
+] as const;
+
+/** Match status types */
+export type MatchStatus = (typeof MATCH_STATUSES)[number];
 
 // NOTE: A team's schedule position is persisted directly on the `teams` table
 // (`teams.schedule_position`, added 2026-06-11) — written at matchup creation in
@@ -147,17 +154,18 @@ export type MatchInsertData = Omit<Match,
  */
 export interface MatchWithDetails extends Match {
   scheduled_date?: string;  // Denormalized from season_week for easier access
+  // Null status is possible: teams.status is a nullable column (default 'active').
   home_team?: {
     id: string;
     team_name: string;
     captain_id: string | null;
-    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
+    status: TeamStatus | null;
   } | null;
   away_team?: {
     id: string;
     team_name: string;
     captain_id: string | null;
-    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
+    status: TeamStatus | null;
   } | null;
   scheduled_venue?: {
     id: string;

@@ -25,7 +25,7 @@
 export interface LmsSourceTeam {
   id: string;
   team_name: string;
-  status: string;
+  status: string | null;
 }
 export interface LmsSourceMatch {
   match_number: number;

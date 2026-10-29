@@ -10,8 +10,13 @@
  * placeholder team rows used in odd-team-count season schedules and
  * (after PR 2) absorbed dropped-team slots. Bye rows have no captain
  * and no roster.
+ *
+ * Must match the teams status check constraint (matchRowNarrowing.db.test.ts).
  */
-export type TeamStatus = 'active' | 'withdrawn' | 'forfeited' | 'bye';
+export const TEAM_STATUSES = ['active', 'withdrawn', 'forfeited', 'bye'] as const;
+
+/** Team status types */
+export type TeamStatus = (typeof TEAM_STATUSES)[number];
 
 /**
  * Team player status types
