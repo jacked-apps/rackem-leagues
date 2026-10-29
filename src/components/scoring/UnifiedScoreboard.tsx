@@ -324,7 +324,7 @@ function TeamCard({
                 ? `${wins}/${thresholds.games_to_win}`
                 : formatNumber(wins)}
             </span>
-            <span className="text-[10px] text-muted-foreground">Wins</span>
+            <span className={`text-[10px] ${colors.mutedText}`}>Wins</span>
           </div>
 
           {/* Points column — hidden entirely when calculator is 'none' (R7).
@@ -337,7 +337,7 @@ function TeamCard({
               <span className={`font-bold ${pointsClass}`}>
                 {formatNumber(points)}
               </span>
-              <span className="text-[10px] text-muted-foreground">Points</span>
+              <span className={`text-[10px] ${colors.mutedText}`}>Points</span>
             </div>
           )}
         </div>
@@ -358,7 +358,7 @@ function TeamCard({
           <>
             {/* Threshold row — win/tie/lose for games-mode, "Starts +N" for
                 points-mode. */}
-            <div className={`flex flex-wrap justify-center gap-3 text-xs text-muted-foreground pt-2 border-t ${colors.borderDark}`}>
+            <div className={`flex flex-wrap justify-center gap-3 text-xs ${colors.mutedText} pt-2 border-t ${colors.borderDark}`}>
               {winCondition === 'points' ? (
                 // Always render for both teams (symmetry per Ed 2026-05-04
                 // pass 3). Stronger team's "+0" matches weaker team's "+N"
@@ -390,7 +390,7 @@ function TeamCard({
                 Ed 2026-05-04: "1.5 is always on its own line. it is a
                 separate thing and deserves its own spot"). */}
             {hints.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-3 text-xs text-muted-foreground pt-1">
+              <div className={`flex flex-wrap justify-center gap-3 text-xs ${colors.mutedText} pt-1`}>
                 {hints.map((hint, i) => {
                   // Milestone-role rendering is progress-aware. Combines the
                   // calculator's milestone_percent with the match-row
@@ -450,12 +450,12 @@ function TeamCard({
                   : 'grid-cols-[auto_1fr_auto_auto]'
               }`}
             >
-              <div className="font-semibold text-muted-foreground">HC</div>
-              <div className="font-semibold text-muted-foreground">Name</div>
-              <div className="font-semibold text-muted-foreground text-center">W</div>
-              <div className="font-semibold text-muted-foreground text-center">L</div>
+              <div className={`font-semibold ${colors.mutedText}`}>HC</div>
+              <div className={`font-semibold ${colors.mutedText}`}>Name</div>
+              <div className={`font-semibold ${colors.mutedText} text-center`}>W</div>
+              <div className={`font-semibold ${colors.mutedText} text-center`}>L</div>
               {getPlayerPoints && (
-                <div className="font-semibold text-muted-foreground text-center">P</div>
+                <div className={`font-semibold ${colors.mutedText} text-center`}>P</div>
               )}
 
               {/* Team summary row */}
@@ -464,7 +464,7 @@ function TeamCard({
               </div>
               <div className="font-semibold truncate">
                 {/* team_id is schema-nullable but always set on a real lineup */}
-                <TeamNameLink teamId={lineup.team_id ?? ''} teamName={teamName} />
+                <TeamNameLink teamId={lineup.team_id ?? ''} teamName={teamName} className={colors.link} />
               </div>
               <div className="font-semibold text-center">{wins}</div>
               <div className="font-semibold text-center">{losses}</div>
@@ -508,6 +508,7 @@ function TeamCard({
                         playerName={getPlayerDisplayName(player.id)}
                         customActions={swapAction}
                         hidePlaceholderBadge
+                        className={colors.link}
                       />
                     </div>
                     <div className="text-center">{stats.wins}</div>

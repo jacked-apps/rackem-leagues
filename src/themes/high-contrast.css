@@ -1,8 +1,9 @@
 /*
  * High Contrast palette — PREVIEW (see src/themes/palettes.ts).
  *
- * Darker text and stronger borders in light mode; true black page with
- * brighter grey text in dark mode. Aimed squarely at readability.
+ * Built purely for readability: black buttons (white in dark mode), darker
+ * body text and stronger borders, and SOLID team panels — strong blue with
+ * white text for home, strong amber with black text for away.
  *
  * Selector rule for every palette file: light values go under
  * `[data-palette=…]:not(.dark)` and dark values under `.dark[data-palette=…]`.
@@ -14,39 +15,50 @@
   --foreground: oklch(0 0 0);
   --card-foreground: oklch(0 0 0);
   --popover-foreground: oklch(0 0 0);
-  --muted-foreground: oklch(0.38 0 0);
+  --muted-foreground: oklch(0.35 0 0);
   --accent-foreground: oklch(0 0 0);
-  --border: oklch(0.55 0 0);
-  --input: oklch(0.55 0 0);
-
-  --home-team-border-strong: oklch(0.6 0.14 255);
-  --home-team-heading: oklch(0.3 0.15 265);
-  --home-team-accent: oklch(0.42 0.2 263);
-  --away-team-border-strong: oklch(0.65 0.14 60);
-  --away-team-heading: oklch(0.33 0.1 38);
-  --away-team-accent: oklch(0.48 0.16 42);
+  --border: oklch(0.5 0 0);
+  --input: oklch(0.5 0 0);
+  --primary: oklch(0.15 0 0);
+  --primary-foreground: oklch(1 0 0);
 }
 
 .dark[data-palette='high-contrast'] {
   --background: oklch(0 0 0);
   --foreground: oklch(1 0 0);
-  --card: oklch(0.16 0 0);
+  --card: oklch(0.14 0 0);
   --card-foreground: oklch(1 0 0);
-  --popover: oklch(0.16 0 0);
+  --popover: oklch(0.14 0 0);
   --popover-foreground: oklch(1 0 0);
   --muted: oklch(0.22 0 0);
-  --muted-foreground: oklch(0.85 0 0);
+  --muted-foreground: oklch(0.87 0 0);
   --accent: oklch(0.26 0 0);
   --accent-foreground: oklch(1 0 0);
-  --border: oklch(1 0 0 / 35%);
-  --input: oklch(1 0 0 / 40%);
-  --sidebar: oklch(0.1 0 0);
+  --border: oklch(1 0 0 / 40%);
+  --input: oklch(1 0 0 / 45%);
+  --primary: oklch(0.98 0 0);
+  --primary-foreground: oklch(0 0 0);
+  --sidebar: oklch(0.08 0 0);
   --sidebar-foreground: oklch(1 0 0);
+}
 
-  --home-team: oklch(0.28 0.09 258);
-  --home-team-heading: oklch(0.93 0.04 254);
-  --home-team-accent: oklch(0.88 0.08 252);
-  --away-team: oklch(0.3 0.07 70);
-  --away-team-heading: oklch(0.95 0.05 80);
-  --away-team-accent: oklch(0.9 0.1 75);
+/* Solid team panels — the same in BOTH modes, so this one block uses
+   :root[...] on purpose (it must out-rank the base .dark block too). */
+:root[data-palette='high-contrast'] {
+  --home-team: oklch(0.45 0.2 262);
+  --home-team-hover: oklch(0.4 0.2 262);
+  --home-team-border: oklch(0.38 0.2 262);
+  --home-team-border-strong: oklch(1 0 0 / 45%);
+  --home-team-foreground: oklch(1 0 0);
+  --home-team-heading: oklch(1 0 0);
+  --home-team-accent: oklch(0.95 0.12 95);
+  --home-team-link: oklch(1 0 0);
+  --away-team: oklch(0.82 0.16 78);
+  --away-team-hover: oklch(0.77 0.16 74);
+  --away-team-border: oklch(0.65 0.15 65);
+  --away-team-border-strong: oklch(0 0 0 / 35%);
+  --away-team-foreground: oklch(0 0 0);
+  --away-team-heading: oklch(0 0 0);
+  --away-team-accent: oklch(0.3 0.15 262);
+  --away-team-link: oklch(0.3 0.15 262);
 }

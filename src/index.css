@@ -58,6 +58,7 @@
   --home-team-foreground: oklch(0.145 0 0);
   --home-team-heading: oklch(0.379 0.146 265.522);
   --home-team-accent: oklch(0.546 0.245 262.881);
+  --home-team-link: oklch(0.45 0.2 262);
   --away-team: oklch(0.954 0.038 75.164);
   --away-team-hover: oklch(0.901 0.076 70.697);
   --away-team-border: oklch(0.901 0.076 70.697);
@@ -65,6 +66,7 @@
   --away-team-foreground: oklch(0.145 0 0);
   --away-team-heading: oklch(0.408 0.123 38.172);
   --away-team-accent: oklch(0.646 0.222 41.116);
+  --away-team-link: oklch(0.45 0.2 262);
 
   /* Scored-game tokens on the scoring screen: a picked winner waiting for
      the other side (pending), an agreed result (confirmed), and a game with
@@ -161,6 +163,7 @@ body {
   --color-home-team-foreground: var(--home-team-foreground);
   --color-home-team-heading: var(--home-team-heading);
   --color-home-team-accent: var(--home-team-accent);
+  --color-home-team-link: var(--home-team-link);
   --color-away-team: var(--away-team);
   --color-away-team-hover: var(--away-team-hover);
   --color-away-team-border: var(--away-team-border);
@@ -168,6 +171,7 @@ body {
   --color-away-team-foreground: var(--away-team-foreground);
   --color-away-team-heading: var(--away-team-heading);
   --color-away-team-accent: var(--away-team-accent);
+  --color-away-team-link: var(--away-team-link);
   --color-game-pending: var(--game-pending);
   --color-game-pending-foreground: var(--game-pending-foreground);
   --color-game-confirmed: var(--game-confirmed);
@@ -231,6 +235,7 @@ body {
   --home-team-foreground: oklch(0.985 0 0);
   --home-team-heading: oklch(0.882 0.059 254.128);
   --home-team-accent: oklch(0.809 0.105 251.813);
+  --home-team-link: oklch(0.88 0.08 250);
   --away-team: oklch(0.32 0.07 50);
   --away-team-hover: oklch(0.38 0.09 50);
   --away-team-border: oklch(0.42 0.1 50);
@@ -238,6 +243,7 @@ body {
   --away-team-foreground: oklch(0.985 0 0);
   --away-team-heading: oklch(0.901 0.076 70.697);
   --away-team-accent: oklch(0.837 0.128 66.29);
+  --away-team-link: oklch(0.88 0.08 250);
   --game-pending: oklch(0.38 0.08 95);
   --game-pending-foreground: oklch(0.985 0 0);
   --game-confirmed: oklch(0.36 0.08 152);
