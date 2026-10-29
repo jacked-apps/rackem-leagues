@@ -129,10 +129,10 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
         {/* Verification ticks — operator/debug only. */}
         {!playerView && (
           <div className="ml-auto flex gap-2">
-            {(match as any).home_team_verified_by && (
+            {match.home_team_verified_by && (
               <Badge variant="outline" className="text-xs">Home ✓</Badge>
             )}
-            {(match as any).away_team_verified_by && (
+            {match.away_team_verified_by && (
               <Badge variant="outline" className="text-xs">Away ✓</Badge>
             )}
           </div>

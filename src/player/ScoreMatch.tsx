@@ -681,10 +681,10 @@ function ScoreMatchBody() {
   const mySideVerifiedMatchEnd =
     !!match &&
     (iAmHome
-      ? !!(match as any).home_team_verified_by ||
-        !!(match as any).home_tiebreaker_verified_by
-      : !!(match as any).away_team_verified_by ||
-        !!(match as any).away_tiebreaker_verified_by);
+      ? !!match.home_team_verified_by ||
+        !!match.home_tiebreaker_verified_by
+      : !!match.away_team_verified_by ||
+        !!match.away_tiebreaker_verified_by);
 
   // ── State-derived confirmation + vacate handoff ─────────────────────────
   // Neither prompt may depend on catching a live realtime message. On every
@@ -1085,8 +1085,8 @@ function ScoreMatchBody() {
         <TiebreakerScoreboard
           match={{
             ...match,
-            home_team_verified_by: (match as any).home_team_verified_by ?? null,
-            away_team_verified_by: (match as any).away_team_verified_by ?? null,
+            home_team_verified_by: match.home_team_verified_by ?? null,
+            away_team_verified_by: match.away_team_verified_by ?? null,
           }}
           gameResults={filteredGameResults}
           isHomeTeam={isHomeTeam ?? false}
@@ -1099,8 +1099,8 @@ function ScoreMatchBody() {
         <UnifiedScoreboard
           match={{
             ...match,
-            home_team_verified_by: (match as any).home_team_verified_by ?? null,
-            away_team_verified_by: (match as any).away_team_verified_by ?? null,
+            home_team_verified_by: match.home_team_verified_by ?? null,
+            away_team_verified_by: match.away_team_verified_by ?? null,
           }}
           homeLineup={homeLineup}
           awayLineup={awayLineup}

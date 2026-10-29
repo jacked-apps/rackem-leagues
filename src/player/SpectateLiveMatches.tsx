@@ -44,7 +44,7 @@ export function SpectateLiveMatches() {
   // (which can drift/collide). A single live match can't derive its own number,
   // so fetch the season's weeks and build a weekId → label map.
   const weekLabels = useWeekLabelsForSeasons(
-    matches.map((m) => (m as any).season_id),
+    matches.map((m) => m.season_id),
   );
 
   // If the user came from a specific page (e.g., their scoring page), the
@@ -116,10 +116,10 @@ export function SpectateLiveMatches() {
             // Per-card week label. Makeup matches can have different weeks on
             // the same night, so each card labels its week for clarity.
             const weekName =
-              weekLabels.get((m as any).season_week?.id) ||
-              (m as any).season_week?.week_name ||
+              (m.season_week && weekLabels.get(m.season_week.id)) ||
+              m.season_week?.week_name ||
               '';
-            const weekDate = (m as any).season_week?.scheduled_date || '';
+            const weekDate = m.season_week?.scheduled_date || '';
             const subLabel = [weekName, weekDate].filter(Boolean).join(' — ');
 
             return (

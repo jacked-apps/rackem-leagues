@@ -375,11 +375,15 @@ export function MatchEndVerification({
                   // Games-condition match (BCA-style) — may be a tie that
                   // triggers tiebreaker; status stays 'in_progress' in
                   // that case so the tiebreaker flow can complete it.
+                  // A tie is NOT finished, so it gets no completed_at either
+                  // (audit F4) — the tiebreaker's completion stamps it. A
+                  // stamped-but-in_progress tie was a trap for any "finished
+                  // matches" query keyed on completed_at.
                   winner_team_id: winnerTeamId,
                   match_result: result,
                   results_confirmed_by_home: true,
                   results_confirmed_by_away: true,
-                  completed_at: new Date().toISOString(),
+                  completed_at: winnerTeamId ? new Date().toISOString() : null,
                   status: winnerTeamId ? 'completed' : 'in_progress',
                 };
 

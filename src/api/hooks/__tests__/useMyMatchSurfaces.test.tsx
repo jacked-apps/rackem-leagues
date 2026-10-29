@@ -45,8 +45,8 @@ import {
   resolveMyMatchNavState,
   buildMyMatchDrawerItems,
   useMyMatchSurfaces,
-  type MyMatchRow,
 } from '../useMyMatchSurfaces';
+import type { MatchWithDetails } from '@/types';
 
 // --- Fixtures --------------------------------------------------------------
 
@@ -59,7 +59,7 @@ const TODAY = formatLocalDate(new Date());
 const YESTERDAY = isoOffset(-1);
 const TOMORROW = isoOffset(1);
 
-function row(o: Partial<MyMatchRow> & { id: string }): MyMatchRow {
+function row(o: Partial<MatchWithDetails> & { id: string }): MatchWithDetails {
   return {
     status: 'in_progress',
     started_at: null,
@@ -71,7 +71,7 @@ function row(o: Partial<MyMatchRow> & { id: string }): MyMatchRow {
     home_team: { id: 't1', team_name: 'Sharks', captain_id: null, status: 'active' },
     away_team: { id: 't2', team_name: 'Cues', captain_id: null, status: 'active' },
     ...o,
-  } as unknown as MyMatchRow;
+  } as unknown as MatchWithDetails;
 }
 
 // --- Pure resolvers --------------------------------------------------------

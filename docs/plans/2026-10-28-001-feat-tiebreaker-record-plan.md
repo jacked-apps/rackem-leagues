@@ -1,8 +1,10 @@
 # PLAN — Tiebreaker as its own record
 
 Date: 2026-10-28. Branch: `audit/tiebreaker-phase3` (branch off for
-implementation). Status: **revised after document review; drafted, not
-approved.**
+implementation). Status: **ALL UNITS BUILT on `feat/tiebreaker-record` (2026-10-29)** —
+Units 1–5 and 7 in code, Unit 6 decided as a release step (release outside
+Sunday play). 7b's risky half was sized and needs its own plan. Ed tested a
+real tie end to end. No PR yet.
 
 Requirements: `docs/brainstorms/2026-10-28-tiebreaker-requirements.md`
 Evidence: `docs/audits/2026-10-28-tiebreaker-audit.md`
@@ -450,6 +452,37 @@ encode that the real shape is bigger: `MyMatchRow`
 
 **Gate:** if implementing any unit requires a new `X & { ... }` patch type over
 `MatchWithDetails`, stop and fix the declaration instead.
+
+> **AS BUILT 2026-10-29 (Unit 7).**
+>
+> - **Rename** — done in Units 4–5 (`fetchHandicapHistory`).
+> - **`autoSaveLineup` deleted** — it had no callers.
+> - **F4 fixed** — a tie no longer stamps `completed_at`
+>   (`MatchEndVerification`, games-condition branch). The tiebreaker's
+>   completion stamps it. Nothing read the tie's stamp; the only
+>   `completed_at` reader (manual-scoring "reopened for correction") keys on
+>   status `updating`, which a tie never has.
+> - **F3** — note only, per the plan. Also found: `completeMatch` /
+>   `useCompleteMatch` have NO callers at all, so F3's convention guards dead
+>   code. Left alone — outside this plan.
+> - **7b safe half — done.** `Match` now declares every column `select('*')`
+>   returns (lineup ids, `started_at`, winner, `match_result`, both confirm
+>   flags, all four verified-by ids, `system_snapshot`), and
+>   `MatchWithDetails` declares the `season → league` embed. `MyMatchRow` is
+>   deleted, and every `as any` that reached for those fields is gone
+>   (MatchDetailCard, ScoreMatch, SpectateMatchCard, both Spectate pages). The
+>   type checker then caught one real gap: a missing season week fed
+>   `undefined` into the week-label lookup on both Spectate pages — now guarded.
+> - **7b risky half — SIZED, not done.** Removing the six `as MatchWithDetails`
+>   casts produces ZERO type errors — and that is the finding: the app's
+>   `supabase` client (src/supabaseClient.ts) is created WITHOUT the
+>   `Database` type, so every query result is loosely typed and the casts
+>   neither add nor remove checking. Only typing the client
+>   (`createClient<Database>`) makes these queries checked, and that touches
+>   every query in the app; `database.types.ts` is also behind the schema
+>   (no `matches.lms_entered_at`), so it must be regenerated first. That is
+>   its own plan, not a cleanup bullet. `MatchWithVenueDetails` left as is
+>   (its required `street_address` is a real contract difference).
 
 ---
 
