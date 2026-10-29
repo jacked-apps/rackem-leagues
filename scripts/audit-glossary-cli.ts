@@ -33,7 +33,7 @@ function parseEntries(): EntryToVerify[] {
   for (const file of files) {
     const content = readFileSync(join(ENTRIES_DIR, file), 'utf-8');
     // Split into entry-shaped segments.
-    const segments = content.split(/(?=^  ['"]?[a-zA-Z0-9_-]+['"]?:\s*\{)/m);
+    const segments = content.split(/(?=^ {2}['"]?[a-zA-Z0-9_-]+['"]?:\s*\{)/m);
     for (const seg of segments) {
       const slugMatch = seg.match(/slug:\s*['"]([^'"]+)['"]/);
       const nameMatch = seg.match(/canonicalName:\s*['"]([^'"]+)['"]/);

@@ -66,7 +66,6 @@ describe('Approve surface Unit 1 — roster RPC + feed captain summary', () => {
   // case + the "captain only in teams.captain_id" robustness case).
   let phTeam: string | null = null;
   let phStaffUser: string | null = null;
-  let phStaffMember: string | null = null;
 
   // An outsider registered user (not captain, not staff of either fixture org).
   let outsiderUser: string | null = null;
@@ -88,7 +87,6 @@ describe('Approve surface Unit 1 — roster RPC + feed captain summary', () => {
 
     phFixture = await createOnboardingFixture({ captain: 'placeholder' });
     phTeam = phFixture.teamId;
-    phStaffMember = phFixture.staffMemberId;
     phStaffUser = phFixture.staffUserId;
 
     // An outsider: registered, and staff of neither fixture's organization.

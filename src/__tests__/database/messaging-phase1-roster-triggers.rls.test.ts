@@ -25,10 +25,9 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
-import { executeSql, getPostgresPool } from '@/test/dbTestUtils';
+import { executeSql } from '@/test/dbTestUtils';
 
 let seasonId: string;
-let leagueId: string;
 let organizationId: string;
 let teamId: string;
 let teamConvId: string;
@@ -61,7 +60,6 @@ async function bootstrap() {
   expect(rows.length).toBe(1);
   teamId = rows[0].team_id;
   seasonId = rows[0].season_id;
-  leagueId = rows[0].league_id;
   organizationId = rows[0].organization_id;
   initialCaptainId = rows[0].captain_id;
 
