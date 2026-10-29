@@ -18,7 +18,8 @@ export function useFilteredMembers(currentUserId: string, searchQuery: string) {
 
   // Fetch blocked users with TanStack Query
   const { data: blockedUsersData = [] } = useBlockedUsers(currentUserId);
-  const blockedUserIds = blockedUsersData.map((block: any) => block.blocked_id);
+  // getBlockedUsers already returns the blocked member IDs as plain strings.
+  const blockedUserIds = blockedUsersData;
 
   // Filter out blocked users
   const members = useMemo(() => {

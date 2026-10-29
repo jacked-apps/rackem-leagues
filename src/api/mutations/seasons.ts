@@ -177,7 +177,7 @@ export async function createSeason(params: CreateSeasonParams): Promise<Season> 
       }
 
       return {
-        season_id: createdSeasonId,
+        season_id: newSeason.id, // same value as createdSeasonId, but non-null to the compiler
         scheduled_date: week.date,
         week_name: week.weekName,
         week_type: weekType,
@@ -195,7 +195,8 @@ export async function createSeason(params: CreateSeasonParams): Promise<Season> 
       throw new Error(`Failed to insert season weeks: ${weeksError.message}`);
     }
 
-    return newSeason;
+    // `status` is text in the DB; the app narrows it to SeasonStatus.
+    return newSeason as Season;
   } catch (error) {
     // Rollback: Delete the season if weeks insertion failed
     if (createdSeasonId) {
@@ -235,7 +236,7 @@ export async function updateSeason(params: UpdateSeasonParams): Promise<Season> 
     throw new Error(`Failed to update season: ${error.message}`);
   }
 
-  return updatedSeason;
+  return updatedSeason as Season; // status: text → SeasonStatus
 }
 
 /**
@@ -272,7 +273,7 @@ export async function activateSeason(params: ActivateSeasonParams): Promise<Seas
     throw new Error(`Failed to activate season: ${activateError.message}`);
   }
 
-  return activatedSeason;
+  return activatedSeason as Season; // status: text → SeasonStatus
 }
 
 /**
@@ -297,7 +298,7 @@ export async function deleteSeason(params: DeleteSeasonParams): Promise<Season> 
     throw new Error(`Failed to cancel season: ${error.message}`);
   }
 
-  return cancelledSeason;
+  return cancelledSeason as Season; // status: text → SeasonStatus
 }
 
 /** Match statuses that count as "played" — a season with any of these can't be hard-deleted. */

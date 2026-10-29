@@ -82,7 +82,7 @@ export function useUserProfile(): UseUserProfileResult {
     queryFn: () => getMemberProfile(user!.id),
     enabled: !!user?.id,
     staleTime: STALE_TIME.MEMBER,
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: Error & { code?: string }) => {
       // Don't retry if member not found (PGRST116 = no rows)
       // This is expected for new users who haven't completed application
       if (error?.code === 'PGRST116') return false;

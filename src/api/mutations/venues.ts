@@ -164,7 +164,8 @@ export async function createVenue(params: CreateVenueParams): Promise<Venue> {
     throw new Error(`Failed to create venue: ${error.message}`);
   }
 
-  return data;
+  // Legacy table-count columns are nullable in the DB; the app treats them as set.
+  return data as Venue;
 }
 
 /**
@@ -253,7 +254,8 @@ export async function updateVenue(params: UpdateVenueParams): Promise<Venue> {
     throw new Error(`Failed to update venue: ${error.message}`);
   }
 
-  return data;
+  // Legacy table-count columns are nullable in the DB; the app treats them as set.
+  return data as Venue;
 }
 
 /**

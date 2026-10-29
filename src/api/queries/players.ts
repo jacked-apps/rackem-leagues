@@ -5,6 +5,7 @@
  * Used by operator tools for player management and statistics.
  */
 
+import type { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/supabaseClient';
 import { fetchPlayerGameHistory } from './matchGames';
 import { calculatePlayerHandicap } from '@/utils/calculatePlayerHandicap';
@@ -44,7 +45,7 @@ export async function fetchOperatorPlayerCount(
     return 0;
   }
 
-  const teamIds = teams.map((t: any) => t.id);
+  const teamIds = teams.map((t) => t.id);
 
   if (teamIds.length === 0) {
     return 0;
@@ -130,7 +131,7 @@ export async function fetchOperatorPlayers(
   }
 
   // Extract unique member IDs
-  const uniqueMemberIds = [...new Set(teamPlayers.map((tp: any) => tp.member_id))];
+  const uniqueMemberIds = [...new Set(teamPlayers.map((tp) => tp.member_id))];
 
   if (uniqueMemberIds.length === 0) {
     return { data: [], error: null };
@@ -169,12 +170,12 @@ export interface PlayerDetails {
   nickname: string | null;
   system_player_number: number;
   bca_member_number: string | null;
-  role: string;
-  phone: string;
-  email: string;
+  role: string | null;
+  phone: string | null;
+  email: string | null;
   membership_paid_date: string | null;
-  starting_handicap_3v3: number;
-  starting_handicap_5v5: number;
+  starting_handicap_3v3: number | null;
+  starting_handicap_5v5: number | null;
   teams: Array<{
     id: string;
     team_name: string;
@@ -216,7 +217,7 @@ export interface PlayerDetails {
 export async function fetchPlayerDetails(
   playerId: string,
   operatorId: string
-): Promise<{ data: PlayerDetails | null; error: any }> {
+): Promise<{ data: PlayerDetails | null; error: PostgrestError | null }> {
   // Fetch player basic info and starting handicaps
   const { data: player, error: playerError } = await supabase
     .from('members')
@@ -257,9 +258,9 @@ export async function fetchPlayerDetails(
   }
 
   // Extract teams with league/season info
-  const teamsArray: any[] = [];
+  const teamsArray: PlayerDetails['teams'] = [];
 
-  teamPlayers?.forEach((tp: any) => {
+  teamPlayers?.forEach((tp) => {
     const team = tp.team;
     if (!team || Array.isArray(team)) return;
 
@@ -269,8 +270,10 @@ export async function fetchPlayerDetails(
     if (!league || Array.isArray(league) || !season || Array.isArray(season)) return;
 
     // Add to teams array with league and season info
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const dayName = typeof league.day_of_week === 'number' ? dayNames[league.day_of_week] : '';
+    // day_of_week is stored lowercase ('tuesday'); capitalize it for display.
+    const dayName = league.day_of_week
+      ? league.day_of_week.charAt(0).toUpperCase() + league.day_of_week.slice(1)
+      : '';
     const gameTypeFormatted = league.game_type ? league.game_type.replace('_', '-').charAt(0).toUpperCase() + league.game_type.replace('_', '-').slice(1) : '';
     const division = league.division || '';
 

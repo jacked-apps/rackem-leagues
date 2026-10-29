@@ -63,6 +63,9 @@ async function fetchInviteStatuses(memberIds: string[]): Promise<Map<string, Inv
   const now = new Date();
 
   for (const invite of data || []) {
+    // Never null here (the query filters on member_id), but the column is
+    // nullable in the generated type.
+    if (!invite.member_id) continue;
     // Skip if we already have an entry for this member (we want the most recent)
     if (statusMap.has(invite.member_id)) {
       continue;

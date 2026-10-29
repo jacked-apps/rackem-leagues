@@ -21,6 +21,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { executeSql, closePostgresPool } from '@/test/dbTestUtils';
+import type { QueryResultRow } from 'pg';
 
 describe('join_bracket_hopper (Unit C2)', () => {
   let organizerId: string; // bracket.created_by
@@ -175,7 +176,7 @@ describe('join_bracket_hopper (Unit C2)', () => {
         : await executeSql(`SELECT public.get_bracket_player_view($1::uuid) AS v`, [
             joinToken,
           ]);
-      return rows[0].v as Record<string, any>;
+      return rows[0].v as QueryResultRow;
     }
 
     it('splits the waiting and official lists, names only', async () => {
@@ -245,7 +246,7 @@ describe('join_bracket_hopper (Unit C2)', () => {
         `SELECT public.add_self_as_walkup($1::uuid, $2::text) AS r`,
         [joinToken, name]
       );
-      return rows[0].r as Record<string, any>;
+      return rows[0].r as QueryResultRow;
     }
 
     it('lets someone with no account put themselves on the waiting list', async () => {

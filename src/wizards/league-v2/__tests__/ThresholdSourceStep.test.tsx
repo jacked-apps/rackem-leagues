@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { classifyThresholdSource } from '../steps/ThresholdSourceStep';
+import { classifyThresholdSource } from '../steps/thresholdSourceClassifier';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 
 const customBase: LeagueWizardFormData = {

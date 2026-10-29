@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { formatPartialMemberNumber } from '@/types/member';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
+import type { GameType, DayOfWeek } from '@/types/league';
 import { Link } from 'react-router-dom';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
@@ -118,7 +119,7 @@ export function TeamCard({
           <div>
             <CardTitle className="text-2xl">{teamName}</CardTitle>
             <p className="text-base text-foreground dark:text-gray-300 mt-1 font-medium">
-              {formatGameType(season.league.game_type as any)} • {formatDayOfWeek(season.league.day_of_week as any)}
+              {formatGameType(season.league.game_type as GameType)} • {formatDayOfWeek(season.league.day_of_week as DayOfWeek)}
               {season.league.division && ` • ${season.league.division}`}
             </p>
           </div>

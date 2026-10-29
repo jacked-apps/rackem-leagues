@@ -30,8 +30,8 @@ function game(overrides: Partial<MatchGame>): MatchGame {
     game_number: 1,
     winner_team_id: null,
     winner_player_id: null,
-    confirmed_by_home: false,
-    confirmed_by_away: false,
+    confirmed_by_home: null,
+    confirmed_by_away: null,
     break_and_run: false,
     golden_break: false,
     break_fouled: false,
@@ -48,8 +48,8 @@ describe('gameNeedsMyConfirmation', () => {
   it('away scored + away confirmed, home has not → home needs to confirm', () => {
     const g = game({
       winner_player_id: 'p1',
-      confirmed_by_away: true as unknown as boolean,
-      confirmed_by_home: false,
+      confirmed_by_away: 'confirmer-id',
+      confirmed_by_home: null,
     });
     expect(gameNeedsMyConfirmation(g, HOME, HOME)).toBe(true);
   });
@@ -57,8 +57,8 @@ describe('gameNeedsMyConfirmation', () => {
   it('home scored + home confirmed, away has not → away needs to confirm', () => {
     const g = game({
       winner_player_id: 'p1',
-      confirmed_by_home: true as unknown as boolean,
-      confirmed_by_away: false,
+      confirmed_by_home: 'confirmer-id',
+      confirmed_by_away: null,
     });
     expect(gameNeedsMyConfirmation(g, AWAY, HOME)).toBe(true);
   });
@@ -66,22 +66,22 @@ describe('gameNeedsMyConfirmation', () => {
   it('does NOT prompt the side that already scored/confirmed it', () => {
     const g = game({
       winner_player_id: 'p1',
-      confirmed_by_away: true as unknown as boolean,
+      confirmed_by_away: 'confirmer-id',
     });
     // away is the scorer here; away should not be prompted
     expect(gameNeedsMyConfirmation(g, AWAY, HOME)).toBe(false);
   });
 
   it('does NOT prompt when there is no winner yet', () => {
-    const g = game({ winner_player_id: null, confirmed_by_away: true as unknown as boolean });
+    const g = game({ winner_player_id: null, confirmed_by_away: 'confirmer-id' });
     expect(gameNeedsMyConfirmation(g, HOME, HOME)).toBe(false);
   });
 
   it('does NOT prompt when both sides already confirmed (official)', () => {
     const g = game({
       winner_player_id: 'p1',
-      confirmed_by_home: true as unknown as boolean,
-      confirmed_by_away: true as unknown as boolean,
+      confirmed_by_home: 'confirmer-id',
+      confirmed_by_away: 'confirmer-id',
     });
     expect(gameNeedsMyConfirmation(g, HOME, HOME)).toBe(false);
     expect(gameNeedsMyConfirmation(g, AWAY, HOME)).toBe(false);
@@ -125,12 +125,12 @@ describe('gameHasPendingVacateForMe', () => {
 
 describe('decidePendingAction', () => {
   it('opponent scored, I have not confirmed, auto-confirm OFF → confirm', () => {
-    const g = game({ winner_player_id: 'p1', confirmed_by_away: true as unknown as boolean });
+    const g = game({ winner_player_id: 'p1', confirmed_by_away: 'confirmer-id' });
     expect(decidePendingAction(g, HOME, HOME, false)).toBe('confirm');
   });
 
   it('same, auto-confirm ON → autoconfirm', () => {
-    const g = game({ winner_player_id: 'p1', confirmed_by_away: true as unknown as boolean });
+    const g = game({ winner_player_id: 'p1', confirmed_by_away: 'confirmer-id' });
     expect(decidePendingAction(g, HOME, HOME, true)).toBe('autoconfirm');
   });
 
@@ -147,7 +147,7 @@ describe('decidePendingAction', () => {
   });
 
   it('the scorer side is owed nothing on its own game → none', () => {
-    const g = game({ winner_player_id: 'p1', confirmed_by_away: true as unknown as boolean });
+    const g = game({ winner_player_id: 'p1', confirmed_by_away: 'confirmer-id' });
     expect(decidePendingAction(g, AWAY, HOME, false)).toBe('none');
   });
 });
@@ -312,8 +312,8 @@ describe('gameNeedsMyConfirmation — per-person (Phase 2)', () => {
       id: GAME_1_ID,
       winner_player_id: 'p1',
       // Both columns set (game is official); ME personally still hasn't vouched.
-      confirmed_by_home: true as unknown as boolean,
-      confirmed_by_away: true as unknown as boolean,
+      confirmed_by_home: 'confirmer-id',
+      confirmed_by_away: 'confirmer-id',
     });
     expect(
       gameNeedsMyConfirmation(
@@ -333,7 +333,7 @@ describe('gameNeedsMyConfirmation — per-person (Phase 2)', () => {
     const g = game({
       id: GAME_1_ID,
       winner_player_id: 'p1',
-      confirmed_by_away: true as unknown as boolean, // opponent scored, mine empty
+      confirmed_by_away: 'confirmer-id', // opponent scored, mine empty
     });
     expect(gameNeedsMyConfirmation(g, HOME, HOME, ctxFor([]))).toBe(true);
   });

@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, Users, Award } from 'lucide-react';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
+import type { GameType, DayOfWeek } from '@/types/league';
 import { logger } from '@/utils/logger';
 import { TeamNameLink } from '@/components/TeamNameLink';
 
@@ -45,7 +46,7 @@ interface TeamData {
       division: string | null;
     };
   };
-  is_captain: boolean;
+  is_captain: boolean | null;
 }
 
 export function PlayerProfile() {
@@ -111,7 +112,7 @@ export function PlayerProfile() {
         // Don't fail completely if teams don't load
       } else {
         // Transform the data to match our interface
-        const transformedTeams = (teamsData || []).map((item: any) => ({
+        const transformedTeams = (teamsData || []).map((item) => ({
           is_captain: item.is_captain,
           team: {
             id: item.teams.id,
@@ -225,8 +226,8 @@ export function PlayerProfile() {
                         )}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {formatGameType(teamData.season.league.game_type as any)} •{' '}
-                        {formatDayOfWeek(teamData.season.league.day_of_week as any)}
+                        {formatGameType(teamData.season.league.game_type as GameType)} •{' '}
+                        {formatDayOfWeek(teamData.season.league.day_of_week as DayOfWeek)}
                         {teamData.season.league.division &&
                           ` • ${teamData.season.league.division}`}
                       </p>

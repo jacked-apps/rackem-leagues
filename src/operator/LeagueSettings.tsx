@@ -48,7 +48,8 @@ export const LeagueSettings: React.FC = () => {
           .single();
 
         if (fetchError) throw fetchError;
-        setLeague(data);
+        // Text enum columns (game_type, day_of_week…) are CHECK-limited to League's unions.
+        setLeague(data as League);
       } catch (err) {
         logger.error('Error fetching league', { error: err instanceof Error ? err.message : String(err) });
         setError('Failed to load league details');

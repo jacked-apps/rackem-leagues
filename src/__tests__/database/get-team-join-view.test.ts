@@ -128,9 +128,11 @@ describe('Onboarding cascade Unit 2 — get_team_join_view', () => {
       p_token: token!,
     });
     expect(error).toBeNull();
-    expect((data as any).found).toBe(true);
+    // jsonb RPC result: the generated type is plain Json.
+    const view = data as { found?: unknown; viewer_request_status?: unknown };
+    expect(view.found).toBe(true);
     // Anonymous reader has no JWT → no viewer request state.
-    expect((data as any).viewer_request_status).toBeNull();
+    expect(view.viewer_request_status).toBeNull();
   });
 
   // ---------------------------------------------------------------------------

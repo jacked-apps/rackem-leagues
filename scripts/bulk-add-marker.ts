@@ -63,7 +63,7 @@ for (const slug of SLUGS_TO_MARK) {
   }
   const openIdx = openMatch.index;
   // Find the entry's closing `  },` (at indent 2). Search forward from openIdx.
-  const closeRe = /^  \},$/m;
+  const closeRe = /^ {2}\},$/m;
   closeRe.lastIndex = openIdx;
   const afterOpen = source.slice(openIdx);
   const closeMatch = afterOpen.match(closeRe);

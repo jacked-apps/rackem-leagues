@@ -10,17 +10,20 @@
  * not by checking if lineup ID exists.
  */
 
+import type { MatchWithLeagueSettings } from '@/types/match';
+import type { Tables } from '@/types/database.types';
+
 interface OpponentStatusParams {
   /** Match data */
-  matchData: any;
+  matchData: MatchWithLeagueSettings | undefined;
   /** Is current user on home team? */
   isHomeTeam: boolean;
   /** Opponent's lineup data */
-  opponentLineup: any;
+  opponentLineup: Tables<'match_lineups'> | null | undefined;
   /** Is this tiebreaker mode? */
   isTiebreakerMode?: boolean;
   /** All games (for tiebreaker mode player counting) */
-  allGames?: any[];
+  allGames?: Tables<'match_games'>[];
   /** Player count (3 for 3v3, 5 for 5v5) */
   playerCount?: number;
 }
@@ -29,7 +32,7 @@ export type OpponentStatus = 'absent' | 'choosing' | 'ready';
 
 interface OpponentStatusResult {
   /** Opponent team info */
-  opponentTeam: any;
+  opponentTeam: MatchWithLeagueSettings['home_team'] | null;
   /** Opponent status: absent, choosing, or ready */
   status: OpponentStatus;
   /** Detailed selection status string for display */

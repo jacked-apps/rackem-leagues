@@ -228,7 +228,7 @@ export async function blockUser(params: BlockUserParams) {
     .insert([
       {
         blocker_id: blockerId,
-        blocked_user_id: blockedUserId,
+        blocked_id: blockedUserId,
         blocked_at: new Date().toISOString(),
       },
     ]);

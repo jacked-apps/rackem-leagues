@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { deriveReasonFromError } from '../MatchPhaseGuard';
+import { deriveReasonFromError } from '../matchPhaseHelpers';
 
 describe('deriveReasonFromError', () => {
   describe('happy paths — known error shapes map to specific reasons', () => {

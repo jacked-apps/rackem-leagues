@@ -109,13 +109,11 @@ async function setupActivationFixture() {
 
 describe('season-activation trigger → auto_create_season_conversations()', () => {
   let seasonId: string;
-  let leagueId: string;
   let organizationId: string;
 
   beforeEach(async () => {
     const ctx = await setupActivationFixture();
     seasonId = ctx.seasonId;
-    leagueId = ctx.leagueId;
     organizationId = ctx.organizationId;
   });
 

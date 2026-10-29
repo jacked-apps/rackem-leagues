@@ -12,6 +12,7 @@
 
 import { supabase } from '@/supabaseClient';
 import type { ChampionshipDateOption } from '@/utils/tournamentUtils';
+import type { TablesUpdate } from '@/types/database.types';
 
 /**
  * Parameters for creating a championship date option
@@ -111,7 +112,9 @@ export async function createChampionshipDate(
     );
   }
 
-  return data;
+  // `organization` is plain text in the generated types; a CHECK constraint
+  // limits it to 'BCA' | 'APA'.
+  return data as ChampionshipDateOption;
 }
 
 /**
@@ -139,7 +142,7 @@ export async function updateChampionshipDate(
   }
 
   // Build update object with only provided fields
-  const updates: Record<string, any> = {};
+  const updates: TablesUpdate<'championship_date_options'> = {};
 
   if (params.organization !== undefined) {
     if (!['BCA', 'APA'].includes(params.organization)) {
@@ -195,7 +198,9 @@ export async function updateChampionshipDate(
     );
   }
 
-  return data;
+  // `organization` is plain text in the generated types; a CHECK constraint
+  // limits it to 'BCA' | 'APA'.
+  return data as ChampionshipDateOption;
 }
 
 /**

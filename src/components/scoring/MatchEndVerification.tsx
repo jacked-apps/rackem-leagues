@@ -436,7 +436,8 @@ export function MatchEndVerification({
                 const winnerIsHome = winnerTeamId === homeTeamId;
                 const winningPlayerId =
                   (winnerIsHome ? game.home_player_id : game.away_player_id) ??
-                  winningLineup[`player${position}_id` as keyof typeof winningLineup];
+                  // `player{n}_id` columns hold a member id (or null).
+                  (winningLineup[`player${position}_id` as keyof typeof winningLineup] as string | null);
 
                 await updateGameMutation.mutateAsync({
                   gameId: game.id,

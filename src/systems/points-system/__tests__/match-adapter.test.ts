@@ -132,7 +132,6 @@ describe('Parity: Points 3-Man (linear_above_threshold)', () => {
       // start-credit fold-in (Points 3-Man composition has no match_start
       // points trigger, so the adapter must add it the way legacy does).
       for (const winCondition of ['games', 'points'] as const) {
-        // eslint-disable-next-line vitest/valid-title
         describe(`diff=${diff}, mult=${multiplier}, ${winCondition}`, () => {
           const homeThresholds = get3v3GamesNeeded(diff);
           const awayThresholds = get3v3GamesNeeded(-diff);
@@ -302,7 +301,6 @@ describe('Parity: Percentage 5-Man (accumulate_with_milestone_jumps)', () => {
     // so points-mode start-credit folds in 0. We still test points-mode to
     // prove the adapter handles winCondition correctly without divergence.
     for (const winCondition of ['games', 'points'] as const) {
-      // eslint-disable-next-line vitest/valid-title
       describe(`param set ${i + 1}, ${winCondition}`, () => {
         // 5v5 can't tie; games_to_tie is null → start-credit fold-in is 0.
         const thresholds = {

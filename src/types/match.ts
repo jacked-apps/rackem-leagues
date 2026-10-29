@@ -199,7 +199,8 @@ export interface MatchForLineup {
  */
 export interface Lineup {
   id: string;
-  team_id: string;
+  // Nullable in the schema; real lineup rows always carry their team.
+  team_id: string | null;
   player1_id: string | null;
   player1_handicap: number;
   player2_id: string | null;
@@ -281,8 +282,10 @@ export interface MatchGame {
   away_action: 'breaks' | 'racks';
   break_and_run: boolean;
   golden_break: boolean;
-  confirmed_by_home: boolean;
-  confirmed_by_away: boolean;
+  // Member id of the person who confirmed for each side (NULL = not yet
+  // confirmed). Read as truthy/falsy "has this side confirmed?".
+  confirmed_by_home: string | null;
+  confirmed_by_away: string | null;
   is_tiebreaker: boolean;
   // Per-game achievement / break-state flags (added by migration 20260418000004).
   // Always tracked across all scoring systems. Default false.

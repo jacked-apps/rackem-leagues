@@ -55,7 +55,8 @@ export const ScheduleSetupPage: React.FC = () => {
           return;
         }
 
-        setTeams(seasonTeams);
+        // Raw join rows: stat columns are schema-nullable but DB-defaulted to 0.
+        setTeams(seasonTeams as TeamWithQueryDetails[]);
       } catch (err) {
         logger.error('Error fetching teams', { error: err instanceof Error ? err.message : String(err) });
         setError('Failed to load teams');

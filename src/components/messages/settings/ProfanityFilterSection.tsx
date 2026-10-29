@@ -29,7 +29,7 @@ export function ProfanityFilterSection({ userId, onSuccess, onError }: Profanity
     try {
       await updateMutation.mutateAsync({ userId, enabled: newValue });
       onSuccess();
-    } catch (error) {
+    } catch {
       onError('Failed to update profanity filter. Please try again.');
     }
   };

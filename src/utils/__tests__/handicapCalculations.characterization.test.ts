@@ -72,7 +72,7 @@ function mockTwoQueries(
     const finalChain = Promise.resolve({
       data: isHomeQuery ? homeMatches : awayMatches,
       error: isHomeQuery ? homeError : awayError,
-    }) as any;
+    });
     return {
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
@@ -81,7 +81,7 @@ function mockTwoQueries(
           })),
         })),
       })),
-    } as any;
+    } as unknown as ReturnType<typeof supabase.from>;
   });
 }
 

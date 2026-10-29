@@ -146,6 +146,37 @@ export const RELEASES: Release[] = [
         text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passes about a thousand games, the app was only reading the first thousand and adding up whatever it got — so if one of your games fell outside that, it was missing from your record and you were never told. It now reads all of them. If your record has ever looked short, it is worth another look.',
         kind: 'fix',
       },
+      {
+        text: 'Blocking someone from Messages didn\u2019t work \u2014 the block was refused every time. It works now.',
+        kind: 'fix',
+      },
+      {
+        text: 'Opening a player invite that had already been used, cancelled or turned down always said \u201cInvite Expired\u201d \u2014 with a blank where the team name should be. It now tells you what actually happened to the invite.',
+        kind: 'fix',
+      },
+      {
+        text: 'The \u201cno profanity in team names\u201d setting stopped doing anything back in April \u2014 team names were never checked, whatever it was set to. It works again: if your league has it switched on, a team name with bad language is now refused.',
+        kind: 'fix',
+        forOperators: true,
+      },
+      {
+        text: 'Setting up a league\u2019s first season on a different night than you picked for the league offers to move the league to that night. Saying yes always failed with an error. It works now.',
+        kind: 'fix',
+        forOperators: true,
+      },
+      {
+        text: 'The language filter in your settings is now your choice, whatever your age. It was locked on for players under 18, and anyone without a birth date on their profile got an error every time they tried to change it.',
+        kind: 'fix',
+      },
+      {
+        text: 'Opening a player\u2019s details in Player Management listed their leagues without the night they play on. The night is back.',
+        kind: 'fix',
+        forOperators: true,
+      },
+      {
+        text: 'Starting a new message showed people you\u2019d blocked, even though they were meant to be left out. It also kept reloading the whole list of players the entire time the window was open, which could make it sluggish. Both are fixed.',
+        kind: 'fix',
+      },
     ],
   },
   {
