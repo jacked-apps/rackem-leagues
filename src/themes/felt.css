@@ -1,19 +1,31 @@
 /*
- * Felt palette — PREVIEW (see src/themes/palettes.ts).
+ * Felt — custom scheme (dark-based). See src/themes/palettes.ts.
  *
- * Pool table: green buttons, a felt-green home panel with white text and a
- * cue-ball ivory away panel with black text (told apart by lightness, not
- * just hue). Light mode keeps a clean white page (the green tint read as
- * dingy); dark mode turns the page deep felt green.
+ * Pool table: a deep felt-green page with green buttons, a felt-green home
+ * panel with white text and a cue-ball ivory away panel with black text (told
+ * apart by lightness, not just hue). The confirmed-game highlight moves to
+ * sky blue, off the green home panel.
  *
  * Selector rule: see the header of high-contrast.css.
  */
 
-/* Team panels — the same in BOTH modes (:root[...] on purpose). */
 :root[data-palette='felt'] {
+  --background: oklch(0.2 0.035 155);
+  --card: oklch(0.26 0.045 155);
+  --popover: oklch(0.26 0.045 155);
+  --muted: oklch(0.3 0.04 155);
+  --muted-foreground: oklch(0.82 0.02 150);
+  --accent: oklch(0.3 0.04 155);
+  --border: oklch(1 0 0 / 14%);
+  --primary: oklch(0.66 0.13 155);
+  --primary-foreground: oklch(0.1 0 0);
+  --game-confirmed: oklch(0.36 0.07 230);
+  --sidebar: oklch(0.23 0.04 155);
+  --sidebar-accent: oklch(0.3 0.04 155);
+
   --home-team: oklch(0.42 0.1 155);
   --home-team-hover: oklch(0.37 0.1 155);
-  --home-team-border: oklch(0.34 0.09 155);
+  --home-team-border: oklch(0.5 0.1 155);
   --home-team-border-strong: oklch(1 0 0 / 40%);
   --home-team-foreground: oklch(1 0 0);
   --home-team-heading: oklch(1 0 0);
@@ -27,26 +39,4 @@
   --away-team-heading: oklch(0 0 0);
   --away-team-accent: oklch(0.38 0.1 155);
   --away-team-link: oklch(0.38 0.1 155);
-}
-
-[data-palette='felt']:not(.dark) {
-  --primary: oklch(0.48 0.12 155);
-  --primary-foreground: oklch(1 0 0);
-  /* Confirmed-game highlight moves off green: the home panel is green here. */
-  --game-confirmed: oklch(0.91 0.05 230);
-}
-
-.dark[data-palette='felt'] {
-  --background: oklch(0.2 0.035 155);
-  --card: oklch(0.26 0.045 155);
-  --popover: oklch(0.26 0.045 155);
-  --muted: oklch(0.3 0.04 155);
-  --muted-foreground: oklch(0.82 0.02 150);
-  --accent: oklch(0.3 0.04 155);
-  --border: oklch(1 0 0 / 14%);
-  --primary: oklch(0.66 0.13 155);
-  --primary-foreground: oklch(0.1 0 0);
-  --game-confirmed: oklch(0.36 0.07 230);
-  --sidebar: oklch(0.23 0.04 155);
-  --sidebar-accent: oklch(0.3 0.04 155);
 }

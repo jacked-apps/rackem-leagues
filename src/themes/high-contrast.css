@@ -1,17 +1,17 @@
 /*
- * High Contrast palette — PREVIEW (see src/themes/palettes.ts).
+ * High Contrast — custom scheme (light-based). See src/themes/palettes.ts.
  *
- * Built purely for readability: black buttons (white in dark mode), darker
- * body text and stronger borders, and team panels told apart by lightness
- * alone — black with white text for home, white with black text for away.
+ * Built purely for readability: black buttons, black text, strong borders,
+ * and team panels told apart by lightness alone — black with white text for
+ * home, white with black text for away. No colour needed to read anything.
  *
- * Selector rule for every palette file: light values go under
- * `[data-palette=…]:not(.dark)` and dark values under `.dark[data-palette=…]`.
- * A bare `:root[data-palette=…]` would out-rank the base `.dark` block and
- * leak light values into dark mode.
+ * Selector rule for every scheme file: one `:root[data-palette=…]` block.
+ * Its specificity beats both base blocks in index.css (`:root` and `.dark`),
+ * and ThemeToggle switches to the scheme's mode, so the mode's `dark:`
+ * utilities match the page.
  */
 
-[data-palette='high-contrast']:not(.dark) {
+:root[data-palette='high-contrast'] {
   --foreground: oklch(0 0 0);
   --card-foreground: oklch(0 0 0);
   --popover-foreground: oklch(0 0 0);
@@ -21,35 +21,10 @@
   --input: oklch(0.5 0 0);
   --primary: oklch(0.15 0 0);
   --primary-foreground: oklch(1 0 0);
-}
 
-.dark[data-palette='high-contrast'] {
-  --background: oklch(0 0 0);
-  --foreground: oklch(1 0 0);
-  --card: oklch(0.14 0 0);
-  --card-foreground: oklch(1 0 0);
-  --popover: oklch(0.14 0 0);
-  --popover-foreground: oklch(1 0 0);
-  --muted: oklch(0.22 0 0);
-  --muted-foreground: oklch(0.87 0 0);
-  --accent: oklch(0.26 0 0);
-  --accent-foreground: oklch(1 0 0);
-  --border: oklch(1 0 0 / 40%);
-  --input: oklch(1 0 0 / 45%);
-  --primary: oklch(0.98 0 0);
-  --primary-foreground: oklch(0 0 0);
-  --sidebar: oklch(0.08 0 0);
-  --sidebar-foreground: oklch(1 0 0);
-}
-
-/* Team panels — the same in BOTH modes, so this one block uses :root[...]
-   on purpose (it must out-rank the base .dark block too). Black home, white
-   away: told apart by lightness alone, no colour needed. The mid-grey home
-   border keeps the black panel visible on the black dark-mode page. */
-:root[data-palette='high-contrast'] {
   --home-team: oklch(0.13 0 0);
   --home-team-hover: oklch(0.25 0 0);
-  --home-team-border: oklch(0.55 0 0);
+  --home-team-border: oklch(0 0 0);
   --home-team-border-strong: oklch(1 0 0 / 45%);
   --home-team-foreground: oklch(1 0 0);
   --home-team-heading: oklch(1 0 0);

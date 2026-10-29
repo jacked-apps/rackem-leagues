@@ -548,11 +548,13 @@ how to add a new test, demo recording, cleanup model).
 | `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
 | `config/envBannerVisibility.ts` | Lets a page hide the staging/dev banner while open (`useHideEnvBanner`) |
 | `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
-| `themes/palettes.ts` | **Custom colour schemes (GATED, non-production)** — the fourth theme choice beside Light/Dark/System: each scheme = one palette in one mode (`COLOUR_SCHEMES`); `applyScheme` sets `data-palette` on `<html>`, `ThemeToggle` switches the mode. Applied at boot from `main.tsx` |
-| `themes/palettes.css` | Imports the palette files into `index.css` |
-| `themes/high-contrast.css` | High Contrast palette — darker text + stronger borders; true black in dark mode |
-| `themes/blue-gold.css` | Blue & Gold palette — standard page, away team gold (pending highlight moves to lavender) |
-| `themes/felt.css` | Felt palette — pool-table green page, away team amber |
+| `themes/palettes.ts` | **Custom colour schemes (GATED, non-production)** — the fourth theme choice beside Light/Dark/System: each scheme = one complete look built on one mode (`COLOUR_SCHEMES`); `applyScheme` sets `data-palette` on `<html>`, `ThemeToggle` switches the mode. Applied at boot from `main.tsx` |
+| `themes/palettes.css` | Imports the custom-scheme files into `index.css` |
+| `themes/high-contrast.css` | High Contrast scheme (light-based) — black and white: black home / white away panels |
+| `themes/blue-gold.css` | Blue & Gold scheme (dark-based) — navy page, gold buttons, navy home / gold away |
+| `themes/felt.css` | Felt scheme (dark-based) — felt-green page, green buttons, green home / cue-ball away |
+| `themes/pastel.css` | Pastel scheme (light-based) — blush page, lavender buttons, periwinkle home / peach away |
+| `themes/crimson-cream.css` | Crimson & Cream scheme (light-based) — cream page, crimson buttons, crimson home / gold away |
 | `components/CustomSchemePicker.tsx` | Custom colour-scheme dropdown shown by `ThemeToggle` while "Custom" is selected (non-production) |
 
 ---

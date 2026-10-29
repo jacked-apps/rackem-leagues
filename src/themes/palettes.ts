@@ -3,9 +3,9 @@
  * Light / Dark / System. PREVIEW.
  *
  * Light vs dark is chosen by next-themes (the `dark` class on <html>). A
- * custom scheme is one palette in one mode: picking it sets `data-palette` on
- * <html> (the matching CSS file in this folder overrides index.css tokens)
- * AND switches next-themes to that scheme's mode. Picking Light, Dark or
+ * custom scheme is one complete look built on one mode: picking it sets
+ * `data-palette` on <html> (the matching CSS file in this folder overrides
+ * index.css tokens) AND switches next-themes to that mode. Picking Light, Dark or
  * System clears the scheme, so those three are always the standard look.
  *
  * GATED: schemes exist so Ed (and others) can compare readability across the
@@ -16,35 +16,29 @@
 
 import { isProduction } from '@/config/environment';
 
-/** One selectable custom scheme: a palette shown in one mode. */
+/**
+ * One selectable custom scheme: a single, complete look. Ed (2026-10-29): no
+ * light and dark versions — forcing every palette into both modes made some
+ * of them look wrong. Each scheme is built on ONE mode instead.
+ */
 export interface ColourScheme {
-  /** Stored id, e.g. 'felt-dark'. */
+  /** Stored id; also the `data-palette` value its CSS file targets. */
   id: string;
-  /** The `data-palette` value its CSS file targets. */
-  palette: string;
-  /** The next-themes mode it switches to. */
+  /** The next-themes mode the scheme is built on (sets the `dark:` utilities). */
   mode: 'light' | 'dark';
   label: string;
   /** One line shown under the picker, so testers know what to look for. */
   description: string;
 }
 
-const PALETTE_INFO = [
-  { palette: 'high-contrast', label: 'High Contrast', description: 'Black and white: black home and white away panels, strongest text.' },
-  { palette: 'blue-gold', label: 'Blue & Gold', description: 'Gold buttons, navy home and gold away panels.' },
-  { palette: 'felt', label: 'Felt', description: 'Green buttons, felt-green home and cue-ball away panels.' },
-] as const;
-
-/** Every custom scheme: each palette in light, then dark. */
-export const COLOUR_SCHEMES: readonly ColourScheme[] = PALETTE_INFO.flatMap((p) =>
-  (['light', 'dark'] as const).map((mode) => ({
-    id: `${p.palette}-${mode}`,
-    palette: p.palette,
-    mode,
-    label: `${p.label} — ${mode === 'light' ? 'Light' : 'Dark'}`,
-    description: p.description,
-  })),
-);
+/** Every custom scheme, in picker order. One CSS file each in this folder. */
+export const COLOUR_SCHEMES: readonly ColourScheme[] = [
+  { id: 'high-contrast', mode: 'light', label: 'High Contrast', description: 'Black and white: black home and white away panels, strongest text.' },
+  { id: 'blue-gold', mode: 'dark', label: 'Blue & Gold', description: 'Navy page, gold buttons, navy home and gold away panels.' },
+  { id: 'felt', mode: 'dark', label: 'Felt', description: 'Felt-green page, green buttons, felt-green home and cue-ball away panels.' },
+  { id: 'pastel', mode: 'light', label: 'Pastel', description: 'Soft blush page, lavender buttons, periwinkle home and peach away panels.' },
+  { id: 'crimson-cream', mode: 'light', label: 'Crimson & Cream', description: 'Cream page, crimson buttons, crimson home and gold away panels.' },
+];
 
 const STORAGE_KEY = 'rackem-colour-scheme';
 
@@ -69,7 +63,7 @@ export function readScheme(): ColourScheme | null {
  */
 export function applyScheme(scheme: ColourScheme | null): void {
   const root = document.documentElement;
-  if (scheme) root.dataset.palette = scheme.palette;
+  if (scheme) root.dataset.palette = scheme.id;
   else delete root.dataset.palette;
   try {
     if (scheme) localStorage.setItem(STORAGE_KEY, scheme.id);

@@ -1,0 +1,39 @@
+/*
+ * Pastel — custom scheme (light-based). See src/themes/palettes.ts.
+ *
+ * Soft and light: a faint blush page, lavender buttons, a periwinkle home
+ * panel and a peach away panel, all with near-black text. Blue vs peach stays
+ * distinguishable for the common colour-blindness types; the deeper accents
+ * carry the numbers. Confirmed games turn mint.
+ *
+ * Selector rule: see the header of high-contrast.css.
+ */
+
+:root[data-palette='pastel'] {
+  --background: oklch(0.985 0.008 340);
+  --muted: oklch(0.96 0.015 300);
+  --accent: oklch(0.95 0.02 300);
+  --border: oklch(0.89 0.025 300);
+  --input: oklch(0.89 0.025 300);
+  --primary: oklch(0.78 0.09 300);
+  --primary-foreground: oklch(0.15 0 0);
+  --sidebar: oklch(0.97 0.012 300);
+  --game-confirmed: oklch(0.92 0.06 165);
+
+  --home-team: oklch(0.88 0.06 265);
+  --home-team-hover: oklch(0.84 0.07 265);
+  --home-team-border: oklch(0.78 0.08 265);
+  --home-team-border-strong: oklch(0.7 0.1 265);
+  --home-team-foreground: oklch(0.15 0 0);
+  --home-team-heading: oklch(0.3 0.1 265);
+  --home-team-accent: oklch(0.4 0.15 265);
+  --home-team-link: oklch(0.35 0.15 265);
+  --away-team: oklch(0.91 0.06 50);
+  --away-team-hover: oklch(0.87 0.07 50);
+  --away-team-border: oklch(0.8 0.08 50);
+  --away-team-border-strong: oklch(0.72 0.1 45);
+  --away-team-foreground: oklch(0.15 0 0);
+  --away-team-heading: oklch(0.35 0.09 40);
+  --away-team-accent: oklch(0.45 0.13 40);
+  --away-team-link: oklch(0.35 0.15 265);
+}

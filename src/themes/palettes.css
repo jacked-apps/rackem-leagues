@@ -1,8 +1,11 @@
 /*
- * Colour palettes layered on light / dark mode — PREVIEW, non-production only.
- * Each file overrides tokens from src/index.css; see src/themes/palettes.ts.
+ * Custom colour schemes — PREVIEW, non-production only.
+ * One file per scheme; each overrides tokens from src/index.css. See
+ * src/themes/palettes.ts.
  */
 
 @import './high-contrast.css';
 @import './blue-gold.css';
 @import './felt.css';
+@import './pastel.css';
+@import './crimson-cream.css';
