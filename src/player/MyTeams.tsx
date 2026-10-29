@@ -32,6 +32,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 // import { Link } from 'react-router-dom';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
+import type { GameType, DayOfWeek } from '@/types/league';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { PlayerRoster } from '@/components/PlayerRoster';
 import { VenueWithMaps } from '@/components/VenueWithMaps';
@@ -170,7 +171,7 @@ function TeamAccordionItem({
                     year: parseLocalDate(team.season.league.league_start_date).getFullYear(),
                   })
                 ) : (
-                  `${formatGameType(team.season.league.game_type as any)} ${formatDayOfWeek(team.season.league.day_of_week as any)}`
+                  `${formatGameType(team.season.league.game_type as GameType)} ${formatDayOfWeek(team.season.league.day_of_week as DayOfWeek)}`
                 )}
               </h3>
             </div>
