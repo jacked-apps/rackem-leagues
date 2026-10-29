@@ -3,7 +3,7 @@
 Date: 2026-10-28. Branch: `audit/tiebreaker-phase3` (branch off for
 implementation). Status: **ALL UNITS BUILT on `feat/tiebreaker-record` (2026-10-29)** —
 Units 1–5 and 7 in code, Unit 6 decided as a release step (release outside
-Sunday play). 7b's risky half was sized and needs its own plan. Ed tested a
+Sunday play). 7b's risky half is covered by the open lint stack (PR #293). Ed tested a
 real tie end to end. No PR yet.
 
 Requirements: `docs/brainstorms/2026-10-28-tiebreaker-requirements.md`
@@ -481,7 +481,12 @@ encode that the real shape is bigger: `MyMatchRow`
 >   (`createClient<Database>`) makes these queries checked, and that touches
 >   every query in the app; `database.types.ts` is also behind the schema
 >   (no `matches.lms_entered_at`), so it must be regenerated first. That is
->   its own plan, not a cleanup bullet. `MatchWithVenueDetails` left as is
+>   its own plan, not a cleanup bullet. **UPDATE (Ed, same day): that work
+>   already exists — PR #293 (`chore/lint-any-api-queries`) types the client
+>   and regenerates `database.types.ts`, part of the open lint stack
+>   #292→#303. It does NOT do the safe half above (`MyMatchRow` still exists
+>   there), so the two are complementary. Once the stack is on main and this
+>   branch is rebased onto it, removing the six casts becomes meaningful.** `MatchWithVenueDetails` left as is
 >   (its required `street_address` is a real contract difference).
 
 ---
