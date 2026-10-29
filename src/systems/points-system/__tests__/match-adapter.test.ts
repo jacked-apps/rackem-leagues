@@ -178,6 +178,91 @@ describe('Parity: Points 3-Man (linear_above_threshold)', () => {
 });
 
 // ============================================================================
+// Points 3-Man — saved targets are authoritative (regression)
+// ============================================================================
+
+/**
+ * Targets are fixed at match prep and must never change mid-match (Ed,
+ * 2026-10-26). The engine used to re-derive them from the handicap diff it
+ * rebuilt off the locked lineups on every scoring event; a tiebreaker re-lock
+ * (fresh handicaps / team bonus) could shift that diff, so a tied match whose
+ * tiebreaker the home team then WON was stored at −1 for the winner — the
+ * impossible "win with −1 points" seen in production standings.
+ *
+ * Setup mirrors that case: the match was prepped at diff +4 (home 12 to win /
+ * 11 to tie, away 8 / 7) and ended 11–7 — both sides inside their tie band.
+ * The rebuilt diff has drifted to +6 (home 13 / 12), which would score home −1.
+ */
+describe('Points 3-Man scores against SAVED targets, not a re-derived diff', () => {
+  const savedHome = get3v3GamesNeeded(4); // 12 / 11 / 10
+  const savedAway = get3v3GamesNeeded(-4); // 8 / 7 / 6
+  const driftedInputs: ThresholdInputs = {
+    homeRatings: [],
+    awayRatings: [],
+    homeHandicapDiff: 6,
+    awayHandicapDiff: -6,
+    gameCount: 18,
+    prefs: {},
+  };
+
+  function run(homeWins: number, awayWins: number) {
+    return computeMatchRunningTotalsViaEngine({
+      homeTeamId: HOME,
+      awayTeamId: AWAY,
+      games: winStream(homeWins, awayWins),
+      pointsCalculator: 'linear_above_threshold',
+      pointsCalculatorParams: {},
+      winCondition: 'games',
+      thresholdInputs: driftedInputs,
+      homeThresholds: savedHome,
+      awayThresholds: savedAway,
+    });
+  }
+
+  it('tie-band result stays 0 / 0 even when the rebuilt diff has drifted', () => {
+    const totals = run(11, 7);
+    expect(totals.home_points_earned).toBe(0);
+    expect(totals.away_points_earned).toBe(0);
+  });
+
+  it('above / below bands use the saved targets', () => {
+    // 14–4: home 14 − 11 (saved tie) = +3; away 4 − 7 (saved tie) = −3.
+    const totals = run(14, 4);
+    expect(totals.home_points_earned).toBe(3);
+    expect(totals.away_points_earned).toBe(-3);
+  });
+
+  it('matches legacy fed the same saved targets across every 18-game outcome', () => {
+    for (let h = 0; h <= 18; h++) {
+      const games = winStream(h, 18 - h);
+      assertParity(
+        {
+          homeTeamId: HOME,
+          awayTeamId: AWAY,
+          homeThresholds: savedHome,
+          awayThresholds: savedAway,
+          games,
+          pointsCalculator: 'linear_above_threshold',
+          pointsCalculatorParams: {},
+          winCondition: 'games',
+        },
+        {
+          homeTeamId: HOME,
+          awayTeamId: AWAY,
+          games,
+          pointsCalculator: 'linear_above_threshold',
+          pointsCalculatorParams: {},
+          winCondition: 'games',
+          thresholdInputs: driftedInputs,
+          homeThresholds: savedHome,
+          awayThresholds: savedAway,
+        },
+      );
+    }
+  });
+});
+
+// ============================================================================
 // System 2 — Percentage 5-Man (accumulate_with_milestone_jumps)
 // ============================================================================
 

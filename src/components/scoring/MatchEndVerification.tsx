@@ -427,8 +427,17 @@ export function MatchEndVerification({
                   continue;
                 }
 
-                // `player{n}_id` columns hold a member id (or null).
-                const winningPlayerId = winningLineup[`player${position}_id` as keyof typeof winningLineup] as string | null;
+                // The tiebreaker order lives on the tiebreaker game rows
+                // (written by useTiebreakerLineup); the lineup row keeps the
+                // ORIGINAL regular-game order and is never re-ordered for the
+                // tiebreaker. Credit the player who actually played this game
+                // for the winning side; the lineup slot is only a fallback for
+                // a game row with no player recorded.
+                const winnerIsHome = winnerTeamId === homeTeamId;
+                const winningPlayerId =
+                  (winnerIsHome ? game.home_player_id : game.away_player_id) ??
+                  // `player{n}_id` columns hold a member id (or null).
+                  (winningLineup[`player${position}_id` as keyof typeof winningLineup] as string | null);
 
                 await updateGameMutation.mutateAsync({
                   gameId: game.id,

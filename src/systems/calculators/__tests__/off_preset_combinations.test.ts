@@ -71,7 +71,7 @@ describe('off-preset combinations: linear_above_threshold at non-canonical lineu
     registerTestedPresetCalculators();
   });
 
-  it('4v4 single-RR (16 games, W=9, T=8): wins=11 → +2', () => {
+  it('4v4 single-RR (16 games, W=9, T=8): wins=11 → +3 (par 8)', () => {
     const calc = getCalculator('linear_above_threshold');
     if (calc?.kind !== 'aggregate') throw new Error('expected aggregate calculator');
     const result = calc.compute(
@@ -81,10 +81,10 @@ describe('off-preset combinations: linear_above_threshold at non-canonical lineu
       },
       { per_extra_game_multiplier: 1 },
     );
-    expect(result).toBe(2);
+    expect(result).toBe(3);
   });
 
-  it('6v6 single-RR (36 games, W=19): wins=25 → +6', () => {
+  it('6v6 single-RR (36 games, W=19, T=18): wins=25 → +7 (par 18)', () => {
     const calc = getCalculator('linear_above_threshold');
     if (calc?.kind !== 'aggregate') throw new Error('expected aggregate calculator');
     const result = calc.compute(
@@ -94,7 +94,7 @@ describe('off-preset combinations: linear_above_threshold at non-canonical lineu
       },
       { per_extra_game_multiplier: 1 },
     );
-    expect(result).toBe(6);
+    expect(result).toBe(7);
   });
 
   it('5v5 single-RR (25 games, no tie possible, W=13): wins=15 → +2', () => {
@@ -114,7 +114,7 @@ describe('off-preset combinations: linear_above_threshold at non-canonical lineu
     expect(result).toBe(2);
   });
 
-  it('4v4 with custom multiplier=2: wins=11 (W=9) → +4', () => {
+  it('4v4 with custom multiplier=2: wins=11 (par 8) → +6', () => {
     const calc = getCalculator('linear_above_threshold');
     if (calc?.kind !== 'aggregate') throw new Error('expected aggregate calculator');
     const result = calc.compute(
@@ -124,7 +124,7 @@ describe('off-preset combinations: linear_above_threshold at non-canonical lineu
       },
       { per_extra_game_multiplier: 2 },
     );
-    expect(result).toBe(4);
+    expect(result).toBe(6);
   });
 });
 
@@ -289,7 +289,7 @@ describe('cross-calculator: same league config could use any calculator', () => 
       throw new Error('expected aggregate calculators');
     }
 
-    expect(lin.compute(aggInput, lin.defaultParams)).toBe(1); // 10-9=1
+    expect(lin.compute(aggInput, lin.defaultParams)).toBe(2); // 10 - par 8 = 2
     // milestone: target=round(9*0.7)=6, gamesWon=10 ≥ W=9 → win-threshold: 3 + 1×0.1 = 3.1
     expect(milestone.compute(aggInput, milestone.defaultParams)).toBeCloseTo(3.1, 5);
 

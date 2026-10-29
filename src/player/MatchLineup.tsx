@@ -424,6 +424,8 @@ function MatchLineupBody() {
     onLockedChange: lineup.setLineupLocked,
     matchData,
     refetchLineups: lineupsQuery.refetch,
+    // Tiebreaker lock/unlock must not touch players, handicaps or team bonus.
+    isTiebreakerMode,
   });
 
   // Note: Lineups are now auto-created by database trigger when match is inserted

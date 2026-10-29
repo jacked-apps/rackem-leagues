@@ -388,7 +388,7 @@ R11 (state-bag-read from the allocator) is honored by the new `read_state_var` r
 |---|---|---|
 | `accumulated_per_game` | (A) generic per-game allocator | FargoRate 10-Point 5-Man (also wired with start_points logic in `fargo5v5.ts`) |
 | `accumulate_with_milestone_jumps` | (A) + (B) bundled into one calculator | Percentage 5-Man |
-| `linear_above_threshold` | end-of-match scoring — computes a side's match points once at match end from games-won vs thresholds (incl. the tie-band rule) | Points 3-Man |
+| `linear_above_threshold` | end-of-match scoring — computes a side's match points once at match end from games-won vs par (incl. the tied-match rule) | Points 3-Man |
 | `none` | No-op (no points tracked at all) | None today (selectable for new leagues) |
 
 **Implementation artifact, not architectural intent.** The current per-Scoring-System bundling means the "calculator" picked in the wizard is a pre-built combination matching that Scoring System. Architecturally, a future refactor should decouple these into composable sub-mechanisms — so an LO could mix-and-match (e.g., milestone triggers stacked on top of any per-game allocator config; start_points combined with any per-game allocator; new compositions for new Scoring Systems without writing new calculator types).
@@ -411,7 +411,7 @@ The DB has a `points_system` column (`differential | bca_tiered | per_game | man
 
 - ~~Per-game allocator `formula` value-shape: not yet supported in code~~. **Updated 2026-06-04**: shipped in code via the new Points System engine (`evaluateAllocator` + `allocator-formula-registry`) and exposed via the Per-Game Allocator Workshop room. Three registered formula recipes (`add_complement_of_other_side`, `state_diff_times_constant`, `read_state_var`) cover the 17-Point case, behind-boost handicap, and R11 direct state-bag reads. 17-Point is selectable today via a custom variation pointed at by `preferences.per_game_allocator_id`.
 - Trigger sub-mechanism: currently bundled inside the `accumulate_with_milestone_jumps` calculator. **Future "trigger room"** of the workshop will expose this independently.
-- Tie-band rule: enforced in `src/systems/calculators/linear_above_threshold.ts`, fixed in code (not configurable).
+- Tied-match rule: enforced in `src/systems/calculators/linear_above_threshold.ts`, fixed in code (not configurable).
 - ~~Calculator registry … the gap for LO-customizable allocations is the LO-facing UI~~. **Updated 2026-06-04**: gap closed for the per-game allocator slot specifically. Other slots (triggers, thresholds, win calc) follow the same pattern in future rooms.
 
 ## modules/points-system/one-point-scoring.md

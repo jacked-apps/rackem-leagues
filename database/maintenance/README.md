@@ -21,3 +21,7 @@ self-serve features in the app.
 | File | What it does |
 |------|--------------|
 | `mergeRegisteredPlayers.sql` | Merge two **real registered accounts** that belong to the same person (e.g. a duplicate signup where both logins have since played matches). The in-app placeholder merge refuses this on purpose; this script reuses the same `merge_placeholder_into_member_v2` RPC by first demoting the discard account to a placeholder, so the merge stays undoable via `lo-undo-merge`. Read its header for the 3-step procedure. |
+| `diagnose_standings_points.sql` | **Read-only** diagnostic. For one season, lists every completed match with stored vs expected points (rule applied to the saved targets + confirmed games), flags mismatches, and totals stored vs expected per team. Changes nothing. |
+| `recalculate_points_3man_1_preview.sql` | **Step 1 of 3, read-only.** Previews the re-score of stored points on completed Points 3-Man (games-mode) matches against their **saved** targets, fixing matches mis-scored before the saved-targets engine fix (e.g. a match win stored at −1). Lists `will_update` (old → new) and `needs_review` (stored games disagree with `match_games`, left alone). |
+| `recalculate_points_3man_2_apply.sql` | **Step 2 of 3.** One transaction: backs up old values to `maintenance.points_recalc_backup`, then updates only `*_points_earned`. Set the same season as the preview. |
+| `recalculate_points_3man_3_undo.sql` | **Step 3 of 3, only if needed.** Restores the most recent apply run from the backup. |
