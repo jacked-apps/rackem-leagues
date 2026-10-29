@@ -40,7 +40,7 @@ export const COLOUR_SCHEMES: readonly ColourScheme[] = [
   { id: 'pastel', mode: 'light', label: 'Pastel', description: 'Soft blush page, lavender buttons, periwinkle home and peach away panels.' },
   { id: 'blue-gold', mode: 'dark', label: 'Blue & Gold', description: 'Navy page, gold buttons, navy home and gold away panels.' },
   { id: 'felt', mode: 'dark', label: 'Felt', description: 'Felt-green page, green buttons, felt-green home and cue-ball away panels.' },
-  { id: 'crimson-cream', mode: 'light', label: 'Crimson & Cream', description: 'Cream page, crimson buttons, crimson home and cream away panels.' },
+  { id: 'strawberry-cream', mode: 'light', label: 'Strawberry & Cream', description: 'Cream page, strawberry buttons, strawberry home and cream away panels.' },
   { id: 'high-contrast', mode: 'light', label: 'High Contrast', description: 'Black and white: black home and white away panels, strongest text.' },
 ];
 

@@ -305,7 +305,7 @@ export function PlayerNameLink({
         <PopoverTrigger asChild>
           <button
             className={cn(
-              'text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium transition-colors inline-flex items-center gap-1.5',
+              'text-info hover:text-info hover:underline cursor-pointer font-medium transition-colors inline-flex items-center gap-1.5',
               className
             )}
           >

@@ -24,6 +24,9 @@
   --sidebar: oklch(0.935 0.035 300);
   --sidebar-accent: oklch(0.9 0.045 300);
   --game-confirmed: oklch(0.92 0.06 165);
+  /* Links (player + team names, text-info) — the standard blue read too
+     light on the lavender cards. */
+  --info: oklch(0.45 0.17 262);
 
   --home-team: oklch(0.88 0.06 265);
   --home-team-hover: oklch(0.84 0.07 265);
@@ -31,8 +34,8 @@
   --home-team-border-strong: oklch(0.7 0.1 265);
   --home-team-foreground: oklch(0.15 0 0);
   --home-team-heading: oklch(0.3 0.1 265);
-  --home-team-accent: oklch(0.4 0.15 265);
-  --home-team-link: oklch(0.35 0.15 265);
+  --home-team-accent: oklch(0.36 0.15 265);
+  --home-team-link: oklch(0.32 0.15 265);
   --away-team: oklch(0.91 0.06 50);
   --away-team-hover: oklch(0.87 0.07 50);
   --away-team-border: oklch(0.8 0.08 50);
@@ -40,5 +43,5 @@
   --away-team-foreground: oklch(0.15 0 0);
   --away-team-heading: oklch(0.35 0.09 40);
   --away-team-accent: oklch(0.45 0.13 40);
-  --away-team-link: oklch(0.35 0.15 265);
+  --away-team-link: oklch(0.32 0.15 265);
 }

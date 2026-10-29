@@ -237,7 +237,7 @@ from this list when un-gated.
 
 - **Custom colour schemes (preview)** — a fourth theme choice, "Custom",
   beside Light / Dark / System: High Contrast, Blue & Gold, Felt, Pastel and
-  Crimson & Cream, one look each (`src/themes/`). Ed wants players to try
+  Strawberry & Cream, one look each (`src/themes/`). Ed wants players to try
   them for feedback — un-gate after his staging look. Gate: `palettesEnabled` (`!isProduction`)
   in `src/themes/palettes.ts`, checked by BOTH entry points — the Custom
   button in `src/components/ThemeToggle.tsx` (Profile page) and the start-up
