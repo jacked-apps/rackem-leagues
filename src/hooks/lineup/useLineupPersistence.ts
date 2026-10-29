@@ -13,6 +13,8 @@ import { useUpdateMatch, useUpdateMatchLineup } from '@/api/hooks';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { computeLineupCompleteness } from '@/utils/lineup';
+import type { MatchWithLeagueSettings } from '@/types/match';
+import type { TablesUpdate } from '@/types/database.types';
 
 interface LineupPersistenceParams {
   matchId: string | undefined;
@@ -42,7 +44,7 @@ interface LineupPersistenceParams {
   hasDuplicates: boolean;
   onLineupIdChange: (id: string) => void;
   onLockedChange: (locked: boolean) => void;
-  matchData?: any;
+  matchData?: MatchWithLeagueSettings;
   refetchLineups?: () => void; // Optional refetch function for lineup updates
 }
 
@@ -128,7 +130,7 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
       }
 
       // Prepare lineup data (keep substitute IDs, don't convert to null)
-      const lineupData: any = {
+      const lineupData: TablesUpdate<'match_lineups'> = {
         match_id: matchId,
         team_id: userTeamId,
         player1_id: player1Id,
@@ -179,7 +181,7 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
       const opponentLineupLocked = matchData?.[opponentLineupField] != null;
 
       // If both lineups are now locked, set started_at timestamp
-      const matchUpdateData: any = { [lineupField]: result.id };
+      const matchUpdateData: TablesUpdate<'matches'> = { [lineupField]: result.id };
       if (opponentLineupLocked && !matchData?.started_at) {
         matchUpdateData.started_at = new Date().toISOString();
       }
@@ -189,20 +191,20 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
           matchId,
           updates: matchUpdateData,
         });
-      } catch (matchUpdateError: any) {
+      } catch (matchUpdateError: unknown) {
         logger.error('Error updating match with lineup ID', {
           error: matchUpdateError instanceof Error ? matchUpdateError.message : String(matchUpdateError),
           matchId
         });
         // Don't throw - lineup is still locked, just log the error
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('Error saving lineup', {
         error: err instanceof Error ? err.message : String(err),
         matchId,
         lineupId
       });
-      toast.error(`Failed to save lineup: ${err.message || 'Unknown error'}`);
+      toast.error(`Failed to save lineup: ${(err as { message?: string }).message || 'Unknown error'}`);
     }
   };
 
@@ -228,7 +230,7 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
     }
 
     try {
-      const updates: any = { locked: false, locked_at: null };
+      const updates: TablesUpdate<'match_lineups'> = { locked: false, locked_at: null };
 
       // Check for duplicate players across all positions (works for both 3v3 and 5v5)
       const playerIds = [player1Id, player2Id, player3Id, player4Id, player5Id];
@@ -248,8 +250,9 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
         if (positions.length > 1) {
           // Set both positions to null (ID) and 0 (handicap - can't be null due to DB constraint)
           positions.forEach((pos) => {
-            updates[`player${pos}_id`] = null;
-            updates[`player${pos}_handicap`] = 0;
+            // Keys are built at runtime; player{1-5}_id/_handicap are real columns.
+            (updates as Record<string, string | number | null>)[`player${pos}_id`] = null;
+            (updates as Record<string, string | number | null>)[`player${pos}_handicap`] = 0;
           });
         }
       }
@@ -266,7 +269,7 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
       if (refetchLineups) {
         refetchLineups();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('Error unlocking lineup', {
         error: err instanceof Error ? err.message : String(err),
         lineupId,
@@ -302,7 +305,7 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
         matchId,
       });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error('Auto-save error', {
         error: err instanceof Error ? err.message : String(err),
         matchId,

@@ -410,9 +410,9 @@ export function useMatchScoringMutations({
         }, 500);
 
         return true;
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Error confirming game', { error: err instanceof Error ? err.message : String(err) });
-        toast.error(`Failed to confirm game: ${err.message}`);
+        toast.error(`Failed to confirm game: ${(err as { message?: string }).message}`);
         return false;
       }
     },
@@ -556,9 +556,9 @@ export function useMatchScoringMutations({
 
         // Game results will be automatically refreshed by real-time subscription
         return true;
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Error denying game', { error: err instanceof Error ? err.message : String(err) });
-        toast.error(`Failed to deny game: ${err.message}`);
+        toast.error(`Failed to deny game: ${(err as { message?: string }).message}`);
         return false;
       }
     },
@@ -858,9 +858,9 @@ export function useMatchScoringMutations({
 
         // Close modal and reset state
         onSuccess();
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Error saving game score', { error: err instanceof Error ? err.message : String(err) });
-        toast.error(`Failed to save game score: ${err.message}`);
+        toast.error(`Failed to save game score: ${(err as { message?: string }).message}`);
       }
     },
     [match, homeLineup, awayLineup, userTeamId, gameResults, memberId]

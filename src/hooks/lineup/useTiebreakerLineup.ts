@@ -9,10 +9,12 @@
  */
 
 import { logger } from '@/utils/logger';
+import type { useUpdateMatchGame } from '@/api/hooks/useMatchMutations';
+import type { Tables } from '@/types/database.types';
 
 interface TiebreakerLineupParams {
   /** All match games */
-  allGames: any[];
+  allGames: Tables<'match_games'>[];
   /** Is current user on home team? */
   isHomeTeam: boolean;
   /** Match ID */
@@ -22,7 +24,7 @@ interface TiebreakerLineupParams {
   setPlayer2Id: (id: string) => void;
   setPlayer3Id: (id: string) => void;
   /** Mutation to update game records */
-  updateGameMutation: any;
+  updateGameMutation: ReturnType<typeof useUpdateMatchGame>;
 }
 
 interface TiebreakerLineupResult {

@@ -66,8 +66,8 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
 
   const matchForScoreboard = {
     ...data.match,
-    home_team_verified_by: (data.match as any).home_team_verified_by ?? null,
-    away_team_verified_by: (data.match as any).away_team_verified_by ?? null,
+    home_team_verified_by: data.match.home_team_verified_by ?? null,
+    away_team_verified_by: data.match.away_team_verified_by ?? null,
   };
 
   return (

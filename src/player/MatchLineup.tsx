@@ -189,7 +189,7 @@ function MatchLineupBody() {
 
   // Extract players from team details query
   const playersWithoutHandicaps: Omit<Player, 'handicap'>[] =
-    teamDetailsQuery.data?.team_players?.map((tp: any) => ({
+    teamDetailsQuery.data?.team_players?.map((tp) => ({
       id: tp.members.id,
       nickname: tp.members.nickname,
       first_name: tp.members.first_name,
@@ -216,7 +216,7 @@ function MatchLineupBody() {
 
   // Extract opponent players from opponent team details query
   const opponentPlayersWithoutHandicaps: Omit<Player, 'handicap'>[] =
-    opponentTeamDetailsQuery.data?.team_players?.map((tp: any) => ({
+    opponentTeamDetailsQuery.data?.team_players?.map((tp) => ({
       id: tp.members.id,
       nickname: tp.members.nickname,
       first_name: tp.members.first_name,
