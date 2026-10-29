@@ -142,6 +142,10 @@ export const RELEASES: Release[] = [
         text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passes about a thousand games, the app was only reading the first thousand and adding up whatever it got — so if one of your games fell outside that, it was missing from your record and you were never told. It now reads all of them. If your record has ever looked short, it is worth another look.',
         kind: 'fix',
       },
+      {
+        text: 'Blocking someone from Messages didn\u2019t work \u2014 the block was refused every time. It works now.',
+        kind: 'fix',
+      },
     ],
   },
   {
