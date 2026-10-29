@@ -363,7 +363,8 @@ the whole point: the rule does not change, only where the credit comes from.
 > - **Renamed** `matchGames.fetchPlayerGameHistory` → `fetchHandicapHistory`
 >   (Unit 7's first bullet, done here because the function was rewritten anyway).
 >   The profile game counts use it too, so they keep counting tiebreak wins.
-> - **ONE deliberate difference from the old code.** The old overwrite
+> - **ONE deliberate difference from the old code — Ed CONFIRMED 2026-10-29
+>   ("don't copy that behavior, it seems wrong").** The old overwrite
 >   credited by the MATCH lineup's slot order, but the row's player was the
 >   TIEBREAK order. When a side reordered, a winner whose position changed got
 >   no credit at all (the row's winner was someone not on that row). The new
