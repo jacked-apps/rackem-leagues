@@ -37,7 +37,7 @@ export const COLOUR_SCHEMES: readonly ColourScheme[] = [
   { id: 'blue-gold', mode: 'dark', label: 'Blue & Gold', description: 'Navy page, gold buttons, navy home and gold away panels.' },
   { id: 'felt', mode: 'dark', label: 'Felt', description: 'Felt-green page, green buttons, felt-green home and cue-ball away panels.' },
   { id: 'pastel', mode: 'light', label: 'Pastel', description: 'Soft blush page, lavender buttons, periwinkle home and peach away panels.' },
-  { id: 'crimson-cream', mode: 'light', label: 'Crimson & Cream', description: 'Cream page, crimson buttons, crimson home and gold away panels.' },
+  { id: 'crimson-cream', mode: 'light', label: 'Crimson & Cream', description: 'Cream page, crimson buttons, crimson home and cream away panels.' },
 ];
 
 const STORAGE_KEY = 'rackem-colour-scheme';

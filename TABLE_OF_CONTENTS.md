@@ -554,7 +554,7 @@ how to add a new test, demo recording, cleanup model).
 | `themes/blue-gold.css` | Blue & Gold scheme (dark-based) — navy page, gold buttons, navy home / gold away |
 | `themes/felt.css` | Felt scheme (dark-based) — felt-green page, green buttons, green home / cue-ball away |
 | `themes/pastel.css` | Pastel scheme (light-based) — blush page, lavender buttons, periwinkle home / peach away |
-| `themes/crimson-cream.css` | Crimson & Cream scheme (light-based) — cream page, crimson buttons, crimson home / gold away |
+| `themes/crimson-cream.css` | Crimson & Cream scheme (light-based) — cream page, crimson buttons, crimson home / cream away |
 | `components/CustomSchemePicker.tsx` | Custom colour-scheme dropdown shown by `ThemeToggle` while "Custom" is selected (non-production) |
 
 ---
