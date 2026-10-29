@@ -147,7 +147,8 @@ export async function deleteLeague(params: DeleteLeagueParams): Promise<void> {
  * Updates the day of week for a league in the database
  *
  * Used when operator changes the league schedule day.
- * Converts day name to numeric format (0-6) for database storage.
+ * Stores the lowercase day name ('wednesday') — the leagues_day_of_week_check
+ * constraint accepts nothing else.
  *
  * @param params - League ID and new day name
  * @returns The updated day of week as lowercase string
@@ -165,26 +166,12 @@ export async function updateLeagueDayOfWeek(
 ): Promise<DayOfWeek> {
   const { leagueId, newDay } = params;
 
-  // Convert day name to number (0 = Sunday, 6 = Saturday)
-  const dayMap: Record<string, number> = {
-    Sunday: 0,
-    Monday: 1,
-    Tuesday: 2,
-    Wednesday: 3,
-    Thursday: 4,
-    Friday: 5,
-    Saturday: 6,
-  };
-
-  const newDayNumber = dayMap[newDay];
   const newDayString = newDay.toLowerCase() as DayOfWeek;
 
   // Update the league's day_of_week in database
   const { error } = await supabase
     .from('leagues')
-    // TODO(typed-client): day_of_week is a text column holding lowercase day
-    // names ('wednesday'), but this writes the day NUMBER (3). Kept as-is.
-    .update({ day_of_week: newDayNumber as unknown as string })
+    .update({ day_of_week: newDayString })
     .eq('id', leagueId);
 
   if (error) {
