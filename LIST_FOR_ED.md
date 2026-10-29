@@ -235,6 +235,16 @@ Features merged to `main` but NOT yet live for users (see **Feature Gating
 Workflow** in `CLAUDE.md`). Reviewed on staging, then un-gated — and removed
 from this list when un-gated.
 
+- **Colour palettes (preview)** — High Contrast, Blue & Gold and Felt, each
+  with light + dark values, layered over the standard theme
+  (`src/themes/`). Gate: `palettesEnabled` (`!isProduction`) in
+  `src/themes/palettes.ts`, checked by BOTH entry points — the picker on the
+  Profile page (`src/profile/Profile.tsx`) and the start-up apply in
+  `src/main.tsx`. **Verify:** Ed (and his wife) compare readability across the
+  app in each palette, light and dark. This is a DECISION tool, not
+  necessarily a feature: the outcome may be "fold the winner into the
+  standard theme and delete the picker" rather than "un-gate the picker".
+
 - **Become a Host** (PR #287) — the self-serve `$1/mo` / `$10/yr` purchase that
   grants the `host` designation. Gated by `!isProduction` in two places: the
   route (`src/navigation/NavRoutes.tsx` — `become-host`) AND the Profile CTA

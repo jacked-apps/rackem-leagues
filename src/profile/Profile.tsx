@@ -34,6 +34,8 @@ import { PageHeader } from '@/components/PageHeader';
 import { ShareAppCard } from '@/components/ShareAppCard';
 import { InstallAppCard } from '@/components/InstallAppCard';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { PalettePicker } from '@/components/PalettePicker';
+import { palettesEnabled } from '@/themes/palettes';
 // --- Handicap Calculator entry point (dev/staging only) — remove this import + the marked block at the bottom of the page to remove the entry point ---
 import { isProduction } from '@/config/environment';
 
@@ -228,6 +230,12 @@ export const Profile: React.FC = () => {
                   Choose how Rack 'Em looks on this device.
                 </p>
                 <ThemeToggle />
+                {/* Palette preview — gated non-production (src/themes/palettes.ts) */}
+                {palettesEnabled && (
+                  <div className="mt-4">
+                    <PalettePicker />
+                  </div>
+                )}
               </div>
               <div className="border-t pt-6">
                 <h3 className="font-semibold text-foreground mb-1">Sign Out</h3>

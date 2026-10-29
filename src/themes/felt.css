@@ -1,0 +1,48 @@
+/*
+ * Felt palette — PREVIEW (see src/themes/palettes.ts).
+ *
+ * Pool-table green: a faint green tint on the page and green buttons in light
+ * mode; a deep felt-green page in dark mode. Teams stay blue (home) and
+ * switch to amber (away), which reads clearly against the green.
+ *
+ * Selector rule: see the header of high-contrast.css.
+ */
+
+[data-palette='felt']:not(.dark) {
+  --background: oklch(0.98 0.012 150);
+  --muted: oklch(0.95 0.015 150);
+  --accent: oklch(0.95 0.015 150);
+  --border: oklch(0.87 0.025 150);
+  --input: oklch(0.87 0.025 150);
+  --primary: oklch(0.45 0.1 155);
+  --primary-foreground: oklch(1 0 0);
+  --sidebar: oklch(0.96 0.015 150);
+
+  --away-team: oklch(0.95 0.06 85);
+  --away-team-hover: oklch(0.91 0.09 85);
+  --away-team-border: oklch(0.9 0.09 85);
+  --away-team-border-strong: oklch(0.82 0.12 80);
+  --away-team-heading: oklch(0.4 0.09 65);
+  --away-team-accent: oklch(0.55 0.13 70);
+}
+
+.dark[data-palette='felt'] {
+  --background: oklch(0.2 0.035 155);
+  --card: oklch(0.25 0.04 155);
+  --popover: oklch(0.25 0.04 155);
+  --muted: oklch(0.3 0.04 155);
+  --muted-foreground: oklch(0.8 0.02 150);
+  --accent: oklch(0.3 0.04 155);
+  --border: oklch(1 0 0 / 14%);
+  --primary: oklch(0.62 0.12 155);
+  --primary-foreground: oklch(0.12 0 0);
+  --sidebar: oklch(0.23 0.04 155);
+  --sidebar-accent: oklch(0.3 0.04 155);
+
+  --away-team: oklch(0.36 0.08 75);
+  --away-team-hover: oklch(0.42 0.09 75);
+  --away-team-border: oklch(0.46 0.1 75);
+  --away-team-border-strong: oklch(0.55 0.11 75);
+  --away-team-heading: oklch(0.93 0.07 85);
+  --away-team-accent: oklch(0.87 0.12 80);
+}
