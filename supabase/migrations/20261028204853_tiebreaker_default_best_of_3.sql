@@ -33,9 +33,13 @@ UPDATE public.preferences
    SET tiebreaker_format = 'best_of_3_short_race'
  WHERE tiebreaker_format = 'accept_tie';
 
--- 3. The view's last-resort fallback. Identical to the 20260605000001
---    definition except the tiebreaker_format default; same columns in the same
---    order, so CREATE OR REPLACE is allowed.
+-- 3. The view's last-resort fallback. Identical to the definition in
+--    20261028043311_restore_profanity_filter_to_resolved_view.sql (which runs
+--    BEFORE this file) except the tiebreaker_format default — including that
+--    file's restored profanity_filter_enabled column. That matters: CREATE OR
+--    REPLACE VIEW cannot DROP a column, so a copy of the OLDER definition here
+--    would fail the deploy once that migration has run, and quietly undo it
+--    where it hasn't.
 CREATE OR REPLACE VIEW public.resolved_league_preferences AS
 SELECT
   l.id AS league_id,
@@ -88,10 +92,18 @@ SELECT
 
   -- Scoring System Workshop — Per-Game Allocator Room
   COALESCE(league_prefs.per_game_allocator_id, org_prefs.per_game_allocator_id)
-    AS per_game_allocator_id
+    AS per_game_allocator_id,
+
+  -- Restored: dropped by accident when 20260417000000 rebuilt this view.
+  -- Same chain as the original (20251202194308): league → org → off.
+  COALESCE(league_prefs.profanity_filter_enabled, org_prefs.profanity_filter_enabled, false)
+    AS profanity_filter_enabled
 
 FROM public.leagues l
 LEFT JOIN public.preferences org_prefs
   ON org_prefs.entity_type = 'organization' AND org_prefs.entity_id = l.organization_id
 LEFT JOIN public.preferences league_prefs
   ON league_prefs.entity_type = 'league' AND league_prefs.entity_id = l.id;
+
+COMMENT ON VIEW public.resolved_league_preferences IS
+  'Final resolved preferences for each league with full fallback chain: league → org → system default. Includes original columns, Phase 1 + Phase 2 modular columns, the per-game allocator workshop pointer (per_game_allocator_id), and profanity_filter_enabled.';
