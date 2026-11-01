@@ -1,7 +1,7 @@
 ---
 title: "fix: team handicap bonus — off in playoffs, one formula everywhere"
 type: fix
-status: not started — NEXT PROJECT (Ed, 2026-11-01). Must ship before next season.
+status: built 2026-11-01 on fix/team-bonus-playoffs — awaiting PR + merge. Must ship before next season.
 date: 2026-11-01
 branch: fix/team-bonus-playoffs
 ---
@@ -62,6 +62,28 @@ wins this season.
 - Frozen data: once a match's lineups lock, its bonus is stored with them.
   Fixing the formula must not rewrite already-locked matches.
 
-## Not started
+## What was built (2026-11-01)
 
-Nothing is built yet. This file is the note so it's first in line.
+Ed chose: no setting for now (a big settings project is coming), just take
+the bonus out of playoffs.
+
+- `src/utils/getTeamHandicapBonus.ts` is the ONLY bonus helper:
+  `getTeamHandicapBonus(matchId, handicapType)`. Points system only; 0 when
+  the match's week is `playoffs`; divisor from
+  `resolved_league_preferences.team_handicap_variant` (the value the
+  operator's Preferences card writes; the lineup screen used to read
+  `leagues.team_handicap_variant`, a third disagreement). Pure rule exported
+  as `computeTeamBonus`.
+- Callers: lineup screen (`MatchLineup.tsx`), match setup
+  (`calculateHandicapThresholds` → `useMatchPreparation`,
+  `computeMatchPrepPayload` / LO manual setup, `composeMatchThresholds` /
+  lineup swap). They pass the match id instead of team + season ids.
+- `calculateTeamHandicap` (the second copy) is deleted. The scoring page now
+  shows the bonus FROZEN on the home lineup instead of recomputing it.
+- Already-locked matches are not touched: their bonus stays frozen.
+- `team_bonus_enabled` left as-is (unread) for the settings project.
+- Read-only check for production:
+  `database/maintenance/diagnose_playoff_team_bonus.sql`.
+- Tests: `getTeamHandicapBonus.characterization.test.ts` (rule + mocked
+  lookup) and `src/__tests__/database/teamHandicapBonus.db.test.ts` (real
+  queries: regular +2, playoff 0, reduced +1).

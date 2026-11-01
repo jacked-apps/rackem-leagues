@@ -47,9 +47,7 @@ const baseArgs = (
   awayLineup: makeLineup([450, 460, 440], 'a'),
   lineupSize: 3,
   handicapType: 'fargo',
-  homeTeamId: 'home-team',
-  awayTeamId: 'away-team',
-  seasonId: 'season-1',
+  matchId: 'match-1',
   ...over,
 });
 
@@ -155,7 +153,7 @@ describe('computeMatchPrepPayload', () => {
   });
 
   describe('non-Fargo (BCA points / percentage)', () => {
-    it('maps calculateHandicapThresholds output and passes home/away/season args', async () => {
+    it('maps calculateHandicapThresholds output and passes the match id for the team-bonus lookup', async () => {
       const { thresholds } = await computeMatchPrepPayload(
         baseArgs({ handicapType: 'points' })
       );
@@ -168,9 +166,7 @@ describe('computeMatchPrepPayload', () => {
       expect(calculateHandicapThresholds).toHaveBeenCalledWith(
         expect.anything(),
         expect.anything(),
-        'home-team',
-        'away-team',
-        'season-1',
+        'match-1',
         'points'
       );
     });

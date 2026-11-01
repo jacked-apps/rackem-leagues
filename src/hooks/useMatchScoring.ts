@@ -7,7 +7,6 @@
  * This hook extracts all business logic from the scoring pages, making them pure UI components.
  */
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { calculateTeamHandicap } from '@/utils/handicapCalculations';
 import { shouldGoldenBreakCount } from '@/utils/goldenBreakRules';
 import { getPlayerNicknameById } from '@/types/member';
 import { getTeamStats, getPlayerStats, getCompletedGamesCount, TIEBREAKER_THRESHOLDS } from '@/types';
@@ -22,7 +21,6 @@ import {
   useConnectionHealth,
   computeDegradedPollInterval,
 } from '@/realtime/useConnectionHealth';
-import { logger } from '@/utils/logger';
 import type {
   Player,
   MatchGame,
@@ -130,8 +128,11 @@ export function useMatchScoring({
   // LOCAL STATE
   // ============================================================================
 
-  // Handicap data (needs state because calculated async)
-  const [homeTeamHandicap, setHomeTeamHandicap] = useState(0);
+  // The team bonus FROZEN on the home lineup when it locked — the number the
+  // race was set with. Re-deriving it here from live standings could show a
+  // different bonus than the one being played (3v3 only; 5v5 has none).
+  const homeTeamHandicap =
+    matchType === '3v3' ? (lineupsData?.homeLineup?.home_team_modifier ?? 0) : 0;
 
   // Confirmation queue
   const [confirmationQueue, setConfirmationQueue] = useState<ConfirmationQueueItem[]>([]);
@@ -332,43 +333,6 @@ export function useMatchScoring({
   // ============================================================================
   // DATA PROCESSING
   // ============================================================================
-
-  /**
-   * Calculate team handicap for display purposes
-   * Note: Thresholds are now loaded from match table (saved during lineup)
-   */
-  useEffect(() => {
-    async function calculateHandicaps() {
-      if (!matchId || !memberId || !matchData || !lineupsData) {
-        return;
-      }
-
-      // Only calculate for 3v3 matches
-      if (matchType !== '3v3') {
-        return;
-      }
-
-      try {
-        // Calculate team handicap (only for home team in 3v3) - used for display
-        const calculatedTeamHandicap = await calculateTeamHandicap(
-          matchData.home_team_id,
-          matchData.away_team_id,
-          matchData.season_id,
-          matchData.league.team_handicap_variant
-        );
-        setHomeTeamHandicap(calculatedTeamHandicap);
-      } catch (err: unknown) {
-        logger.error('Error calculating team handicap', {
-          error: err instanceof Error ? err.message : String(err),
-          matchId,
-          homeTeamId: matchData?.home_team_id,
-          awayTeamId: matchData?.away_team_id
-        });
-      }
-    }
-
-    calculateHandicaps();
-  }, [matchId, memberId, matchType, matchData, lineupsData]);
 
   /**
    * Refetch lineups immediately on mount to ensure fresh data

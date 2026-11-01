@@ -4,17 +4,24 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
-## 🚨 2026-11-01 — NEXT PROJECT: team bonus is applied in PLAYOFF matches (fix before next season)
+## 🚨 2026-11-01 — Team bonus in PLAYOFF matches: FIXED on `fix/team-bonus-playoffs` (awaiting PR / merge)
 
-The home team's team handicap bonus (points-system leagues) must NOT apply in
-playoffs, and right now it does: nothing in the bonus code checks for a
-playoff week. Too late for tonight; **must be fixed before next season.**
-Same project also fixes a mismatch found while checking: the lineup screen
-and match setup use two different copies of the bonus math, and only the
-lineup screen respects the league's standard / reduced / none setting.
+Found by a user complaint during the 2026-11-01 playoffs (Team Leftovers'
+board showed 12 to win; player handicaps alone make it 11). Built:
 
-**Plan (not started):** `docs/plans/2026-11-01-003-fix-team-bonus-playoffs-plan.md`
-on branch `fix/team-bonus-playoffs`.
+- **No team bonus in a playoff week**, on the lineup screen and in match
+  setup, automatically.
+- **One formula everywhere** — the lineup screen and match setup now call the
+  same helper, which reads the league's real team-bonus setting (the one on
+  the operator's Preferences card: standard ÷2 / reduced ÷3 / none).
+- **To see which playoff matches got a bonus:** run the read-only
+  `database/maintenance/diagnose_playoff_team_bonus.sql` in production's SQL
+  editor (it changes nothing).
+- **Left for the big settings project:** an operator on/off switch for the
+  bonus in league / playoffs. (`system_overrides.team_bonus_enabled` exists as
+  a type but nothing reads it.)
+
+Plan: `docs/plans/2026-11-01-003-fix-team-bonus-playoffs-plan.md`.
 
 ---
 
