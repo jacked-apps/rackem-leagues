@@ -82,8 +82,8 @@ the bonus out of playoffs.
   shows the bonus FROZEN on the home lineup instead of recomputing it.
 - Already-locked matches are not touched: their bonus stays frozen.
 - `team_bonus_enabled` left as-is (unread) for the settings project.
-- Read-only check for production:
-  `database/maintenance/diagnose_playoff_team_bonus.sql`.
+- No production check needed: 2026-11-01 was the first real playoff (Ed), so
+  only that night's matches were affected.
 - Tests: `getTeamHandicapBonus.characterization.test.ts` (rule + mocked
   lookup) and `src/__tests__/database/teamHandicapBonus.db.test.ts` (real
   queries: regular +2, playoff 0, reduced +1).

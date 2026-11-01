@@ -14,9 +14,8 @@ board showed 12 to win; player handicaps alone make it 11). Built:
 - **One formula everywhere** — the lineup screen and match setup now call the
   same helper, which reads the league's real team-bonus setting (the one on
   the operator's Preferences card: standard ÷2 / reduced ÷3 / none).
-- **To see which playoff matches got a bonus:** run the read-only
-  `database/maintenance/diagnose_playoff_team_bonus.sql` in production's SQL
-  editor (it changes nothing).
+- **Past results:** 2026-11-01 was the first real playoff, so only that
+  night's playoff matches (e.g. Team Leftovers vs Bad Shape Crazy) had a bonus.
 - **Left for the big settings project:** an operator on/off switch for the
   bonus in league / playoffs. (`system_overrides.team_bonus_enabled` exists as
   a type but nothing reads it.)
