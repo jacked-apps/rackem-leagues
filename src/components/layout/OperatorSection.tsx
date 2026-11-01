@@ -3,10 +3,16 @@
  * signed-in menu (shared by sidebar + drawer; it used to be copy-pasted as
  * `SidebarOperatorSection` and `OperatorSection`).
  *
- * One org → a "Dashboard" row. Several → one row per org, named after it,
- * each going straight to that org's dashboard (owned orgs first, capped at
- * `OPERATOR_ORG_CAP`). Reports (N) appears under an org only while reports
- * are pending — see `OperatorOrgRow`.
+ * A list of the operator's organizations, one row each, named after the org
+ * and going straight to its dashboard (owned orgs first, capped at
+ * `OPERATOR_ORG_CAP`). Reports (N) appears indented under an org only while
+ * reports are pending — see `OperatorOrgRow`.
+ *
+ * @example What an operator with two orgs sees:
+ *   OPERATOR
+ *   Triple B Pool
+ *     Reports (2)
+ *   Riverside League
  */
 
 import { OperatorOrgRow } from './OperatorOrgRow';
@@ -19,19 +25,16 @@ import { OPERATOR_ORG_CAP, pickVisibleOrgs, type OperatorOrg } from './navHelper
  */
 export function OperatorSection({ orgs, inSheet }: { orgs: OperatorOrg[]; inSheet?: boolean }) {
   if (!orgs || orgs.length === 0) return null;
-  const visible = pickVisibleOrgs(orgs, OPERATOR_ORG_CAP);
-  const mode = visible.length === 1 ? 'flat' : 'named';
 
   return (
     <div className="mt-4 border-t pt-4">
       <NavSectionHeading>Operator</NavSectionHeading>
       <ul className="space-y-1">
-        {visible.map((org) => (
+        {pickVisibleOrgs(orgs, OPERATOR_ORG_CAP).map((org) => (
           <OperatorOrgRow
             key={org.id}
             orgId={org.id}
             orgName={org.organization_name ?? ''}
-            mode={mode}
             inSheet={inSheet}
           />
         ))}

@@ -47,13 +47,12 @@ Units 1–2 checkpoint):
    New has something unseen, the folded heading reads "Info (New)" too, so
    the marker isn't hidden. The marker is the WORD, never a coloured dot.
    Ed is colourblind.
-5. **Operator**: per org, **Dashboard** always. **Reports** only when there's
-   at least one pending ("Reports (1)"). That's safe to hide because
-   `OperatorDashboard.tsx` already links to Reports.
-   With several orgs there are no folds: each **org name links straight to
-   its dashboard**, with Reports (N) indented under it when pending (Ed,
-   2026-11-01; a fold usually hid a single link). Operator rows close the
-   phone menu like every other row.
+5. **Operator**: a list of your organizations. Each **org name links
+   straight to that org's dashboard**, whether you have one org or several
+   (Ed, 2026-11-01: no "Dashboard Dashboard Dashboard"). **Reports (N)** sits
+   indented under its org's name, only when at least one is pending. That's
+   safe to hide because `OperatorDashboard.tsx` already links to Reports. No
+   folds. Operator rows close the phone menu like every other row.
 6. **Signed-out visitors get no menu at all**: no sidebar, no bottom tab
    bar, no hamburger (Ed, 2026-11-01). Public pages render full width, and
    the header's Sign in button is the way in. Home still links to About

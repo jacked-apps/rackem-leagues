@@ -156,7 +156,7 @@ describe('AppDrawer', () => {
   });
 
   // Happy path — single-org operator
-  it('renders flat operator shortcuts for a single-org operator', () => {
+  it('shows a single-org operator their org name, linking to its dashboard', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Solo' },
       canAccessLeagueOperatorFeatures: () => true,
@@ -174,13 +174,14 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Dashboard always; Reports only while something is pending (0 here) —
-    // the Operator Dashboard links to Reports, so hiding it is safe.
-    // Create League was removed.
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
+    // Even with one org, the row is the org's NAME and opens its dashboard.
+    // Reports only while something is pending (0 here) — the Operator
+    // Dashboard links to Reports, so hiding it is safe. Create League removed.
+    expect(screen.getByRole('link', { name: 'Triple B Pool' })).toHaveAttribute(
       'href',
       '/operator-dashboard/org-a',
     );
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^Reports/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Create League' })).not.toBeInTheDocument();
   });
@@ -207,7 +208,7 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // No folds: each org name IS the link to its dashboard (owner first).
+    // A list of orgs: each name IS the link to its dashboard (owner first).
     const tripleB = screen.getByRole('link', { name: 'Triple B Pool' });
     const riverside = screen.getByRole('link', { name: 'Riverside League' });
     expect(tripleB).toHaveAttribute('href', '/operator-dashboard/org-a');
@@ -218,7 +219,7 @@ describe('AppDrawer', () => {
     expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
   });
 
-  it("shows Reports (N) under a multi-org operator's org only when it has pending reports", () => {
+  it("shows Reports (N) under its org's name only when that org has pending reports", () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
       canAccessLeagueOperatorFeatures: () => true,
@@ -245,6 +246,9 @@ describe('AppDrawer', () => {
     expect(reports).toHaveLength(1);
     expect(reports[0]).toHaveTextContent('Reports (2)');
     expect(reports[0]).toHaveAttribute('href', '/operator-reports/org-b');
+    // It sits right under Riverside League, not Triple B Pool.
+    const riverside = screen.getByRole('link', { name: 'Riverside League' });
+    expect(riverside.compareDocumentPosition(reports[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('closes the drawer when an operator taps the dashboard they are already on', () => {
@@ -263,7 +267,7 @@ describe('AppDrawer', () => {
     mockUsePendingReportsCount.mockReturnValue({ count: 0, loading: false });
 
     const { onOpenChange } = renderDrawer();
-    fireEvent.click(screen.getByRole('link', { name: 'Dashboard' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Triple B Pool' }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
