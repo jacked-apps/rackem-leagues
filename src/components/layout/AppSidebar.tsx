@@ -3,12 +3,13 @@
  *
  * Always visible on desktop, fixed to the left of page content. Its content is
  * the SAME as the phone drawer's — both render `NavIdentityHeader` (logo +
- * profile row) and `MemberNavSections` (My Match, Favorites, Extras, Info,
- * Operator) — so the two menus can't drift. The only difference is the shell:
- * the sidebar is an `<aside>`, the drawer lives inside a Sheet.
+ * profile row) and `MemberNavSections` (My Teams + Messages, My Match,
+ * Favorites, Extras, Info, Operator) — so the two menus can't drift. The only
+ * difference is the shell: the sidebar is an `<aside>`, the drawer lives
+ * inside a Sheet.
  *
- * Signed-out visitors (on public pages that sit inside MemberLayout, like
- * Rules) see just the logo.
+ * MemberLayout only mounts this for signed-in members (and while the session
+ * is still being checked, when it shows just the logo).
  */
 
 import { useUser } from '@/context/useUser';

@@ -3,7 +3,7 @@
  *
  * Covers role-aware section rendering (logged-out / player / operator),
  * position-based owner-vs-staff classification, the cap-at-4 behavior,
- * single-org flat layout vs multi-org collapsible layout, drawer-internal
+ * single-org "Dashboard" row vs multi-org org-name rows, drawer-internal
  * `(N)` badges for unread messages and pending reports, loading/error
  * graceful fallbacks, and SheetClose-driven dismissal on link tap.
  */
@@ -118,26 +118,14 @@ describe('AppDrawer', () => {
     mockUseMyMatchSurfaces.mockReturnValue(emptyMyMatch());
   });
 
-  // Happy path — logged out
-  it('renders public items when logged out', () => {
+  // Signed-out visitors never see the hamburger (PageHeader hides it); this
+  // is only the guard for a session ending while the drawer is open.
+  it('renders no menu rows when logged out', () => {
     configureLoggedOut();
     renderDrawer({ isLoggedIn: false });
 
     const nav = screen.getByRole('navigation', { name: /main navigation/i });
-    expect(within(nav).getByRole('link', { name: 'Home' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'About' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Pricing' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: /sign in/i })).toBeInTheDocument();
-  });
-
-  it('does not render player or operator sections when logged out', () => {
-    configureLoggedOut();
-    renderDrawer({ isLoggedIn: false });
-
-    const nav = screen.getByRole('navigation', { name: /main navigation/i });
-    expect(within(nav).queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
-    expect(within(nav).queryByText(/^Operator$/)).not.toBeInTheDocument();
+    expect(within(nav).queryAllByRole('link')).toHaveLength(0);
   });
 
   // Happy path — logged-in player
@@ -198,7 +186,7 @@ describe('AppDrawer', () => {
   });
 
   // Happy path — multi-org operator
-  it('renders multi-org operator section with collapsed-by-default groups', () => {
+  it("links each org's name straight to its dashboard for a multi-org operator", () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
       canAccessLeagueOperatorFeatures: () => true,
@@ -219,14 +207,64 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Both org names show as collapsible group headers (owner before staff).
-    const orgHeaders = screen.getAllByRole('group');
-    expect(orgHeaders[0]).toHaveTextContent('Triple B Pool');
-    expect(orgHeaders[1]).toHaveTextContent('Riverside League');
+    // No folds: each org name IS the link to its dashboard (owner first).
+    const tripleB = screen.getByRole('link', { name: 'Triple B Pool' });
+    const riverside = screen.getByRole('link', { name: 'Riverside League' });
+    expect(tripleB).toHaveAttribute('href', '/operator-dashboard/org-a');
+    expect(riverside).toHaveAttribute('href', '/operator-dashboard/org-b');
+    expect(tripleB.compareDocumentPosition(riverside) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Nothing pending → no Reports rows and no separate Dashboard rows.
+    expect(screen.queryByRole('link', { name: /^Reports/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
+  });
 
-    // Sub-items are not visible until the group is expanded (collapsed by default).
-    const tripleBSummary = screen.getByText('Triple B Pool').closest('summary')!;
-    expect(tripleBSummary.parentElement).not.toHaveAttribute('open');
+  it("shows Reports (N) under a multi-org operator's org only when it has pending reports", () => {
+    mockUseUserProfile.mockReturnValue({
+      member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
+      canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
+      loading: false,
+    });
+    mockUseOrganizations.mockReturnValue({
+      organizations: [
+        { id: 'org-a', organization_name: 'Triple B Pool', position: 'owner' },
+        { id: 'org-b', organization_name: 'Riverside League', position: 'admin' },
+      ],
+      loading: false,
+      error: null,
+    });
+    mockUseUnreadMessageCount.mockReturnValue({ data: 0 });
+    mockUsePendingReportsCount.mockImplementation((orgId?: string) => ({
+      count: orgId === 'org-b' ? 2 : 0,
+      loading: false,
+    }));
+
+    renderDrawer();
+
+    const reports = screen.getAllByRole('link', { name: /^Reports/ });
+    expect(reports).toHaveLength(1);
+    expect(reports[0]).toHaveTextContent('Reports (2)');
+    expect(reports[0]).toHaveAttribute('href', '/operator-reports/org-b');
+  });
+
+  it('closes the drawer when an operator taps the dashboard they are already on', () => {
+    mockUseUserProfile.mockReturnValue({
+      member: { id: 'm1', first_name: 'Op', last_name: 'Solo' },
+      canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
+      loading: false,
+    });
+    mockUseOrganizations.mockReturnValue({
+      organizations: [{ id: 'org-a', organization_name: 'Triple B Pool', position: 'owner' }],
+      loading: false,
+      error: null,
+    });
+    mockUseUnreadMessageCount.mockReturnValue({ data: 0 });
+    mockUsePendingReportsCount.mockReturnValue({ count: 0, loading: false });
+
+    const { onOpenChange } = renderDrawer();
+    fireEvent.click(screen.getByRole('link', { name: 'Dashboard' }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   // Edge case — unread messages badge
@@ -330,7 +368,7 @@ describe('AppDrawer', () => {
 
     renderDrawer();
 
-    // Two collapsible group headers, alphabetical: Alpha then Beta.
+    // Two org rows, alphabetical: Alpha then Beta.
     expect(screen.getByText('Alpha League')).toBeInTheDocument();
     expect(screen.getByText('Beta League')).toBeInTheDocument();
     // No "More on Dashboard" because we're under cap.

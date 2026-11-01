@@ -50,6 +50,14 @@ Units 1–2 checkpoint):
 5. **Operator**: per org, **Dashboard** always. **Reports** only when there's
    at least one pending ("Reports (1)"). That's safe to hide because
    `OperatorDashboard.tsx` already links to Reports.
+   With several orgs there are no folds: each **org name links straight to
+   its dashboard**, with Reports (N) indented under it when pending (Ed,
+   2026-11-01; a fold usually hid a single link). Operator rows close the
+   phone menu like every other row.
+6. **Signed-out visitors get no menu at all**: no sidebar, no bottom tab
+   bar, no hamburger (Ed, 2026-11-01). Public pages render full width, and
+   the header's Sign in button is the way in. Home still links to About
+   and Rules, and About links to Pricing.
 
 Folds start **closed**, only **one is open at a time** (opening Info closes
 Extras), and both **close again on the next page**: open one, use it to
@@ -108,6 +116,8 @@ both get shorter.
 - The Info heading shows "(New)" from `useHasUnseenWhatsNew`.
 - Operator: `OperatorOrgRow.tsx` hides Reports at 0 pending (the hook is
   already there: `usePendingReportsCount`).
+  Done: Home (`/`) shows the same page to everyone (no redirect), so both
+  moved in. Signed-out visitors see no menu there (see item 6 above).
 - `MyMatchPanel`: when there are no live/today matches, the default
   selection is `null` (closed) instead of makeup. Live/today behaviour is
   unchanged.

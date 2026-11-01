@@ -88,7 +88,7 @@ export function MemberNavSections({ inSheet }: { inSheet?: boolean }) {
           </NavFold>
         )}
       </NavFolds>
-      {isOperator ? <OperatorSection orgs={orgs} /> : null}
+      {isOperator ? <OperatorSection orgs={orgs} inSheet={inSheet} /> : null}
     </>
   );
 }
