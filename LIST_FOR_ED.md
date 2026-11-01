@@ -30,6 +30,14 @@ room for the information shown. Look at a tighter layout that shows MORE
 
 ---
 
+## 🧭 2026-11-01 — NEXT: grouped menu + favorites (plan ready, not started)
+
+Plan: `docs/plans/2026-11-01-002-feat-menu-favorites-plan.md` (branch
+`feat/menu-favorites`). Start after PR #310 merges. The plan has a table of
+open questions with recommended answers — say yes or change them.
+
+---
+
 ## 🔧 2026-10-28 — TODO: let an LO fix a lineup on a finished match (no UI today)
 
 **Low priority — Ed's call 2026-10-28: "it's a rare thing, we have only one
