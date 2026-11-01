@@ -15,6 +15,7 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { isProduction } from '@/config/environment';
 import { MemberLayout } from '../components/layout/MemberLayout';
+import { MemberLayoutWhenSignedIn } from '../components/layout/MemberLayoutWhenSignedIn';
 import { BracketsIndexPage } from '../brackets/BracketsIndexPage';
 import { CreateBracketFlow } from '../brackets/CreateBracketFlow';
 import { BracketView } from '../brackets/BracketView';
@@ -190,9 +191,15 @@ export const router = createBrowserRouter([
       { path: 'about', element: <About /> },
       // What's New — public, so someone deciding whether to sign up can see a
       // record of steady work. One component serves both: bare shows the
-      // newest, /:version shows that one.
-      { path: 'whats-new', element: <WhatsNewPage /> },
-      { path: 'whats-new/:version', element: <WhatsNewPage /> },
+      // newest, /:version shows that one. The member nav links here too, so a
+      // signed-in member gets the sidebar / tab bar (MemberLayoutWhenSignedIn).
+      {
+        element: <MemberLayoutWhenSignedIn />,
+        children: [
+          { path: 'whats-new', element: <WhatsNewPage /> },
+          { path: 'whats-new/:version', element: <WhatsNewPage /> },
+        ],
+      },
       { path: 'pricing', element: <Pricing /> },
       { path: 'privacy', element: <PrivacyPolicy /> },
       // Stop Stop explainer for invited readers: unlinked, noindex, never on production.
