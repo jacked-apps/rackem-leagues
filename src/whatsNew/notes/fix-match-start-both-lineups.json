@@ -1,0 +1,4 @@
+{
+  "text": "A match no longer shows as live when only one team has locked its lineup, and a live scoreboard that can't load now says why instead of spinning.",
+  "kind": "fix"
+}
