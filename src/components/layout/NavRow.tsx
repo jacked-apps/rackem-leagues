@@ -7,7 +7,7 @@
  * the drawer, so the child is wrapped in `SheetClose`; the sidebar never closes.
  */
 
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { SheetClose } from '@/components/ui/sheet';
 
@@ -28,24 +28,38 @@ export function MaybeSheetClose({ inSheet, children }: { inSheet?: boolean; chil
  * @param to Route to open.
  * @param label Visible text, including any "(N)" / "(New)" marker.
  * @param inSheet True in the drawer, so a tap closes it.
+ * @param trailing Optional control after the link (the favorites star). It
+ *   sits OUTSIDE the link and outside SheetClose, so tapping it neither
+ *   navigates nor closes the drawer.
  */
-export function NavRow({ to, label, inSheet }: { to: string; label: string; inSheet?: boolean }) {
+export function NavRow({
+  to,
+  label,
+  inSheet,
+  trailing,
+}: {
+  to: string;
+  label: string;
+  inSheet?: boolean;
+  trailing?: ReactNode;
+}) {
   const { pathname } = useLocation();
   const isActive = pathname === to || (to !== '/' && pathname.startsWith(`${to}/`));
 
   return (
-    <li>
+    <li className="flex items-center">
       <MaybeSheetClose inSheet={inSheet}>
         <Link
           to={to}
           aria-current={isActive ? 'page' : undefined}
-          className={`flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10 ${
+          className={`flex min-h-11 flex-1 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10 ${
             isActive ? 'bg-primary/15 font-semibold' : ''
           }`}
         >
           {label}
         </Link>
       </MaybeSheetClose>
+      {trailing}
     </li>
   );
 }

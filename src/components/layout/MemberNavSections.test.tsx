@@ -29,6 +29,12 @@ vi.mock('@/whatsNew/useWhatsNewSeen', () => ({ useHasUnseenWhatsNew: () => mockU
 vi.mock('@/api/hooks/useMyMatchSurfaces', () => ({
   useMyMatchSurfaces: () => ({ drawerItems: [], isHydrating: false }),
 }));
+// Saving is covered by useNavFavorites.test; here we drive the list directly.
+const mockFavoriteIds = vi.fn();
+const mockToggle = vi.fn();
+vi.mock('@/api/hooks/useNavFavorites', () => ({
+  useNavFavorites: () => ({ favoriteIds: mockFavoriteIds(), toggleFavorite: mockToggle }),
+}));
 
 import { MemberNavSections } from './MemberNavSections';
 import { splitNavEntries } from './navEntries';
@@ -41,6 +47,7 @@ beforeEach(() => {
   mockReup.mockReturnValue({ data: [] });
   mockUnseen.mockReturnValue(false);
   mockJoinCount.mockReturnValue(0);
+  mockFavoriteIds.mockReturnValue([]);
 });
 
 describe('MemberNavSections', () => {
@@ -77,6 +84,38 @@ describe('MemberNavSections', () => {
     renderMenu();
     expect(screen.getByRole('link', { name: 'Season Re-Up (2)' })).toHaveAttribute('href', '/reup');
     expect(screen.getByRole('link', { name: 'Join requests (2)' })).toHaveAttribute('href', '/my-teams');
+  });
+
+  it('stars a fold entry without following its link', () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole('button', { name: 'Info' }));
+    const star = screen.getByRole('button', { name: 'Add Rules to favorites' });
+    expect(star).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(star);
+    expect(mockToggle).toHaveBeenCalledWith('rules');
+  });
+
+  it('shows a starred entry in Favorites (filled star) and not in its fold', () => {
+    mockFavoriteIds.mockReturnValue(['rules']);
+    renderMenu();
+    const favorites = screen.getByRole('region', { name: 'Favorites' });
+    expect(favorites).toHaveTextContent('Rules');
+    const unstar = screen.getByRole('button', { name: 'Remove Rules from favorites' });
+    expect(unstar).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Info' }));
+    expect(screen.getAllByRole('link', { name: 'Rules' })).toHaveLength(1);
+
+    fireEvent.click(unstar);
+    expect(mockToggle).toHaveBeenCalledWith('rules');
+  });
+
+  it('moves the "(New)" marker off the Info heading when What\'s New is a favorite', () => {
+    mockUnseen.mockReturnValue(true);
+    mockFavoriteIds.mockReturnValue(['whats-new']);
+    renderMenu();
+    expect(screen.getByRole('button', { name: 'Info' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: "What's New (New)" })).toBeInTheDocument();
   });
 });
 

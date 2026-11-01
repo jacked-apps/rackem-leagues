@@ -1,7 +1,7 @@
 ---
 title: "feat: grouped menu + player favorites"
 type: feat
-status: in progress — Units 1–2 built (awaiting Ed's desktop + phone checkpoint); Units 3–4 not started. Rooms left out of navEntries until feat/game-room's route lands.
+status: in progress — Units 1–3 built (grouped menu, Ed's reorder, account-saved stars); awaiting Ed's try-out (incl. whether Favorites keeps a title); Unit 4 mostly done alongside. Rooms left out of navEntries until feat/game-room's route lands.
 date: 2026-11-01
 branch: feat/menu-favorites
 assumes: PR #310 (member-reached pages keep the sidebar) is merged to main
