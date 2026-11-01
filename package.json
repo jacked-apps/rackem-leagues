@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "version": "node scripts/stamp-whats-new.mjs && git add src/whatsNew",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",

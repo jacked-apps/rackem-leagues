@@ -40,6 +40,7 @@ jobs:
         run: |
           git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/changed-files.txt
           printf '%s' "$PR_BODY" > /tmp/pr-body.txt
+          git show "$BASE_SHA:package.json" > /tmp/base-package.json
 
       - name: Check for a What's New entry
-        run: node scripts/check-whats-new.mjs /tmp/changed-files.txt /tmp/pr-body.txt
+        run: node scripts/check-whats-new.mjs /tmp/changed-files.txt /tmp/pr-body.txt /tmp/base-package.json

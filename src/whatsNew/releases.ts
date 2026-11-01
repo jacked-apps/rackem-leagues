@@ -3,9 +3,11 @@
  *
  * ── HOW TO ADD AN ENTRY ──────────────────────────────────────────────────────
  *
- * In the PR that makes the change, add a line to the `unreleased` block below.
- * Write it while the effect is fresh; reconstructing a fortnight of work from
- * commit subjects at release time is how notes end up unreadable.
+ * In the PR that makes the change, add ONE file to `src/whatsNew/notes/` (format
+ * in that folder's README). Not a line in this file: every PR editing the same
+ * list is what made open PRs conflict with each other. Write it while the
+ * effect is fresh; reconstructing a fortnight of work from commit subjects at
+ * release time is how notes end up unreadable.
  *
  * If your PR has no user-facing effect — a refactor, a test fix, a dependency
  * bump — add nothing, and put `[no-changelog]` in the PR description. That's a
@@ -35,11 +37,20 @@
  *
  * ── AT RELEASE ───────────────────────────────────────────────────────────────
  *
- * `node scripts/stamp-whats-new.mjs 1.9.0` renames the `unreleased` block to
- * that version, dates it, and opens a fresh empty one.
+ * Nothing to do. `npm version` (how releases are cut) runs
+ * `scripts/stamp-whats-new.mjs` through the `version` script in package.json.
+ * It moves every waiting note into a new block below the STAMP marker, builds
+ * the summary from the notes' headlines, and deletes the note files, all
+ * inside the version commit that gets tagged. Releasing is never a step
+ * someone has to remember.
+ *
+ * Released blocks are history: edit one only to correct it.
  *
  * @see docs/plans/2026-09-05-002-feat-whats-new-plan.md
+ * @see docs/plans/2026-11-01-001-fix-whats-new-zero-step-release-plan.md
  */
+
+import { PENDING_ENTRIES } from './pendingNotes';
 
 /**
  * What kind of change this is, which decides where it sits on the page.
@@ -96,8 +107,8 @@ export const UNRELEASED = 'unreleased';
 /**
  * Releases, newest first.
  *
- * The `unreleased` block is always index 0 (add it back after stamping). It is
- * shown on the page but never triggers the "New" marker — users shouldn't be
+ * The `unreleased` block is always index 0, and its entries are the waiting
+ * note files. It is shown on the page but never triggers the "New" marker — users shouldn't be
  * told about something that hasn't shipped.
  */
 export const RELEASES: Release[] = [
@@ -105,8 +116,9 @@ export const RELEASES: Release[] = [
     version: UNRELEASED,
     date: null,
     summary: '',
-    entries: [],
+    entries: PENDING_ENTRIES,
   },
+  // STAMP: new releases are inserted directly below this line. Keep it.
   {
     version: '1.12.0',
     date: '2026-10-31',
