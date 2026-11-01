@@ -4,6 +4,20 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🚨 2026-11-01 — NEXT PROJECT: team bonus is applied in PLAYOFF matches (fix before next season)
+
+The home team's team handicap bonus (points-system leagues) must NOT apply in
+playoffs, and right now it does: nothing in the bonus code checks for a
+playoff week. Too late for tonight; **must be fixed before next season.**
+Same project also fixes a mismatch found while checking: the lineup screen
+and match setup use two different copies of the bonus math, and only the
+lineup screen respects the league's standard / reduced / none setting.
+
+**Plan (not started):** `docs/plans/2026-11-01-003-fix-team-bonus-playoffs-plan.md`
+on branch `fix/team-bonus-playoffs`.
+
+---
+
 ## 🌙 2026-10-29 — Dark mode: scoreboard numbers turn white on the light team panels
 
 **Found by Ed** while testing the tiebreaker. On the live scoreboard, the
