@@ -1,7 +1,7 @@
 {
   "name": "supabase-learning-hub",
   "private": true,
-  "version": "1.11.0",
+  "version": "1.12.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "version": "node scripts/stamp-whats-new.mjs && git add src/whatsNew",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
