@@ -957,11 +957,11 @@ Shared chrome that wraps all authenticated routes. `MemberLayout` is mounted by 
 - `navEntries.ts` - **The ONE list of signed-in menu entries** (id, label, path, group, optional `show` gate) both menus read, plus `splitNavEntries(favoriteIds)` → core (My Teams, Messages) / Favorites / Extras / Info. Add a page to the menu here, once.
 - `navHelpers.ts` - Pure helpers shared by both menus: `pickVisibleOrgs`, `resolveJoinRequestsTo`, `computeInitials`, `displayNameOf`, `OPERATOR_ORG_CAP`.
 - `MemberNavSections.tsx` - Body of the signed-in menu (sidebar + drawer): My Teams + Messages → My Match → Favorites (only once starred) → Extras fold → Info fold ("Info (New)" when What's New is unseen) → Operator.
-- `MemberNavSections.test.tsx` - Tests for group order, folds closed-by-default + remembered, Info "(New)", doorbells in the core block, Favorites hidden while empty, starring/un-starring, `splitNavEntries`.
+- `MemberNavSections.test.tsx` - Tests for group order, folds (closed at start, one open at a time, closed again after navigating), Info "(New)", doorbells in the core block, Favorites hidden while empty, starring/un-starring, `splitNavEntries`.
 - `StarredNavRow.tsx` - A menu row with an always-visible star (own 44px button, outside the link + SheetClose); filled = favorite, outline = not; "Add/Remove … from favorites" label.
 - `CoreNavSection.tsx` - Fixed top block under the name row: My Teams, Messages, then the automatic Join requests (N) / Season Re-Up doorbells. No heading.
 - `FavoritesSection.tsx` - The player's starred entries; renders nothing until there's at least one.
-- `NavFold.tsx` - Foldable menu group on the shadcn Accordion; remembers open/closed per device in localStorage (try/catch guarded), defaults closed.
+- `NavFold.tsx` - `NavFolds` (one shadcn Accordion: one fold open at a time, both closed again on every page change) + `NavFold` (one group: heading button + rows). Defaults closed; nothing saved.
 - `NavRow.tsx` - One menu link row with active highlight (shared by both menus), optional `trailing` control (the star) + `MaybeSheetClose` (drawer taps close the drawer).
 - `NavIdentityHeader.tsx` - Menu top: theme-swapped logo + signed-in avatar/name row to /profile. Shared by both menus.
 - `NavSectionHeading.tsx` - Small uppercase heading for the menu's fixed sections (Favorites, Operator).

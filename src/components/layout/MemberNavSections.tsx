@@ -17,6 +17,9 @@
  *    marker isn't hidden (if What's New is a favorite, its own row says it).
  * 6. **Operator** — per org (`OperatorSection`), operators only.
  *
+ * Extras and Info start closed, only one can be open at a time, and both
+ * close again on the next page (`NavFolds`).
+ *
  * Every Extras / Info row carries a star; starring moves it into Favorites.
  * Entries come from the ONE list in `navEntries.ts`, so a menu change is
  * made once and the two menus can't drift.
@@ -30,7 +33,7 @@ import { MyMatchPanel } from './MyMatchPanel';
 import { CoreNavSection } from './CoreNavSection';
 import { FavoritesSection } from './FavoritesSection';
 import { OperatorSection } from './OperatorSection';
-import { NavFold } from './NavFold';
+import { NavFold, NavFolds } from './NavFold';
 import { StarredNavRow } from './StarredNavRow';
 import { splitNavEntries, type NavEntry } from './navEntries';
 import { useNavLabel } from './useNavLabel';
@@ -72,16 +75,19 @@ export function MemberNavSections({ inSheet }: { inSheet?: boolean }) {
       />
       <MyMatchPanel items={drawerItems} isHydrating={isHydrating} inSheet={inSheet} />
       <FavoritesSection entries={favorites} labelFor={labelFor} onToggleStar={toggleFavorite} inSheet={inSheet} />
-      {extras.length > 0 && (
-        <NavFold id="extras" title="Extras">
-          {extras.map(foldRow)}
-        </NavFold>
-      )}
-      {info.length > 0 && (
-        <NavFold id="info" title={infoHasNew ? 'Info (New)' : 'Info'}>
-          {info.map(foldRow)}
-        </NavFold>
-      )}
+      {/* One fold open at a time; both close again on the next page. */}
+      <NavFolds>
+        {extras.length > 0 && (
+          <NavFold id="extras" title="Extras">
+            {extras.map(foldRow)}
+          </NavFold>
+        )}
+        {info.length > 0 && (
+          <NavFold id="info" title={infoHasNew ? 'Info (New)' : 'Info'}>
+            {info.map(foldRow)}
+          </NavFold>
+        )}
+      </NavFolds>
       {isOperator ? <OperatorSection orgs={orgs} /> : null}
     </>
   );

@@ -1,70 +1,74 @@
 /**
- * @fileoverview NavFold — a foldable menu group ("Extras", "Info").
+ * @fileoverview The menu's foldable groups ("Extras", "Info").
  *
- * A heading button opens and closes the group (shadcn Accordion underneath).
- * Each fold remembers whether it was left open or closed, per device, so a
- * Rules regular can leave Info open. That memory lives in localStorage
- * because it's a per-device habit and harmless to lose; every read and write
- * is wrapped in try/catch because storage can be blocked (private windows,
- * cleared site data) and the menu must still work. Folds start closed.
+ * - `NavFolds` wraps the groups and owns which one is open. Only ONE can be
+ *   open at a time (opening Info closes Extras), and both start closed.
+ * - Both close again as soon as the player goes to another page. On a phone
+ *   the drawer remounts each time it opens anyway; on desktop the sidebar
+ *   stays mounted, so the open fold is tied to the page it was opened on.
+ *   Ed's call (2026-11-01): open a fold, use it to navigate, and the menu is
+ *   tidy again on the next page. (Folds used to remember their state per
+ *   device; that was dropped for this.)
+ * - `NavFold` is one group: a heading button plus its rows.
+ *
+ * Built on the shadcn Accordion (`type="single"` gives one-at-a-time).
  */
 
 import { useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
-const storageKey = (id: string) => `nav-fold:${id}`;
+/**
+ * Holds the folds; one open at most, reset on every page change.
+ *
+ * The open fold is stored WITH the page it was opened on, and only counts
+ * while that's still the current page — so navigating closes it without an
+ * effect that would flash the old state for a frame.
+ *
+ * @param children `NavFold`s.
+ */
+export function NavFolds({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  const [opened, setOpened] = useState<{ path: string; fold: string }>({ path: '', fold: '' });
+  const value = opened.path === pathname ? opened.fold : '';
 
-function readOpen(id: string): boolean {
-  try {
-    return window.localStorage.getItem(storageKey(id)) === 'open';
-  } catch {
-    return false;
-  }
-}
-
-function writeOpen(id: string, open: boolean): void {
-  try {
-    window.localStorage.setItem(storageKey(id), open ? 'open' : 'closed');
-  } catch {
-    // Storage unavailable — the fold still works, it just won't remember.
-  }
+  return (
+    <Accordion
+      type="single"
+      collapsible
+      value={value}
+      onValueChange={(fold) => setOpened({ path: pathname, fold })}
+    >
+      {children}
+    </Accordion>
+  );
 }
 
 interface NavFoldProps {
-  /** Stable id; also the storage key, so don't rename casually. */
+  /** Stable id, unique among the folds. */
   id: string;
   /** Heading text, including any "(New)" marker. */
   title: string;
-  /** The fold's rows (`<NavRow>`s). */
+  /** The fold's rows. */
   children: ReactNode;
 }
 
 /**
  * @example
- * <NavFold id="info" title={hasNew ? 'Info (New)' : 'Info'}>
- *   <NavRow to="/rules" label="Rules" />
- * </NavFold>
+ * <NavFolds>
+ *   <NavFold id="info" title={hasNew ? 'Info (New)' : 'Info'}>…rows…</NavFold>
+ * </NavFolds>
  */
 export function NavFold({ id, title, children }: NavFoldProps) {
-  const [open, setOpen] = useState(() => readOpen(id));
-
-  const onValueChange = (value: string) => {
-    const next = value === id;
-    setOpen(next);
-    writeOpen(id, next);
-  };
-
   return (
-    <Accordion type="single" collapsible value={open ? id : ''} onValueChange={onValueChange}>
-      <AccordionItem value={id} className="border-b-0">
-        {/* Same small uppercase look as the menu's other section headings. */}
-        <AccordionTrigger className="min-h-11 items-center px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
-          {title}
-        </AccordionTrigger>
-        <AccordionContent className="pb-2">
-          <ul className="space-y-1">{children}</ul>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+    <AccordionItem value={id} className="border-b-0">
+      {/* Same small uppercase look as the menu's other section headings. */}
+      <AccordionTrigger className="min-h-11 items-center px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:no-underline">
+        {title}
+      </AccordionTrigger>
+      <AccordionContent className="pb-2">
+        <ul className="space-y-1">{children}</ul>
+      </AccordionContent>
+    </AccordionItem>
   );
 }

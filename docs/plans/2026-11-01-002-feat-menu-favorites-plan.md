@@ -51,8 +51,10 @@ Units 1–2 checkpoint):
    at least one pending ("Reports (1)"). That's safe to hide because
    `OperatorDashboard.tsx` already links to Reports.
 
-Each fold **remembers** whether it was left open or closed, so a Rules
-regular can leave Info open.
+Folds start **closed**, only **one is open at a time** (opening Info closes
+Extras), and both **close again on the next page**: open one, use it to
+navigate, and the menu is tidy again. (Ed, after trying it 2026-11-01. This
+replaced the first build, where each fold remembered its state per device.)
 
 **Favorites (step 2):** every entry in a fold gets a **star**. Starring
 moves it up into Favorites, and un-starring moves it back. My Teams and
@@ -72,7 +74,7 @@ Ed: say yes, or change any of these.
 | Group names | **"Extras"** and **"Info"** (decided 2026-11-01) | "Non-league" read wrong, and Stats IS league. Extras = the things beyond league night that are about you. |
 | Star on a phone (no hover) | **Always-visible small star** at the row's end, its own tap target (44px). Filled star = favorite, outline = not, plus an `aria-label` "Add/Remove … from favorites". | A hover-only star doesn't exist on a phone. Filled vs outline is a shape difference, not a colour one. |
 | Limit on favorites | **None** | The list of entries is short (about 10), so the worst case is still short. |
-| Where fold open/closed is saved | **This device** (browser storage) | It's a per-device habit, like a remembered tab, and it's harmless if lost. |
+| Where fold open/closed is saved | **Nowhere** (changed 2026-11-01) | Ed wants the folds closed on every new page and one open at a time, so there is nothing to remember. |
 | Where favorites are saved | **The player's account** (database) | Players use a phone on match night and a computer at home. Favorites that vanish on the other device feel broken. |
 | Bottom tab bar (phone) | **Unchanged** | It's a separate surface (My Teams / Messages / Profile / Manage). Not part of this. |
 
@@ -100,9 +102,9 @@ both get shorter.
 ### Unit 2: the grouped menu
 
 - `NavFold` component: a heading button that opens and closes, built on
-  the shadcn `accordion.tsx` already in `src/components/ui`. Fold state is
-  saved per fold id in localStorage, wrapped in try/catch, and defaults to
-  closed.
+  the shadcn `accordion.tsx` already in `src/components/ui`. `NavFolds`
+  holds one Accordion (`type="single"`, so one open at a time) and resets
+  it on every page change. Defaults to closed.
 - The Info heading shows "(New)" from `useHasUnseenWhatsNew`.
 - Operator: `OperatorOrgRow.tsx` hides Reports at 0 pending (the hook is
   already there: `usePendingReportsCount`).

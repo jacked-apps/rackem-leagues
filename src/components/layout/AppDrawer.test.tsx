@@ -111,8 +111,6 @@ function configureLoggedOut() {
 describe('AppDrawer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Folds remember open/closed in localStorage; start every test closed.
-    window.localStorage.clear();
     // No pending join requests by default — the doorbell link only renders
     // when the count is > 0, so most tests want it absent. Routing tests
     // override this per-case.
@@ -154,11 +152,11 @@ describe('AppDrawer', () => {
     // My Teams + Messages are fixed at the top, always visible.
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
-    // The rest sit in folds that start closed; open them to see their rows.
+    // The rest sit in folds that start closed (one open at a time).
     fireEvent.click(within(nav).getByRole('button', { name: 'Extras' }));
-    fireEvent.click(within(nav).getByRole('button', { name: 'Info' }));
     expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Tournaments' })).toBeInTheDocument();
+    fireEvent.click(within(nav).getByRole('button', { name: 'Info' }));
     expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
     // No Profile row — the name / avatar row at the top already opens it.
     expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();

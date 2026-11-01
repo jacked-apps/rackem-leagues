@@ -2,10 +2,11 @@
  * @fileoverview Tests for the grouped signed-in menu (`MemberNavSections`),
  * which both the desktop sidebar and the phone drawer render.
  *
- * Covers the block order, folds starting closed and remembering their state,
- * the Info "(New)" marker, the doorbells in the core block (Season Re-Up used
- * to be drawer-only), Favorites hidden while empty, and `splitNavEntries`. Drawer-specific behaviour
- * (SheetClose, signed-out list, operator orgs) stays in AppDrawer.test.
+ * Covers the block order, folds (closed at start, one open at a time, closed
+ * again after navigating), the Info "(New)" marker, the doorbells in the core
+ * block (Season Re-Up used to be drawer-only), Favorites hidden while empty,
+ * starring, and `splitNavEntries`. Drawer-specific behaviour (SheetClose,
+ * signed-out list, operator orgs) stays in AppDrawer.test.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -43,7 +44,6 @@ const renderMenu = () => renderWithProviders(<MemberNavSections />, { userContex
 
 beforeEach(() => {
   vi.clearAllMocks();
-  window.localStorage.clear();
   mockReup.mockReturnValue({ data: [] });
   mockUnseen.mockReturnValue(false);
   mockJoinCount.mockReturnValue(0);
@@ -59,16 +59,27 @@ describe('MemberNavSections', () => {
     expect(order).toEqual(['My Teams', 'Messages', 'Extras', 'Info']);
   });
 
-  it('starts folds closed and remembers a fold left open', () => {
-    const first = renderMenu();
+  it('starts with both folds closed and opens only one at a time', () => {
+    renderMenu();
     expect(screen.queryByRole('link', { name: 'Rules' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Stats' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Extras' }));
+    expect(screen.getByRole('link', { name: 'Stats' })).toBeInTheDocument();
+
+    // Opening Info closes Extras.
     fireEvent.click(screen.getByRole('button', { name: 'Info' }));
     expect(screen.getByRole('link', { name: 'Rules' })).toBeInTheDocument();
-    first.unmount();
-
-    renderMenu();
-    expect(screen.getByRole('link', { name: 'Rules' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Stats' })).not.toBeInTheDocument();
+  });
+
+  it('closes the open fold once the player goes to another page', () => {
+    renderMenu();
+    fireEvent.click(screen.getByRole('button', { name: 'Info' }));
+    // The sidebar stays mounted on desktop, so this is the case that matters.
+    fireEvent.click(screen.getByRole('link', { name: 'Rules' }));
+    expect(screen.queryByRole('link', { name: 'Rules' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Info' })).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('marks the folded Info heading "(New)" when What\'s New is unseen', () => {
