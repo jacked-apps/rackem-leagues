@@ -1,7 +1,7 @@
 ---
 title: "fix: What's New — zero extra steps for Jack, no conflicts"
 type: fix
-status: proposed — awaiting Ed's go-ahead
+status: built — awaiting PR
 date: 2026-11-01
 amends: docs/plans/2026-09-05-002-feat-whats-new-plan.md
 ---
