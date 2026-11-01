@@ -104,7 +104,13 @@ export const RELEASES: Release[] = [
   {
     version: UNRELEASED,
     date: null,
-    summary: 'My Stats, and early 8s on the scoring page',
+    summary: '',
+    entries: [],
+  },
+  {
+    version: '1.12.0',
+    date: '2026-10-31',
+    summary: 'My Stats, fairer tiebreakers and standings, and a batch of fixes',
     entries: [
       {
         text: 'Setting your tiebreaker order is simpler. The order starts empty, the list only has the players who played the match, and anyone on the team can set it, not just the captain. Your match lineup stays locked the whole time.',
