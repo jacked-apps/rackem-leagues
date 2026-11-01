@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 import type { RouteObject } from 'react-router-dom';
 import { router } from './NavRoutes';
 import { MemberLayout } from '../components/layout/MemberLayout';
+import { NAV_ENTRIES } from '../components/layout/navEntries';
 
 /** Paths a signed-in member can navigate to from the member nav or Profile. */
 const MEMBER_REACHED = [
@@ -26,10 +27,18 @@ const MEMBER_REACHED = [
   'messages',
   'brackets',
   'profile',
+  'reup',
+  'about',
+  // Every menu entry in navEntries is a door too — '' is Home (the index route).
+  ...NAV_ENTRIES.map((e) => e.path.replace(/^\//, '')),
 ];
 
+/** Route paths under `routes`; an index route is reported as ''. */
 function pathsUnder(routes: RouteObject[]): string[] {
-  return routes.flatMap((r) => [...(r.path ? [r.path] : []), ...pathsUnder(r.children ?? [])]);
+  return routes.flatMap((r) => [
+    ...(r.path ? [r.path] : r.index ? [''] : []),
+    ...pathsUnder(r.children ?? []),
+  ]);
 }
 
 describe('member-reached pages keep the member nav', () => {
@@ -39,7 +48,7 @@ describe('member-reached pages keep the member nav', () => {
   );
   const inside = pathsUnder(layout?.children ?? []);
 
-  it.each(MEMBER_REACHED)('/%s renders inside MemberLayout', (path) => {
+  it.each([...new Set(MEMBER_REACHED)])('/%s renders inside MemberLayout', (path) => {
     expect(inside).toContain(path);
   });
 });

@@ -1,12 +1,11 @@
 /**
  * @fileoverview OperatorOrgRow — per-organization entry in the Operator nav
- * section (shared by AppDrawer's OperatorSection + AppSidebar's
- * SidebarOperatorSection).
+ * section (rendered by the shared `OperatorSection`).
  *
- * Each operator org exposes two actions: its **Dashboard** and **Reports**
- * (Reports carries the pending-reports doorbell badge — "Reports (N)" — so the
- * operator gets nudged when reports are waiting). Create League was removed
- * from the nav (its page/route still exists; may return later).
+ * Each operator org shows its **Dashboard** always, and **Reports (N)** only
+ * while at least one report is pending — a doorbell, not a fixture. Hiding it
+ * at 0 is safe because the Operator Dashboard already links to Reports.
+ * Create League was removed from the nav (its page/route still exists).
  *
  * Owns `usePendingReportsCount(orgId)` for its org — extracting the hook into a
  * per-org component keeps the Rules of Hooks satisfied (a fixed hook count per
@@ -35,12 +34,11 @@ const LINK_CLASS =
   'flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10';
 
 /**
- * Renders the org-scoped operator shortcuts (Dashboard + Reports) for one org.
+ * Renders the org-scoped operator shortcuts (Dashboard, + Reports when pending).
  * Owns its own `usePendingReportsCount` so the hook count per render is fixed.
  */
 export function OperatorOrgRow({ orgId, orgName, mode }: OperatorOrgRowProps) {
   const { count: pendingReports } = usePendingReportsCount(orgId);
-  const reportsLabel = pendingReports > 0 ? `Reports (${pendingReports})` : 'Reports';
 
   const links = (
     <ul className="space-y-0.5">
@@ -49,11 +47,13 @@ export function OperatorOrgRow({ orgId, orgName, mode }: OperatorOrgRowProps) {
           Dashboard
         </Link>
       </li>
-      <li>
-        <Link to={`/operator-reports/${orgId}`} className={LINK_CLASS}>
-          {reportsLabel}
-        </Link>
-      </li>
+      {pendingReports > 0 && (
+        <li>
+          <Link to={`/operator-reports/${orgId}`} className={LINK_CLASS}>
+            {`Reports (${pendingReports})`}
+          </Link>
+        </li>
+      )}
     </ul>
   );
 

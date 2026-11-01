@@ -186,8 +186,6 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     children: [
       // === Public Routes ===
-      { index: true, element: <Home /> },
-      { path: 'about', element: <About /> },
       { path: 'privacy', element: <PrivacyPolicy /> },
       // Stop Stop explainer for invited readers: unlinked, noindex, never on production.
       { path: 'aboutstopstop', element: <NonProdGate><StopStopExplainer /></NonProdGate> },
@@ -233,6 +231,10 @@ export const router = createBrowserRouter([
           { path: 'whats-new/:version', element: <WhatsNewPage /> },
           // Pricing — linked from Become a League Operator.
           { path: 'pricing', element: <Pricing /> },
+          // Home + About — in the signed-in menu's Info fold, so a member who
+          // opens them keeps the sidebar / tab bar (same reason as Rules).
+          { index: true, element: <Home /> },
+          { path: 'about', element: <About /> },
 
           // --- Signed-in pages reached from Profile (same reason). ---
           { path: 'become-league-operator', element: withAuth(<BecomeLeagueOperator />) },

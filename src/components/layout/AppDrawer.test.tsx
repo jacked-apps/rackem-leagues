@@ -111,6 +111,8 @@ function configureLoggedOut() {
 describe('AppDrawer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Folds remember open/closed in localStorage; start every test closed.
+    window.localStorage.clear();
     // No pending join requests by default — the doorbell link only renders
     // when the count is > 0, so most tests want it absent. Routing tests
     // override this per-case.
@@ -146,21 +148,19 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     const nav = screen.getByRole('navigation', { name: /main navigation/i });
-    // The player section is My Teams / Stats / Rules / Messages / Profile.
-    // "My Match" is no longer a static link — it's now a dedicated section
-    // that appears only when the player has a current/today/makeup match
-    // (covered by the "My Match section" tests). With no matches (default
-    // mock), it's hidden, so there is no standalone "My Match" link.
+    // "My Match" is a chips panel that appears only when the player has a
+    // live/makeup match; with none (default mock) there's no My Match link.
     expect(within(nav).queryByRole('link', { name: 'My Match' })).not.toBeInTheDocument();
+    // Favorites are always visible.
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
-    // No standalone "Profile" nav link — the name/avatar at the top of the
-    // drawer opens /profile. The reclaimed slot holds the gated "Tournaments"
-    // side tool (un-gated — live in every environment).
-    expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
+    // The rest sit in folds that start closed; open them to see their rows.
+    fireEvent.click(within(nav).getByRole('button', { name: 'Non-league' }));
+    fireEvent.click(within(nav).getByRole('button', { name: 'Info' }));
+    expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Tournaments' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Profile' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
     // No "Dashboard" link and no Sign Out in the drawer — the player nav dropped
     // Dashboard, and Sign Out moved to the bottom of the Profile page (nav
     // redesign, PR #124/#131).
@@ -187,15 +187,14 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Dashboard + Reports are the operator nav actions; Create League was removed.
+    // Dashboard always; Reports only while something is pending (0 here) —
+    // the Operator Dashboard links to Reports, so hiding it is safe.
+    // Create League was removed.
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
       'href',
       '/operator-dashboard/org-a',
     );
-    expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute(
-      'href',
-      '/operator-reports/org-a',
-    );
+    expect(screen.queryByRole('link', { name: /^Reports/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Create League' })).not.toBeInTheDocument();
   });
 
@@ -479,7 +478,7 @@ describe('AppDrawer', () => {
     expect(screen.queryByRole('link', { name: /Sharks/ })).not.toBeInTheDocument();
   });
 
-  it('keeps the Live chip visible (disabled) and defaults to Makeup when there is no live match', () => {
+  it('keeps the Live chip visible (disabled) and leaves makeups closed until tapped', () => {
     configurePlayer();
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
@@ -490,11 +489,18 @@ describe('AppDrawer', () => {
 
     renderDrawer();
 
-    // Live chip always shows, but is disabled with no live matches; Makeup is
-    // selected by default so its list shows without a tap.
+    // Live chip always shows, but is disabled with no live matches. Makeups
+    // alone don't open on their own — the chip shows, closed, until tapped.
     expect(screen.getByRole('button', { name: /Live/ })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Makeup/ })).toHaveAttribute('aria-pressed', 'true');
+    const makeup = screen.getByRole('button', { name: /Makeup/ });
+    expect(makeup).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
+
+    fireEvent.click(makeup);
     expect(screen.getByRole('link', { name: /Rails/ })).toBeInTheDocument();
+    // Tapping it again closes it.
+    fireEvent.click(makeup);
+    expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
   });
 
   it('hides the My Match section entirely when there are no matches', () => {
