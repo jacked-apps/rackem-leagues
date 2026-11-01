@@ -151,7 +151,7 @@ describe('AppDrawer', () => {
     // "My Match" is a chips panel that appears only when the player has a
     // live/makeup match; with none (default mock) there's no My Match link.
     expect(within(nav).queryByRole('link', { name: 'My Match' })).not.toBeInTheDocument();
-    // Favorites are always visible.
+    // My Teams + Messages are fixed at the top, always visible.
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
     // The rest sit in folds that start closed; open them to see their rows.
@@ -159,8 +159,9 @@ describe('AppDrawer', () => {
     fireEvent.click(within(nav).getByRole('button', { name: 'Info' }));
     expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Tournaments' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Profile' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
+    // No Profile row — the name / avatar row at the top already opens it.
+    expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
     // No "Dashboard" link and no Sign Out in the drawer — the player nav dropped
     // Dashboard, and Sign Out moved to the bottom of the Profile page (nav
     // redesign, PR #124/#131).

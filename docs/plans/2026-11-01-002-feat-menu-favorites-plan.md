@@ -24,8 +24,14 @@ twice, and sometimes only one copy gets it.
 
 ## What Ed decided (2026-11-01 conversation)
 
-Top to bottom, the same on desktop and phone:
+Top to bottom, the same on desktop and phone (order revised by Ed after the
+Units 1–2 checkpoint):
 
+0. **You**: the name / avatar row (opens Profile, so there's no separate
+   Profile entry), then **My Teams** and **Messages**, fixed and never
+   starred. The automatic **Join requests (N)** and **Season Re-Up** appear
+   right after them. Below My Match rather than above it, so a match appearing
+   or ending never pushes these rows around.
 1. **My Match**: the existing chips panel (`MyMatchPanel.tsx`).
    - A live match or one **today** (the `'live'` group in
      `useMyMatchSurfaces`): **forced open**, as today. One tap gets you to
@@ -33,10 +39,10 @@ Top to bottom, the same on desktop and phone:
    - Only past-due makeups: chips show, but **closed** until tapped. Today
      the makeup list opens on its own, which is "constantly have one open"
      for nothing.
-2. **Favorites**: always visible. Defaults are **My Teams** and **Messages**.
-   The automatic entries also appear here when they apply: **Join requests
-   (N)** and **Season Re-Up**.
-3. **Extras** (foldable): Tournaments, Rooms, Stats, Profile.
+2. **Favorites**: only the entries a player starred; **hidden until there's
+   at least one**. Whether it keeps a "Favorites" title (or just shows the
+   stars) is Ed's open call after he tries it.
+3. **Extras** (foldable): Tournaments, Rooms, Stats.
 4. **Info** (foldable): Home, Rules, Learn, What's New, About. When What's
    New has something unseen, the folded heading reads "Info (New)" too, so
    the marker isn't hidden. The marker is the WORD, never a coloured dot.
@@ -49,8 +55,8 @@ Each fold **remembers** whether it was left open or closed, so a Rules
 regular can leave Info open.
 
 **Favorites (step 2):** every entry in a fold gets a **star**. Starring
-moves it up into Favorites, and un-starring moves it back. Players can
-un-star My Teams and Messages too, since they're defaults, not locks.
+moves it up into Favorites, and un-starring moves it back. My Teams and
+Messages are fixed at the top, so they have no star.
 
 **Learn vs Rules stay separate pages.** Rules is the official CSI/BCA
 rulebook plus the league's house rules. Learn is our glossary of how the app
@@ -75,7 +81,7 @@ Ed: say yes, or change any of these.
 ### Unit 1: one list of menu entries (the drift fix)
 
 New `src/components/layout/navEntries.ts`: the ONE list both menus read.
-Each entry has an id, label, path, group (`favorites-default`, `extras`,
+Each entry has an id, label, path, group (`core`, `extras`,
 `info`) and an optional `show` condition (for example Rooms: non-production
 only, the same gate as its route).
 
@@ -115,9 +121,10 @@ step 2.
 ### Unit 3: favorites saved to the account
 
 - Migration (real UTC timestamp, `supabase migration new`):
-  `members.nav_favorites text[] DEFAULT NULL`. **NULL means "the defaults"**
-  (My Teams + Messages), so nobody needs a backfill, and changing the
-  defaults later changes them for everyone who never customised. Ids not in
+  `members.nav_favorites text[] DEFAULT NULL`. **NULL means "never
+  customised"**, which today means no favorites (My Teams + Messages are fixed
+  in the core block, not favorites). Nobody needs a backfill, and if we ever
+  add default favorites they reach everyone who never customised. Ids not in
   `navEntries` are ignored on read, so a removed page can't break the menu.
   This follows the precedent of per-member settings as `members` columns
   (`profanity_filter_enabled`, `last_seen_whats_new`).

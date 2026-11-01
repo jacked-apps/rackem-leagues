@@ -2,9 +2,9 @@
  * @fileoverview Tests for the grouped signed-in menu (`MemberNavSections`),
  * which both the desktop sidebar and the phone drawer render.
  *
- * Covers the group order, folds starting closed and remembering their state,
- * the Info "(New)" marker, the automatic Favorites entries (Season Re-Up used
- * to be drawer-only), and `splitNavEntries`. Drawer-specific behaviour
+ * Covers the block order, folds starting closed and remembering their state,
+ * the Info "(New)" marker, the doorbells in the core block (Season Re-Up used
+ * to be drawer-only), Favorites hidden while empty, and `splitNavEntries`. Drawer-specific behaviour
  * (SheetClose, signed-out list, operator orgs) stays in AppDrawer.test.
  */
 
@@ -44,10 +44,12 @@ beforeEach(() => {
 });
 
 describe('MemberNavSections', () => {
-  it('shows Favorites, then the Extras and Info folds, in that order', () => {
+  it('puts My Teams + Messages first, then the Extras and Info folds; no empty Favorites', () => {
     renderMenu();
-    const headings = screen.getAllByText(/^(Favorites|Extras|Info)$/).map((el) => el.textContent);
-    expect(headings).toEqual(['Favorites', 'Extras', 'Info']);
+    const order = screen
+      .getAllByText(/^(My Teams|Messages|Favorites|Extras|Info)$/)
+      .map((el) => el.textContent);
+    expect(order).toEqual(['My Teams', 'Messages', 'Extras', 'Info']);
   });
 
   it('starts folds closed and remembers a fold left open', () => {
@@ -69,7 +71,7 @@ describe('MemberNavSections', () => {
     expect(screen.getByRole('link', { name: "What's New (New)" })).toBeInTheDocument();
   });
 
-  it('adds Season Re-Up and Join requests to Favorites when they apply', () => {
+  it('adds Season Re-Up and Join requests under My Teams + Messages when they apply', () => {
     mockReup.mockReturnValue({ data: [{ id: 't1' }, { id: 't2' }] });
     mockJoinCount.mockReturnValue(2);
     renderMenu();
@@ -80,7 +82,8 @@ describe('MemberNavSections', () => {
 
 describe('splitNavEntries', () => {
   it('moves a favorite out of its fold and ignores unknown ids', () => {
-    const { favorites, info } = splitNavEntries(['rules', 'gone-page']);
+    // 'my-teams' is core — it can't be a favorite, so it's ignored too.
+    const { favorites, info } = splitNavEntries(['rules', 'gone-page', 'my-teams']);
     expect(favorites.map((e) => e.id)).toEqual(['rules']);
     expect(info.map((e) => e.id)).toEqual(['home', 'learn', 'whats-new', 'about']);
   });
