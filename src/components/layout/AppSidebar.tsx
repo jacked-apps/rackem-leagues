@@ -3,7 +3,7 @@
  *
  * Always visible on desktop, fixed to the left of page content. Its content is
  * the SAME as the phone drawer's — both render `NavIdentityHeader` (logo +
- * profile row) and `MemberNavSections` (My Match, Favorites, Non-league, Info,
+ * profile row) and `MemberNavSections` (My Match, Favorites, Extras, Info,
  * Operator) — so the two menus can't drift. The only difference is the shell:
  * the sidebar is an `<aside>`, the drawer lives inside a Sheet.
  *

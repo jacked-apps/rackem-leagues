@@ -36,8 +36,8 @@ Top to bottom, the same on desktop and phone:
 2. **Favorites**: always visible. Defaults are **My Teams** and **Messages**.
    The automatic entries also appear here when they apply: **Join requests
    (N)** and **Season Re-Up**.
-3. **Non-league** (foldable): Tournaments, Rooms, Stats, Profile.
-4. **Info** (foldable): Home, About, Rules, Learn, What's New. When What's
+3. **Extras** (foldable): Tournaments, Rooms, Stats, Profile.
+4. **Info** (foldable): Home, Rules, Learn, What's New, About. When What's
    New has something unseen, the folded heading reads "Info (New)" too, so
    the marker isn't hidden. The marker is the WORD, never a coloured dot.
    Ed is colourblind.
@@ -63,7 +63,7 @@ Ed: say yes, or change any of these.
 | Question | Recommended | Why |
 |---|---|---|
 | Can players reorder favorites? | **No, add/remove only.** Favorites show in the menu's own order. | Reordering is the expensive part (drag on a phone). Add it later if anyone asks. |
-| Group names | **"Non-league"** and **"Info"** for now | Easy to rename once Ed sees them in place. |
+| Group names | **"Extras"** and **"Info"** (decided 2026-11-01) | "Non-league" read wrong, and Stats IS league. Extras = the things beyond league night that are about you. |
 | Star on a phone (no hover) | **Always-visible small star** at the row's end, its own tap target (44px). Filled star = favorite, outline = not, plus an `aria-label` "Add/Remove … from favorites". | A hover-only star doesn't exist on a phone. Filled vs outline is a shape difference, not a colour one. |
 | Limit on favorites | **None** | The list of entries is short (about 10), so the worst case is still short. |
 | Where fold open/closed is saved | **This device** (browser storage) | It's a per-device habit, like a remembered tab, and it's harmless if lost. |
@@ -75,7 +75,7 @@ Ed: say yes, or change any of these.
 ### Unit 1: one list of menu entries (the drift fix)
 
 New `src/components/layout/navEntries.ts`: the ONE list both menus read.
-Each entry has an id, label, path, group (`favorites-default`, `non-league`,
+Each entry has an id, label, path, group (`favorites-default`, `extras`,
 `info`) and an optional `show` condition (for example Rooms: non-production
 only, the same gate as its route).
 
@@ -143,7 +143,7 @@ step 2.
 
 - **`feat/game-room`** adds a gated `Rooms` link straight into both
   `AppSidebar` and `AppDrawer`. Whichever merges second must put Rooms in
-  `navEntries` (group `non-league`, `show: !isProduction`) instead. If this
+  `navEntries` (group `extras`, `show: !isProduction`) instead. If this
   branch merges first, the game-room branch needs that one-line move.
   The gate must cover the entry AND the route (CLAUDE.md, Feature Gating).
 - Don't stack this on another branch. Branch from main after #310 merges.

@@ -10,19 +10,19 @@
  * Season Re-Up and operator Reports. They appear because a count says so, not
  * because a player chose them, so their sections compute and place them.
  *
- * Rooms (`/rooms`) belongs in `non-league` with `show: () => !isProduction`
+ * Rooms (`/rooms`) belongs in `extras` with `show: () => !isProduction`
  * once `feat/game-room` lands — the gate must match its route's gate (see
  * CLAUDE.md "Feature Gating": gate the door AND the room). It isn't listed
  * yet because that route doesn't exist on this branch.
  */
 
 /** Which part of the menu an entry lives in when it isn't a favorite. */
-export type NavGroup = 'favorites-default' | 'non-league' | 'info';
+export type NavGroup = 'favorites-default' | 'extras' | 'info';
 
 export interface NavEntry {
   /** Stable id — saved in a player's favorites later, so never rename one. */
   id: string;
-  /** Plain label; counts/markers are added by `useNavBadges`. */
+  /** Plain label; counts/markers are added by `useNavLabel`. */
   label: string;
   /** Route the row links to. */
   path: string;
@@ -37,15 +37,15 @@ export const NAV_ENTRIES: readonly NavEntry[] = [
   { id: 'my-teams', label: 'My Teams', path: '/my-teams', group: 'favorites-default' },
   { id: 'messages', label: 'Messages', path: '/messages', group: 'favorites-default' },
 
-  { id: 'tournaments', label: 'Tournaments', path: '/brackets', group: 'non-league' },
-  { id: 'stats', label: 'Stats', path: '/stats', group: 'non-league' },
-  { id: 'profile', label: 'Profile', path: '/profile', group: 'non-league' },
+  { id: 'tournaments', label: 'Tournaments', path: '/brackets', group: 'extras' },
+  { id: 'stats', label: 'Stats', path: '/stats', group: 'extras' },
+  { id: 'profile', label: 'Profile', path: '/profile', group: 'extras' },
 
   { id: 'home', label: 'Home', path: '/', group: 'info' },
-  { id: 'about', label: 'About', path: '/about', group: 'info' },
   { id: 'rules', label: 'Rules', path: '/rules', group: 'info' },
   { id: 'learn', label: 'Learn', path: '/learn', group: 'info' },
   { id: 'whats-new', label: "What's New", path: '/whats-new', group: 'info' },
+  { id: 'about', label: 'About', path: '/about', group: 'info' },
 ];
 
 /** Ids that sit in Favorites until a player customises them. */
@@ -61,8 +61,8 @@ export const DEFAULT_FAVORITE_IDS: readonly string[] = NAV_ENTRIES.filter(
  * ignored, so a removed page can't break a saved favorites list.
  *
  * @param favoriteIds Ids the player has in Favorites (defaults for now).
- * @returns `{ favorites, nonLeague, info }`, each in menu order.
- * @example splitNavEntries(['my-teams', 'rules']).info // Home, About, Learn, What's New
+ * @returns `{ favorites, extras, info }`, each in menu order.
+ * @example splitNavEntries(['my-teams', 'rules']).info // Home, Learn, What's New, About
  */
 export function splitNavEntries(favoriteIds: readonly string[] = DEFAULT_FAVORITE_IDS) {
   const favs = new Set(favoriteIds);
@@ -70,7 +70,7 @@ export function splitNavEntries(favoriteIds: readonly string[] = DEFAULT_FAVORIT
   const inFold = (group: NavGroup) => visible.filter((e) => e.group === group && !favs.has(e.id));
   return {
     favorites: visible.filter((e) => favs.has(e.id)),
-    nonLeague: inFold('non-league'),
+    extras: inFold('extras'),
     info: inFold('info'),
   };
 }

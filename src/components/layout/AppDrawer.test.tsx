@@ -155,7 +155,7 @@ describe('AppDrawer', () => {
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
     // The rest sit in folds that start closed; open them to see their rows.
-    fireEvent.click(within(nav).getByRole('button', { name: 'Non-league' }));
+    fireEvent.click(within(nav).getByRole('button', { name: 'Extras' }));
     fireEvent.click(within(nav).getByRole('button', { name: 'Info' }));
     expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Tournaments' })).toBeInTheDocument();

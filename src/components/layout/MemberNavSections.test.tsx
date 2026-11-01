@@ -44,10 +44,10 @@ beforeEach(() => {
 });
 
 describe('MemberNavSections', () => {
-  it('shows Favorites, then the Non-league and Info folds, in that order', () => {
+  it('shows Favorites, then the Extras and Info folds, in that order', () => {
     renderMenu();
-    const headings = screen.getAllByText(/^(Favorites|Non-league|Info)$/).map((el) => el.textContent);
-    expect(headings).toEqual(['Favorites', 'Non-league', 'Info']);
+    const headings = screen.getAllByText(/^(Favorites|Extras|Info)$/).map((el) => el.textContent);
+    expect(headings).toEqual(['Favorites', 'Extras', 'Info']);
   });
 
   it('starts folds closed and remembers a fold left open', () => {
@@ -82,6 +82,6 @@ describe('splitNavEntries', () => {
   it('moves a favorite out of its fold and ignores unknown ids', () => {
     const { favorites, info } = splitNavEntries(['rules', 'gone-page']);
     expect(favorites.map((e) => e.id)).toEqual(['rules']);
-    expect(info.map((e) => e.id)).toEqual(['home', 'about', 'learn', 'whats-new']);
+    expect(info.map((e) => e.id)).toEqual(['home', 'learn', 'whats-new', 'about']);
   });
 });

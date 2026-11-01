@@ -6,8 +6,8 @@
  * 1. **My Match** — chips panel (`MyMatchPanel`): open on a live/today match,
  *    closed when there are only makeups.
  * 2. **Favorites** — always visible (`FavoritesSection`).
- * 3. **Non-league** fold — Tournaments, Stats, Profile.
- * 4. **Info** fold — Home, About, Rules, Learn, What's New. Its heading reads
+ * 3. **Extras** fold — Tournaments, Stats, Profile.
+ * 4. **Info** fold — Home, Rules, Learn, What's New, About. Its heading reads
  *    "Info (New)" when What's New has unseen notes, so the marker isn't hidden
  *    inside a closed fold.
  * 5. **Operator** — per org (`OperatorSection`), operators only.
@@ -38,7 +38,7 @@ export function MemberNavSections({ inSheet }: { inSheet?: boolean }) {
   const { labelFor, hasUnseenWhatsNew } = useNavLabel();
 
   // Favorites are the defaults until Unit 3 saves a player's own choice.
-  const { favorites, nonLeague, info } = splitNavEntries();
+  const { favorites, extras, info } = splitNavEntries();
 
   return (
     <>
@@ -49,9 +49,9 @@ export function MemberNavSections({ inSheet }: { inSheet?: boolean }) {
         joinRequestsTo={resolveJoinRequestsTo(isOperator, orgs)}
         inSheet={inSheet}
       />
-      {nonLeague.length > 0 && (
-        <NavFold id="non-league" title="Non-league">
-          {nonLeague.map((e) => (
+      {extras.length > 0 && (
+        <NavFold id="extras" title="Extras">
+          {extras.map((e) => (
             <NavRow key={e.id} to={e.path} label={labelFor(e)} inSheet={inSheet} />
           ))}
         </NavFold>

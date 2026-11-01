@@ -1,5 +1,5 @@
 /**
- * @fileoverview NavFold — a foldable menu group ("Non-league", "Info").
+ * @fileoverview NavFold — a foldable menu group ("Extras", "Info").
  *
  * A heading button opens and closes the group (shadcn Accordion underneath).
  * Each fold remembers whether it was left open or closed, per device, so a
