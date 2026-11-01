@@ -146,7 +146,7 @@ export function PlayerRoster({
               {!hideName && (
                 <span className="text-muted-foreground text-xs truncate">
                   {player.first_name} {player.last_name}
-                  {isCaptain && <span className="ml-1 text-blue-600 font-bold">(C)</span>}
+                  {isCaptain && <span className="ml-1 text-info font-bold">(C)</span>}
                 </span>
               )}
               {!hidePlayerNumber && (

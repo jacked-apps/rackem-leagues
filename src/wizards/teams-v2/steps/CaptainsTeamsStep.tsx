@@ -219,7 +219,7 @@ export function CaptainsTeamsStep({
           Red border + red bg so it stands out against the rest of the
           page. Hides once the operator clears the threshold. */}
       {captains.length < 4 && (
-        <div className="rounded-lg border-2 border-red-500 bg-red-50 dark:bg-red-950/30 p-4 text-base font-medium text-red-900 dark:text-red-200">
+        <div className="rounded-lg border-2 border-destructive bg-destructive/10 p-4 text-base font-medium text-destructive">
           ⚠️ A season needs at least <strong>4 teams</strong>. You have{' '}
           <strong>{captains.length}</strong>. Add{' '}
           <strong>{4 - captains.length} more</strong> below before continuing.
@@ -372,7 +372,7 @@ function TeamEditCard({
           Captain:{' '}
           <strong className="text-foreground">{captainName}</strong>
           {captainId !== captain.captainId && (
-            <span className="ml-2 text-xs italic text-amber-700 dark:text-amber-400">
+            <span className="ml-2 text-xs italic text-warning">
               (changed — click Save to confirm)
             </span>
           )}

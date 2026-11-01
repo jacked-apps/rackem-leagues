@@ -133,7 +133,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
 
           {/* Action Buttons */}
           <div className="flex space-x-2 pt-4">
-            <Button onClick={handlers.save} className="bg-blue-600 hover:bg-blue-700" loadingText="Saving...">
+            <Button onClick={handlers.save} className="bg-info text-info-foreground hover:bg-info/90" loadingText="Saving...">
               Save Changes
             </Button>
             <Button variant="outline" onClick={handlers.cancel} loadingText="none">

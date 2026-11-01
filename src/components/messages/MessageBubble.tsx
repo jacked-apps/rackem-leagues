@@ -126,22 +126,22 @@ export function MessageBubble({
       <div
         className={cn(
           'max-w-md rounded-lg px-4 py-2',
-          isCurrentUser ? 'bg-blue-600 text-white' : 'bg-accent text-foreground'
+          isCurrentUser ? 'bg-info text-info-foreground' : 'bg-accent text-foreground'
         )}
       >
         {!isCurrentUser && senderName && senderId && (
           <div className="text-xs font-semibold mb-1">
-            <PlayerNameLink playerId={senderId} playerName={senderName} className="text-foreground hover:text-blue-600" />
+            <PlayerNameLink playerId={senderId} playerName={senderName} className="text-foreground hover:text-info" />
           </div>
         )}
         <p className="text-sm whitespace-pre-wrap">{displayContent}</p>
         <div className="flex items-center gap-1 mt-1">
-          <p className={cn('text-xs', isCurrentUser ? 'text-blue-100' : 'text-muted-foreground')}>
+          <p className={cn('text-xs', isCurrentUser ? 'text-info-foreground/80' : 'text-muted-foreground')}>
             {formatTimestamp(createdAt)}
             {isEdited && ' (edited)'}
           </p>
           {isCurrentUser && recipientLastRead && (
-            <span className="text-blue-100">
+            <span className="text-info-foreground/80">
               {isRead ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />}
             </span>
           )}

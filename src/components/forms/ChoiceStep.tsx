@@ -103,7 +103,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
                     onClick={() => onSelect(choice.value)}
                     className={`px-6 py-3 ${
                       isSelected
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'bg-info hover:bg-info/90 text-info-foreground'
                         : 'hover:bg-muted'
                     }`}
                   >
@@ -123,7 +123,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
 
           {/* Error Message */}
           {error && (
-            <p className="text-red-500 text-sm mt-2">{error}</p>
+            <p className="text-destructive text-sm mt-2">{error}</p>
           )}
 
           {!hideNavigation && (
@@ -141,7 +141,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
                 isLoading={isSubmitting || isNavigating}
                 onClick={onNext}
                 disabled={!selectedValue || isSubmitting || isNavigating}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-info hover:bg-info/90 text-info-foreground"
               >
                 {isLastQuestion ? 'Submit Application' : 'Next'}
               </Button>

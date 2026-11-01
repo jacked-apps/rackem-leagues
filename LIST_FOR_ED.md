@@ -4,6 +4,29 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 🏆 2026-11-01 — Playoffs page: show the standings + the actual matchups once set (NEXT after colour sweep)
+
+**Asked by Ed (playoff day).** After "Set matchups now", the Playoffs page
+(`src/operator/PlayoffSetup.tsx`, the `locked` state) shows only "Matchups are
+set" + View matchups / Reset matchups. Keep both buttons, and add the two
+things an LO needs to judge the matchups without leaving the page:
+
+1. **Final standings, slimmed down** — place + team name (1st, 2nd, …), the
+   same order the bracket was seeded from (`sortStandings`).
+2. **The playoff week's matchups** — who plays whom (what was TBD before),
+   i.e. the last week of the Matchups page, shown here.
+
+**Later (design together, not built yet):** a post-create **edit** so the LO
+can move teams around after the matchups are set — like the pre-create
+pairing-rule setup, but after the fact.
+
+**Related annoyance found the same day:** the Matchups page always opens at
+**Week 1**, so the playoff week is buried at the bottom and Ed mistook Week 1
+for the playoffs. It should open on the current week (during playoffs, the
+playoff week).
+
+---
+
 ## 🗂️ 2026-10-29 — Past-match results on the schedule: show more in less room
 
 **Found by Ed.** A finished match on the schedule is two cards inside a card

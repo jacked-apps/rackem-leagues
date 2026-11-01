@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 interface DashboardCardProps {
   /** Icon element to display (lucide-react icon) */
   icon: React.ReactNode;
-  /** Icon color class (e.g., 'text-blue-600') */
+  /** Icon color class (e.g., 'text-info') */
   iconColor: string;
   /** Card title */
   title: string;

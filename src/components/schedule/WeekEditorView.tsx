@@ -195,7 +195,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
             <CardTitle className="text-lg">
               Edit {weekLabel ?? week.week_name}
             </CardTitle>
-            <span className="text-xs font-semibold px-2 py-1 rounded bg-blue-600 text-white">
+            <span className="text-xs font-semibold px-2 py-1 rounded bg-info text-info-foreground">
               EDITING
             </span>
           </div>

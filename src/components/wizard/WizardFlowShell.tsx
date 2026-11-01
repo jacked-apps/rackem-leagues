@@ -58,7 +58,7 @@ export function WizardFlowShell({
     : undefined;
 
   if (!state.currentStage) {
-    return <div className="p-4 text-sm text-red-600">No stages configured.</div>;
+    return <div className="p-4 text-sm text-destructive">No stages configured.</div>;
   }
   const nextStage = flow.stages[state.currentStageIndex + 1] ?? null;
 

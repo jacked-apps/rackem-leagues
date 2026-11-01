@@ -401,7 +401,7 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <Settings className="h-6 w-6 text-indigo-600" />
+          <Settings className="h-6 w-6 text-highlight" />
           <div className="flex-1">
             <CardTitle>{cardTitle}</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">{cardSubtitle}</p>

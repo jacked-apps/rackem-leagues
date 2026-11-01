@@ -186,7 +186,7 @@ export const CapitalizeInput = React.forwardRef<
             id={`${id}-autocap`}
             checked={autoCapitalize}
             onChange={(e) => setAutoCapitalize(e.target.checked)}
-            className="w-4 h-4 text-blue-600 bg-muted border-input rounded focus:ring-ring focus:ring-2"
+            className="w-4 h-4 text-info bg-muted border-input rounded focus:ring-ring focus:ring-2"
             disabled={disabled}
           />
           <label

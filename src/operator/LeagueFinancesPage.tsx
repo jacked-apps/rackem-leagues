@@ -74,7 +74,7 @@ export default function LeagueFinancesPage() {
   }, [leagueId]);
 
   if (!leagueId) {
-    return <p className="p-6 text-red-600">Missing league ID.</p>;
+    return <p className="p-6 text-destructive">Missing league ID.</p>;
   }
   if (loading) {
     return (
@@ -86,7 +86,7 @@ export default function LeagueFinancesPage() {
   if (error) {
     return (
       <div className="container mx-auto px-4 max-w-4xl py-8">
-        <p className="text-red-600">{error}</p>
+        <p className="text-destructive">{error}</p>
       </div>
     );
   }

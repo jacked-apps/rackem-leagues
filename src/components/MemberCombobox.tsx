@@ -176,7 +176,7 @@ export const MemberCombobox: React.FC<MemberComboboxProps> = ({
 
             {/* Filter Chips - future functionality */}
             <div className="flex gap-1 p-2 border-b">
-              <button className="px-3 py-1 text-xs font-medium rounded-full bg-orange-500 text-white">
+              <button className="px-3 py-1 text-xs font-medium rounded-full bg-warning text-warning-foreground">
                 All
               </button>
               <button className="px-3 py-1 text-xs font-medium rounded-full bg-muted text-foreground hover:bg-accent">

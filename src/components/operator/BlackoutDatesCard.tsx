@@ -64,7 +64,7 @@ export const BlackoutDatesCard: React.FC<BlackoutDatesCardProps> = ({
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <CalendarX className="h-6 w-6 text-red-600" />
+          <CalendarX className="h-6 w-6 text-destructive" />
           <CardTitle>Blackout Dates</CardTitle>
         </div>
       </CardHeader>

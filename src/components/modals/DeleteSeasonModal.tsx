@@ -43,7 +43,7 @@ export const DeleteSeasonModal: React.FC<DeleteSeasonModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-card rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
         {/* Warning Icon */}
         <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-destructive/10 rounded-full">
@@ -91,7 +91,8 @@ export const DeleteSeasonModal: React.FC<DeleteSeasonModalProps> = ({
             isLoading={isDeleting}
             onClick={onConfirm}
             disabled={isDeleting}
-            className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+            variant="destructive"
+            className="flex-1"
           >
             Delete Season
           </Button>

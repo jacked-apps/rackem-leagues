@@ -492,10 +492,10 @@ function TeamCard({
                   ? [
                       {
                         label: 'Swap Player',
-                        icon: <UserRoundPen className="h-4 w-4 text-purple-600" />,
+                        icon: <UserRoundPen className="h-4 w-4 text-highlight" />,
                         onClick: () => onSwapPlayer?.(player.id, player.position),
                         className:
-                          'flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-purple-600',
+                          'flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-highlight',
                       },
                     ]
                   : [];

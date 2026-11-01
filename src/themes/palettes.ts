@@ -12,6 +12,14 @@
  * whole app before anything is chosen. Outside production only — the Custom
  * option in ThemeToggle and the start-up apply in main.tsx both check
  * `palettesEnabled`. Listed in LIST_FOR_ED.md under "Gated".
+ *
+ * A scheme reaches a screen only through theme tokens, so app code never
+ * uses fixed Tailwind colours (guarded by noFixedColours.test.ts). Colour by
+ * MEANING: blue → `info`, green → `success`, amber/yellow/orange →
+ * `warning`, red → `destructive`, purple → `highlight`, gray → `muted`.
+ * Forms: tinted box `bg-info/10`, its border `border-info/40`, coloured text
+ * `text-info`, solid button `bg-info text-info-foreground`. A scheme that
+ * overrides `--info` (etc.) therefore recolours every one of those at once.
  */
 
 import { isProduction } from '@/config/environment';

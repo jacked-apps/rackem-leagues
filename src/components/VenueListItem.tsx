@@ -74,7 +74,7 @@ export const VenueListItem: React.FC<VenueListItemProps> = ({
       {isAssigned && (
         <>
           {capacity !== undefined && teamsAtVenue !== undefined && (
-            <span className={`text-xs ${isAtCapacity ? 'text-orange-600 font-medium' : 'text-muted-foreground'}`}>
+            <span className={`text-xs ${isAtCapacity ? 'text-warning font-medium' : 'text-muted-foreground'}`}>
               {teamsAtVenue}/{capacity} teams
             </span>
           )}

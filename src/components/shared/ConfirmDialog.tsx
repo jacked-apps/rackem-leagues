@@ -27,6 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -67,7 +68,7 @@ export function ConfirmDialog({
             onClick={handleConfirm}
             className={
               variant === 'destructive'
-                ? 'bg-red-600 hover:bg-red-700 focus:ring-red-600'
+                ? buttonVariants({ variant: 'destructive' })
                 : ''
             }
           >

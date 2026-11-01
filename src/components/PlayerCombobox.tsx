@@ -214,7 +214,7 @@ export const PlayerCombobox: React.FC<PlayerComboboxProps> = ({
                       onClick={() => setActiveFilter(filter.type)}
                       className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                         activeFilter === filter.type
-                          ? 'bg-orange-500 text-white'
+                          ? 'bg-warning text-warning-foreground'
                           : 'bg-muted text-foreground hover:bg-accent'
                       }`}
                     >

@@ -136,24 +136,24 @@ export const getDuesStatusStyling = (membershipPaidDate: string | null | undefin
   switch (status.status) {
     case 'current':
       return {
-        bgColor: 'bg-green-50',
-        borderColor: 'border-green-200',
-        textColor: 'text-green-800',
-        badgeColor: 'bg-green-100 text-green-800'
+        bgColor: 'bg-success/10',
+        borderColor: 'border-success/40',
+        textColor: 'text-success',
+        badgeColor: 'bg-success/20 text-success'
       };
     case 'overdue':
       return {
-        bgColor: 'bg-red-50',
-        borderColor: 'border-red-200',
-        textColor: 'text-red-800',
-        badgeColor: 'bg-red-100 text-red-800'
+        bgColor: 'bg-destructive/10',
+        borderColor: 'border-destructive/40',
+        textColor: 'text-destructive',
+        badgeColor: 'bg-destructive/20 text-destructive'
       };
     case 'never_paid':
       return {
-        bgColor: 'bg-yellow-50',
-        borderColor: 'border-yellow-200',
-        textColor: 'text-yellow-800',
-        badgeColor: 'bg-yellow-100 text-yellow-800'
+        bgColor: 'bg-warning/10',
+        borderColor: 'border-warning/40',
+        textColor: 'text-warning',
+        badgeColor: 'bg-warning/20 text-warning'
       };
     default:
       return {
