@@ -4,22 +4,6 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
-## 🌙 2026-10-29 — Dark mode: scoreboard numbers turn white on the light team panels — FIXED on fix/scoreboard-dark-mode-text (awaiting merge)
-
-**Found by Ed** while testing the tiebreaker. On the live scoreboard, the
-points (and other numbers) are near-white in dark mode and hard to read.
-
-**Likely cause (checked, not fixed):** the team panels use FIXED light
-backgrounds (`bg-blue-100` / `bg-orange-100` from
-`src/components/scoring/scoreboardColors.ts`), but the text on them uses
-`text-foreground`, which flips to white in dark mode — e.g.
-`src/components/scoring/UnifiedScoreboard.tsx:337` (points) and the player
-table around :462–515. Fix: fixed-colour text on fixed-colour backgrounds
-(the panel's own `headerText` colour, or a dark-mode panel colour). Check
-`TiebreakerScoreboard.tsx` too — its score uses the same pattern.
-
----
-
 ## 🗂️ 2026-10-29 — Past-match results on the schedule: show more in less room
 
 **Found by Ed.** A finished match on the schedule is two cards inside a card
@@ -59,40 +43,6 @@ leave a record of who changed it).
 Ben vs Duff investigation in the same doc — hand-edited SQL leaves no trace, so
 any lineup audit trail we build has holes while this is the only repair route.
 
-## 🧪 2026-09-05 — Database tests are not run by CI, and three files have rotted
-
-CI (`.github/workflows/checks.yml`) runs the vitest **unit** project only. The
-**db** project needs a live Postgres, so nothing on GitHub has ever run it —
-these failures are invisible to every PR.
-
-Ran locally on 2026-09-05, after applying two migrations the local DB was
-missing. Seven tests fail, in three files, none of them related to each other:
-
-| File | Failing | Introduced by |
-|---|---|---|
-| `request-team-join.test.ts` | 2 | PR #165 |
-| `approve-surface-roster.test.ts` + `approve-join-request.test.ts` | 4 | PR #219 |
-| `messagePushTrigger.db.test.ts` | 1 | push Unit 8 |
-
-The first two look like fixture drift — they assert against seeded rows that have
-since changed shape. Worth a look, but they are testing code that has been in
-production for months, so this is stale tests rather than a broken feature.
-
-The push one is **not** a product bug — I traced it. The trigger enqueues
-correctly. The test then reads the request back out of `net.http_request_queue`
-to check its body and headers, and the pg_net background worker drains that queue
-within milliseconds of the commit, so the row is usually gone before the test
-looks. The fix is to do that read inside an uncommitted transaction, where the
-worker cannot see the row. Not done — it needs a small transaction helper in
-`dbTestUtils`, and it did not belong in the PR I was on.
-
-**The decision worth making:** either give CI a Postgres service container so the
-db project runs on every PR, or accept that these tests only run when someone
-remembers to run them locally. The current middle ground — having them, and never
-running them — is the one option with no upside.
-
----
-
 ## 🔧 2026-09-05 — Reuse `PaymentMethodSetup` in the LO application
 
 The tournament paid flow introduced a **reusable** "set up a payment method"
@@ -130,26 +80,6 @@ tournaments — but the token is a **mock** (`PaymentCardForm` returns
 
 ---
 
-## 🧪 2026-08-04 — VERIFY: tiebreaker scoring fix (PR #249)
-
-**Bug (live):** the first match to end in a games **tie** couldn't be scored —
-captains confirmed the tie, then got "Both team lineups must be locked before
-scoring can begin" and were kicked to My Teams. Cause: on a tie the app unlocks
-both lineups and sends captains to the tiebreak **lineup** page, but the route
-guard (`MatchPhaseGuard`) saw `status='in_progress'` and force-redirected them to
-the **scoring** page, which demands locked lineups. Fix teaches the guard the
-"tiebreaker window" via `matches.match_result='tie'` so it stops bouncing them.
-Branch `fix/tiebreaker-scoring-lineup-lock`, **PR #249**.
-
-**👉 YOU (or whoever can reproduce a tie) NEED TO DO: verify on staging.** Play a
-match to a real games tie, confirm the tie on both teams, and check you land on
-the **tiebreak lineup page** (not the error card). Enter + lock both tiebreak
-lineups → you should reach the tiebreak scoring page → score games 19–21 →
-match completes with a winner. Unit-tested at the routing layer, but a live
-2-device tie was NOT run — this is the confidence check.
-
----
-
 ## 🧪 2026-06-30 — Schedule ⇄ Matchup decoupling: TEST A+B, then Phase C
 
 **The two-"Week 14" bug is fixed** on branch `feat/schedule-matchup-decoupling`
@@ -181,44 +111,20 @@ nothing reads it).
 
 ## 📋 2026-06-13 — league-page wiring + playoff/seed session follow-ups
 
-Shipped this session (PRs awaiting Jack): #229 playoff review page (merged),
-#233 league-page card order + button wiring + "Matchups" title/URL rename,
-#234 seed makes playoff matchups start empty. Lingering:
+Lingering (trimmed 2026-11-02 — season-length re-land, the self-add join-request
+bug and the scored-games seed gap are done):
 
-1. **Rename the dates page to "Schedule" (DEFERRED — do after season-length lands).**
+1. **Rename the dates page to "Schedule" (now unblocked — season length landed).**
    `SeasonScheduleManager` is the dates/blackouts page but is still titled
    **"Manage Schedule"** at **`/manage-schedule`**. It should be **"Schedule"** at
-   **`/schedule`** (now free — the matchups page moved to `/matchups`). Held back
-   because the **season-length recovery is editing that exact file**
-   (`SeasonScheduleManager.tsx`) — renaming now would collide. Once it lands: rename
-   the route in `NavRoutes.tsx`, the regex in `BottomTabBar.tsx:27`, the nav in
-   `ScheduleCard.tsx:177`, and the page title (`SeasonScheduleManager.tsx:409`).
+   **`/schedule`** (free — the matchups page moved to `/matchups`). Rename the
+   route in `NavRoutes.tsx`, the regex in `BottomTabBar.tsx:27`, the nav in
+   `ScheduleCard.tsx`, and the page title in `SeasonScheduleManager.tsx`.
 
-2. **Re-land the Change Season Length feature (#211 got stranded).** PR #211 was
-   stacked on `fix/blackout-reflow` and merged into *that* branch — but it had
-   already gone to main (via #209) first, so #211 never reached main. The feature
-   is fully built on commit `b0741a87` (dialog `ChangeSeasonLengthDialog.tsx` +
-   gated early-season button on `SeasonScheduleManager` + plan/brainstorm docs).
-   Needs cherry-picking onto a fresh branch off main + conflict resolution + a clean
-   PR. *(Other computer was on this.)* Once in, its button is reachable via the
-   Schedule card → dates page.
+2. **Seed gap (optional).** No **finished-season fixture** in the seed, so you
+   can't watch the playoff auto-populate end-to-end locally.
 
-3. **Seed gaps (optional).** Clean-DB tests reveal: (a) the seed has **no scored
-   games** (`match_games` = 0) → `appendConfirmation` + `gameConfirmations.schema`
-   tests can't find a fixture; (b) **no finished-season fixture** → can't actually
-   watch the playoff auto-populate (all seed seasons are 1/16 weeks). Add a played
-   match with games + a complete-season fixture if you want those green / to test
-   the playoff automation end-to-end.
-
-5. **Onboarding self-add join-request bug (REAL — likely what Jack saw, not
-   playoffs).** On a clean DB, `request-team-join` + `approve-surface-roster` DB
-   tests fail: `null value in column "team_id" of relation "team_join_requests"
-   violates not-null constraint`. A league-scoped "self-add" request inserts no
-   `team_id`, but the column is NOT NULL. Schema-vs-code mismatch in the onboarding
-   cascade — needs whoever owns onboarding. Either make `team_id` nullable or have
-   the RPC not write a team-less row.
-
-6. **Optional label sweep.** The "View Schedule" buttons on `PlayerProfile` and the
+3. **Optional label sweep.** The "View Schedule" buttons on `PlayerProfile` and the
    `LeagueDetail` next-season panel now open the **Matchups** page (URL updated, they
    work). I left those labels — some are player-facing where "schedule" reads fine.
    Sweep to "Matchups" if you want full consistency.
@@ -274,6 +180,11 @@ from this list when un-gated.
   (`src/navigation/NavRoutes.tsx` — `operator/scoring-workshop[/...]`). Verify on
   staging it still shows there; un-gate (remove both `!isProduction` guards) when
   it's ready for users.
+- **Handicap Calculator ("LMS Calc", `/tools/calc`)** — added to this list
+  2026-11-02 (it was gated but never listed). Gated in two places: the route
+  (`NonProdGate` in `src/navigation/NavRoutes.tsx`) AND the "LMS Calc" link on
+  Profile (`!isProduction` in `src/profile/Profile.tsx`). Decide: un-gate both
+  together, or keep it a staging-only tool.
 
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate
@@ -326,6 +237,12 @@ So:
 ---
 
 ## 🚨 2026-04-21 STAGING TEST — remaining failure (staging email)
+
+> **Re-checked 2026-11-02 — bigger than "staging":** email invites are switched
+> off on EVERY environment (`EMAIL_INVITES_ENABLED` in `src/config/featureFlags.ts`),
+> because the invite function still sends from Resend's sandbox address, which only
+> delivers to the account owner. The real task is **set up a verified sending
+> address for invites (all environments)**. Invites by link/QR still work meanwhile.
 
 **Discovered:** 2026-04-21 during first real-player staging test at the league event
 
@@ -484,12 +401,6 @@ const mutation = useMutation({
 - Some mutations don't invalidate queries at all
 - Some invalidate partial query keys but miss related queries
 - No consistent pattern across the codebase
-
----
-
-## Future Items
-
-(Add more items here as needed)
 
 ---
 
@@ -1214,6 +1125,7 @@ handles arbitrary group chats. All this feature needs is:
 **Out of scope for Phase 1.** No schema change required when this lands.
 
 ## 31. Messaging Phase 2 — Plan Doc Needs Writing
+> **Re-checked 2026-11-02:** most of this shipped — push notifications, master switch, quiet> hours and per-type / per-chat mutes (PRs #254, #255, #261, #267, #268, #271). **Left:** rate> limits, the "pause notifications until…" picker, and @mention alerts.
 
 **Discovered:** 2026-05-15 while triaging post-Phase-1 next steps
 **Severity:** MEDIUM — not blocking, but Phase 2 is the next significant
@@ -1305,75 +1217,6 @@ consistently.
 both are "consistent player-info display across the app" cleanups.
 
 ---
-
----
-
-## 38. "Verify Scores" Button Is Available to Every Scoreboard Viewer (should be the two match teams only)
-
-**Discovered:** 2026-06-14 (Ed, reviewing the live scoring page)
-**Severity:** MEDIUM — wrong-actor can finalize a match's verification; no
-data corruption, but it lets a non-participant verify scores they have no
-standing to verify.
-
-**The problem:** At the end of a match the live scoring page swaps its header
-for `MatchEndVerification.tsx`, which renders a **"Verify Scores"** button.
-That button is `disabled={userTeamVerified || isVerifying}`
-(`src/components/scoring/MatchEndVerification.tsx:715-728`) — it is **never
-gated on whether the current user is actually on one of the two teams in this
-match.** So any player who can open the live scoreboard (spectator, a player
-from a different match/league, a guest) sees a live, clickable Verify button.
-The component's own docstring claims *"Verify Scores button (enabled only for
-user's team)"* (line 11) — so the intent was always to gate it; the code just
-never did.
-
-**Why it reads as "part of the scoreboard":** the verify UI lives *inside*
-the scoreboard/end-of-match header component, so it inherits the scoreboard's
-audience. The fix is to gate the actor, not necessarily to relocate the UI.
-
-**Fix direction:** add a "is the current user a participant in THIS match"
-check (on one of the two teams' rosters / captains) and only render or enable
-Verify for them. Consistent with [[feedback_gate_ui_relax_rls]] — gate the
-button in the UI; don't add server-side identity guards. Note the nuance:
-"anyone on the scoring page is a scorekeeper" still holds for *entering
-scores*; **verification** is the narrower act that should belong to the two
-teams playing.
-
-**Files:** `src/components/scoring/MatchEndVerification.tsx` (button + the
-`userTeamVerified` / `onVerify` wiring), and wherever it's mounted
-(`src/player/ScoreMatch.tsx`).
-
----
-
-## 39. Dark-Mode Button Contrast on the Scoring Page (text barely visible)
-
-**Discovered:** 2026-06-14 (Ed, reviewing the live scoring page)
-**Severity:** MEDIUM — accessibility/readability; some scoring-page buttons
-have text that's barely legible in dark mode. Ed did an earlier contrast pass
-but some spots were missed.
-
-**The problem:** On the scoring page, certain buttons render with poor
-text-on-background contrast in dark mode (text nearly invisible). Likely the
-same class of bug as [[feedback_dark_mode_fixed_bg_text_colors]] — a
-fixed-color background paired with a theme-variable text color (or vice
-versa), so the pairing inverts and washes out under the dark theme.
-
-**Fix direction:** sweep every button on the scoring surface and check its
-foreground/background pairing in **both** light and dark mode. Anywhere a
-fixed background (e.g. `bg-*-50`, a status color) is used, pair it with a
-**fixed** readable text color rather than `text-foreground` /
-`text-muted-foreground` (which flip with the theme). Keep
-[[user_colorblind]] in mind — state must not be conveyed by color alone, so
-while fixing contrast, confirm any color-coded button also carries a
-text/icon label.
-
-**Files likely involved (scoring surface):**
-`src/components/scoring/UnifiedScoreboard.tsx`,
-`src/components/scoring/ThreeVThreeScoreboard.tsx`,
-`src/components/scoring/GamesList.tsx`,
-`src/components/scoring/MatchEndVerification.tsx`,
-`src/player/ScoreMatch.tsx` — plus any shared scoring button helpers.
-
-
 
 ---
 
