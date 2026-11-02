@@ -4,7 +4,7 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
-## 🌙 2026-10-29 — Dark mode: scoreboard numbers turn white on the light team panels
+## 🌙 2026-10-29 — Dark mode: scoreboard numbers turn white on the light team panels — FIXED on fix/scoreboard-dark-mode-text (awaiting merge)
 
 **Found by Ed** while testing the tiebreaker. On the live scoreboard, the
 points (and other numbers) are near-white in dark mode and hard to read.

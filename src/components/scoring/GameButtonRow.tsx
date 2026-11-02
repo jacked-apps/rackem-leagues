@@ -115,7 +115,7 @@ export function GameButtonRow({
 
   // Confirmed state: Divs with trophy and Vacate button
   if (state === 'confirmed') {
-    const winnerClass = 'bg-green-200 font-semibold';
+    const winnerClass = 'bg-green-200 text-green-950 font-semibold';
     const loserClass = 'bg-card text-muted-foreground';
 
     return (

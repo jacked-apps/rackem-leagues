@@ -28,6 +28,16 @@ export const HOME_TEAM_COLORS = {
   headerText: 'text-blue-900',
   /** Threshold/accent text color */
   accentText: 'text-blue-600',
+  /**
+   * Main text on the panel (numbers, player rows). FIXED colour on purpose:
+   * the panel background is a fixed light colour in both themes, so the
+   * theme-aware `text-foreground` (white in dark mode) would vanish on it.
+   */
+  text: 'text-blue-950',
+  /** Small labels on the panel (Wins, Points, column headers). Fixed, see `text`. */
+  mutedText: 'text-blue-800',
+  /** Team / player name links on the panel. Fixed, see `text`. */
+  linkText: 'text-blue-700 hover:text-blue-900',
 } as const;
 
 /**
@@ -46,6 +56,12 @@ export const AWAY_TEAM_COLORS = {
   headerText: 'text-orange-900',
   /** Threshold/accent text color */
   accentText: 'text-orange-600',
+  /** Main text on the panel (numbers, player rows). Fixed, see HOME_TEAM_COLORS.text. */
+  text: 'text-orange-950',
+  /** Small labels on the panel (Wins, Points, column headers). Fixed. */
+  mutedText: 'text-orange-800',
+  /** Team / player name links on the panel. Fixed. */
+  linkText: 'text-blue-700 hover:text-blue-900',
 } as const;
 
 /**
