@@ -38,8 +38,8 @@ interface TiebreakerScoreboardProps {
   >;
   /** Is current user on home team? */
   isHomeTeam: boolean;
-  /** Handler when user clicks verify */
-  onVerify: () => void;
+  /** Handler when user clicks verify. Omit for viewers not on either team (hides the button). */
+  onVerify?: () => void;
   /** Is verification in progress? */
   isVerifying?: boolean;
   /** Game type for potential future tiebreakers */

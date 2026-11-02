@@ -1006,6 +1006,7 @@ Reusable wizard/form step components
 - `UnifiedScoreboard.tsx` - **Single live-match scoreboard for all configs** (replaces former ThreeVThree / FiveVFive / TenSeven). Reads match-row source-of-truth, schema-derived display hints, calculator-driven per-player points column, R22 Fargo start-points display.
 - `TiebreakerScoreboard.tsx` - Tiebreaker score panel; finishes at the tiebreak record's games-needed (never a hardcoded 2); team-name labels per R18
 - `MatchEndVerification.tsx` - End-of-match dual-team verify-and-confirm flow (mode-aware internally)
+- `MatchEndVerification.test.tsx` - Verify Scores button shows only to the two teams playing (hidden when `onVerify` is left out)
 - `GamesList.tsx` - Games list. Column ordering (`displayMode` + `onToggleDisplayMode`) is now a **controlled prop** lifted to ScoreMatch (via `useGameDisplayMode`) so the in-list header bar and the settings gear stay in sync; the header bar still toggles it on click.
 - `ScoringSettingsMenu.tsx` - **Scoring participation modes / Unit D.** Gear-icon `Popover` in the scoring header (replaced the cramped inline Auto-Confirm checkbox). Houses Auto-Confirm, I'm-Not-Scoring, and the Break/Rack ⇄ Home/Away game-order toggle, each with an `InfoButton`. Presentational only — state/persistence live in the hooks behind its props.
 - `GameButtonRow.tsx` - Game row with breaker vs racker buttons (extracted from ScoreMatch)
@@ -1809,7 +1810,7 @@ The player-facing release notes. Waiting notes are one file per PR (never confli
 - `releases.ts` — every shipped release (history) plus the `unreleased` block, whose entries come from the note files; the stamp inserts below its STAMP marker.
 - `pendingNotes.ts` — reads `notes/*.json` (one note or an array per file) into the `unreleased` block, in file-name order.
 - `notes/README.md` — the note-file format; one `.json` per user-facing PR, named after the branch.
-- `notes/fix-scoreboard-dark-mode-text.json` — fix note: scoreboard text readable in dark mode (removed by the release stamp).
+- `notes/fix-scoreboard-dark-mode-text.json` — fix notes: scoreboard text readable in dark mode; Verify Scores only for the two teams (removed by the release stamp).
 - `releaseSelectors.ts` — pure lookups: grouping by kind, which release is current, what the New marker compares against.
 - `WhatsNewPage.tsx` — `/whats-new` and `/whats-new/:version`.
 - `useWhatsNewSeen.ts` / `useShowWhatsNewAfterUpdate.ts` — the New marker and the after-update prompt.

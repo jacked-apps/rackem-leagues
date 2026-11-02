@@ -71,8 +71,8 @@ export interface UnifiedScoreboardProps {
   allGamesComplete: boolean;
   /** Whether the current user is on the home team — drives swap-player UX. */
   isHomeTeam: boolean;
-  /** Verify-completion handler. */
-  onVerify: () => void;
+  /** Verify-completion handler. Omit for viewers not on either team (hides the Verify button). */
+  onVerify?: () => void;
   /** Whether verification is in flight. */
   isVerifying?: boolean;
   /** Game type ('8-ball', '9-ball', etc.) — passed through to MatchEndVerification. */
