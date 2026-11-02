@@ -1125,7 +1125,10 @@ handles arbitrary group chats. All this feature needs is:
 **Out of scope for Phase 1.** No schema change required when this lands.
 
 ## 31. Messaging Phase 2 — Plan Doc Needs Writing
-> **Re-checked 2026-11-02:** most of this shipped — push notifications, master switch, quiet> hours and per-type / per-chat mutes (PRs #254, #255, #261, #267, #268, #271). **Left:** rate> limits, the "pause notifications until…" picker, and @mention alerts.
+
+> **Re-checked 2026-11-02:** most of this shipped: push notifications, master switch,
+> quiet hours and per-type / per-chat mutes (PRs #254, #255, #261, #267, #268, #271).
+> **Left:** rate limits, the "pause notifications until…" picker, and @mention alerts.
 
 **Discovered:** 2026-05-15 while triaging post-Phase-1 next steps
 **Severity:** MEDIUM — not blocking, but Phase 2 is the next significant
