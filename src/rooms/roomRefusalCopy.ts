@@ -45,7 +45,12 @@ export function roomRefusalCopy(r: RoomRefused): string {
     case 'not_host':
       return 'Only the host can do that.';
     case 'not_a_host':
-      return 'Opening a room to others is a host feature. Ask a league operator to start it.';
+      return 'Opening a room to others is a host feature. Ask a host to start it.';
+    case 'too_many_rooms':
+      // Rooms no longer self-delete, so the owner tidies up; the server sends the cap.
+      return r.max
+        ? `You have ${r.max} rooms already. Delete one to start another.`
+        : 'You have as many rooms as you can keep. Delete one to start another.';
     case 'no_game':
       return 'Pick a game first.';
     case 'no_tables':

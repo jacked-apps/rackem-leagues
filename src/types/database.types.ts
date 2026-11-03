@@ -4775,6 +4775,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: unknown
       }
+      room_cap_per_host: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       room_current_member: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -5003,10 +5007,6 @@ export type Database = {
       }
       sweep_stale_brackets: {
         Args: { p_idle_days?: number }
-        Returns: number
-      }
-      sweep_stale_rooms: {
-        Args: { p_idle_hours?: number }
         Returns: number
       }
       text_soundex: {

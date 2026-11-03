@@ -291,8 +291,10 @@ from this list when un-gated.
   host ends the room → guest sees "This room has ended" without refreshing.
   Coin flip: guest taps Heads/Tails, host taps Throw, BOTH phones show the same
   face + winner; refresh either — same result.
-  Also confirm `pg_cron` runs `sweep_stale_rooms` on the hosted project (daily,
-  07:00 UTC — `select jobname, schedule from cron.job;` should list it). Un-gate
+  Opening a room to others now needs the **Host** designation (not the operator
+  role) — grant it to your member on staging first (SQL, like the developer key).
+  Rooms no longer delete themselves (end one to remove it); you can keep 10 at once,
+  and an 11th says "You have 10 rooms already." Un-gate
   = remove `NonProdGate` from the three routes AND the two `!isProduction &&`
   door conditions in the same commit, then drop/flip the production cases in
   `roomsGate.test.tsx`. Ask Claude — one motion.

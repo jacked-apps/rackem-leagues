@@ -22,7 +22,7 @@ import {
   closePostgresPool,
   signOut,
 } from '@/test/dbTestUtils';
-import { deleteRoomsHostedBy, newDevice, rpc, type Jsonb } from './roomsFixtures';
+import { deleteRoomsHostedBy, grantRoomHost, revokeRoomHost, newDevice, rpc, type Jsonb } from './roomsFixtures';
 
 const TABLE = 'room_coin_flips';
 
@@ -37,6 +37,8 @@ describe('room_coin_flips + RPCs (Unit 6)', () => {
     player = await createAuthenticatedClient('player');
     operatorMemberId = (await getCurrentMemberId(operator))!;
     playerMemberId = (await getCurrentMemberId(player))!;
+    // Flip rooms are shared, so the operator needs the Host designation.
+    await grantRoomHost([operatorMemberId]);
   });
 
   // House seats (Unit 8) span every room a host owns; each flip test opens a
@@ -47,6 +49,7 @@ describe('room_coin_flips + RPCs (Unit 6)', () => {
 
   afterAll(async () => {
     await deleteRoomsHostedBy([operatorMemberId, playerMemberId]);
+    await revokeRoomHost([operatorMemberId]);
     await signOut(operator);
     await signOut(player);
     await closePostgresPool();

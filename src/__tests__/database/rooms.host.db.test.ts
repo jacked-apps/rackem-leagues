@@ -27,6 +27,8 @@ import {
   createRoomFixtureTables,
   dropRoomFixtureTables,
   deleteRoomsHostedBy,
+  grantRoomHost,
+  revokeRoomHost,
   newDevice,
   rpc,
   createRoomAs,
@@ -45,6 +47,7 @@ describe('host controls + reads (Unit 1)', () => {
     player = await createAuthenticatedClient('player');
     operatorMemberId = (await getCurrentMemberId(operator))!;
     playerMemberId = (await getCurrentMemberId(player))!;
+    await grantRoomHost([operatorMemberId]);
   });
 
   // House seats span every room a host owns — start each test with an empty house.
@@ -54,6 +57,7 @@ describe('host controls + reads (Unit 1)', () => {
 
   afterAll(async () => {
     await deleteRoomsHostedBy([operatorMemberId, playerMemberId]);
+    await revokeRoomHost([operatorMemberId]);
     await dropRoomFixtureTables();
     await signOut(operator);
     await signOut(player);
@@ -124,7 +128,7 @@ describe('host controls + reads (Unit 1)', () => {
     expect((await executeSql(`SELECT settings FROM public.rooms WHERE id = $1`, [room.room_id]))[0].settings).toEqual({ race_to: 9 });
   });
 
-  it('a player cannot open the door on their free room; an operator can, in place, and guests may then join', async () => {
+  it('a player cannot open the door on their free room; a Host can, in place, and guests may then join', async () => {
     const playersRoom = await createRoomAs(player, { shared: false });
     expect(await rpc(player, 'set_room_shared', { p_room_id: playersRoom.room_id, p_shared: true })).toMatchObject({ reason: 'not_a_host' });
 

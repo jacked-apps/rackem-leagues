@@ -13,8 +13,9 @@
  * place — that keeps "navigate into the new room" out of here.
  *
  * The shared toggle is disabled with a note unless the viewer passes the host
- * gate (`useIsOperator`). Shared rooms cost sockets; the server enforces the
- * same gate, this just explains it before the tap.
+ * gate: the Host designation (`hasDesignation('host')`; the developer key
+ * passes too). Shared rooms cost sockets; the server enforces the same gate
+ * (`room_member_is_host`), this just explains it before the tap.
  */
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { useIsOperator } from '@/api/hooks/useUserProfile';
+import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { listGames } from './games/registry';
 import type { GameDefinition } from './games/types';
 
@@ -42,7 +43,7 @@ interface CreateRoomDialogProps {
 
 export function CreateRoomDialog({ open, onOpenChange, onSubmit }: CreateRoomDialogProps) {
   const games = listGames();
-  const canShare = useIsOperator();
+  const canShare = useUserProfile().hasDesignation('host');
   const [gameKey, setGameKey] = useState(games[0]?.key ?? '');
   const [shared, setShared] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);

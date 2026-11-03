@@ -15,7 +15,7 @@ import type { Database } from '@/types/database.types';
 import { supabase } from '@/supabaseClient';
 import { TEST_USERS, createAuthenticatedClient, getCurrentMemberId, closePostgresPool, signOut, executeSql } from '@/test/dbTestUtils';
 import { getMyRooms, getRoom, getRoomByToken } from '@/api/queries/rooms';
-import { createRoomFixtureTables, dropRoomFixtureTables, deleteRoomsHostedBy, newDevice, rpc, createRoomAs } from './roomsFixtures';
+import { createRoomFixtureTables, dropRoomFixtureTables, deleteRoomsHostedBy, grantRoomHost, revokeRoomHost, newDevice, rpc, createRoomAs } from './roomsFixtures';
 
 describe('room queries (Unit 3)', () => {
   let operator: SupabaseClient<Database>;
@@ -33,6 +33,7 @@ describe('room queries (Unit 3)', () => {
     });
     if (error) throw new Error(`player sign-in failed: ${error.message}`);
     playerMemberId = (await getCurrentMemberId(supabase))!;
+    await grantRoomHost([operatorMemberId]);
   });
 
   // House seats span every room a host owns — start each test with an empty house.
@@ -42,6 +43,7 @@ describe('room queries (Unit 3)', () => {
 
   afterAll(async () => {
     await deleteRoomsHostedBy([operatorMemberId, playerMemberId]);
+    await revokeRoomHost([operatorMemberId]);
     await dropRoomFixtureTables();
     await signOut(operator);
     await supabase.auth.signOut();

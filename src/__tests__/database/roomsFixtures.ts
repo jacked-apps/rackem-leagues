@@ -2,9 +2,10 @@
  * @fileoverview Shared fixtures for the Game Room db tests (Unit 1).
  *
  * The room RPCs resolve the caller from `auth.uid()`, so the happy paths run
- * through REAL authenticated supabase-js clients (`operator@test.com` is a
- * league_operator → passes the host gate; `player@test.com` is a plain
- * player → does not). Raw `executeSql` runs as postgres (auth.uid() NULL) and
+ * through REAL authenticated supabase-js clients. The shared-room gate is the
+ * Host DESIGNATION, which no seed user holds, so suites that open shared rooms
+ * grant it with `grantRoomHost` (usually to `operator@test.com`) and take it
+ * back with `revokeRoomHost`; `player@test.com` stays a plain player. Raw `executeSql` runs as postgres (auth.uid() NULL) and
  * is used for fixtures, ground-truth assertions, and the not-signed-in branch.
  *
  * Fixture game tables: the plug-in contract says a game table must have a uuid
@@ -87,6 +88,38 @@ export async function dropRoomFixtureTables(): Promise<void> {
 /** Delete every room hosted by these members (cascade clears the rest). */
 export async function deleteRoomsHostedBy(memberIds: string[]): Promise<void> {
   await executeSql(`DELETE FROM public.rooms WHERE host_member_id = ANY($1::uuid[])`, [memberIds]);
+}
+
+/**
+ * Tag on the designation rows these fixtures grant, so cleanup removes only
+ * what the tests added — never a real grant someone made by hand.
+ */
+const TEST_GRANT_SOURCE = 'room_test';
+
+/**
+ * Give members the active Host designation (the shared-room gate). Seed users
+ * hold no designations, so any test that opens a shared room grants it first.
+ * Idempotent against the one-active-row-per-designation index.
+ *
+ * @param memberIds - members.id values (not auth user ids).
+ * @param designation - 'host' by default; 'developer' to test the master key.
+ */
+export async function grantRoomHost(memberIds: string[], designation: 'host' | 'developer' = 'host'): Promise<void> {
+  await executeSql(
+    `INSERT INTO public.member_designations (member_id, designation, source)
+     SELECT unnest($1::uuid[]), $2, '${TEST_GRANT_SOURCE}'
+     ON CONFLICT (member_id, designation) WHERE (ended_at IS NULL) DO NOTHING`,
+    [memberIds, designation]
+  );
+}
+
+/** Remove every designation row these fixtures granted to these members. */
+export async function revokeRoomHost(memberIds: string[]): Promise<void> {
+  await executeSql(
+    `DELETE FROM public.member_designations
+      WHERE member_id = ANY($1::uuid[]) AND source = '${TEST_GRANT_SOURCE}'`,
+    [memberIds]
+  );
 }
 
 /** A fresh device id — a seat is a device, so tests mint these freely. */

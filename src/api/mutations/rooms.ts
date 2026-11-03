@@ -32,7 +32,8 @@ export type RoomRefusal =
   | 'table_not_ready'
   | 'is_self'
   | 'room_full'
-  | 'bad_occupancy';
+  | 'bad_occupancy'
+  | 'too_many_rooms';
 
 /** The refused half of any room RPC result. */
 export interface RoomRefused {
@@ -45,7 +46,7 @@ export interface RoomRefused {
   /** `full` carries the seat picture and a hint for the copy. */
   seats?: RoomSeats;
   hint?: string;
-  /** `too_many_tables` says the cap. */
+  /** `too_many_tables`, `bad_occupancy` and `too_many_rooms` say the cap. */
   max?: number;
 }
 

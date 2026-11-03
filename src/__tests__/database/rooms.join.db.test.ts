@@ -32,6 +32,8 @@ import {
   createRoomFixtureTables,
   dropRoomFixtureTables,
   deleteRoomsHostedBy,
+  grantRoomHost,
+  revokeRoomHost,
   newDevice,
   rpc,
   createRoomAs,
@@ -59,6 +61,8 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     playerMemberId = (await getCurrentMemberId(player))!;
     captainMemberId = (await getCurrentMemberId(captain))!;
     ownerMemberId = (await getCurrentMemberId(owner))!;
+    // Operator and owner open shared rooms; player and captain stay guests.
+    await grantRoomHost([operatorMemberId, ownerMemberId]);
   });
 
   // House seats span every room a host owns, so each test starts with an
@@ -69,6 +73,7 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
 
   afterAll(async () => {
     await deleteRoomsHostedBy([operatorMemberId, playerMemberId, captainMemberId, ownerMemberId]);
+    await revokeRoomHost([operatorMemberId, ownerMemberId]);
     await dropRoomFixtureTables();
     await signOut(operator);
     await signOut(player);
@@ -237,7 +242,7 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
 
   it('a friend who is also a host is just a screen in your house — and spends none of their own seats', async () => {
     const room = await createRoomAs(operator, { shared: true });
-    expect(await join(owner, room.join_token)).toMatchObject({ ok: true }); // owner passes the host gate
+    expect(await join(owner, room.join_token)).toMatchObject({ ok: true }); // owner holds the Host designation
     expect(await seats(room.room_id)).toMatchObject({ devices: 2, used: 2, seats: 4, open: 2 });
 
     const theirs = await createRoomAs(owner, { shared: true });
@@ -351,7 +356,7 @@ describe('join_room + house seats + heartbeat (Units 1 + 8)', () => {
     expect(await join(player, room.join_token, device)).toMatchObject({ ok: true, rejoined: false });
   });
 
-  it('leave_room does not keep an abandoned room alive against the sweep', async () => {
+  it("leave_room does not bump the room's last activity", async () => {
     const room = await createRoomAs(operator, { shared: true });
     const device = newDevice();
     await join(player, room.join_token, device);
