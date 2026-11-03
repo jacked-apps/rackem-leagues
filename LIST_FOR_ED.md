@@ -298,18 +298,30 @@ from this list when un-gated.
   = remove `NonProdGate` from the three routes AND the two `!isProduction &&`
   door conditions in the same commit, then drop/flip the production cases in
   `roomsGate.test.tsx`. Ask Claude — one motion.
-- **Individual races (the race room)** — two players, a goal each, scored one
-  game at a time with the existing scoring + confirmation dialogs. Gated by
-  `!isProduction` on the routes only (`src/navigation/NavRoutes.tsx` —
-  `race/new` and `race/:raceId`). **Nothing links to it yet**, so there is no
-  button or card to gate alongside it — when the game room adds one, that
-  entry point needs the same guard until this un-gates.
-  On staging, verify with two signed-in people on two devices: `/race/new` to
-  set it up (pick the opponent, a target EACH, alternate vs winner-breaks),
-  then score games one at a time and check that a result only counts once the
-  other person agrees, and that **Reverse only ever appears on the last game
-  played**. `/race/new` is disposable — the real entrance is the game room,
-  which calls the same `create_race`.
+- **Room Race** (`feat/room-race` — the race as the room's second game) —
+  gated in TWO places, one condition (`!isProduction`): the **Race entry in
+  the game registry** (`src/rooms/games/registry.ts`, so production's Start a
+  room list and `GameSlot` never show it; pinned by `registry.test.ts`) and
+  the dev route `race/:raceId` (`src/navigation/NavRoutes.tsx`). `/race/new`
+  is deleted. Rooms itself has its own four gates (above) — the two un-gate
+  independently. **On staging, with two accounts on two devices** (grant
+  yourself `host` first):
+  1. Start a room → pick **Race** → open it → invite the other account.
+  2. Both see **"Who breaks?"** — one picks, the other gets "Confirm X breaks";
+     the picker can change it until then.
+  3. Score to 5 — each game only counts once the other confirms; the scoring
+     pop-up shows just the winner (no break & run / early 8).
+  4. At 5: both phones show the winner; **Run it back** → the other gets
+     Accept / Deny → accept starts a fresh race, the old score is listed
+     under earlier races.
+  5. Walk away mid-race, come back → same score.
+  6. Delete the room from the **Rooms list** → it's gone (and its races).
+  7. A **coin-flip** room still creates and opens to others as a Host.
+  8. **Confirm 8-ball** is the right default game type (it's a variable in
+     `src/rooms/games/race/raceDefaults.ts` along with race-to-5 and
+     winner-breaks).
+  Note: the database parts (race tables, `room_races`, the confirm-the-breaker
+  change) go live on merge; only the screens are gated.
 
 _(LO Manual Scoring + Match Review/Correction and the LMS Results Sheet were
 un-gated and went LIVE in production 2026-06-21 — see `feat`/`fix` un-gate

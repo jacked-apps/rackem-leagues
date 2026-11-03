@@ -1,5 +1,10 @@
 # Resume here — individual races
 
+> **2026-11-03: superseded for the room entrance.** The race now plays inside a
+> Game Room — see `docs/plans/2026-11-03-001-feat-room-race-plan.md`. `/race/new`
+> and `useCreateRace` are deleted; rooms create races via `open_room_race`, and
+> `start_race` is now propose + confirm. The tournament half (§8) is unchanged.
+
 > Rewritten 2026-09-16. **The race is built.** It is waiting on one thing: the
 > game room that launches it. Read this, then go straight to §5.
 

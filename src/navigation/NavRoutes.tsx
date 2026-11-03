@@ -48,7 +48,6 @@ import { TeamSchedule } from '../player/TeamSchedule';
 import { MatchLineup } from '../player/MatchLineup';
 import { ScoreMatch } from '../player/ScoreMatch';
 import { ScoreRacePage } from '../race/ScoreRacePage';
-import { StartRacePage } from '../race/StartRacePage';
 import { SpectateLiveMatches } from '../player/SpectateLiveMatches';
 import { SpectateMyLiveMatches } from '../player/SpectateMyLiveMatches';
 import { BecomeLeagueOperator } from '../leagueOperator/BecomeLeagueOperator';
@@ -343,13 +342,12 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
           { path: 'league/:leagueId/finances', element: withOperator(LeagueFinancesPage) },
           { path: 'league/:leagueId/dues', element: withOperator(LeagueDuesPage) },
-          // Individual races — two players, a goal each, scored one game at a
-          // time. Gated off in production until the game room that launches
-          // them exists; nothing links to these yet, so there is no door to
-          // gate alongside them.
+          // Individual races — a dev entrance to one race by id. The real
+          // entrance is the Race game in a room (its registry entry is gated
+          // by the same !isProduction). /race/new was a disposable stand-in
+          // and is gone; rooms create races server-side (open_room_race).
           ...(!isProduction
             ? [
-                { path: 'race/new', element: withMember(<StartRacePage />) },
                 { path: 'race/:raceId', element: withMember(<ScoreRacePage />) },
               ]
             : []),

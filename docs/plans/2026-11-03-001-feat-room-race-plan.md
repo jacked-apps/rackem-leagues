@@ -294,7 +294,7 @@ sequenceDiagram
 **Verification:**
 - Existing scoring dialog and league scoring tests stay green.
 
-- [ ] **Unit 6: The Race room game**
+- [x] **Unit 6: The Race room game** *(done 2026-11-03: `346b9d26`)*
 
 **Goal:** Race appears as a room game and plays end to end in a room.
 
@@ -355,7 +355,7 @@ sequenceDiagram
 **Verification:**
 - The rooms page tests are green.
 
-- [ ] **Unit 8: Gates, dead code, docs**
+- [x] **Unit 8: Gates, dead code, docs** *(done 2026-11-03; 283 unit + 89 db test files green)*
 
 **Goal:** Every new door is gated, the disposable entrance is gone, and the docs are current.
 
