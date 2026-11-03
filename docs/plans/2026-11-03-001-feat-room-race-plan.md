@@ -228,7 +228,7 @@ sequenceDiagram
 **Verification:**
 - The race engine DB suite is green, with the start tests rewritten and every other race test unchanged.
 
-- [ ] **Unit 4: `room_races`: open, Run it back, delete-with-room**
+- [x] **Unit 4: `room_races`: open, Run it back, delete-with-room** *(done 2026-11-03: `96b21def`)*
 
 **Goal:** The room has a server-side link to its races. It opens the race once, handles Run it back, and deleting the room deletes its races.
 
@@ -269,7 +269,7 @@ sequenceDiagram
 **Verification:**
 - The new DB suite is green, and the coin flip and room suites are unchanged.
 
-- [ ] **Unit 5: Winner-only scoring option**
+- [x] **Unit 5: Winner-only scoring option** *(done 2026-11-03: `7db8557b`)*
 
 **Goal:** A room race records only who won each game.
 
@@ -329,7 +329,7 @@ sequenceDiagram
 **Verification:**
 - Locally, two accounts in two browsers: create a Race room, join, confirm who breaks, score to 5, Run it back, accept.
 
-- [ ] **Unit 7: Delete a room from the Rooms list**
+- [x] **Unit 7: Delete a room from the Rooms list** *(done 2026-11-03: `1a6eec41`)*
 
 **Goal:** A host can delete any of their rooms without opening it.
 
