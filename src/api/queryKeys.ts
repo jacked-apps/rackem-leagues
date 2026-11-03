@@ -177,6 +177,24 @@ export const queryKeys = {
   },
 
   /**
+   * Race-related query keys (individual races — two players, a goal each)
+   */
+  races: {
+    /** Base key for all race queries */
+    all: ['races'] as const,
+
+    /** Race by ID */
+    detail: (id: string) => [...queryKeys.races.all, id] as const,
+
+    /** The games played so far in a race */
+    games: (raceId: string) => [...queryKeys.races.detail(raceId), 'games'] as const,
+
+    /** The many-eyes witness records for a race's games */
+    confirmations: (raceId: string) =>
+      [...queryKeys.races.detail(raceId), 'confirmations'] as const,
+  },
+
+  /**
    * Messaging-related query keys
    */
   messages: {
