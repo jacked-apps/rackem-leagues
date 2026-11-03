@@ -2839,6 +2839,8 @@ export type Database = {
           away_member_id: string
           break_rule: string
           created_at: string
+          first_breaker_proposed_by: string | null
+          first_breaker_proposed_side: string | null
           first_breaker_side: string | null
           game_type: string
           goal_away: number
@@ -2853,6 +2855,8 @@ export type Database = {
           away_member_id: string
           break_rule?: string
           created_at?: string
+          first_breaker_proposed_by?: string | null
+          first_breaker_proposed_side?: string | null
           first_breaker_side?: string | null
           game_type: string
           goal_away: number
@@ -2867,6 +2871,8 @@ export type Database = {
           away_member_id?: string
           break_rule?: string
           created_at?: string
+          first_breaker_proposed_by?: string | null
+          first_breaker_proposed_side?: string | null
           first_breaker_side?: string | null
           game_type?: string
           goal_away?: number
@@ -2881,6 +2887,13 @@ export type Database = {
           {
             foreignKeyName: "races_away_member_id_fkey"
             columns: ["away_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "races_first_breaker_proposed_by_fkey"
+            columns: ["first_breaker_proposed_by"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]

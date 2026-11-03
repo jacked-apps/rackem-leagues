@@ -68,3 +68,23 @@ export function winnerSideOf(game: RaceGame, race: Race): RaceSide | null {
   if (!game.winner_player_id) return null;
   return game.winner_player_id === race.home_member_id ? 'home' : 'away';
 }
+
+/** A pick of who breaks game 1 that one player made and the other has not confirmed. */
+export interface BreakerProposal {
+  /** Who was named to break. */
+  side: RaceSide;
+  /** Which player named them — the other one is the one who confirms. */
+  bySide: RaceSide;
+}
+
+/**
+ * The race's pending who-breaks proposal, or null if nobody has picked yet (or
+ * the race has started — the proposal columns are kept, but nothing is pending).
+ */
+export function proposalOf(race: Race): BreakerProposal | null {
+  if (race.status !== 'created') return null;
+  const side = race.first_breaker_proposed_side;
+  const by = race.first_breaker_proposed_by;
+  if ((side !== 'home' && side !== 'away') || !by) return null;
+  return { side, bySide: by === race.home_member_id ? 'home' : 'away' };
+}

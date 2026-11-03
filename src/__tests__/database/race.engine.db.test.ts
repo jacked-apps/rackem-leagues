@@ -4,7 +4,10 @@
  *
  * Exercises the four things a race can have done to it (start / record /
  * confirm / vacate) plus the two rules that are easy to get wrong and expensive
- * to get wrong late:
+ * to get wrong late. Starting is propose / confirm
+ * (supabase/migrations/20261103*_race_first_breaker_confirm.sql): one player
+ * names who breaks, the other confirms the same side, and only then does
+ * game 1 exist — `startRace()` below does both taps for every other test.
  *
  *  - **A new game is born only on the second confirmation.** One player's word
  *    changes nothing; the game becomes official when both agree, and only then
@@ -61,6 +64,30 @@ async function makeRace(
 async function rpc(c: PoolClient, sql: string, params: unknown[]): Promise<Record<string, unknown>> {
   const res = await c.query(sql, params);
   return res.rows[0][Object.keys(res.rows[0])[0]] as Record<string, unknown>;
+}
+
+/**
+ * Start a race the way two phones do: home proposes who breaks, away confirms
+ * the same side. Leaves home logged in, which is where the old one-tap start
+ * left every test that follows it.
+ */
+async function startRace(c: PoolClient, raceId: string, side: 'home' | 'away'): Promise<void> {
+  await login(c, homeUser);
+  await rpc(c, `SELECT start_race($1, $2)`, [raceId, side]);
+  await login(c, awayUser);
+  const out = await rpc(c, `SELECT start_race($1, $2)`, [raceId, side]);
+  expect(out).toMatchObject({ ok: true, state: 'started' });
+  await login(c, homeUser);
+}
+
+/** The race's status plus everything that says who breaks first. */
+async function proposal(c: PoolClient, raceId: string) {
+  const res = await c.query(
+    `SELECT status, first_breaker_side, first_breaker_proposed_side, first_breaker_proposed_by
+       FROM races WHERE id = $1`,
+    [raceId]
+  );
+  return res.rows[0];
 }
 
 /** Score game `n` for `winner`, then have the other side confirm it. */
@@ -162,36 +189,107 @@ describe('race engine', () => {
     });
   });
 
-  // --- starting -----------------------------------------------------------
+  // --- starting: who breaks is proposed by one player, confirmed by the other
 
-  it('opens a race by naming who breaks, and writes game 1', async () => {
+  it('records a proposal without starting the race', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c);
       await login(c, homeUser);
-      const out = await rpc(c, `SELECT start_race($1, 'away')`, [raceId]);
-      expect(out.ok).toBe(true);
+      const out = await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      expect(out).toMatchObject({ ok: true, state: 'proposed' });
 
-      expect(await raceRow(c, raceId)).toMatchObject({ status: 'in_play' });
+      expect(await proposal(c, raceId)).toEqual({
+        status: 'created',
+        first_breaker_side: null, // stays NULL until confirmed
+        first_breaker_proposed_side: 'home',
+        first_breaker_proposed_by: homeMember,
+      });
+      expect((await games(c, raceId)).length).toBe(0); // no game 1 yet
+    });
+  });
+
+  it('starts the race when the other player confirms the same side', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c);
+      await login(c, homeUser);
+      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await login(c, awayUser);
+      const out = await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      expect(out).toMatchObject({ ok: true, state: 'started' });
+
+      expect(await proposal(c, raceId)).toMatchObject({ status: 'in_play', first_breaker_side: 'home' });
       const g = await games(c, raceId);
       expect(g.length).toBe(1);
+      expect(g[0]).toMatchObject({ game_number: 1, home_action: 'breaks', away_action: 'racks' });
+    });
+  });
+
+  it('lets the proposer change their pick before it is confirmed', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c);
+      await login(c, homeUser);
+      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      const out = await rpc(c, `SELECT start_race($1, 'away')`, [raceId]);
+      expect(out).toMatchObject({ ok: true, state: 'proposed' });
+      expect(await proposal(c, raceId)).toMatchObject({
+        status: 'created',
+        first_breaker_proposed_side: 'away',
+      });
+
+      await login(c, awayUser);
+      await rpc(c, `SELECT start_race($1, 'away')`, [raceId]);
+      const g = await games(c, raceId);
       expect(g[0]).toMatchObject({ game_number: 1, home_action: 'racks', away_action: 'breaks' });
     });
   });
 
-  it('is idempotent when the second phone also taps start', async () => {
+  it('refuses the other player naming a different side, and keeps the proposal', async () => {
     await inTx(async (c) => {
+      // Both tapped different names before realtime caught up.
       const raceId = await makeRace(c);
       await login(c, homeUser);
       await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
       await login(c, awayUser);
       const out = await rpc(c, `SELECT start_race($1, 'away')`, [raceId]);
 
-      expect(out.ok).toBe(true);
-      expect(out.reason).toBe('already_started');
-      // The second tap must not have flipped the break or duplicated game 1.
+      expect(out).toMatchObject({
+        ok: false,
+        reason: 'not_your_proposal',
+        proposed_side: 'home',
+        proposed_by_side: 'home',
+      });
+      expect(await proposal(c, raceId)).toMatchObject({
+        status: 'created',
+        first_breaker_side: null,
+        first_breaker_proposed_side: 'home',
+        first_breaker_proposed_by: homeMember,
+      });
+      expect((await games(c, raceId)).length).toBe(0);
+    });
+  });
+
+  it('is idempotent once the race has started', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c);
+      await startRace(c, raceId, 'home');
+      for (const user of [homeUser, awayUser]) {
+        await login(c, user);
+        const out = await rpc(c, `SELECT start_race($1, 'away')`, [raceId]);
+        expect(out).toMatchObject({ ok: true, reason: 'already_started' });
+      }
+      // Late taps must not flip the break or duplicate game 1.
       const g = await games(c, raceId);
       expect(g.length).toBe(1);
       expect(g[0].home_action).toBe('breaks');
+    });
+  });
+
+  it('refuses a side that is neither home nor away', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c);
+      await login(c, homeUser);
+      const out = await rpc(c, `SELECT start_race($1, 'left')`, [raceId]);
+      expect(out).toMatchObject({ ok: false, reason: 'bad_side' });
     });
   });
 
@@ -208,6 +306,18 @@ describe('race engine', () => {
       const out = await rpc(c, `SELECT start_race($1, 'home')`, [res.rows[0].id]);
       expect(out.ok).toBe(false);
       expect(out.reason).toBe('not_in_race');
+      expect(await proposal(c, res.rows[0].id)).toMatchObject({ first_breaker_proposed_side: null });
+    });
+  });
+
+  it('still lets the winner break game 2 after a confirmed start', async () => {
+    await inTx(async (c) => {
+      const raceId = await makeRace(c, { breakRule: 'winner_breaks' });
+      await startRace(c, raceId, 'home');
+      await playGame(c, raceId, 1, awayMember);
+
+      const g = await games(c, raceId);
+      expect(g[1]).toMatchObject({ game_number: 2, home_action: 'racks', away_action: 'breaks' });
     });
   });
 
@@ -216,8 +326,7 @@ describe('race engine', () => {
   it('does not make a game official, or grow the race, on one player’s word', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c);
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await rpc(c, `SELECT record_race_game($1, 1, $2)`, [raceId, homeMember]);
 
       const g = await games(c, raceId);
@@ -230,8 +339,7 @@ describe('race engine', () => {
   it('grows the next game when the second player confirms', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c);
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, homeMember);
 
       const g = await games(c, raceId);
@@ -244,8 +352,7 @@ describe('race engine', () => {
   it('passes the break back and forth every game under alternate', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c, { goalHome: 9, goalAway: 9 });
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       // Same player wins every game — under alternate that must not matter.
       await playGame(c, raceId, 1, homeMember);
       await playGame(c, raceId, 2, homeMember);
@@ -259,8 +366,7 @@ describe('race engine', () => {
   it('gives the break to whoever won the previous game under winner_breaks', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c, { goalHome: 9, goalAway: 9, breakRule: 'winner_breaks' });
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, awayMember); // away wins -> away breaks 2
       await playGame(c, raceId, 2, awayMember); // away again -> away breaks 3
       await playGame(c, raceId, 3, homeMember); // home takes it -> home breaks 4
@@ -273,8 +379,7 @@ describe('race engine', () => {
   it('lets a player correct their own entry before the other has agreed', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c);
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await rpc(c, `SELECT record_race_game($1, 1, $2)`, [raceId, homeMember]);
       // Wrong name tapped. Nobody has agreed yet, so this is a retype, not a
       // reversal — needing a vacate here would trap the pair on a typo.
@@ -289,8 +394,7 @@ describe('race engine', () => {
   it('clears the first player’s vouch when the opponent enters a different result', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c);
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await rpc(c, `SELECT record_race_game($1, 1, $2)`, [raceId, homeMember]);
 
       // Away does not agree — instead of confirming, they enter the other
@@ -317,8 +421,7 @@ describe('race engine', () => {
   it('treats a repeated confirm as a no-op', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c);
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await rpc(c, `SELECT record_race_game($1, 1, $2)`, [raceId, homeMember]);
       await login(c, awayUser);
       await rpc(c, `SELECT confirm_race_game($1, 1)`, [raceId]);
@@ -339,8 +442,7 @@ describe('race engine', () => {
   it('finishes when a side reaches its goal, and stops growing', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c, { goalHome: 2, goalAway: 2 });
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, homeMember);
       await playGame(c, raceId, 2, homeMember);
 
@@ -356,8 +458,7 @@ describe('race engine', () => {
     await inTx(async (c) => {
       // Away is racing to 2, home to 5 — the handicapped case.
       const raceId = await makeRace(c, { goalHome: 5, goalAway: 2 });
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, awayMember);
       await playGame(c, raceId, 2, homeMember);
       await playGame(c, raceId, 3, awayMember);
@@ -374,8 +475,7 @@ describe('race engine', () => {
   it('un-finishes the race when the deciding game is wiped', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c, { goalHome: 2, goalAway: 2 });
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, homeMember);
       await playGame(c, raceId, 2, homeMember);
       expect(await raceRow(c, raceId)).toMatchObject({ status: 'finished' });
@@ -398,8 +498,7 @@ describe('race engine', () => {
   it('records a vacate marker carrying the result it wiped', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c);
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, homeMember);
       await login(c, homeUser);
       await rpc(c, `SELECT vacate_race_game($1, 1)`, [raceId]);
@@ -455,8 +554,7 @@ describe('race engine', () => {
   it('refuses to wipe anything but the last game played', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c, { goalHome: 5, goalAway: 5 });
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, homeMember);
       await playGame(c, raceId, 2, awayMember);
       await playGame(c, raceId, 3, homeMember);
@@ -474,8 +572,7 @@ describe('race engine', () => {
   it('fixes game 3 of 5 by reversing 5, then 4, then 3', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c, { goalHome: 5, goalAway: 5 });
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, homeMember);
       await playGame(c, raceId, 2, awayMember);
       await playGame(c, raceId, 3, homeMember);
@@ -507,8 +604,7 @@ describe('race engine', () => {
   it('refuses a result on any game but the next one to be played', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c);
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, homeMember);
 
       // Game 1 is settled and game 2 is waiting. Changing game 1 means
@@ -527,8 +623,7 @@ describe('race engine', () => {
   it('un-finishes, then re-finishes, when the deciding game is re-scored', async () => {
     await inTx(async (c) => {
       const raceId = await makeRace(c, { goalHome: 2, goalAway: 2 });
-      await login(c, homeUser);
-      await rpc(c, `SELECT start_race($1, 'home')`, [raceId]);
+      await startRace(c, raceId, 'home');
       await playGame(c, raceId, 1, homeMember);
       await playGame(c, raceId, 2, homeMember);
       expect(await raceRow(c, raceId)).toMatchObject({ winner_player_id: homeMember });

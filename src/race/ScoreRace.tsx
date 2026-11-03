@@ -25,7 +25,7 @@ import { useRaceActions } from './useRaceActions';
 import { RaceScoreboard } from './RaceScoreboard';
 import { RaceGamesList } from './RaceGamesList';
 import { FirstBreakerPrompt } from './FirstBreakerPrompt';
-import { isSettled, winnerSideOf, type RaceSeat } from './types';
+import { isSettled, proposalOf, winnerSideOf, type RaceSeat } from './types';
 
 interface ScoreRaceProps {
   raceId: string;
@@ -47,7 +47,11 @@ interface PendingResult {
 
 export function ScoreRace({ raceId, names }: ScoreRaceProps) {
   const { view, isLoading, error } = useRaceView(raceId, names);
-  const { start, record, confirm, vacate } = useRaceActions(raceId);
+  // The refusal copy for a who-breaks clash names the player who picked first,
+  // so the actions read names from the view once it has loaded.
+  const { start, record, confirm, vacate } = useRaceActions(raceId, {
+    nameOf: (side) => (side === 'home' ? view?.home : view?.away)?.displayName,
+  });
   const [pending, setPending] = useState<PendingResult | null>(null);
   /** Games this viewer waved off — neither agreed nor denied — for this session. */
   const [dismissed, setDismissed] = useState<number[]>([]);
@@ -102,11 +106,13 @@ export function ScoreRace({ raceId, names }: ScoreRaceProps) {
         }
       />
 
-      {race.status === 'created' && isPlayer ? (
+      {race.status === 'created' && mySide ? (
         <FirstBreakerPrompt
           home={home}
           away={away}
           breakRule={race.break_rule}
+          mySide={mySide}
+          proposal={proposalOf(race)}
           disabled={busy}
           onChoose={(side) => start.mutate({ firstBreakerSide: side })}
         />

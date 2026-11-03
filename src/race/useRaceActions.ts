@@ -42,6 +42,7 @@ const REASONS: Record<string, string> = {
   bad_break_rule: 'Pick alternate break or winner breaks.',
   bad_game_type: 'Pick a game type.',
   bad_side: 'Pick who breaks first.',
+  not_your_proposal: 'The other player already picked — confirm, or sort it out at the table.',
 };
 
 function describe(reason?: string): string {
@@ -56,7 +57,9 @@ function describe(reason?: string): string {
 function useRaceMutation<TArgs>(
   raceId: string,
   fn: string,
-  buildParams: (args: TArgs) => Record<string, unknown>
+  buildParams: (args: TArgs) => Record<string, unknown>,
+  /** Copy for a refusal that needs more than its code (e.g. a player's name). */
+  describeRefusal?: (result: RpcResult) => string | undefined
 ) {
   const queryClient = useQueryClient();
 
@@ -71,7 +74,7 @@ function useRaceMutation<TArgs>(
     },
     onSuccess: (result) => {
       if (!result?.ok) {
-        toast.error(describe(result?.reason));
+        toast.error(describeRefusal?.(result) ?? describe(result?.reason));
         logger.warn('[race] action refused', { fn, reason: result?.reason });
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.races.detail(raceId) });
@@ -99,11 +102,30 @@ export interface RaceGameResult {
   loserValue?: number | null;
 }
 
-export function useRaceActions(raceId: string) {
+/** What the race actions may need from the room to word a refusal. */
+export interface RaceActionOptions {
+  /** A side's display name, once the room has loaded it. */
+  nameOf?: (side: 'home' | 'away') => string | undefined;
+}
+
+/**
+ * The race's mutations. `start` is propose / confirm in one call — the engine
+ * decides from who is calling whether a tap proposes, changes, or confirms.
+ * When both phones named different breakers at once, the second is refused
+ * `not_your_proposal`; the toast names who picked, and the shared refetch
+ * shows the proposal that stands.
+ */
+export function useRaceActions(raceId: string, options: RaceActionOptions = {}) {
   const start = useRaceMutation<{ firstBreakerSide: 'home' | 'away' }>(
     raceId,
     'start_race',
-    ({ firstBreakerSide }) => ({ p_race_id: raceId, p_first_breaker_side: firstBreakerSide })
+    ({ firstBreakerSide }) => ({ p_race_id: raceId, p_first_breaker_side: firstBreakerSide }),
+    (result) => {
+      if (result.reason !== 'not_your_proposal') return undefined;
+      const by = result.proposed_by_side;
+      const name = by === 'home' || by === 'away' ? options.nameOf?.(by) : undefined;
+      return name ? `${name} already picked — confirm, or sort it out at the table.` : undefined;
+    }
   );
 
   const record = useRaceMutation<RaceGameResult>(raceId, 'record_race_game', (r) => ({
