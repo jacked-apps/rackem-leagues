@@ -37,6 +37,9 @@ export function RoomsIndexPage() {
     const result = await create.mutateAsync({
       gameKey: game.key,
       tables: [...game.tables],
+      // The game's defaults ride in on create; the room row is where its SQL
+      // reads them (the race refuses a missing key rather than guessing).
+      settings: game.defaultSettings,
       deviceId: getDeviceId(),
       shared,
       maxScreens: game.screens.max,

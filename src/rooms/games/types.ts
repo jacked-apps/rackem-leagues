@@ -82,6 +82,15 @@ export interface GameDefinition {
   /** The game itself. */
   Play: ComponentType<GamePlayProps>;
   /**
+   * Settings written onto the room row at creation (`create_room`'s
+   * `p_settings`). The game's ONE source for its defaults: the database reads
+   * them from the room and keeps no copy, so a room keeps the values it was
+   * created with. Omit for a game with nothing to set (the coin flip). A
+   * future setup screen or tournament writes different values into the same
+   * slot.
+   */
+  defaultSettings?: Record<string, Json>;
+  /**
    * Has `Setup` run? The room shows `Setup` until this says yes, then `Play`.
    * A game with no `Setup` returns true always.
    */

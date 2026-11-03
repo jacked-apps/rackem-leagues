@@ -18,6 +18,7 @@ import { supabase } from '@/supabaseClient';
 import { queryKeys } from '@/api/queryKeys';
 import { STALE_TIME } from '@/api/client';
 import { logger } from '@/utils/logger';
+import { HIDDEN_RELEASE_MS, useHiddenRelease } from '@/realtime/useHiddenRelease';
 import type { Race, RaceGame, RaceConfirmation } from './types';
 
 const LIVE = {
@@ -87,12 +88,25 @@ export function useRaceConfirmations(raceId: string | null | undefined) {
  * The payload is never trusted or merged, because a merged payload is how two
  * phones end up believing different things — the whole failure this layer
  * exists to prevent. Refetching costs one round trip and is always right.
+ *
+ * Two rules it shares with the Game Room channel (`useRoomRealtime`):
+ * - A tab hidden past `HIDDEN_RELEASE_MS` lets the socket go (shared
+ *   `useHiddenRelease`), so a backgrounded phone in a room race does not keep
+ *   a connection alive through the race channel after the room has released.
+ * - EVERY SUBSCRIBED — the first and each one after a release or a drop —
+ *   refetches the race, its games and its confirmations. Realtime never
+ *   replays what it missed, so without this a returning phone would sit on
+ *   "waiting for the other player" for a result that already arrived.
+ *
+ * `races.detail(id)` is a prefix of the games and confirmations keys, so one
+ * invalidation covers all three.
  */
 export function useRaceRealtime(raceId: string | null | undefined): void {
   const queryClient = useQueryClient();
+  const released = useHiddenRelease(HIDDEN_RELEASE_MS);
 
   useEffect(() => {
-    if (!raceId) return;
+    if (!raceId || released) return;
 
     const refetch = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.races.detail(raceId) });
@@ -104,6 +118,8 @@ export function useRaceRealtime(raceId: string | null | undefined): void {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'race_games', filter: `race_id=eq.${raceId}` }, refetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'race_confirmations', filter: `race_id=eq.${raceId}` }, refetch)
       .subscribe((status) => {
+        // Catch up on anything missed while the socket was down (see above).
+        if (status === 'SUBSCRIBED') refetch();
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           // Not fatal: the queries refetch on mount and reconnect anyway, so a
           // dead channel degrades to "slower", never to "wrong".
@@ -114,5 +130,5 @@ export function useRaceRealtime(raceId: string | null | undefined): void {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [raceId, queryClient]);
+  }, [raceId, queryClient, released]);
 }

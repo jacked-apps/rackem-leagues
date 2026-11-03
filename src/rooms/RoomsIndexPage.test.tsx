@@ -1,5 +1,6 @@
 /**
- * @fileoverview Tests for deleting a room from the Rooms list (`/rooms`).
+ * @fileoverview Tests for the Rooms list (`/rooms`): deleting a room, and the
+ * create path forwarding the game's `defaultSettings` to `create_room`.
  *
  * The hooks are REAL (a real QueryClient), and only the read and the RPC are
  * mocked at the API boundary, so "the row leaves" is proven the way it really
@@ -14,6 +15,7 @@ import type { MyRoom } from '@/api/queries/rooms';
 
 const mockGetMyRooms = vi.fn();
 const mockCloseRoom = vi.fn();
+const mockCreateRoom = vi.fn();
 vi.mock('@/api/queries/rooms', () => ({
   getMyRooms: (id: string) => mockGetMyRooms(id),
   getRoom: vi.fn(),
@@ -21,7 +23,7 @@ vi.mock('@/api/queries/rooms', () => ({
 }));
 vi.mock('@/api/mutations/rooms', () => ({
   closeRoom: (id: string) => mockCloseRoom(id),
-  createRoom: vi.fn(),
+  createRoom: (p: unknown) => mockCreateRoom(p),
   joinRoom: vi.fn(),
   leaveRoom: vi.fn(),
   removeRoomPhone: vi.fn(),
@@ -103,5 +105,48 @@ describe('RoomsIndexPage — delete a room', () => {
 
     await waitFor(() => expect(toastError).toHaveBeenCalledWith('Only the host can do that.'));
     expect(screen.getByText('Game mine')).toBeInTheDocument();
+  });
+});
+
+// The create dialog is exercised in its own tests; here a stub hands the page
+// a game with defaults, so only "the page forwards them" is under test.
+vi.mock('./CreateRoomDialog', () => ({
+  CreateRoomDialog: ({ onSubmit }: { onSubmit: (g: unknown, shared: boolean) => Promise<string | null> }) => (
+    <button
+      onClick={() =>
+        onSubmit(
+          {
+            key: 'race',
+            tables: ['room_races'],
+            screens: { min: 2, max: 2 },
+            defaultSettings: { base: 5, break_rule: 'winner_breaks', game_type: 'eight_ball' },
+          },
+          true
+        )
+      }
+    >
+      stub create
+    </button>
+  ),
+}));
+
+describe('RoomsIndexPage — start a room', () => {
+  it("forwards the game's defaultSettings into create_room", async () => {
+    mockCreateRoom.mockResolvedValue({ ok: true, room_id: 'new-room' });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Start a room' }));
+    fireEvent.click(screen.getByRole('button', { name: 'stub create' }));
+
+    await waitFor(() =>
+      expect(mockCreateRoom).toHaveBeenCalledWith(
+        expect.objectContaining({
+          gameKey: 'race',
+          tables: ['room_races'],
+          shared: true,
+          maxScreens: 2,
+          settings: { base: 5, break_rule: 'winner_breaks', game_type: 'eight_ball' },
+        })
+      )
+    );
   });
 });

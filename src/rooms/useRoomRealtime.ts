@@ -40,17 +40,15 @@ import {
   classifySubscribeEvent,
   type RealtimeConnectionStatus,
 } from '@/realtime/useMatchRealtime';
+import { HIDDEN_RELEASE_MS, useHiddenRelease } from '@/realtime/useHiddenRelease';
 import { HEARTBEAT_COLUMNS, onlyIgnoredColumnsChanged } from './roomChangeFilter';
 
 type Row = Record<string, unknown>;
 type ChangePayload = RealtimePostgresChangesPayload<Row>;
 
-/**
- * How long a tab may stay hidden before its socket is released. Matches the
- * server's presence grace (`room_presence_grace()`, 2 min): the moment this
- * device reads as "away" is the moment it stops holding a connection.
- */
-export const HIDDEN_RELEASE_MS = 120_000;
+// Moved to the shared hook (the race channel releases the same way); re-exported
+// so the room's callers and tests keep one import site.
+export { HIDDEN_RELEASE_MS };
 
 interface UseRoomRealtimeParams {
   /** The room this device is in (undefined = nothing to listen to). */
@@ -192,35 +190,4 @@ export function useRoomRealtime({
   }, [roomId, shared, tablesKey, queryClient, released]);
 
   return { connectionStatus, roomGone };
-}
-
-/**
- * True once the tab has been hidden for `afterMs`; false again the moment it
- * is visible. A visible tab — however idle — never counts.
- */
-function useHiddenRelease(afterMs: number): boolean {
-  const [released, setReleased] = useState(false);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const arm = () => {
-      if (timer) return;
-      timer = setTimeout(() => setReleased(true), afterMs);
-    };
-    const disarm = () => {
-      if (timer) clearTimeout(timer);
-      timer = null;
-      setReleased(false);
-    };
-    const onVisibility = () => (document.visibilityState === 'hidden' ? arm() : disarm());
-
-    document.addEventListener('visibilitychange', onVisibility);
-    if (document.visibilityState === 'hidden') arm();
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      if (timer) clearTimeout(timer);
-    };
-  }, [afterMs]);
-
-  return released;
 }
