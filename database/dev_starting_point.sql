@@ -13,7 +13,7 @@
 --
 -- Logins (all use password "password")
 --
---   dev@test.com    — Lee Goperator (Lo)         — LO of Tester Org, captain of Team 3
+--   dev@test.com    — Lee Goperator (Lo)         — LO of Tester Org, captain of Team 3, Game Room host
 --   cap1@test.com   — Johnny Captain (Johnny)    — Captain of Team 1
 --   cap2@test.com   — Captain Smith (Smitty)     — Captain of Team 4
 --   cap3@test.com   — Sally Captain (Sal)        — Captain of Team 2
@@ -1130,3 +1130,24 @@ INSERT INTO public.members (
   ('00000000-0000-0000-0000-000000000011'::uuid, NULL, 'Home', 'Double Duty', 'Sub (HomeDD)', '000-000-0011', 'sub.home.dd@placeholder.local', 'N/A', 'N/A', 'NA', '00000', '1900-01-01'::date, 'player', nextval('public.members_system_player_number_seq'), NULL, NULL, now(), now(), false),
   ('00000000-0000-0000-0000-000000000012'::uuid, NULL, 'Away', 'Double Duty', 'Sub (AwayDD)', '000-000-0012', 'sub.away.dd@placeholder.local', 'N/A', 'N/A', 'NA', '00000', '1900-01-01'::date, 'player', nextval('public.members_system_player_number_seq'), NULL, NULL, now(), now(), false)
 ON CONFLICT (id) DO NOTHING;
+
+
+-- ============================================================================
+-- dev@test.com holds the 'host' designation.
+-- ============================================================================
+--
+-- Only a host may open a shared Game Room (room_member_is_host() asks the
+-- designations store; being a league operator no longer counts). Granting it
+-- here means the dev login can create rooms — Race, Coin Flip — straight after
+-- a reset, with no manual SQL. The NOT EXISTS guard mirrors the "one active
+-- record per member + designation" index, so re-running this file is safe.
+-- ============================================================================
+
+INSERT INTO public.member_designations (member_id, designation, source)
+SELECT 'd0d0d0d0-bbbb-bbbb-bbbb-d0d0d0d0d0d0'::uuid, 'host', 'manual'
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.member_designations
+  WHERE member_id = 'd0d0d0d0-bbbb-bbbb-bbbb-d0d0d0d0d0d0'::uuid
+    AND designation = 'host'
+    AND ended_at IS NULL
+);
