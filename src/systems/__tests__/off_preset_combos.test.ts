@@ -120,9 +120,9 @@ describe('Off-preset combos — full pipeline', () => {
 
       expect(totals.home_games_won).toBe(9);
       expect(totals.away_games_won).toBe(7);
-      // Home at win threshold: tie-band rule → 0 (band [8,9])
-      expect(totals.home_points_earned).toBe(0);
-      // Away at 7 = 1 below tie band: -1
+      // Home 9 vs par (tie target) 8: +1
+      expect(totals.home_points_earned).toBe(1);
+      // Away 7 vs par 8: -1
       expect(totals.away_points_earned).toBe(-1);
     });
   });

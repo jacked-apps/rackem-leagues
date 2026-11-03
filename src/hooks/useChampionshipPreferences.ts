@@ -84,10 +84,11 @@ export function useChampionshipPreferences(
           .single();
 
         if (championship) {
+          // The organization check narrows the text column to 'BCA' | 'APA'.
           if (championship.organization === 'BCA') {
-            setBcaPreference({ preference: pref, championship });
+            setBcaPreference({ preference: pref, championship: championship as ChampionshipDateOption });
           } else if (championship.organization === 'APA') {
-            setApaPreference({ preference: pref, championship });
+            setApaPreference({ preference: pref, championship: championship as ChampionshipDateOption });
           }
         }
       }

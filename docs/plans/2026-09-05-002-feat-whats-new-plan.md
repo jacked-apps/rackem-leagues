@@ -2,6 +2,7 @@
 title: "feat: What's New — a plain-language changelog users actually read"
 type: feat
 status: ready to build
+amended_by: docs/plans/2026-11-01-001-fix-whats-new-zero-step-release-plan.md (notes are one file per PR; the stamp runs inside npm version)
 date: 2026-09-05
 origin: docs/brainstorms/2026-09-05-whats-new-requirements.md
 supersedes: docs/plans/2026-09-05-001-feat-whats-new-plan.md

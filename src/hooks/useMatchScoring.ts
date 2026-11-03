@@ -182,7 +182,7 @@ export function useMatchScoring({
   // not in the current lineup) still resolve.
   const memberIdsToFetch = useMemo(() => {
     const ids = new Set<string>();
-    const collectFromLineup = (lineup: any) => {
+    const collectFromLineup = (lineup: Record<string, unknown> | null | undefined) => {
       if (!lineup) return;
       for (let n = 1; n <= 5; n++) {
         const id = lineup[`player${n}_id`];
@@ -191,10 +191,10 @@ export function useMatchScoring({
     };
     collectFromLineup(lineupsData?.homeLineup);
     collectFromLineup(lineupsData?.awayLineup);
-    homeTeamData?.team_players?.forEach((tp: any) => {
+    homeTeamData?.team_players?.forEach((tp) => {
       if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
     });
-    awayTeamData?.team_players?.forEach((tp: any) => {
+    awayTeamData?.team_players?.forEach((tp) => {
       if (typeof tp.member_id === 'string' && tp.member_id) ids.add(tp.member_id);
     });
     return Array.from(ids);
@@ -204,7 +204,7 @@ export function useMatchScoring({
 
   const players = useMemo(() => {
     const playerMap = new Map<string, Player>();
-    membersQuery.data?.forEach((m: any) => {
+    membersQuery.data?.forEach((m) => {
       playerMap.set(m.id, {
         id: m.id,
         first_name: m.first_name,
@@ -357,7 +357,7 @@ export function useMatchScoring({
           matchData.league.team_handicap_variant
         );
         setHomeTeamHandicap(calculatedTeamHandicap);
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Error calculating team handicap', {
           error: err instanceof Error ? err.message : String(err),
           matchId,

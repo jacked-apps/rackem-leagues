@@ -44,7 +44,7 @@ interface UseRealtimeOptions {
   /** Optional Supabase filter string */
   filter?: string;
   /** Callback fired when event occurs */
-  onEvent: (payload: RealtimePostgresChangesPayload<any>) => void | Promise<void>;
+  onEvent: (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void | Promise<void>;
   /** Database schema (defaults to 'public') */
   schema?: string;
   /** Whether subscription is enabled (defaults to true) */
@@ -68,14 +68,16 @@ export function useRealtime({
     const channel = supabase
       .channel(channelName)
       .on(
-        'postgres_changes' as any,
+        'postgres_changes',
         {
-          event,
+          // supabase-js overloads .on() per event literal; our event is a union
+          // of those literals, so present it as the catch-all overload ('*').
+          event: event as '*',
           schema,
           table,
           ...(filter && { filter }),
         },
-        onEvent as any
+        onEvent
       )
       .subscribe();
 

@@ -145,7 +145,7 @@ describe('computeMatchRunningTotals', () => {
   });
 
   describe('linear_above_threshold (aggregate)', () => {
-    it('above-win-band: 11 wins with games_to_win=10 → +1', () => {
+    it('above par: 11 wins with games_to_tie=9 → +2', () => {
       const games = Array.from({ length: 11 }, () => regularGame(HOME))
         .concat(Array.from({ length: 7 }, () => regularGame(AWAY)));
 
@@ -162,7 +162,7 @@ describe('computeMatchRunningTotals', () => {
 
       expect(result.home_games_won).toBe(11);
       expect(result.away_games_won).toBe(7);
-      expect(result.home_points_earned).toBe(1);
+      expect(result.home_points_earned).toBe(2);
     });
 
     it('LOCKED tie-band rule: 9 wins of 18 with games_to_tie=9 → 0', () => {
@@ -214,7 +214,7 @@ describe('computeMatchRunningTotals', () => {
       expect(result.away_points_earned).toBe(0);
     });
 
-    it('below-tie-band: 7 wins with games_to_tie=9 → -2', () => {
+    it('below par: 7 wins with games_to_tie=9 → -2', () => {
       const games = Array.from({ length: 7 }, () => regularGame(HOME))
         .concat(Array.from({ length: 11 }, () => regularGame(AWAY)));
 
@@ -230,7 +230,7 @@ describe('computeMatchRunningTotals', () => {
       });
 
       expect(result.home_points_earned).toBe(-2);
-      expect(result.away_points_earned).toBe(1);
+      expect(result.away_points_earned).toBe(2);
     });
   });
 

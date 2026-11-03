@@ -18,7 +18,7 @@ import { rulebook } from './useRulebook';
 import type { Rule } from './rulebook.types';
 
 /** Filter value meaning "match across every game". */
-export const ALL_GAMES: 'all' = 'all';
+export const ALL_GAMES = 'all' as const;
 
 export type GameFilter = string | typeof ALL_GAMES;
 

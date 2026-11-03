@@ -92,7 +92,7 @@ export function BlockedUsersModal({
 }: BlockedUsersModalProps) {
   // TanStack Query hooks
   const { data: blockedUsersData = [], isLoading: loading } = useBlockedUsersDetails(currentUserId);
-  const blockedUsers = blockedUsersData as any as BlockedUser[];
+  const blockedUsers: BlockedUser[] = blockedUsersData;
   const unblockMutation = useUnblockUser();
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 

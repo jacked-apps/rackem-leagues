@@ -120,9 +120,12 @@ serve(async (req) => {
         .eq("member_id", placeholderMemberId)
         .limit(1)
         .maybeSingle();
-      // deno-lint-ignore no-explicit-any
+      // The client here is untyped, so describe the embedded shape we selected.
+      type TeamPlayerOrgRow = {
+        teams?: { seasons?: { leagues?: { organization_id?: string | null } | null } | null } | null;
+      };
       organizationId =
-        (teamRow as any)?.teams?.seasons?.leagues?.organization_id ?? null;
+        (teamRow as TeamPlayerOrgRow | null)?.teams?.seasons?.leagues?.organization_id ?? null;
     }
 
     if (!organizationId) {

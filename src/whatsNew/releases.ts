@@ -3,9 +3,11 @@
  *
  * ── HOW TO ADD AN ENTRY ──────────────────────────────────────────────────────
  *
- * In the PR that makes the change, add a line to the `unreleased` block below.
- * Write it while the effect is fresh; reconstructing a fortnight of work from
- * commit subjects at release time is how notes end up unreadable.
+ * In the PR that makes the change, add ONE file to `src/whatsNew/notes/` (format
+ * in that folder's README). Not a line in this file: every PR editing the same
+ * list is what made open PRs conflict with each other. Write it while the
+ * effect is fresh; reconstructing a fortnight of work from commit subjects at
+ * release time is how notes end up unreadable.
  *
  * If your PR has no user-facing effect — a refactor, a test fix, a dependency
  * bump — add nothing, and put `[no-changelog]` in the PR description. That's a
@@ -35,11 +37,20 @@
  *
  * ── AT RELEASE ───────────────────────────────────────────────────────────────
  *
- * `node scripts/stamp-whats-new.mjs 1.9.0` renames the `unreleased` block to
- * that version, dates it, and opens a fresh empty one.
+ * Nothing to do. `npm version` (how releases are cut) runs
+ * `scripts/stamp-whats-new.mjs` through the `version` script in package.json.
+ * It moves every waiting note into a new block below the STAMP marker, builds
+ * the summary from the notes' headlines, and deletes the note files, all
+ * inside the version commit that gets tagged. Releasing is never a step
+ * someone has to remember.
+ *
+ * Released blocks are history: edit one only to correct it.
  *
  * @see docs/plans/2026-09-05-002-feat-whats-new-plan.md
+ * @see docs/plans/2026-11-01-001-fix-whats-new-zero-step-release-plan.md
  */
+
+import { PENDING_ENTRIES } from './pendingNotes';
 
 /**
  * What kind of change this is, which decides where it sits on the page.
@@ -96,16 +107,51 @@ export const UNRELEASED = 'unreleased';
 /**
  * Releases, newest first.
  *
- * The `unreleased` block is always index 0 (add it back after stamping). It is
- * shown on the page but never triggers the "New" marker — users shouldn't be
+ * The `unreleased` block is always index 0, and its entries are the waiting
+ * note files. It is shown on the page but never triggers the "New" marker — users shouldn't be
  * told about something that hasn't shipped.
  */
 export const RELEASES: Release[] = [
   {
     version: UNRELEASED,
     date: null,
-    summary: 'My Stats, and early 8s on the scoring page',
+    summary: '',
+    entries: PENDING_ENTRIES,
+  },
+  // STAMP: new releases are inserted directly below this line. Keep it.
+  {
+    version: '1.12.0',
+    date: '2026-10-31',
+    summary: 'My Stats, fairer tiebreakers and standings, and a batch of fixes',
     entries: [
+      {
+        text: 'Setting your tiebreaker order is simpler. The order starts empty, the list only has the players who played the match, and anyone on the team can set it, not just the captain. Your match lineup stays locked the whole time.',
+        kind: 'improvement',
+      },
+      {
+        text: 'If your team changed its order for a tiebreaker and won, some of the winners were not getting that win counted toward their handicap. Every player on the winning side now gets credit, whatever order you played in.',
+        kind: 'fix',
+      },
+      {
+        text: 'Tiebreaker games now keep their real results. Before, all three were recorded as wins for the team that won the tiebreaker, even a game they lost or never played.',
+        kind: 'fix',
+      },
+      {
+        text: 'Standings points were being scored wrong this season. When a tie was possible, the winning team got one point less than the league scoresheet gives — and a tiebreaker could make it worse, even leaving a win at −1. Every completed match has been rescored to match the scoresheet, and new matches score correctly. Nobody’s wins or games changed.',
+        kind: 'fix',
+      },
+      {
+        text: 'Tap a team name almost anywhere now — the standings, your schedule, a match result, the season sign-up page, another player\u2019s profile — and you\u2019ll see who is on that team. It only worked in a handful of places before.',
+        kind: 'improvement',
+      },
+      {
+        text: 'Blue text means you can tap it. Two places were breaking that promise, so on your schedule the team that is yours now says \u201c\u00b7 Your team\u201d in words, and on a match result the winner is shown by its badge and border instead of by the colour of the name.',
+        kind: 'fix',
+      },
+      {
+        text: 'If an organiser added you to a tournament after it had already started, the tournament page stopped recognising you. Your name disappeared from it, and typing it back in was refused — all while you were in the bracket playing matches. You now appear on the sign-up list like everybody else, spelled the way you typed it.',
+        kind: 'fix',
+      },
       {
         text: 'My Stats is real now. Every game you have played is in there: who you played, where, which table, whether you won, and how the game ended. It goes back over everything already recorded, so there is history to look at from day one.',
         kind: 'feature',
@@ -125,6 +171,41 @@ export const RELEASES: Release[] = [
       {
         text: 'Fair warning: the My Stats page is brand new and has barely been tested against real games — it is going out to you to be tried properly. If a number looks wrong, or you want it to answer something it cannot, please say so. Tell your league operator, and it will get looked at.',
         kind: 'improvement',
+      },
+      {
+        text: 'Top Shooters, Team Stats, Feats and My Stats were quietly leaving games out. Once a season passes about a thousand games, the app was only reading the first thousand and adding up whatever it got — so if one of your games fell outside that, it was missing from your record and you were never told. It now reads all of them. If your record has ever looked short, it is worth another look.',
+        kind: 'fix',
+      },
+      {
+        text: 'Blocking someone from Messages didn\u2019t work \u2014 the block was refused every time. It works now.',
+        kind: 'fix',
+      },
+      {
+        text: 'Opening a player invite that had already been used, cancelled or turned down always said \u201cInvite Expired\u201d \u2014 with a blank where the team name should be. It now tells you what actually happened to the invite.',
+        kind: 'fix',
+      },
+      {
+        text: 'The \u201cno profanity in team names\u201d setting stopped doing anything back in April \u2014 team names were never checked, whatever it was set to. It works again: if your league has it switched on, a team name with bad language is now refused.',
+        kind: 'fix',
+        forOperators: true,
+      },
+      {
+        text: 'Setting up a league\u2019s first season on a different night than you picked for the league offers to move the league to that night. Saying yes always failed with an error. It works now.',
+        kind: 'fix',
+        forOperators: true,
+      },
+      {
+        text: 'The language filter in your settings is now your choice, whatever your age. It was locked on for players under 18, and anyone without a birth date on their profile got an error every time they tried to change it.',
+        kind: 'fix',
+      },
+      {
+        text: 'Opening a player\u2019s details in Player Management listed their leagues without the night they play on. The night is back.',
+        kind: 'fix',
+        forOperators: true,
+      },
+      {
+        text: 'Starting a new message showed people you\u2019d blocked, even though they were meant to be left out. It also kept reloading the whole list of players the entire time the window was open, which could make it sluggish. Both are fixed.',
+        kind: 'fix',
       },
     ],
   },

@@ -37,7 +37,7 @@ function team(
 }
 
 describe('sortStandings', () => {
-  describe('default priority [match_wins, games_won, points_earned]', () => {
+  describe('default priority [match_wins, points_earned, games_won]', () => {
     it('sorts by match_wins first', () => {
       const result = sortStandings([
         team('a', 3, 100, 50),
@@ -47,19 +47,29 @@ describe('sortStandings', () => {
       expect(result.map((t) => t.teamId)).toEqual(['b', 'c', 'a']);
     });
 
-    it('falls through to games_won when match_wins ties', () => {
+    it('falls through to points_earned when match_wins ties', () => {
       const result = sortStandings([
-        team('a', 5, 100, 30),
-        team('b', 5, 50, 50),
-        team('c', 5, 75, 40),
+        team('a', 5, 30, 100),
+        team('b', 5, 100, 50),
+        team('c', 5, 50, 75),
       ]);
       expect(result.map((t) => t.teamId)).toEqual(['b', 'c', 'a']);
     });
 
-    it('falls through to points_earned when match_wins AND games_won tie', () => {
+    it('fewer games but better points ranks higher (11–5 at −1 above 11–5 at −9)', () => {
+      // The live league's case: Heads 11–5, −9 pts, 149 games vs Team
+      // Leftovers 11–5, −1 pts, 141 games. Points decide before games.
       const result = sortStandings([
-        team('a', 5, 30, 50),
-        team('b', 5, 100, 50),
+        team('heads', 11, -9, 149),
+        team('leftovers', 11, -1, 141),
+      ]);
+      expect(result.map((t) => t.teamId)).toEqual(['leftovers', 'heads']);
+    });
+
+    it('falls through to games_won when match_wins AND points_earned tie', () => {
+      const result = sortStandings([
+        team('a', 5, 50, 30),
+        team('b', 5, 50, 100),
         team('c', 5, 50, 50),
       ]);
       expect(result.map((t) => t.teamId)).toEqual(['b', 'c', 'a']);
@@ -109,12 +119,13 @@ describe('sortStandings', () => {
       expect(withEmpty).toEqual(withDefault);
     });
 
-    it('DEFAULT_STANDINGS_SORT_PRIORITY is explicitly [match_wins, games_won, points_earned]', () => {
+    it('DEFAULT_STANDINGS_SORT_PRIORITY is explicitly [match_wins, points_earned, games_won]', () => {
       // Lock the default value so any change to the default is visible.
+      // Wins → points → games is the league scoresheet's order.
       expect(DEFAULT_STANDINGS_SORT_PRIORITY).toEqual([
         'match_wins',
-        'games_won',
         'points_earned',
+        'games_won',
       ] satisfies StandingsSortKey[]);
     });
   });

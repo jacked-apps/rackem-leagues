@@ -15,6 +15,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import type { Json, Tables, TablesInsert, TablesUpdate } from '@/types/database.types';
 import { composeMatchThresholds, type ThresholdPayload } from '@/utils/match/composeMatchThresholds';
 import type { ResolvedSystemConfig } from '@/types/resolvedSystemConfig';
 import type { Lineup } from '@/types/match';
@@ -58,24 +59,9 @@ export interface UnlockLineupParams {
 }
 
 /**
- * Match lineup database record
+ * Match lineup database record (the generated `match_lineups` row).
  */
-export interface MatchLineup {
-  id: string;
-  match_id: string;
-  team_id: string;
-  locked: boolean;
-  player1_id?: string;
-  player1_handicap?: number;
-  player2_id?: string;
-  player2_handicap?: number;
-  player3_id?: string;
-  player3_handicap?: number;
-  player4_id?: string;
-  player4_handicap?: number;
-  player5_id?: string;
-  player5_handicap?: number;
-}
+export type MatchLineup = Tables<'match_lineups'>;
 
 /**
  * Save or update a match lineup
@@ -101,7 +87,7 @@ export async function saveMatchLineup(params: SaveLineupParams): Promise<MatchLi
   }
 
   // Build lineup data object dynamically based on player count
-  const lineupData: any = {
+  const fields: Record<string, unknown> = {
     match_id: params.matchId,
     team_id: params.teamId,
     locked: false,
@@ -109,9 +95,12 @@ export async function saveMatchLineup(params: SaveLineupParams): Promise<MatchLi
 
   // Add player data for each position
   params.players.forEach((player) => {
-    lineupData[`player${player.position}_id`] = player.playerId;
-    lineupData[`player${player.position}_handicap`] = player.handicap;
+    fields[`player${player.position}_id`] = player.playerId;
+    fields[`player${player.position}_handicap`] = player.handicap;
   });
+  // The player1..N keys are built from positions above, which TypeScript can't
+  // follow. Every format fills at least positions 1-3 (the required handicaps).
+  const lineupData = fields as TablesInsert<'match_lineups'>;
 
   let result;
 
@@ -282,7 +271,7 @@ export async function createEmptyLineup(params: CreateEmptyLineupParams): Promis
  */
 export interface UpdateMatchLineupParams {
   lineupId: string;
-  updates: Record<string, any>; // Any lineup field(s) to update
+  updates: TablesUpdate<'match_lineups'>; // Any lineup field(s) to update
   teamId?: string; // Optional - if provided, verifies user is on team
   memberId?: string; // Optional - required if teamId provided
 }
@@ -500,7 +489,7 @@ export async function approveLineupChange(
   };
   const { error: rpcError } = await supabase.rpc('swap_player_in_lineup', {
     p_lineup_id: lineupId,
-    p_thresholds: thresholds,
+    p_thresholds: thresholds as unknown as Json, // jsonb arg
     p_resolution: resolution,
   });
   if (rpcError) {

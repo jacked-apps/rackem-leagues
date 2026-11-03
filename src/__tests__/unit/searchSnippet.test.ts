@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest';
 import {
   renderHighlightedSnippet,
   truncateOnWordBoundary,
-} from '@/rules/SearchSnippet';
+} from '@/rules/searchSnippetHelpers';
 
 // Helper: flatten the returned React nodes into a single plain-text string
 // and the set of substrings that were wrapped in <mark> elements.

@@ -127,7 +127,8 @@ export async function createTeam(params: CreateTeamParams): Promise<Team> {
     throw new Error(`Failed to create team roster: ${rosterError.message}`);
   }
 
-  return newTeam;
+  // Stat columns are nullable in the DB (defaulted on insert); status is text.
+  return newTeam as Team;
 }
 
 /**
@@ -254,7 +255,8 @@ export async function updateTeam(params: UpdateTeamParams): Promise<Team> {
     }
   }
 
-  return updatedTeam;
+  // Stat columns are nullable in the DB (defaulted on insert); status is text.
+  return updatedTeam as Team;
 }
 
 /**
@@ -308,7 +310,8 @@ export async function createByeTeam(params: CreateByeTeamParams): Promise<Team> 
     throw new Error(`Failed to create bye team: ${error.message}`);
   }
 
-  return byeTeam;
+  // Stat columns are nullable in the DB (defaulted on insert); status is text.
+  return byeTeam as Team;
 }
 
 /**
@@ -333,7 +336,8 @@ export async function deleteTeam(params: DeleteTeamParams): Promise<Team> {
     throw new Error(`Failed to withdraw team: ${error.message}`);
   }
 
-  return withdrawnTeam;
+  // Stat columns are nullable in the DB (defaulted on insert); status is text.
+  return withdrawnTeam as Team;
 }
 
 /**
@@ -437,5 +441,6 @@ export async function convertTeamToBye(params: ConvertTeamToByeParams): Promise<
     throw new Error(`Team converted to BYE but clearing its roster failed: ${rosterErr.message}`);
   }
 
-  return byeTeam;
+  // Stat columns are nullable in the DB (defaulted on insert); status is text.
+  return byeTeam as Team;
 }

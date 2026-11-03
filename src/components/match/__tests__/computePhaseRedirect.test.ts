@@ -7,7 +7,7 @@
  * tiebreak lineup page.
  */
 import { describe, it, expect } from 'vitest';
-import { computePhaseRedirect } from '../MatchPhaseGuard';
+import { computePhaseRedirect } from '../matchPhaseHelpers';
 
 describe('computePhaseRedirect', () => {
   describe('lineup phase (scheduled / updating)', () => {

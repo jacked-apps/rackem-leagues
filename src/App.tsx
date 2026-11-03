@@ -18,7 +18,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Toaster } from './components/ui/sonner';
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt';
 import { EnvironmentBanner } from './components/EnvironmentBanner';
-import { CaptainReupSyncer } from './hooks/useCaptainReupPrompt';
+import { CaptainReupSyncer } from './components/reup/CaptainReupSyncer';
 
 const App: React.FC = () => {
   return (

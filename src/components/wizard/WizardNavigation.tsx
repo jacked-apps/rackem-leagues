@@ -35,6 +35,12 @@ export function WizardNavigation({
   onNext,
   onCancel,
 }: WizardNavigationProps) {
+  // Track pending state locally so the Next button disables itself while the
+  // async onNext chain (validation → confirm dialog → stage handler → DB) is
+  // still resolving. Prevents double-click from firing duplicate writes.
+  // Declared before the early return below so it runs on every render.
+  const [pending, setPending] = useState(false);
+
   const nextLabel = isLastStep ? 'Finish' : showSkip ? 'Skip' : 'Next';
   const showBack = !isFirstStep && !hideBack;
   const showCancel = onCancel && !hideCancel;
@@ -43,10 +49,6 @@ export function WizardNavigation({
   // If nothing renders, return null so callers don't get an empty nav bar.
   if (!showBack && !showCancel && !showNext) return null;
 
-  // Track pending state locally so the Next button disables itself while the
-  // async onNext chain (validation → confirm dialog → stage handler → DB) is
-  // still resolving. Prevents double-click from firing duplicate writes.
-  const [pending, setPending] = useState(false);
   const handleNextClick = async () => {
     if (pending) return;
     setPending(true);

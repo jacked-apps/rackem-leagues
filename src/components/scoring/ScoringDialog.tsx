@@ -204,12 +204,9 @@ export function ScoringDialog({
   onCancel,
   onConfirm,
 }: ScoringDialogProps) {
-  if (!game) return null;
-
-  // Derive the actual breaker role of the game-of-record. A break foul
-  // means the scheduled racker breaks again (re-rack), so role flips.
-  const winnerWasScheduledBreaker = game.winnerWasScheduledBreaker ?? true;
-  const winnerIsActualBreaker = winnerWasScheduledBreaker !== breakFouled;
+  // Hooks first, then the early return. React matches hooks to state by
+  // call order, so every hook must run on every render — including the
+  // renders where the dialog is closed and `game` is null.
 
   // Resolve the active calculator and its scoringPopupFields spec. The spec
   // tells the modal whether each side needs a counter input (kind: 'counter')
@@ -233,6 +230,19 @@ export function ScoringDialog({
     const resolvedParams = resolveCalculatorParams(pointsCalculator, pointsCalculatorParams);
     return calc.scoringPopupFields(resolvedParams as never);
   }, [pointsCalculator, pointsCalculatorParams]);
+
+  // Aria-live announcement region. Updated when an auto-clear cascade
+  // happens (currently only Forfeit clears a checked achievement). Locked
+  // copy template: "[Achievement Name] cleared because forfeit was selected."
+  const [liveAnnouncement, setLiveAnnouncement] = useState('');
+
+  if (!game) return null;
+
+  // Derive the actual breaker role of the game-of-record. A break foul
+  // means the scheduled racker breaks again (re-rack), so role flips.
+  const winnerWasScheduledBreaker = game.winnerWasScheduledBreaker ?? true;
+  const winnerIsActualBreaker = winnerWasScheduledBreaker !== breakFouled;
+
 
   const winnerSpec = spec?.perSideInputs?.winner;
   const loserSpec = spec?.perSideInputs?.loser;
@@ -273,11 +283,6 @@ export function ScoringDialog({
       if (goldenBreak) onGoldenBreakChange(false);
     }
   };
-
-  // Aria-live announcement region. Updated when an auto-clear cascade
-  // happens (currently only Forfeit clears a checked achievement). Locked
-  // copy template: "[Achievement Name] cleared because forfeit was selected."
-  const [liveAnnouncement, setLiveAnnouncement] = useState('');
 
   // Mutual-exclusion handlers for the achievement checkboxes. B&R and Golden
   // Break are mutually exclusive on the breaker side; checking one auto-

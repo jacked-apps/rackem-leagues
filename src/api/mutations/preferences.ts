@@ -10,6 +10,7 @@
 
 import { supabase } from '@/supabaseClient';
 import { isLeagueSeasonActive } from './leagues';
+import type { TablesInsert, TablesUpdate } from '@/types/database.types';
 import type {
   Preference,
   CreatePreferenceParams,
@@ -28,12 +29,14 @@ export async function createPreference(params: CreatePreferenceParams): Promise<
 
   const { data, error } = await supabase
     .from('preferences')
-    .insert([{ entity_type, entity_id, ...fields }])
+    // points_calculator_params is an app object stored in a jsonb column.
+    .insert([{ entity_type, entity_id, ...fields } as TablesInsert<'preferences'>])
     .select()
     .single();
 
   if (error) throw new Error(`Failed to create preference: ${error.message}`);
-  return data;
+  // entity_type is text in the DB; a CHECK limits it to the app's union.
+  return data as Preference;
 }
 
 /**
@@ -98,13 +101,13 @@ export async function updatePreference(params: UpdatePreferenceParams): Promise<
 
   const { data, error } = await supabase
     .from('preferences')
-    .update(fields)
+    .update(fields as TablesUpdate<'preferences'>) // jsonb params, as above
     .eq('id', preferenceId)
     .select()
     .single();
 
   if (error) throw new Error(`Failed to update preference: ${rewriteTier1Error(error.message)}`);
-  return data;
+  return data as Preference;
 }
 
 /**
@@ -117,14 +120,14 @@ export async function upsertPreference(params: UpsertPreferenceParams): Promise<
   const { data, error } = await supabase
     .from('preferences')
     .upsert(
-      { entity_type, entity_id, ...fields },
+      { entity_type, entity_id, ...fields } as TablesInsert<'preferences'>,
       { onConflict: 'entity_type,entity_id' },
     )
     .select()
     .single();
 
   if (error) throw new Error(`Failed to upsert preference: ${rewriteTier1Error(error.message)}`);
-  return data;
+  return data as Preference;
 }
 
 /**

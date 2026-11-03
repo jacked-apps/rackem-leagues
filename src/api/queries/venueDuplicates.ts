@@ -60,18 +60,21 @@ export async function findDuplicateVenues(
   state: string,
   zipCode: string
 ): Promise<DuplicateVenue[]> {
-  const { data, error } = await supabase.rpc('find_duplicate_venues', {
+  // TODO(typed-client): find_duplicate_venues is in no migration (only the
+  // hand-run database/fix_venue_persistence.sql), so it isn't in the generated
+  // types. Nothing imports this module today.
+  const { data, error } = await supabase.rpc('find_duplicate_venues' as never, {
     p_street_address: streetAddress,
     p_city: city,
     p_state: state,
     p_zip_code: zipCode,
-  });
+  } as never);
 
   if (error) {
     throw new Error(`Failed to check for duplicate venues: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []) as unknown as DuplicateVenue[];
 }
 
 /**

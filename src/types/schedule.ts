@@ -6,18 +6,26 @@
  */
 
 import type { SeasonWeek } from './season';
+import type { ResolvedSystemConfig } from './resolvedSystemConfig';
+import type { TeamStatus } from './team';
 
 /**
- * Match status types
+ * Match status values. Must match the `matches_status_check` constraint:
+ * the match queries trust the database to hold only these (narrowMatchRow),
+ * and matchRowNarrowing.db.test.ts fails if the two drift apart.
  */
-export type MatchStatus =
-  | 'scheduled'             // Not yet played
-  | 'updating'              // LO is hand-entering this match (manual scoring); off the players' live surfaces
-  | 'in_progress'           // Currently being played
-  | 'awaiting_verification' // Scored but needs both teams to verify
-  | 'completed'             // Finished and verified
-  | 'forfeited'             // One team forfeited
-  | 'postponed';            // Rescheduled to different date
+export const MATCH_STATUSES = [
+  'scheduled',             // Not yet played
+  'updating',              // LO is hand-entering this match (manual scoring); off the players' live surfaces
+  'in_progress',           // Currently being played
+  'awaiting_verification', // Scored but needs both teams to verify
+  'completed',             // Finished and verified
+  'forfeited',             // One team forfeited
+  'postponed',             // Rescheduled to different date
+] as const;
+
+/** Match status types */
+export type MatchStatus = (typeof MATCH_STATUSES)[number];
 
 // NOTE: A team's schedule position is persisted directly on the `teams` table
 // (`teams.schedule_position`, added 2026-06-11) — written at matchup creation in
@@ -77,6 +85,28 @@ export interface Match {
   // batches (a few weeks at a time), so the marker has to survive sessions.
   lms_entered_at: string | null;
 
+  // Columns every `select('*')` returns but this type used to leave out, so
+  // callers reached them through `as any` or a patch type (Unit 7b of
+  // docs/plans/2026-10-28-001-feat-tiebreaker-record-plan.md). Mirrors the
+  // matches row in src/types/database.types.ts.
+  home_lineup_id: string | null;
+  away_lineup_id: string | null;
+  /** Set when lineups lock and prep runs — the "match has started" signal. */
+  started_at: string | null;
+  winner_team_id: string | null;
+  /** Authoritative outcome, written at completion. Null until then. */
+  match_result: 'home_win' | 'away_win' | 'tie' | null;
+  results_confirmed_by_home: boolean;
+  results_confirmed_by_away: boolean;
+  /** Member who verified the regular match for each side. */
+  home_team_verified_by: string | null;
+  away_team_verified_by: string | null;
+  /** Member who verified the tiebreaker for each side. */
+  home_tiebreaker_verified_by: string | null;
+  away_tiebreaker_verified_by: string | null;
+  /** Frozen system config, set at first scoring; null before then. */
+  system_snapshot: ResolvedSystemConfig | null;
+
   created_at: string;
   updated_at: string;
 }
@@ -102,6 +132,18 @@ export type MatchInsertData = Omit<Match,
   | 'away_to_lose'           // Set at match prep
   | 'completed_at'           // Set when the match completes
   | 'lms_entered_at'         // Set by the operator after typing results into LMS
+  | 'home_lineup_id'         // Lineups are created by trigger
+  | 'away_lineup_id'
+  | 'started_at'             // Set when the match starts
+  | 'winner_team_id'         // Set when the match completes
+  | 'match_result'
+  | 'results_confirmed_by_home'
+  | 'results_confirmed_by_away'
+  | 'home_team_verified_by'  // Set by each side's verification
+  | 'away_team_verified_by'
+  | 'home_tiebreaker_verified_by'
+  | 'away_tiebreaker_verified_by'
+  | 'system_snapshot'        // Frozen at first scoring
   | 'created_at'             // Auto-generated timestamp
   | 'updated_at'             // Auto-generated timestamp
 >;
@@ -112,21 +154,18 @@ export type MatchInsertData = Omit<Match,
  */
 export interface MatchWithDetails extends Match {
   scheduled_date?: string;  // Denormalized from season_week for easier access
-  // Authoritative completed-match outcome (column on `matches`, written at
-  // completion). Selected via `*`; typed here so display layers can show
-  // W/L/T without re-deriving from games_won (which lies under points-mode).
-  match_result?: 'home_win' | 'away_win' | 'tie' | null;
+  // Null status is possible: teams.status is a nullable column (default 'active').
   home_team?: {
     id: string;
     team_name: string;
     captain_id: string | null;
-    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
+    status: TeamStatus | null;
   } | null;
   away_team?: {
     id: string;
     team_name: string;
     captain_id: string | null;
-    status: 'active' | 'withdrawn' | 'forfeited' | 'bye';
+    status: TeamStatus | null;
   } | null;
   scheduled_venue?: {
     id: string;
@@ -147,6 +186,20 @@ export interface MatchWithDetails extends Match {
     scheduled_date: string;
     week_name: string;
     week_type: string;
+  } | null;
+  /**
+   * Season + league, embedded only by the live / My Match queries
+   * (getLiveMatchesForLeague, getLiveMatchesForMember, getMyMatchMatches).
+   */
+  season?: {
+    id: string;
+    league_id: string;
+    league: {
+      id: string;
+      game_type: string;
+      day_of_week: string;
+      division: string | null;
+    } | null;
   } | null;
 }
 

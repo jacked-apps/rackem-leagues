@@ -35,9 +35,9 @@ interface OpponentLineupShape {
   player3_id: string | null;
   player3_handicap: number;
   player4_id: string | null;
-  player4_handicap: number;
+  player4_handicap: number | null; // null on 3-player lineup rows
   player5_id: string | null;
-  player5_handicap: number;
+  player5_handicap: number | null;
 }
 
 interface OpponentSubstituteModalProps {

@@ -5,7 +5,7 @@
 import React from 'react';
 import type { LeagueOperatorApplication as ApplicationData } from '../../schemas/leagueOperatorSchema';
 import { useUserProfile } from '@/api/hooks';
-import { getVisibilityLabel } from '@/components/privacy/ContactInfoExposure';
+import { getVisibilityLabel } from '@/components/privacy/contactVisibilityOptions';
 
 interface ApplicationPreviewProps {
   applicationData: ApplicationData;

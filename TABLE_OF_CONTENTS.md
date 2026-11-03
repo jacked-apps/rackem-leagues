@@ -51,6 +51,12 @@
 | `docs/CUSTOM_5MAN_HANDICAP_SYSTEM.md` | Custom 5-man handicap system | Proprietary handicap system for 5-man format |
 | `docs/file-split-backlog.md` | Ranked do-one-at-a-time list of files worth splitting (single-responsibility, not line count) | Refactor backlog from the 2026-06-06 sweep; each is a behavior-preserving PR |
 | `docs/guides/captain-onboarding-guide.md` | Long-form, hand-holdy captain how-to for the link-share onboarding (copy message → paste → send → wait → approve). Source for the in-app `InviteHelpContent` popup; train-the-trainer reference | Active guide; foundation for a future wizard/video |
+| `docs/audits/2026-10-28-tiebreaker-audit.md` | **Phase 3 tiebreaker audit (read-only)** — what the tiebreaker reads/writes vs the agreed rule; finds that `locked` is a flag with no DB enforcement and four unguarded lineup writers live in `MatchLineup.tsx` | Investigation only, no fix; recommends a brainstorm before Phase 4 |
+| `docs/brainstorms/2026-10-28-tiebreaker-requirements.md` | **Tiebreaker requirements** — the anti-sandbagging rule (winning team’s 3 players each get a win, losing team nothing) and the CORRECTED finding that the rule is live today, produced by overwriting all three tiebreak games | Requirements agreed and planned; forward-only, no backfill |
+| `docs/plans/2026-11-01-001-fix-whats-new-zero-step-release-plan.md` | **What's New ships itself** — the stamp runs inside Jack's existing `npm version` (zero new steps for him), one file per note so PRs never conflict, release PRs always pass the check | BUILT on `fix/whats-new-zero-step-release` |
+| `docs/plans/2026-10-28-001-feat-tiebreaker-record-plan.md` | **Tiebreaker-as-its-own-record plan** — 7 units; a tie writes a parallel mini-match record so match lineups are never unlocked. REVISED after a 4-persona document review caught two P0s: the anti-sandbagging rule is LIVE (not off), and the lineup unlock is a signal three other paths depend on | IN PROGRESS on `feat/tiebreaker-record` (Unit 1 built); handicap work IN scope |
+| `docs/audits/2026-10-28-duplicate-week-14-findings.md` | **Phase 6 duplicate “Week 14” findings** — week numbers used to be stored text written by two disagreeing counters; already fixed by derived labels (shipped v1.8.0, after the season was built) | Investigation only; past data left as-is by Ed, no guard needed |
+| `database/maintenance/diagnose-lineup-handicap-change/` | **READ-ONLY diagnostic (3 steps + README)** — why a match’s lineup handicaps changed; step 2 reads the swap audit columns to separate a legitimate player swap from an untracked lineup-screen edit | Companion to the Phase 3 tiebreaker audit; run one file at a time in Studio SQL Editor |
 | `docs/archive/LEAGUE_MANAGEMENT_PLAN.md` | League management system architecture | System hierarchy and database schema |
 | `/docs/league-system/` | **Modular Scoring System framework — LOCKED canonical docs** | 9-Module architecture (Handicap Systems, Handicap Mechanisms, Points System, Win Calculator, Threshold Charts, Team Geometry, Match Format, Pairings Generator, Tiebreak System); LOCKED per Principle 7 gate procedure |
 | `docs/league-system/PRINCIPLES.md` | 10 architectural principles + 4 Module kinds + composition patterns | **LOCKED** — edits require explicit Principle 7 unlock invocation |
@@ -109,7 +115,7 @@
 | `docs/brainstorms/2026-06-04-scoring-system-workshop-building-requirements.md` | Foundational framing: Scoring System Workshop is a BUILDING with one work room per module type; build room-by-room starting with the per-game point allocator; two non-negotiables (lineup/scoring page renders + per-game W/L recording survives any variation failure) | Foundation for all subsequent Scoring System workshop plans; branch `feat/per-game-allocator-workshop` |
 | `docs/brainstorms/lo-manual-match-scoring-requirements.md` | Requirements for LO manual match scoring (enter a played-on-paper match from blank) | Two-phase Setup→Entry page; reuses engine/recompute/scoreboard/modal + thin LO dual-slot write+finalize; v1 enter-from-blank only; based on many-eyes stack (PR #157) |
 | `docs/brainstorms/lo-match-review-and-correction-requirements.md` | Requirements for LO view/edit of an ALREADY-scored match (take-over/adjust; dispute adjudication) | Operator-authoritative; per-game confirmer-audit (official + "+N others"); solo vacate-and-rescore appends operator override row + optional reason; explicit completed→reopen→re-finalize lifecycle; roster-identity fixes → v3; stacks on v1 (PR #167) |
-| `docs/brainstorms/2026-06-12-team-page-schedule-refinement-sketch.md` | SKETCH (not full requirements) — team-page declutter (split glance/play from Manage Team; captain overload) + schedule refinement, done "with click-through in mind" | Deliberately deferred until "My Match" ships (My Match lifts the fast-path duty off these pages); full `/ce:brainstorm` after that. Sibling to the 2026-05-29 My Match doc |
+| `docs/brainstorms/2026-06-12-team-page-schedule-refinement-sketch.md` | SKETCH (not full requirements) — team-page declutter (split glance/play from Manage Team; captain overload) + schedule refinement, done "with click-through in mind" | Deliberately deferred until "My Match" ships (My Match lifts the fast-path duty off these pages); full `/compound-engineering:ce-brainstorm` after that. Sibling to the 2026-05-29 My Match doc |
 | `docs/brainstorms/2026-06-14-schedule-matchup-decoupling-requirements.md` | Requirements for decoupling the schedule (dated typed slots: regular/blackout/playoffs) from matchups (chart owns round order); derive week numbers from regular-week position instead of storing `week_name` — kills the week-numbering drift/collision bug class | Three week types (season_end_break folds into blackout "Week Off"); blackout label needs `week_name→label` backfill; control-flow-vs-display sweep; load-bearing invariant = regular dates monotonic in chart order |
 | `docs/brainstorms/2026-09-04-tournament-paid-foundation-requirements.md` | Requirements for the Tournaments PAID-tier FOUNDATION (roadmap #1) — real players on `member_id`, organizer roster, QR/link/search self-add → hopper → official list, tier-gate "Premium features" checklist + $0 `PaymentCardForm` checkout, reusable saved setup | Player-run (no org); tournaments DISPOSABLE (only setup/roster/run-count persist); walk-ups = tournament-scoped (NOT app placeholders, no merge-code changes); scoring/handicap/money/venue = forward hooks; future idea: Tournament Series (~#8) |
 | `docs/brainstorms/2026-09-08-self-scoring-primer.md` | PRIMER (not the brainstorm) for **self-scoring / individual races** — hands a fresh session Ed's stated vision, the five verified code findings, and the open questions, so the `/ce:brainstorm` doesn't restart from scratch | Feature is BOTH tournament + league (individual-race leagues MUST be covered, not ported later); break order is an existing Pairings dial with an extension point; `match-format` already has `race_to_n`; confirmation system is built but keyed on member ids (walk-ups have none); scoring room `ScoreMatch.tsx` is team/lineup-shaped |
@@ -121,6 +127,7 @@
 | `docs/brainstorms/2026-09-09-self-scoring-requirements.md` | REQUIREMENTS for **self-scoring individual races** (successor to the primer) — the race as a standalone primitive (per-side goal numbers, games APPENDED never pre-created, gated on "all confirmed and no goal met"), its own storage with parents pointing AT it, a second smaller scoring room reusing the prop-driven confirmation layer, who-may-score stored as a LIST, **three kinds of human** (A registered / B phone+ticket / C no phone — once a ticket counts as identity the scoring layer stops caring which), scanning the QR issues a ticket BEFORE any name is typed, an organizer **Validate** action giving a large single-use 6-digit code that binds a walk-in's ticket to a name he typed in, a match going **in progress is what creates its race**, and a new "Scoring" setup tab (break rule / race + game per bracket side / single-player policy / advance policy, the last two sharing one three-position shape) | Acceptance test = the SAME race runs a league night of N individual races (no port later); `matches` needs season_id + season_week_id so fake-teams-of-one is dead; `ScoreMatch.tsx` + `match_games` NEVER edited; auto-advance is safe because `reopen_bracket_match` exists; notifications / venue-tables / handicap races / modular scoreboard all OUT of scope |
 | `docs/plans/2026-09-09-001-feat-self-scoring-individual-races-plan.md` | PLAN for self-scoring individual races — 11 units in five phases, opening with a **league-night walkthrough before the schema exists** (R32's acceptance test run while its output can still change columns for free), then the race primitive standalone, identity, bracket integration, the Scoring tab, and the room | Two P0s the review caught: new `public` tables are born **anon-WRITABLE** via baseline DEFAULT PRIVILEGES (so the race tables need explicit REVOKE, and tickets live in a non-exposed schema), and the automatic advance must run in a **nested caught block** because `advance_bracket_winner` RAISEs — otherwise a rollback eats the rack a player just confirmed. Also: reopen writes to THREE matches (winner, loser-drop, grand-final reset); `add_late_entry` PERFORMs reopen and discards its result; `deriveDissents` silently drops rows whose `side` isn't 'home'/'away' |
 | `docs/plans/2026-09-09-002-league-race-walkthrough.md` | PARKED LEAGUE REFERENCE — **not scope, and no tournament unit depends on it.** One league night walked against the designed race to answer one narrow question: is the race primitive being built in a shape a league could never reuse? **It passes** | The self-scoring plan is SOLELY tournaments; the league is not "the race, five times" — lineup sequencing, league scoring and non-predetermined matchups are their own much larger effort (Ed, 2026-09-10). One carry-forward, now in Unit 9: the room is addressable PER RACE and assumes no single race exists, because a league night is several at once. Everything else here is a note to a future league brainstorm |
+| `docs/brainstorms/2026-09-16-member-designations-requirements.md` | REQUIREMENTS for **designations + organization permissions** — replacing the single-value `members.role` enum. Splits "role" into TWO FAMILIES: a *designation* describes the PERSON (developer, host, tournament organizer, venue owner, **may own an organization**) and gets a grant record with granted/ends/source/granted-by; a *permission* says what someone may DO and WHERE (primary owner, admin, scoped staff, captain) and lives in the relationship table it already has. **The central rule: code asks `can(member, action, scope)`, never `isOperator()`** — roles become bundles, so splitting a role later touches ZERO call sites. Org staff gets an OPTIONAL LEAGUE SCOPE (empty = all leagues = "a league operator is staff with total access"); ONE primary owner, transferable, never ownerless. Org staffing is RESOLVED live, never mirrored into a grant row (a stored derived row would relocate the bug, not fix it). `developer` = master key with a VISIBLE indicator. `members.role` DROPPED; RLS moves to one plpgsql `STABLE` `search_path`-pinned helper | **BUILT IN TWO PHASES.** Phase 1 (now) = permissions + designations + drop the column; Phase 2 (when something is actually sold) = expiry/renewal/billing boundary, because on merge day NOTHING can expire (host + TO don't exist, developer + org-ownership never expire). Timing: the RLS pass is a pre-launch blocker and policies reference `members.role` — run this FIRST or those policies get written twice. NO OpenFGA/Zanzibar (hierarchical scoped RBAC). Expiry checks at the START of an activity, and L3 makes that a CONTRACT on consumers (bounded lifetime + completion event) or "buy one month, stay open" defeats the paywall. Stale card may NOT revoke anything — nag off `organizations.expiry_month/year`. **`league_operators` does NOT exist** (no migration creates it; replaced by `organizations` + `organization_staff`); `database/schema_dump.sql` is STALE. Motivating bug: `addOrganizationStaff` flips `members.role` and hand-flips it back |
 | `/docs/plans/` | **CE implementation plans** | Output of `/compound-engineering:ce-plan` |
 | `docs/plans/2026-09-04-001-feat-tournament-paid-foundation-plan.md` | Implementation plan for the Tournaments PAID-tier FOUNDATION (roadmap #1) — 10 units / 4 phases (A tier gate + paid backbone, B identity registered-link/walk-up, C roster+hopper+self-add, D setup + run-count) | Reviewed by 7 personas + reshaped with Ed; tournaments disposable; walk-ups tournament-scoped (no shared-merge surgery); builds on free-tier (now in main); **Phase A BUILT (A1–A3)** — schema + per-player `payment_methods` card-on-file + reusable `PaymentMethodSetup` + create-page Premium-features checklist ($1 each/$5 cap) + $0 charge-at-checkout seam ("Start & pay $X"); branch `feat/tournament-paid-foundation` |
 | `docs/plans/2026-06-14-001-refactor-schedule-matchup-decoupling-plan.md` | Implementation plan for the schedule ⇄ matchup decoupling (derive week numbers from regular-week position, drop stored `week_name`) | 7 units in 3 deploy-ordered phases (A read-paths+sweep / B backfill-labels-to-`notes`+collapse `season_end_break`→blackout / C drop `week_name`) + docs unit; live-season-safe (run controlled renumber SQL before Phase A; monotonic-date invariant gate; grep-gate reader inventory); origin `2026-06-14-schedule-matchup-decoupling-requirements.md`; implement on a branch off fresh main (this work predates it) |
@@ -226,8 +233,8 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `scripts/e2e-setup.mjs` | E2E foundation seed runner. Wired to `pnpm e2e:setup`. Validates `E2E_LOCAL_OK=true`, then pipes `database/e2e_seed.sql` into local Supabase via the `pg` client. |
 | `scripts/e2e-verify-auth.mjs` | E2E bcrypt-hash verification gate. Wired to `pnpm e2e:verify-auth`. Confirms the committed hash matches `E2E_PW` via Postgres `crypt()`. |
 | `scripts/e2e-verify-factories.ts` | E2E factory smoke-check. Wired to `pnpm e2e:verify-factories`. Calls each factory and asserts the resulting DB rows. |
-| `scripts/check-whats-new.mjs` | **CI guard: a PR must EITHER add a What's New entry OR declare `[no-changelog]` in its description.** You can't forget, you can only decide — and a wrong opt-out is one visible line, caught by a human in review. Deliberately NOT "changed src/ ⇒ write an entry": that's wrong most of the time (refactors, test fixes, dependency bumps), and a check that cries wolf gets routed around until it protects nothing. Reads its inputs from FILES rather than shell arguments, since a PR description is arbitrary user text. |
-| `scripts/stamp-whats-new.mjs` | Run when cutting a release. Renames the accumulated `unreleased` block in `src/whatsNew/releases.ts` to the given version, dates it (LOCAL date, not `toISOString()` — an evening release west of Greenwich would otherwise be dated tomorrow), and opens a fresh empty block. Refuses rather than guessing if the file's shape has changed. |
+| `scripts/check-whats-new.mjs` | **CI guard: a PR must add a What's New note (a file in `src/whatsNew/notes/`), declare `[no-changelog]`, or be a release (version change in `package.json`, so Jack's release PR never goes red).** | 2026-11-01 |
+| `scripts/stamp-whats-new.mjs` | **Runs automatically inside `npm version`** (the `version` script in package.json): folds every `src/whatsNew/notes/*.json` into a dated block under the STAMP marker in `releases.ts`, builds the summary from headlines, deletes the note files, all in the commit that gets tagged. Quiet success when there are no notes or the version is already stamped. | 2026-11-01 |
 | `scripts/check-migration-versions.sh` | **CI guard: fails if two files in `supabase/migrations/` share a version number.** `schema_migrations` is keyed on version alone, so a collision merges cleanly in git (filenames differ) but can never both apply — it surfaces only at deploy, aborting it before the S3 upload. Run by `.github/workflows/checks.yml` on every PR and as a pre-flight step in both deploy workflows. Takes an optional dir arg (default `supabase/migrations`). |
 
 ### GitHub Workflows (`/.github/workflows/`)
@@ -332,6 +339,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 
 | File | Purpose | Status |
 |------|---------|--------|
+| `plans/PLAN-standings-points-fix.md` | Phased plan for the all-teams-negative standings bug: par points rule (Ed's scoresheet), re-score the season, tiebreaker audit + rebuild as its own piece, lint cleanup | Active (Phase 1 done) |
 | `plans/PLAN-wizard2.md` | Wizard 2.0 framework — clean rebuild of league wizard with reusable shell, schemas, and step contract | Planning (current branch: `wizard-2-creation`) ✨ |
 | `plans/playoff-system-plan.md` | Playoff system architecture and implementation plan | Existing |
 | `plans/bye-team-enhancement-plan.md` | Plan for treating byes as real team rows | Implemented (migrations `20260501000002`–`04`) |
@@ -490,6 +498,10 @@ Developer-only, hand-run scripts for rare data-surgery tasks. Not deployed, not 
 |------|---------|
 | `database/maintenance/README.md` | What lives here and the rules for adding scripts |
 | `database/maintenance/mergeRegisteredPlayers.sql` | Merge two REAL registered accounts belonging to the same person (dup-signup). Reuses `merge_placeholder_into_member_v2`; preview + one-transaction merge + dead-login cleanup steps |
+| `database/maintenance/diagnose_standings_points.sql` | READ-ONLY. Per completed match in a season, compares stored `*_points_earned` against the points rule applied to the match's saved targets + confirmed games, flags mismatches, and totals stored vs expected per team. Built to chase the all-teams-negative standings bug |
+| `database/maintenance/recalculate_points_3man_1_preview.sql` | Step 1 of 3, READ-ONLY. Previews re-scoring stored `*_points_earned` on completed Points 3-Man (`linear_above_threshold`, games-mode) matches against their SAVED targets, correcting matches mis-scored before the saved-targets engine fix. Flags matches whose stored games disagree with `match_games` as `needs_review` |
+| `database/maintenance/recalculate_points_3man_2_apply.sql` | Step 2 of 3. One transaction: backup to `maintenance.points_recalc_backup`, then update only `*_points_earned` |
+| `database/maintenance/recalculate_points_3man_3_undo.sql` | Step 3 of 3, only if needed. Restores the latest apply run from the backup |
 
 ---
 
@@ -543,6 +555,7 @@ how to add a new test, demo recording, cleanup model).
 | `supabaseClient.test.ts` | Tests for the realtime survival heartbeat handler (worker + reconnect-on-dead-socket) |
 | `vite-env.d.ts` | Vite TypeScript definitions |
 | `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
+| `config/envBannerVisibility.ts` | Lets a page hide the staging/dev banner while open (`useHideEnvBanner`) |
 | `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
 
 ---
@@ -584,6 +597,7 @@ how to add a new test, demo recording, cleanup model).
 - `byeMatchTableAssignment.db.test.ts` - **BYE matches get no table.** Builds a league + venue (3 tables) + a week of three matches (real / real-vs-BYE / real) and calls `assign_tables_for_week()`, asserting the real matches get tables 1 and 2 and the BYE match gets none (and burns no slot). Requires local Supabase + the 20260615000000 migration.
 - `rulesPageEvents.rls.test.ts` - `rules_page_events` RLS + constraints (requires local Supabase)
 - `houseRules.rls.test.ts` - `house_rules` RLS probes (requires local Supabase; full coverage deferred until seed fixtures land)
+- `memberDesignations.db.test.ts` - **Designations Phase 1 (slice 4)** — the `member_has_designation` helper (active vs ended, no-member auth user) + the store's D3 active-uniqueness invariant and D4 catalog FK. Creates its own throwaway auth user + member. 7 tests.
 - `messaging-phase1-conversations.rls.test.ts` - **Messaging Phase 1 / Unit 1** — schema verification: confirms `conversations.archived_at`, `conversation_participants.notification_mode`, `cannot_leave`, and the widened CHECK constraints all landed. 13 tests.
 - `messaging-phase1-messages.rls.test.ts` - **Messaging Phase 1 / Unit 2** — schema verification: confirms `messages.is_system`, nullable `sender_id`, `messages_is_system_shape` CHECK, `members.profanity_onboarding_completed_at`, `members.deleted_at`. 9 tests.
 - `messaging-phase1-postSystemMessage.test.ts` - **Messaging Phase 1 / Unit 3 helper 1/5** — DB-backed coverage of `postSystemMessage()`: inserts row with `is_system=true, sender_id=NULL`, rejects on missing conversation FK.
@@ -633,7 +647,16 @@ how to add a new test, demo recording, cleanup model).
 - `bracket.hopper.db.test.ts` - **Tournament PAID foundation / Unit C1** — hopper + roster: admitting a registered player (hopper→official) auto-adds a sticky roster row (trigger); eject leaves the roster intact; one registered identity per bracket (UNIQUE); multiple walk-ups (member_id NULL) allowed; walk-up admission creates NO roster row (registered-only). 5 tests.
 - `bracket.join.db.test.ts` - **Tournament PAID foundation / Unit C2** — the self-add join RPC (`join_bracket_hopper`) branch logic: unknown token → `not_found`; a valid token on a bracket past setup → `not_accepting`; a valid setup token with no session → `not_signed_in` (proves anon cannot self-add). 3 tests (authed happy path covered by the mutation wiring + manual pass).
 - `payment_methods.schema.db.test.ts` - **Tournament PAID foundation / per-player card-on-file** — `payment_methods`: a card saves with defaults (is_default true), at most one DEFAULT per member (partial-unique), a second NON-default card is allowed, the member FK is enforced, and `brackets.payment_method_id` nulls out when the card is deleted (SET NULL, so a paid tournament never dangles). 5 tests.
+- `helpers/tieFixture.ts` - Shared throwaway tied-match fixture (locked match lineups; repeated letters = double duty) + exact cleanup, for the tiebreak DB tests.
+- `tiebreakLineupFlow.db.test.ts` - **Tiebreak record / Unit 3** — reorder onto the tiebreak lineup with a double-duty player in two slots, lock copies the order onto the tiebreak games then locks, unlock reopens; the match lineup stays byte-identical across the whole flow. 3 tests.
+- `tiebreakHandicapParity.db.test.ts` - **Tiebreak record / Units 4–5 PARITY** — for 2-1, 2-0 (game 3 unplayed) and a double-duty tie, every player's handicap tally (all leagues, league-scoped, short window) and handicap are IDENTICAL between the old world (overwritten rows, frozen old code) and the new (real results + resolved record); the new code also matches the old on pre-record ties; a winner gains exactly one win per slot; resolving keeps the game rows untouched and is idempotent. Mutation-checked (removing the credit or allowing the double count both fail it). 12 tests.
+- `matchRowNarrowing.db.test.ts` - **Status lists vs database constraints** — `MATCH_STATUSES`, the three match results, and `TEAM_STATUSES` must equal the values their CHECK constraints allow; guards the trust `narrowMatchRow` places in them. 3 tests.
+- `helpers/legacyHandicapHistory.ts` - FROZEN copy of the pre-Unit-5 handicap history + tally — the parity reference. Never edit to match new behavior.
+- `helpers/tiebreakScenario.ts` - A tied match with 180 regular games, playable in the old world (overwrite) then moved to the new (real results + resolved record).
+- `createTiebreakerRecord.db.test.ts` - **Tiebreak record / Unit 2** — a tie creates one tiebreaker + two lineups seeded from the match lineups (only `players_per_side` slots), the match lineup rows stay byte-identical (still locked, same locked_at), and re-firing creates nothing and keeps a captain's chosen order. jsdom; own fixture, cleaned up in afterAll. 3 tests.
+- `tiebreakRecords.schema.db.test.ts` - **Tiebreak record / Unit 1** — insert + read back, one tiebreaker per match, games_needed ≤ game_count, deleting a match removes its tiebreaker + lineups, both tables on realtime. Each test runs in a rolled-back transaction (leaves no data). 5 tests.
 - `gameConfirmations.schema.db.test.ts` - **Many-eyes Layer-2 / Unit 1 + Phase 2 Amendment A** — schema verification for the append-only `game_confirmations` table: exists + on the `supabase_realtime` publication, full-vouch insert defaults (`action='confirm'`, `created_at`), `action='vacate'` marker accepted, side/action CHECK rejections, FK rejections (game_id, confirmer_id), snapshot `winner_team_id` is FK-free (history must not mutate on team delete), `match_games` officiality columns left intact, and the Amendment A column (`is_initiator` boolean, default false, accepts true, NO unique constraint — multiple initiators per side allowed). 13 tests.
+- `fetchAllRows.rowCap.db.test.ts` - Proves PostgREST's row cap against a real PostgREST: an unpaged select over 1,001 rows returns 1,000 with `error === null` (the first test deliberately asserts the BUG, so if the hazard ever disappears we are told), and `fetchAllRows` returns all 1,001 — with a count, without one, and at page size 100, with no duplicate ids. Uses `app_logs` as the fixture since it has no required FKs. 4 tests.
 - `appendConfirmation.db.test.ts` - **Many-eyes Layer-2 / Unit 2** — behavior of `appendConfirmation` against the local DB: confirm append carries the full snapshot, append NEVER modifies the `match_games` row (officiality preserved), exact re-tap no-op + change-of-mind new row, extra witnesses accrue without touching `match_games`, vacate marker recorded, finalized match no-op, missing confirmer no-op, and a failure is swallowed (best-effort, never throws). 9 tests.
 
 #### Test Utilities (`/test/`)
@@ -651,6 +674,8 @@ how to add a new test, demo recording, cleanup model).
 - `about/About.tsx` - About page
 - `about/Pricing.tsx` - Pricing breakdown page
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
+- `about/StopStopExplainer.tsx` - Stop Stop explainer at `/aboutstopstop` (staging only, unlinked, noindex)
+- `about/stopStopContent.ts` - Text of the Stop Stop explainer (copied from the stop-stop repo)
 - `home/Home.tsx` - Landing/home page
 - `dashboard/Dashboard.tsx` - Main dashboard
 
@@ -822,6 +847,9 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 
 ### 🏗️ Features
 
+#### Host (`/host/`)
+- `BecomeHost.tsx` - **Become a Host** (`/become-host`) — self-serve purchase (`$1/mo` or `$10/yr`, mock `PaymentCardForm`) that saves the card on file and grants the `host` designation via `useGrantDesignation`, so the member can host game rooms. Reachable from the Profile "Become a Host" CTA. Shows an "already a host" state if held. Self-contained — grants the designation independently of the game room, which reads it separately.
+
 #### League Operator Application (`/leagueOperator/`)
 - `BecomeLeagueOperator.tsx` - Entry point
 - `LeagueOperatorApplication.tsx` - Main application form
@@ -866,6 +894,7 @@ Public feature at `/rules`. Reads the cleaned CSI rulebook from `/src/officalBCA
 - `SearchInput.tsx` - Sticky debounced search with "/" keyboard shortcut
 - `SearchResults.tsx` - Results list + zero-results state (Clear filter / Clear search)
 - `SearchSnippet.tsx` - Snippet extraction + <mark> highlighting
+- `searchSnippetHelpers.tsx` - Pure window/truncate/highlight helpers behind `SearchSnippet` (`renderHighlightedSnippet`, `truncateOnWordBoundary`).
 - `Attribution.tsx` - R11 footer linking to CSI's hosted PDF
 - `CopyLinkButton.tsx` - One-tap clipboard share with sonner toast. Optional `url` / `ariaLabel` props (default: current page URL, rule-page label) — the Game Room InviteSheet reuses it for the join link
 - `RulesSkeleton.tsx` - Suspense fallback matching the page layout
@@ -989,7 +1018,7 @@ Reusable wizard/form step components
 
 #### Scoring Components (`/components/scoring/`)
 - `UnifiedScoreboard.tsx` - **Single live-match scoreboard for all configs** (replaces former ThreeVThree / FiveVFive / TenSeven). Reads match-row source-of-truth, schema-derived display hints, calculator-driven per-player points column, R22 Fargo start-points display.
-- `TiebreakerScoreboard.tsx` - Best-of-3 tiebreaker score panel (separate component; team-name labels per R18)
+- `TiebreakerScoreboard.tsx` - Tiebreaker score panel; finishes at the tiebreak record's games-needed (never a hardcoded 2); team-name labels per R18
 - `MatchEndVerification.tsx` - End-of-match dual-team verify-and-confirm flow (mode-aware internally)
 - `GamesList.tsx` - Games list. Column ordering (`displayMode` + `onToggleDisplayMode`) is now a **controlled prop** lifted to ScoreMatch (via `useGameDisplayMode`) so the in-list header bar and the settings gear stay in sync; the header bar still toggles it on click.
 - `ScoringSettingsMenu.tsx` - **Scoring participation modes / Unit D.** Gear-icon `Popover` in the scoring header (replaced the cramped inline Auto-Confirm checkbox). Houses Auto-Confirm, I'm-Not-Scoring, and the Break/Rack ⇄ Home/Away game-order toggle, each with an `InfoButton`. Presentational only — state/persistence live in the hooks behind its props.
@@ -1011,7 +1040,7 @@ Reusable wizard/form step components
 - `scoreboardColors.ts` - Single source of truth for team colors (home: blue, away: orange)
 - `__tests__/UnifiedScoreboard.test.tsx` - Unit tests for the unified scoreboard (preset paths).
 - `__tests__/UnifiedScoreboard.offPreset.test.tsx` - Tests covering off-preset combos (different lineup / scoring calculator combos).
-- `__tests__/TiebreakerScoreboard.test.tsx` - Tests for the best-of-3 tiebreaker panel.
+- `__tests__/TiebreakerScoreboard.test.tsx` - Tests for the tiebreaker panel, incl. "needs 3 does not finish at 2" and the single-race label.
 - `__tests__/AdaptiveCounter.test.tsx` - Tests for the adaptive counter component.
 
 #### Messaging Components (`/components/messages/`)
@@ -1031,6 +1060,7 @@ Reusable wizard/form step components
 - `CreateTeamChatPrompt.tsx` - **Phase 1 / Unit 5** — banner shown to captains whose teams are missing an auto-managed team chat (e.g., team created before the trigger landed); offers one-tap creation via `useCaptainTeamsMissingChat`.
 - `ReadOnlyBanner.tsx` - **Phase 1 / Unit 6** — banner rendered at the top of a conversation when the viewer is a past member or non-staff in an announcement chat. Replaces the composer with a read-only explanation.
 - `__tests__/ConversationList.profanity.test.tsx` - RTL test ensuring the conversation list applies the profanity filter to preview snippets per the viewer's `profanity_filter_enabled`.
+- `__tests__/NewMessageModal.blocked.test.tsx` - Regression test: blocked members are hidden from the New Message list, and the member list loads once (the old fresh-array dependency re-fetched it endlessly).
 - `__tests__/CreateTeamChatPrompt.test.tsx` - RTL test for the create-team-chat banner (visibility predicate, click → mutation, post-success dismissal).
 - `__tests__/MessageBubble.system-message.test.tsx` - RTL test for the centered/italic system-message variant of `MessageBubble`.
 - `__tests__/ReadOnlyBanner.test.tsx` - RTL test for the Unit 6 read-only banner (announcement-non-staff + past-member triggers).
@@ -1127,6 +1157,8 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 #### Match Components (`/components/match/`)
 - `MatchPhaseGuard.tsx` - Server-state route guard. Reads `matches.status` via `useMatchPhase`, dispatches lineup vs scoring vs recovery rendering, holds the compound `key={matchId:recoveryEpoch}` that drives in-place subtree remounts on Hard Reset.
 - `MatchTransitionRecovery.tsx` - Unified recovery surface for the lineup → scoring transition. Reason-aware copy (connection / match_not_found / auth_expired / server_error / unknown_status), two-level Try Again (soft refetch first, Hard Reset only after soft fails — with confirmation dialog).
+- `matchRecoveryCopy.ts` - `RecoveryReason` codes + the `RECOVERY_COPY` headline/body table the recovery surface shows. Split out so the component file exports only components (fast refresh).
+- `matchPhaseHelpers.ts` - Pure helpers behind `MatchPhaseGuard`: `deriveReasonFromError` (error → recovery reason) and `computePhaseRedirect` (lineup ↔ score redirect decision).
 - `ConnectionIndicator.tsx` - Calm connection indicator for the active scorer. Renders nothing while live, a quiet "Catching up…" pill while degraded, and a single calm note only after a sustained offline outage (north star: invisible robustness).
 - `ConnectionIndicator.test.tsx` - Tests for ConnectionIndicator (live=nothing, degraded=quiet pill, sustained-offline=calm note + threshold).
 
@@ -1195,6 +1227,11 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 
 #### Privacy Components (`/components/privacy/`)
 - `ContactInfoExposure.tsx` - Contact info visibility
+- `contactVisibilityOptions.ts` - The contact-visibility option list + `getVisibilityLabel` / `getVisibilityDescription` lookups.
+
+#### Re-up + Finance helpers (new files only; folders not yet fully indexed)
+- `reup/CaptainReupSyncer.tsx` - App-level, mount-once component that pops the captain re-up modal when `useCaptainReupPrompt` returns teams.
+- `operator/finances/individualAwards.ts` - Payout-calculator award helpers: `newAwardId` + `defaultIndividualAwards` starter set.
 - `VisibilityChoiceCard.tsx` - Visibility choice ⚠️ **DUPLICATE** (also in `/leagueOperator`)
 
 #### Root-Level Components (`/components/`)
@@ -1251,8 +1288,10 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `useMatchScoring.ts` - Match scoring state (data fetching)
 - `useMatchScoringMutations.ts` - Match scoring mutations (database operations). **Many-eyes Layer-2:** each vouch path (`handleConfirmScore`, `confirmOpponentScore`) now also appends a `confirm` row, and the wipe paths (`confirmOpponentScore` accept-vacate, `denyOpponentScore` deny-score) append a `vacate` marker, via `api/mutations/appendConfirmation.ts` — officiality writes stay first/authoritative. **Amendment D:** `handleConfirmScore` re-reads the match_games row before writing; if another initiator already wrote a winner during the modal grace period, it compares results via `resultsDiffer` — agreement → just append the new initiator row alongside (strongest confirmation); disagreement → auto-clear the game's winner fields + append both initiator row and vacate marker + toast the user to re-enter. **Amendment E:** `denyOpponentScore` counts distinct endorsers (post-latest-vacate confirm rows) before wiping; ≤2 (the standard officiality pair) wipes as before; >2 (extras endorsed) skips the wipe, records a vacate marker, and toasts the denier — the dissent flag surfaces it; vacate-and-rescore remains the deliberate correction path. **Amendment I:** `confirmOpponentScore` non-vacate branch reads the fresh match_games row before writing and runs a 3-step check (opponent's column set, my column null, modal snapshot still matches current official). Only writes the officiality column when all three pass; ALWAYS appends the vouch row regardless. Toasts the user when the state diverged so they know their tap landed but didn't lock officiality (Sally's stale-modal-after-auto-clear scenario + any future state-divergence case). **Unit 7 (Phase 3):** all three mutations (`handleConfirmScore`, `confirmOpponentScore`, `denyOpponentScore`) now read `matches.status` at entry and bail with a toast when `'completed'` — belt-and-suspenders behind `MatchEndVerification`'s nav-off so a sub-second race between finalization and page navigation can't mutate `match_games` on a finalized match.
 - `api/mutations/paymentMethods.ts` - **PAID card-on-file writes.** `upsertDefaultPaymentMethod` — saves the player's DEFAULT card (from `PaymentCardForm`'s mock token) to `payment_methods`, replacing the existing default in place (one-default-per-member). Only token + last4/brand stored; raw PAN/CVV never leave the form.
+- `api/mutations/designations.ts` - **Designations store writes.** `grantDesignation({memberId, designation, source, endsAt, grantedBy})` inserts an active designation row (used by Become a Host). Interim client-side write (A8) pending the security pass; fails if the member already holds it (partial-unique).
 - `api/queries/paymentMethods.ts` - **PAID card-on-file read.** `getDefaultPaymentMethod(memberId)` → the member's default saved card, or null (seeds the create flow: show the card form vs. reuse the card on file).
 - `api/hooks/usePaymentMethods.ts` - TanStack hooks: `useDefaultPaymentMethod` (read, enabled once a memberId exists) + `useSaveDefaultPaymentMethod` (upsert + invalidate).
+- `api/hooks/useDesignationMutations.ts` - `useGrantDesignation` — grants a designation (e.g. `host`) and invalidates that member's designations so the capability lights up immediately.
 - `api/mutations/brackets.ts` - **Tournament bracket tool / Unit 3 + 7 (+ PAID A1/A2).** Write ops: `sweepStaleBrackets` (Unit 7 — best-effort `sweep_stale_brackets` RPC call, swallows errors), `createBracket` (setup status; DB-generated share_token; sweeps stale brackets FIRST — cleanup-on-create; **paid:** accepts `premiumFeatures`/`gameType`/`paymentMethodId`, sets tier=paid when any feature is checked), `setParticipants` (resolves seed order by mode — random is Fisher–Yates FROZEN here so a persisted bracket is never re-derived — then replace-inserts seed 1..N), `startBracket` (runs the pure engine then persists via the `start_bracket` RPC atomically), `advanceWinner` (guarded advance via `advance_bracket_winner` RPC; returns whether it advanced), `closeBracket` (status='closed' tombstone, NOT a hard delete). Seeding-mode resolution + engine call live here; the RPCs own the atomic/guarded DB work.
 - `api/queries/brackets.ts` - **Tournament bracket tool / Unit 3.** `getBracket(id)` = authed organizer view (bracket + participants + matches via parallel selects); `getBracketShare(shareToken)` = the PUBLIC read via the `get_bracket_share` RPC (names only; `{found:false}` on unknown token) — kept in the same file (no single-export share file). Row + share-view types exported here.
 - `api/hooks/useBrackets.ts` - **Tournament bracket tool / Unit 3 + 8.** TanStack Query hooks: `useBracket`/`useBracketShare` reads (staleTime 0 — live during play; `useBracketShare` also polls 15s while live as an anon-realtime fallback), `useBracketsByCreator` (index list, Unit 8), + `useCreateBracket`/`useSetParticipants`/`useStartBracket`/`useAdvanceWinner`/`useCloseBracket` mutations that invalidate the `queryKeys.brackets.*` keys.
@@ -1260,6 +1299,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `api/mutations/rooms.ts` - **Game Room / Unit 3 writes.** Thin wrappers over the room RPCs: `createRoom`, `joinRoom`, `roomHeartbeat`, `setRoomGame`, `setRoomSettings`, `setRoomShared`, `closeRoom`. Results are `{ok:true,…} | RoomRefused` with a typed `reason` union so pages can phrase every refusal; only transport throws
 - `api/hooks/useRooms.ts` - **Game Room / Unit 3 hooks.** `useRoom` (polls every 15 s as the realtime FALLBACK while the room exists, stops at `null`), `useRoomByToken`, `useMyRooms`, and the write hooks, each invalidating `rooms.detail(id)` — the PREFIX of every game-table key
 - `api/hooks/useRooms.test.ts` - Wiring tests: enabled gate, poll on/off, refusal returned as data, invalidation of the room prefix
+- `api/hooks/useTeamRosterWithMembers.ts` - Cached roster **with member names/numbers**, behind the `TeamNameLink` popover (tap a team name anywhere → see who is on it). Lazy: `enabled` is the popover's open state, so a standings table of a dozen teams fetches nothing until one is asked about. **Distinct from `useTeamRoster` in `useTeams.ts`**, which returns membership ids only — they keep SEPARATE cache keys (`teams.rosterWithMembers` vs `teams.roster`), because two shapes under one key would let whichever query ran first decide what the other consumer got back.
 - `api/mutations/appendConfirmation.ts` - **Many-eyes Layer-2 / Unit 2 + Amendment B.** The single best-effort "record a vouch" path: appends to `game_confirmations` (confirm or vacate marker), never touches `match_games` officiality, never throws into scoring; append-only (exact re-tap = no-op, change of mind = new row), no-op when match finalized or no confirmer. **Amendment B:** `isInitiator: boolean` is a REQUIRED param — `handleConfirmScore` passes `true` (filled the details from scratch), `confirmOpponentScore` + vacate paths pass `false`. The no-exact-dup guard ignores `is_initiator` (same data + same person = same vouch, even if role label differs). **Scoring participation modes / Unit A:** optional `autoConfirmed` param (default false) recorded on the row — `confirmOpponentScore` passes `true` from the two auto-confirm call sites (scan + handlePlayerClick auto-branch), false elsewhere; integrity metric only.
 - `useScoringParticipationModes.ts` - **Scoring participation modes / Unit C.** Owns the two opt-in scoring modes with consequence-scaled persistence: **Auto-Confirm** (sessionStorage keyed by match — survives a refresh but clears on leaving the page, via a deferred clear-on-unmount that cancels on remount so StrictMode's dev double-fire doesn't wipe it) and **I'm-Not-Scoring** (localStorage keyed by match — lasts the whole match). The two are mutually exclusive (each setter turns the other off).
 - `useGameDisplayMode.ts` - **Scoring participation modes / Unit D.** Owns the games-list column ordering (`break-rack` | `home-away`), lifted out of `GamesList` so the list's header bar AND the settings gear both drive it in sync. localStorage, global + forever (a pure display preference — least-consequential setting persists longest).
@@ -1285,13 +1325,14 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so each one has a single responsibility and can be tested independently.
 
 - `useLineupState.ts` - Owns the in-flight lineup form state (slots, substitute flags) before persistence.
-- `useLineupPersistence.ts` - Save/load mutations for the lineup row + optimistic update wiring.
+- `useLineupPersistence.ts` - Save/load mutations for the lineup row + optimistic update wiring. In tiebreaker mode lock/unlock flip ONLY the lock flag — players, handicaps and team bonus stay as initially locked.
+- `useLineupPersistence.test.ts` - Pins the tiebreaker rule: tiebreaker lock/unlock send only `locked`/`locked_at`; normal pre-match lock/unlock unchanged.
 - `useLineupValidation.ts` - Pre-submit validation (roster coverage, handicap totals, duplicate nicknames).
 - `useMatchPreparation.ts` - Drives the `prep_match` RPC + reads/writes the prep status banner state.
-- `useOpponentStatus.ts` - Tracks the opponent's lineup state for the "waiting on opponent" UI.
+- `useOpponentStatus.ts` - Tracks the opponent's lineup state for the "waiting on opponent" UI. In a tiebreak it is handed the opponent's TIEBREAK lineup (same slot + locked shape).
 - `useHandicapCalculations.ts` - Computes per-player + per-team handicap totals from the current lineup.
 - `useFargoStartPointsNegotiation.ts` - Fargo start-points negotiation flow (proposal, confirm, override).
-- `useTiebreakerLineup.ts` - Separate lineup state for the best-of-3 tiebreaker.
+- `useTiebreakerLineup.ts` - **Tiebreak mode of the lineup page, against the tiebreak record** — per-position choices (match lineup players, double duty counted), pick/clear/lock/unlock writing `match_tiebreaker_lineups` only; handicaps copied from the match lineup. Never writes `match_lineups`.
 - `index.ts` - Barrel exports.
 
 ---
@@ -1428,6 +1469,8 @@ Pure helpers extracted from the lineup page. No React. Imported by both the page
 #### Standings + Tiebreaker (`/utils/standings/`, `/utils/tiebreaker/`)
 - `standings/sortStandings.ts` + `__tests__/sortStandings.test.ts` - Sort helper for the standings table (W → Pts → Games tiebreak chain).
 - `tiebreaker/gameNumbers.ts` + `__tests__/gameNumbers.test.ts` - Game-number assignment for best-of-3 tiebreakers.
+- `tiebreaker/tiebreakPicks.ts` + `__tests__/tiebreakPicks.test.ts` - **Tiebreak dropdown rule** — `lineupSlotIds` (match lineup slots, double duty kept twice) and `tiebreakChoices` (match-lineup players only; disabled once picked as many times as they appear).
+- `tiebreaker/tiebreakerShape.ts` + `__tests__/tiebreakerShape.test.ts` - **The one home for format → numbers** (games needed, game count, players a side) frozen onto every tiebreak record. `manual` → null (no record); `accept_tie` → best-of-3 (accidental legacy default, never a choice).
 
 #### Misc utility files
 - `fargoMatchTotals.ts` - Fargo per-match totals helpers (used by `computeMatchRunningTotals` for the Fargo path).
@@ -1494,7 +1537,9 @@ High-level business logic services
 *Migration from `/utils/*Queries.ts` in progress*
 
 - `members.ts` - **✅ Member queries** (getCurrentMember, getMemberProfile, getOperatorId, etc.)
-- `matchGames.ts` - **✅ Match game queries** (fetchPlayerGameHistory for handicap calculations)
+- `matchGames.ts` - **Handicap game history** — `fetchHandicapHistory`: regular games + tiebreak credits from the record (anti-sandbagging rule: tiebreak wins count, losses never), newest-N window, league-first then all leagues. Renamed from `fetchPlayerGameHistory` to end the clash with playerGameHistory.ts.
+- `tiebreakSlots.ts` - **Tiebreak credit source** — `fetchTiebreakSlots`: one entry per slot a player filled in a RESOLVED tiebreaker (won = their side won), capped at `players_per_side`; double duty counts twice.
+- `matchRows.ts` - **Match row narrowing** — `narrowMatchRow` / `narrowMatchRowWithDate`: turn a raw `matches` query row into `MatchWithDetails`, narrowing ONLY the loosely-typed fields (status, match_result, team status, system_snapshot) so every other field stays type-checked. Replaced six whole-row `as MatchWithDetails` casts in matches.ts.
 - `conversations.ts` - Conversation list/detail reads.
 - `featsStats.ts` - Feats-of-excellence aggregation queries (break-and-run, etc.).
 - `handicaps.ts` - Per-member handicap fetches.
@@ -1505,23 +1550,33 @@ High-level business logic services
 - `messages.ts` - Message list/detail reads.
 - `operators.ts` - Operator list/detail reads.
 - `operatorStats.ts` - Operator-dashboard aggregate stats.
+- `permissions.ts` - **Designations Phase 1 (slice 1)** — `getMemberStaffGrants(memberId)`: resolves a member's authority LIVE from `organization_staff` (org + named position + optional league scope), feeding the `can()` check layer. Unknown positions fail closed.
+- `designations.ts` - **Designations Phase 1 (slice 4)** — `getMemberDesignations(memberId)`: a member's ACTIVE designations (e.g. `['developer']`) from the `member_designations` store. Drives the developer master key in `useUserProfile`/`usePermissions`, replacing `members.role === 'developer'`.
 - `organizations.ts` - Org list/detail reads.
 - `organizationStaff.ts` - Org-staff list query.
+- `fetchAllRows.ts` - Pages a query past PostgREST's 1000-row response cap, which otherwise truncates SILENTLY and understates every season total. Stops on the largest page the server actually returned (not on `pageSize`, so a lowered `max_rows` can't reintroduce the bug); callers pass `{ count: 'exact' }` and a unique `.order()`.
 - `players.ts` - Player list/detail reads.
 - `duesRoster.ts` - `fetchLeagueDuesRoster(leagueId)` — current-season roster (players on active/upcoming-season teams) of one league with each member's `membership_paid_date`, for the Dues Roster page. League-scoped (dues sanctioning is per league).
-- `playerStats.ts` - Per-player stats aggregations.
+- `playerStats.ts` - Per-player stats aggregations. Paged via `fetchAllRows`.
 - `preferences.ts` - Org/league/season resolved-preference queries.
 - `reports.ts` - User-report queries.
 - `seasons.ts` - Season list/detail reads.
 - `standings.ts` - Standings aggregation query.
 - `teamJoin.ts` - **Onboarding cascade (Unit 2)** — wraps the `get_team_join_view` RPC: resolves a team `join_token` to `{found, team_id, team_name, league_name, roster_size, spots[], viewer_request_status}`. Names only; the authz boundary while RLS is off.
 - `teams.ts` - Team list/detail reads.
+- `tiebreakers.ts` - **Tiebreak record read** — `getMatchTiebreaker` (tiebreaker + both lineups embedded, null when none) and `tiebreakLineupFor(record, teamId)`.
 - `teamStats.ts` - Per-team stats aggregations.
 - `thresholdLookup.ts` - Modular threshold-chart lookup query (used by the system resolver).
 - `venueDuplicates.ts` - Detects duplicate venues during creation flows.
 - `venues.ts` - Venue list/detail reads.
 - `__tests__/thresholdLookup.test.ts` - Tests for the threshold-chart lookup.
 - `__tests__/matches.test.ts` - Tests for `getMyMatchMatches` (My Match team-scoped detection query — team/status scoping + client-side date threshold).
+
+#### Permissions (`/permissions/`) - Authorization check layer
+*Designations Phase 1 (slice 1). The one place the app asks "may this member do X, and where?"*
+
+- `permissions.ts` - **Pure check layer** (no React/DB/clock). `can(ctx, action, scope)` + `hasOperatorAccess(ctx)`; `POSITION_PERMISSIONS` bundles (owner/admin/league_rep) ARE the role definitions (O2 — splitting a role later touches zero call sites). Additive/most-permissive-wins (O10), league scoping (O3), developer master key (D7). Mirrored into plpgsql for RLS in slice 5.
+- `permissions.test.ts` - Full unit coverage of the pure rules (master key, bundles, scope, union, deny-by-default).
 
 #### Mutations (`/mutations/`) - Write Operations
 *Create/Update/Delete operations with automatic cache invalidation*
@@ -1549,6 +1604,9 @@ High-level business logic services
 - `seasons.ts` - Season CRUD.
 - `teamJoin.ts` - **Onboarding cascade (Unit 3)** — `submitJoinRequest(token, claimedMemberId?)` wrapping the `request_team_join` RPC; the only join-request write path.
 - `teams.ts` - Team CRUD.
+- `resolveTiebreaker.ts` - **Record a tiebreaker's winner** — `resolveTiebreakerRecord`: stamps `winning_team_id` + `resolved_at`, only on an unresolved record (idempotent). Replaces the three-game overwrite.
+- `tiebreakerLineups.ts` - **Tiebreak lineup writes** — `setTiebreakSlot`, `lockTiebreakLineup` (copies the order onto the tiebreak `match_games` rows, THEN locks), `unlockTiebreakLineup`. Never touches `match_lineups`.
+- `tiebreakers.ts` - **Create the tiebreak record on a tie** — `createTiebreakerRecord`: tiebreaker + one EMPTY lineup per side (Ed: the order starts blank; each team picks from the match lineup). Idempotent via the tables' UNIQUE keys; never wipes an order already chosen. Replaces unlocking the match lineups.
 - `venues.ts` - Venue CRUD.
 - `__tests__/sendMessage.timeout.test.ts` - Timeout-wrapper test for the sendMessage mutation (Unit 16 bounded-send).
 
@@ -1574,6 +1632,7 @@ High-level business logic services
 - `__tests__/useMyMatchSurfaces.test.tsx` - Tests for the My Match pure resolvers (tiers/tiebreak/drawer labels) + hook wiring (no-member posture, live resolution, no-teams short-circuit, error fallback).
 - `useAnnouncementMutations.ts` - Announcement-channel mutation hooks.
 - `useCaptainTeamsMissingChat.ts` - Detects captain teams that don't have an auto-managed team chat yet; drives the `CreateTeamChatPrompt` banner.
+- `useCaptainReupPrompt.ts` - Query hook: which of the current captain's teams still need a re-up answer. Its modal syncer is `components/reup/CaptainReupSyncer.tsx` (mounted in App.tsx).
 - `useChampionshipDateMutations.ts` - Championship-date CRUD hooks.
 - `useConversationMutations.ts` - Conversation create/archive/leave mutation hooks.
 - `useConversationQueries.ts` - Conversation list/detail query hooks.
@@ -1584,6 +1643,7 @@ High-level business logic services
 - `useLeagues.ts` - League query hooks.
 - `useLeagueVenueMutations.ts` - League↔venue linking hooks.
 - `useMatches.ts` - Match query hooks.
+- `useMatchTiebreaker.ts` - Tiebreak record query hook (live: staleTime 0, refetch on mount/reconnect).
 - `useGameConfirmations.ts` - **Many-eyes Layer-2 / Unit 3.** Query hook that OWNS the `game_confirmations` fetch for a match (live fresh-data config); `useMatchScoring` consumes it and wires the realtime invalidation. Phase 2/3 read the rows.
 - `useMatchLineupMutations.ts` - Match-lineup CRUD hooks.
 - `useMatchMutations.ts` - Match-state mutation hooks.
@@ -1602,6 +1662,7 @@ High-level business logic services
 - `useOrganizations.ts` - Org list/detail hooks.
 - `useOrganizationStaff.ts` - Org-staff query hook.
 - `useOrganizationStaffMutations.ts` - Org-staff invite/remove hooks.
+- `usePermissions.ts` - **Designations Phase 1 (slice 1)** — React entry to the check layer. Wires the current member's live staff grants into the pure `can(action, scope)` rules; exposes `can`, `hasOperatorAccess`, `grants`. UI affordances only (A6) — never the authority (A7).
 - `usePlayerHandicaps.ts` - Per-player handicap query hook.
 - `usePlayerTeamCount.ts` - Returns a player's team count for the current scope.
 - `usePlayoffConfigurations.ts` - Playoff config query hooks.
@@ -1653,6 +1714,7 @@ The current LO league-creation flow (replaces the legacy wizard). Modular axes (
 - `steps/MechanismStep.tsx` - Threshold mechanism axis (extra_games / start_points / race_length_adjustment / none).
 - `steps/PointsCalculatorStep.tsx` - Points-calculator axis picker (linear_above_threshold / accumulate_with_milestone_jumps / accumulated_per_game / custom).
 - `steps/ThresholdSourceStep.tsx` - Threshold-chart source axis (chart-by-id vs ad-hoc).
+- `steps/thresholdSourceClassifier.ts` - `classifyThresholdSource`: which threshold source the wizard answers imply (tested preset / Fargo / manual). Drives the step's copy.
 - `steps/PairingFormatStep.tsx` - Round-robin / Swiss / etc.
 - `steps/MatchFormatStep.tsx` - Match-format details (races, games-to-win).
 - `steps/WinConditionStep.tsx` - Win-condition axis.
@@ -1798,6 +1860,21 @@ Calculator-as-type-with-params registry. Each shipped points formula implements 
 
 ---
 
+### 📰 What's New (`/whatsNew/`)
+
+The player-facing release notes. Waiting notes are one file per PR (never conflict); `npm version` stamps them into `releases.ts` automatically. Plan: `docs/plans/2026-11-01-001-fix-whats-new-zero-step-release-plan.md`.
+
+- `releases.ts` — every shipped release (history) plus the `unreleased` block, whose entries come from the note files; the stamp inserts below its STAMP marker.
+- `pendingNotes.ts` — reads `notes/*.json` (one note or an array per file) into the `unreleased` block, in file-name order.
+- `notes/README.md` — the note-file format; one `.json` per user-facing PR, named after the branch.
+- `releaseSelectors.ts` — pure lookups: grouping by kind, which release is current, what the New marker compares against.
+- `WhatsNewPage.tsx` — `/whats-new` and `/whats-new/:version`.
+- `useWhatsNewSeen.ts` / `useShowWhatsNewAfterUpdate.ts` — the New marker and the after-update prompt.
+- `__tests__/stampWhatsNew.test.ts` — runs the real stamp on a copy of the real `releases.ts`: notes folded in, files removed, still valid TS, quiet success with no notes / already stamped, CRLF kept.
+- `__tests__/checkWhatsNew.test.ts` — the PR check: note file / `[no-changelog]` / release PR pass; nothing fails.
+- `__tests__/pendingNotes.test.ts` — every waiting note file is well formed.
+- `__tests__/releaseSelectors.test.ts`, `__tests__/whatsNewAfterUpdate.test.tsx` — selector rules and the after-update prompt.
+
 ### 📖 Glossary (`/glossary/`) **NEW — Operator-facing term registry**
 
 Single source of truth for operator help terminology. Slug-keyed TS module registry; entries carry canonical name + aliases + short def + long def (rich content) + L1 anchor + related slugs. Consumed by `GlossaryInfoButton`, the Learn-hub Glossary page, and the `pnpm glossary:verify` drift audit. See `docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md` Unit 1.
@@ -1826,6 +1903,7 @@ Zod validation schemas
 
 Supabase real-time subscription hooks for live data updates
 
+- `useTiebreakerRealtime.ts` - **Own channel for a tiebreak record** (`match_tiebreaker_lineups` by tiebreaker_id + `match_tiebreakers` by id) so one side's picks/lock reach the other phone; refetches on (re)subscribe. Separate so the main match channel never rebuilds when the record appears.
 - `useMatchRealtime.ts` - Unified real-time subscription for the whole match flow (matches/lineups/games); surfaces connection status + fires a catch-up refetch on re-subscribe after a drop
 - `useConnectionHealth.ts` - Classifies realtime trouble into actionable health (realtime-down vs offline) via one cheap reachability probe; drives the degraded polling fallback cadence
 - `useConnectionHealth.test.ts` - Tests for classifyHealth + computeDegradedPollInterval + the useConnectionHealth probe/online-offline behavior
@@ -1839,6 +1917,7 @@ Supabase real-time subscription hooks for live data updates
 - `OperatorNavBar.tsx` - Operator navigation
 - `NavRoutes.tsx` - Route definitions. GATED (non-prod) routes: `tools/calc`, `rooms`, `rooms/join/:joinToken`, `rooms/:roomId` — each wrapped in `NonProdGate`
 - `roomsGate.test.tsx` - **Game Room / Unit 7** — pins that the room and its doors hide TOGETHER: every `rooms/**` route element is `NonProdGate` (walks `router.routes`); the gate renders off production and redirects home on it; the sidebar + drawer "Rooms" links render exactly when the gate is open (one `isProduction` getter flipped per test); signed out, `/rooms/join/x` → `/login?redirect=…` (the QR funnel)
+- `NavRoutes.test.tsx` - Guard: every page a member reaches from the nav or Profile (What's New, Rules, Pricing, Become LO, …) renders inside `MemberLayout`, so it keeps the sidebar / tab bar
 
 ---
 
@@ -2028,6 +2107,12 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260906181438_bracket_walkup_self_add.sql` | **Tournament PAID foundation — Phase C, Unit C3 (walk-up self-add).** `add_self_as_walkup(join_token, display_name)` — an accountless player types a name on the tournament page and lands in the waiting room. **Deliberately opens an ANONYMOUS write**, reversing the authenticated-only hopper posture: the waiting room is a *proposal* the organizer must admit from, so abuse is tidying rather than corruption, and requiring an account would lose exactly the walk-in this feature exists for. Guards, all in the DB because an input box is bypassable: setup-only, `real_players` required, a **128-entry cap**, a **12-character** name limit, and one-name-per-tournament reported as `name_taken`. The length limit lives in the function, NOT on the column — organizer-typed names and registered nicknames write the same column and aren't bound by the self-entry box's rule. Tests: `bracket.join.db.test.ts`. |
 | `supabase/migrations/20260906204115_my_tournaments.sql` | **Tournament PAID foundation — "tournaments I'm in".** `get_my_tournaments()` returns the tournaments the CALLER is playing in (from their `bracket_hopper` row), excluding closed ones and ones they created. Returns each **`join_token`**, because a player's home for a tournament is the join page — deliberately NOT the `share_token`, which is the spectator view. Member resolved from `auth.uid()`; an anonymous caller gets `[]` rather than an error. A walk-up can't appear here and can't be made to: there's no account to look them up by, so their only route back is the link their own browser remembered. Test: `bracket.myTournaments.db.test.ts`. |
 | `supabase/migrations/20260906205201_organizer_add_registered.sql` | **Tournament PAID foundation — organizer search-add.** `add_registered_to_hopper(bracket_id, member_id)`. **An RPC rather than a client insert because the display name must be derived the SAME WAY `join_bracket_hopper` derives it** (nickname → full name → 'Player'): a name picked in the browser could differ from the one that player gets by scanning the code, and since a name may appear only once per tournament, that mismatch would surface as a phantom collision nobody could explain. Setup-only, registered-only (a placeholder belongs to a league), `already_in` as a no-op answered before the name check, and `name_taken` reported rather than a constraint error. Test: `bracket.organizerAdd.db.test.ts`. |
+| `supabase/migrations/20261028204853_tiebreaker_default_best_of_3.sql` | **"Accept tie" off default** — `preferences.tiebreaker_format` default + every stored `accept_tie` row + the `resolved_league_preferences` fallback all become `best_of_3_short_race`. Value stays legal in the CHECK because frozen match snapshots may carry it. `tiebreaker_trigger` untouched (nothing acts on it). |
+| `supabase/migrations/20261028194312_tiebreak_records.sql` | **Tiebreak record (Unit 1 of the tiebreaker-record plan)** — `match_tiebreakers` (one per match: games_needed, game_count, players_per_side, game_type, winning_team_id, resolved_at) + `match_tiebreaker_lineups` (one per side, five slots + handicaps + own lock). The winning side's tiebreak lineup is the anti-sandbagging credit list. No RLS (same as match_lineups); both on realtime. |
+| `supabase/migrations/20261028043311_restore_profanity_filter_to_resolved_view.sql` | **Restores `profanity_filter_enabled` to `resolved_league_preferences`** (league → org → off, the original 20251202194308 chain). It fell out when 20260417000000 rebuilt the view, so `getOperatorProfanityFilter` threw on every call and the team editor's profanity check never ran. `CREATE OR REPLACE` so it only appends the column and keeps grants. |
+| `supabase/migrations/20260919182736_add_host_designation.sql` | **Game-room host designation** — one catalog row (`host`) so the game room (separate service) can check host status via `member_has_designation(user_id, 'host')` instead of `members.role`, and the app via `useUserProfile().hasDesignation('host')`. Granted by manual SQL (no UI). |
+| `supabase/migrations/20260919172451_add_designations_store.sql` | **Designations Phase 1 (slice 4)** — introduces the designations store and moves the developer master key into it, deprecating `members.role`. New `designations` catalog (data-driven, seeded `developer`) + `member_designations` grants table (one active record per designation via partial unique on `ended_at IS NULL`; tracks granted/ended per D2/D3/D5). New plpgsql `member_has_designation(user_id, designation)` helper (STABLE, SECURITY DEFINER, pinned search_path) — the single SQL/RLS check. Rewrites `log_report_status_change` + the `rules_page_events` policy to use it. Migrates existing `role='developer'` rows. Grants are manual SQL only (no UI); the column itself is dropped later with the RLS pass. |
+| `supabase/migrations/20260916194432_add_league_scope_to_organization_staff.sql` | **Designations Phase 1 (slice 1)** — adds `organization_staff.league_id` (nullable = org-wide, set = one league only) for scoped staff grants (req O3/O4). Same-org integrity enforced in-DB via composite FK `(organization_id, league_id) → leagues (organization_id, id)` (MATCH SIMPLE skips the check when `league_id` is NULL). Adds `leagues_org_id_id_unique` as the FK target + `organization_staff_league_id_idx`. |
 | `supabase/migrations/20260905172511_payment_methods.sql` | **Per-player card-on-file** (tournament paid foundation, Phase A). New `payment_methods` table: one saved card per row, **owned by `member_id`**, reusable for anything the player pays for (tournaments, dues, ...) — matches Stripe's model (charges reference a card by id). Cols: `stripe_customer_id`, `stripe_payment_method_id` (token), `card_last4`, `card_brand`, `nickname` (optional label, for >1 card later), `verified_at`, `is_default` (partial-unique: one default per member). Adds `brackets.payment_method_id` FK (ON DELETE SET NULL) = the card charged at Start. Mock today; Jack's Stripe install backs the token fields. The LO org card (`organizations`) is left as-is (future consolidation points it here). Test: `payment_methods.schema.db.test.ts`. |
 | `supabase/migrations/20260916171612_game_rooms.sql` | **Game Room / Unit 1** — `rooms` + `room_phones` (one row per DEVICE; a seat is a socket), both published + REPLICA IDENTITY FULL; dials as functions (`room_table_cap` 3, `room_seats_per_host` 4, `room_presence_grace` 2 min, `room_activity_threshold` 5 min); `room_validate_tables` (the plug-in contract check: reserved? exists? uuid room_id? cascade FK to rooms? published? full replica?); `room_seats` (distinct hosts present × 4 − devices present); RPCs `create_room` / `join_room` (FOR UPDATE + seat check, `not_shared` on free rooms) / `room_heartbeat` / `set_room_game` (validate → WIPE old tables by room_id → update) / `set_room_settings` (no wipe) / `set_room_shared` / `close_room` (cascade) / `get_room` / `get_room_by_token` (`{found:false}` once gone). Interim host gate `room_member_is_host` = role in (league_operator, developer) | Every caller resolved auth.uid() → members; nothing granted to anon; helpers revoked from authenticated too |
 | `supabase/migrations/20260916184405_game_rooms_sweep.sql` | **Game Room / Unit 2** — `sweep_stale_rooms(p_idle_hours default 24)` deletes rooms whose `last_activity_at` is older than the window (cascade takes phones + game rows), returns the count; scheduled DAILY at 07:00 UTC by pg_cron as `game-room-sweep`, an hour after `auto-forfeit-sweep` — with the 24 h window a room lives 24–48 h after the last phone leaves (Ed, 2026-09-19: tidying, not a deadline; was hourly) | Keyed on state → idempotent + self-healing; revoked from anon AND authenticated (pg_cron runs as owner); mirrors the auto-forfeit sweep |
@@ -2051,6 +2136,7 @@ Supabase local configuration and migrations
 | `src/race/ScoreRacePage.tsx` | Thin route wrapper — turns a URL into a race id | Keeping URL-reading HERE is what lets the room be hosted anywhere |
 | `src/race/StartRacePage.tsx` | **DISPOSABLE** stand-in for starting a race | The real entrance is the game room, which calls the same `create_race`. Exists so a race can be played before that room is built |
 | `src/race/__tests__/RaceGamesList.test.tsx` | Tests that Reverse appears on exactly one game | The button placement IS the rule as far as a player is concerned — on a middle game the server would refuse and they'd see an unexplainable failure |
+| `supabase/migrations/20260916144323_late_entry_writes_hopper_row.sql` | **FIX: a late entrant can see their own tournament.** `add_late_entry` wrote `bracket_participants` only, but `get_bracket_player_view` builds its lists from `bracket_hopper` — so a latecomer was invisible to their own phone, `JoinHopperPage` read that as "the organizer removed me" and WIPED their remembered name, and `add_self_as_walkup` then refused (`not_accepting` — the bracket is live). Playing in a tournament, locked out of its page | Now writes an `official` hopper row too. UPDATE-or-insert, not a plain insert: `bracket_hopper` carries unique indexes on (bracket_id, lower(btrim(display_name))) and (bracket_id, member_id) that the participants-only guards never had to satisfy — a never-admitted sign-up would have hit an unhandled unique violation. That person is the LIKELIEST latecomer, so their row is admitted rather than refused. A walk-up keeps THEIR OWN spelling (the page matches by exact string, so admitting "Rocket" as "rocket" locks them out anyway). Someone else's row → new `name_waiting` reason, distinct from `name_taken` |
 | `supabase/seed.sql` | Full local dev DB dump — auto-applied on `supabase db reset`. **Local only, never runs against production.** |
 | `supabase/seed_test_users.sql` | 4 synthetic test auth users (player/operator/captain/owner; password hashed by pgcrypto at seed time — password `test-password-123`). **Dev-only — run manually via `docker exec ... psql`.** |
 | `supabase/seed_members.sql` | 20 placeholder players (no `user_id`) spanning Fargo 300–580 ratings for wizard/team-management testing. **Dev-only — not wired into auto-seed; run manually when the local DB needs a bench of fake members.** |

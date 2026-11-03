@@ -76,7 +76,7 @@ export async function getLeagueReupStatus(
     .order('team_name', { ascending: true });
 
   // Re-up responses for those teams
-  const teamIds = (teams ?? []).map((t: any) => t.id);
+  const teamIds = (teams ?? []).map((t) => t.id);
   const { data: responses } = teamIds.length > 0
     ? await supabase
         .from('season_reup_responses')
@@ -84,14 +84,15 @@ export async function getLeagueReupStatus(
                  next_captain:members!next_captain_id(first_name, last_name)`)
         .eq('season_id', season.id)
         .in('team_id', teamIds)
-    : { data: [] as any[] };
+    : { data: [] as never[] };
 
-  const byTeamId = new Map<string, any>();
+  type ReupRow = NonNullable<typeof responses>[number];
+  const byTeamId = new Map<string, ReupRow>();
   for (const r of responses ?? []) byTeamId.set(r.team_id, r);
 
   let countSubmitted = 0;
   let countNoResponse = 0;
-  const entries: LeagueReupStatusEntry[] = (teams ?? []).map((t: any) => {
+  const entries: LeagueReupStatusEntry[] = (teams ?? []).map((t) => {
     const captainRaw = Array.isArray(t.captain) ? t.captain[0] : t.captain;
     const captainName = captainRaw
       ? `${captainRaw.first_name} ${captainRaw.last_name}`

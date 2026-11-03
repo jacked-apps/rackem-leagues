@@ -151,7 +151,7 @@ export function useTeamManagement(
         // adding a redundant team to an odd league).
         const { data: teamsData, error: teamsError } = await fetchTeamsWithDetails(leagueId, { includeBye: true });
         if (teamsError) throw teamsError;
-        setTeams(teamsData || []);
+        setTeams((teamsData || []) as TeamWithQueryDetails[]); // stat columns DB-default to 0
 
       } catch (err) {
         logger.error('Error fetching teams', {
@@ -176,7 +176,7 @@ export function useTeamManagement(
       const { data: teamsData, error: teamsError } = await fetchTeamsWithDetails(leagueId, { includeBye: true });
 
       if (teamsError) throw teamsError;
-      setTeams(teamsData || []);
+      setTeams((teamsData || []) as TeamWithQueryDetails[]); // stat columns DB-default to 0
     } catch (err) {
       logger.error('Error refreshing teams', {
         error: err instanceof Error ? err.message : String(err),

@@ -45,7 +45,7 @@ export const EmailConfirmation: React.FC = () => {
           setStatus('error');
           setMessage('Invalid confirmation link');
         }
-      } catch (error) {
+      } catch {
         setStatus('error');
         setMessage('An error occurred during confirmation');
       }

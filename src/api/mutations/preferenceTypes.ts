@@ -31,16 +31,16 @@ export interface PreferenceFields {
   pairing_format?: 'single_rack' | 'race_to_n' | string | null;
   /**
    * Calculator name from the registry (Phase 2 Unit 2.1 rename:
-   * `scoring_method` → `points_calculator`). NULL = league does not
-   * track points; standings sort cannot include `points_earned` and
-   * `win_condition` must be `'games'`.
+   * `scoring_method` → `points_calculator`). NOT NULL in the DB:
+   * `'none'` = league does not track points; standings sort cannot
+   * include `points_earned` and `win_condition` must be `'games'`.
    */
   points_calculator?:
+    | 'none'
     | 'linear_above_threshold'
     | 'accumulate_with_milestone_jumps'
     | 'accumulated_per_game'
-    | string
-    | null;
+    | string;
   /**
    * Calculator-specific parameter object (Phase 2 Unit 2.1 new column).
    * Shape varies by calculator type — each calculator owns its own zod

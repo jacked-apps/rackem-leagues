@@ -83,4 +83,4 @@ _None — all product decisions are settled._
 
 ## Next Steps
 
-→ `/ce:plan` for structured implementation planning (auto-scan script + initial checklist generation + first-screen pilot).
+→ `/compound-engineering:ce-plan` for structured implementation planning (auto-scan script + initial checklist generation + first-screen pilot).

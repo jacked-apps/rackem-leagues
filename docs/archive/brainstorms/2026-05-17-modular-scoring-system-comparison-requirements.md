@@ -76,7 +76,7 @@ This section documents what was actually established during the brainstorm vs wh
 
 ### What already exists in code (brownfield, not greenfield)
 
-The modular work is NOT starting from zero. Significant scaffolding has already shipped under prior planning iterations and should be reconciled (not re-derived) during `/ce:plan`:
+The modular work is NOT starting from zero. Significant scaffolding has already shipped under prior planning iterations and should be reconciled (not re-derived) during `/compound-engineering:ce-plan`:
 
 - **`src/systems/buildSystemFromPreferences.ts`** — runtime resolver with a fast-path preset detection + an ad-hoc-path cross-axis composition. The ad-hoc path already composes across `lineup_size × handicap_type × game_generation × mechanism × points_calculator` axes for off-preset combinations.
 - **`src/systems/__tests__/off_preset_combos.test.ts`** — test coverage proving non-preset combinations already run end-to-end.
@@ -88,14 +88,14 @@ The modular work is NOT starting from zero. Significant scaffolding has already 
 
 ### What remains inferred (not directly walked here)
 
-- **Maintenance cost projection** for snapshot persistence and locked-doc alignment was not walked in detail. Ed accepted these costs as part of the framework rather than treating them as deciding factors. Conservative interpretation: the verdict accepts these costs as the cost of doing business; exact magnitude is a planning concern. Sizing these is `/ce:plan` work.
+- **Maintenance cost projection** for snapshot persistence and locked-doc alignment was not walked in detail. Ed accepted these costs as part of the framework rather than treating them as deciding factors. Conservative interpretation: the verdict accepts these costs as the cost of doing business; exact magnitude is a planning concern. Sizing these is `/compound-engineering:ce-plan` work.
 - **Cross-handicap composition end-to-end walk** (e.g., "FargoRate handicap + 3v3 points formula"): the viability receipt notes this case wasn't walked end-to-end. The Converter math for it is the same shape as Points ⇄ Percentage (bucket the source range, map to target range). Likely fine; walked first cross-handicap case during planning or first implementation pass.
 
 ## Success Criteria
 
 The compare-stage verdict is successful if:
 
-- **The receipt is enough for `/ce:plan` to start.** A future Claude session reads this doc + the viability receipt and can begin structured implementation planning without re-deriving the architectural framework or re-litigating the build decision.
+- **The receipt is enough for `/compound-engineering:ce-plan` to start.** A future Claude session reads this doc + the viability receipt and can begin structured implementation planning without re-deriving the architectural framework or re-litigating the build decision.
 - **The "works, not perfect" standard is preserved.** Future-Ed (or any future reader) reads this doc and sees that the v1 bar is "runs and produces sensible output for any combination an LO wires up" — not "produces industrial-grade analytics." If anyone tries to gate modular work later citing "but this isn't proven to industrial-grade," the receipt reminds them that "works, not perfect" was always the standard.
 - **The deferred surfaces are explicit.** New Module kinds (streak bonuses, ladder formats, etc.) are documented as future work; the build order is named as planning-stage work; downstream UI surfaces (manual dial UI → eventual LO wizard) are noted as separate later concerns.
 
@@ -103,10 +103,10 @@ The compare-stage verdict is successful if:
 
 The verdict is "ship the modular framework." The following are deliberately **out of scope** for this brainstorm:
 
-- **Implementation sequencing.** Which Modules get touched first, what aligns vs gets revised, how many lock-doc unlocks the work needs and in what order — all `/ce:plan` work. This brainstorm answers "yes, ship it"; planning answers "in what order."
+- **Implementation sequencing.** Which Modules get touched first, what aligns vs gets revised, how many lock-doc unlocks the work needs and in what order — all `/compound-engineering:ce-plan` work. This brainstorm answers "yes, ship it"; planning answers "in what order."
 - **UI for the dials.** Modules ship without dials first. A manual UI for the dials comes next. An eventual LO-facing wizard is a further-downstream concern. None of these UI surfaces are part of the verdict and they don't need to exist for the framework to be valuable.
 - **New Module kinds** (streak bonuses, captain-specific scoring, ladder formats, hybrid individual-vs-team formats). Per the viability receipt's narrowed Success Criterion 2, these are deferred future work — built only if a real LO asks. Not in v1 scope.
-- **Detailed maintenance cost estimation.** Converters per handicap-system pair, snapshot persistence edge cases (forfeit-sub, vacate-and-rescore). Real costs the framework carries; sizing is `/ce:plan` work.
+- **Detailed maintenance cost estimation.** Converters per handicap-system pair, snapshot persistence edge cases (forfeit-sub, vacate-and-rescore). Real costs the framework carries; sizing is `/compound-engineering:ce-plan` work.
 - **Per-Scoring-System Win Calculator rules** (primary rule + tiebreaker chain + termination + playoff). Per the viability receipt's R7 hypothesis, these are content for per-Scoring-System pages (Unit 9 in the locked doc plan) and/or a dedicated Win Calc detail brainstorm. Not addressed here.
 
 ## Key Decisions
@@ -134,9 +134,9 @@ Decisions made during the brainstorm with their rationale travelling with them:
 
 ### Resolve Before Planning
 
-- **None.** A prior framing in this receipt treated the viability receipt's R5/R7 lock-gate item as a blocker on `/ce:plan`. On closer reading, neither one is a blocker:
+- **None.** A prior framing in this receipt treated the viability receipt's R5/R7 lock-gate item as a blocker on `/compound-engineering:ce-plan`. On closer reading, neither one is a blocker:
   - **R7** (Win Calc 4-slot hypothesis) was downgraded to a hypothesis in the viability brainstorm itself; v1 ships `win_condition` binary; the locked `modules/win-calculator.md` already frames the 4-piece shape as "Future architectural picture, NOT YET BUILT." No edit needed.
-  - **R5** (Pairings Generator split from Team Geometry) only needs a locked-doc unlock if v1 implementation actually splits them. That's a planning decision — if `/ce:plan` decides to defer the split, no unlock; if it commits to the split, the unlock happens at that point with the specific change (8 → 9 Modules table) known in advance per Principle 7.
+  - **R5** (Pairings Generator split from Team Geometry) only needs a locked-doc unlock if v1 implementation actually splits them. That's a planning decision — if `/compound-engineering:ce-plan` decides to defer the split, no unlock; if it commits to the split, the unlock happens at that point with the specific change (8 → 9 Modules table) known in advance per Principle 7.
 
 ### Deferred to Planning
 
@@ -150,8 +150,8 @@ Decisions made during the brainstorm with their rationale travelling with them:
 
 The compare question is answered: **ship the modular framework**. The next phases:
 
-1. **`/ce:plan`** — structured implementation plan. Inputs: this doc + the viability receipt. Outputs: ordered unit list covering lock-doc unlocks, Module implementation sequence, snapshot persistence shape, and reconciliation pass against the two prior plans.
+1. **`/compound-engineering:ce-plan`** — structured implementation plan. Inputs: this doc + the viability receipt. Outputs: ordered unit list covering lock-doc unlocks, Module implementation sequence, snapshot persistence shape, and reconciliation pass against the two prior plans.
 
 2. **(Optional, lower priority) Win Calc detail brainstorm** — fully specify per-Scoring-System primary rules, tiebreaker chains, playoff escalation per the viability receipt's R7 hypothesis. Not blocking; v1 ships `win_condition` binary regardless.
 
-`-> /ce:plan` is the recommended next step. The verdict is committed; planning is now unblocked.
+`-> /compound-engineering:ce-plan` is the recommended next step. The verdict is committed; planning is now unblocked.

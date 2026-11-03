@@ -67,6 +67,9 @@ export async function getAllLeagueOperators(): Promise<Array<{
   first_name: string;
   last_name: string;
 }>> {
+  // organization_staff links to members twice (member_id = the staff member,
+  // added_by = who added them), so the members embed must name its foreign
+  // key — without the hint PostgREST refuses the query as ambiguous (PGRST201).
   const { data, error } = await supabase
     .from('organization_staff')
     .select(`
@@ -75,7 +78,7 @@ export async function getAllLeagueOperators(): Promise<Array<{
         id,
         organization_name
       ),
-      members!inner (
+      members!organization_staff_member_id_fkey!inner (
         first_name,
         last_name
       )
@@ -88,7 +91,7 @@ export async function getAllLeagueOperators(): Promise<Array<{
   }
 
   // Flatten the nested data
-  return (data || []).map((staff: any) => ({
+  return (data || []).map((staff) => ({
     id: staff.organizations.id,
     organization_name: staff.organizations.organization_name,
     member_id: staff.member_id,

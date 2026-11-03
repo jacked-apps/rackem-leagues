@@ -25,7 +25,7 @@ import {
   destroyOnboardingFixture,
   type OnboardingFixture,
 } from '@/test/onboardingFixtures';
-import type { PoolClient } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
 
 /**
  * Run `fn` in a transaction with auth.uid() set to `sub`, then ROLLBACK.
@@ -53,7 +53,7 @@ async function callRpc(
   client: PoolClient,
   token: string,
   claimedMemberId?: string | null
-): Promise<any> {
+): Promise<QueryResultRow> {
   const res = await client.query(
     `SELECT request_team_join($1, $2) AS r`,
     [token, claimedMemberId ?? null]

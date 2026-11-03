@@ -87,7 +87,7 @@ The organizer is always a logged-in user (a free account suffices); there is no 
 
 ## Paid Feature Roadmap (each its own brainstorm → plan)
 
-> **Status (updated 2026-09-04):** the **Free Tier is BUILT** (PR #264, gated, awaiting review/merge). This section is the paid‑tier plan — the durable "don't lose the features" list. Each item is its own future `/ce:brainstorm → /ce:plan`. Order below is by dependency (foundation first), not locked.
+> **Status (updated 2026-09-04):** the **Free Tier is BUILT** (PR #264, gated, awaiting review/merge). This section is the paid‑tier plan — the durable "don't lose the features" list. Each item is its own future `/compound-engineering:ce-brainstorm → /compound-engineering:ce-plan`. Order below is by dependency (foundation first), not locked.
 
 ### Decide first (not a feature — a business/product gate)
 **How does "paid" unlock?** Per‑account subscription? Per‑tournament fee? One‑time upgrade? This shapes where the paywall flag lives and gates everything below. Likely **Jack's revenue call**.
@@ -157,4 +157,4 @@ _No hard blockers remain for the free-tier plan._
 _Paid-tier open questions live with their **Paid Feature Roadmap** items, not here._
 
 ## Next Steps
--> `/ce:plan` for the **Free Tier v1**. Then resume `/ce:brainstorm` per paid feature in the roadmap (starting with venue).
+-> `/compound-engineering:ce-plan` for the **Free Tier v1**. Then resume `/compound-engineering:ce-brainstorm` per paid feature in the roadmap (starting with venue).

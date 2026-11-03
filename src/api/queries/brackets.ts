@@ -132,7 +132,8 @@ export async function getBracketPlayerView(joinToken: string): Promise<BracketPl
     p_join_token: joinToken,
   });
   if (error) throw new Error(`Failed to load tournament: ${error.message}`);
-  return data as BracketPlayerView;
+  // The RPC returns jsonb, typed as plain Json; the SQL function builds this shape.
+  return data as unknown as BracketPlayerView;
 }
 
 /** The organizer's full bracket view: the bracket + its participants + matches. */

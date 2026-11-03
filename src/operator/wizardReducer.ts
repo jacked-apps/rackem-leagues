@@ -6,7 +6,7 @@
  * Provides predictable state updates through typed reducer actions.
  */
 import type { League } from '@/types/league';
-import type { Season, ChampionshipEvent, WeekEntry } from '@/types/season';
+import type { Season, ChampionshipEvent, WeekEntry, Holiday } from '@/types/season';
 import type { ChampionshipDateOption } from '@/utils/tournamentUtils';
 import type { ChampionshipPreference } from '@/data/seasonWizardSteps';
 
@@ -42,7 +42,7 @@ export interface WizardState {
   savedChampionshipPreferences: ChampionshipPreference[];
 
   // Schedule-related data
-  holidays: any[];
+  holidays: Holiday[];
   bcaChampionship: ChampionshipEvent | undefined;
   apaChampionship: ChampionshipEvent | undefined;
   seasonStartDate: string;
@@ -71,7 +71,7 @@ export type WizardAction =
   | { type: 'SET_APA_DATE_OPTIONS'; payload: ChampionshipDateOption[] }
   | { type: 'SET_SAVED_CHAMPIONSHIP_PREFERENCES'; payload: ChampionshipPreference[] }
   // Schedule-related data
-  | { type: 'SET_HOLIDAYS'; payload: any[] }
+  | { type: 'SET_HOLIDAYS'; payload: Holiday[] }
   | { type: 'SET_BCA_CHAMPIONSHIP'; payload: ChampionshipEvent | undefined }
   | { type: 'SET_APA_CHAMPIONSHIP'; payload: ChampionshipEvent | undefined }
   | { type: 'SET_SEASON_START_DATE'; payload: string }

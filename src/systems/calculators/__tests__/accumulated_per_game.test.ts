@@ -23,10 +23,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { accumulatedPerGame } from '../accumulated_per_game';
-import type {
-  AccumulatedPerGameParams,
-  SideScoringConfig,
-} from '../accumulated_per_game';
+import type { AccumulatedPerGameParams } from '../accumulated_per_game';
 
 const HOME = 'team-home';
 const AWAY = 'team-away';

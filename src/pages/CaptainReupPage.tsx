@@ -17,6 +17,7 @@ import { LoadingState, EmptyState } from '@/components/shared';
 import { CheckCircle2, ClipboardCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CaptainReupForm } from '@/components/reup/CaptainReupForm';
+import { TeamNameLink } from '@/components/TeamNameLink';
 
 export default function CaptainReupPage() {
   const navigate = useNavigate();
@@ -67,7 +68,9 @@ export default function CaptainReupPage() {
           <div key={team.teamId} className="border rounded-lg p-4 bg-card">
             <div className="flex items-center gap-2 mb-3">
               <ClipboardCheck className="h-5 w-5 text-blue-600" />
-              <h2 className="font-semibold text-lg">{team.teamName}</h2>
+              <h2 className="font-semibold text-lg">
+                <TeamNameLink teamId={team.teamId} teamName={team.teamName} />
+              </h2>
             </div>
             <CaptainReupForm
               team={team}

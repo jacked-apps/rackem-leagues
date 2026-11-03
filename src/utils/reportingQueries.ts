@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import type { Json } from '@/types/database.types';
 import { logger } from '@/utils/logger';
 
 /**
@@ -43,8 +44,8 @@ export async function createUserReport(
   reportedUserId: string,
   category: ReportCategory,
   description: string,
-  evidenceSnapshot?: Record<string, any>,
-  contextData?: Record<string, any>
+  evidenceSnapshot?: { [key: string]: Json | undefined },
+  contextData?: { [key: string]: Json | undefined }
 ) {
   const { data, error } = await supabase
     .from('user_reports')

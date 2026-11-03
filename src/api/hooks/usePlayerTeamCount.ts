@@ -39,12 +39,13 @@ async function fetchPlayerTeams(memberId: string): Promise<PlayerTeam[]> {
   }
 
   // Transform the nested data structure
-  return (data || [])
-    .filter((tp: any) => tp.teams && !Array.isArray(tp.teams))
-    .map((tp: any) => ({
-      team_id: tp.teams.id,
-      team_name: tp.teams.team_name,
-    }));
+  // flatMap rather than filter+map so TypeScript keeps the narrowing on
+  // `tp.teams` (a filter callback doesn't carry it into the map).
+  return (data || []).flatMap((tp) =>
+    tp.teams && !Array.isArray(tp.teams)
+      ? [{ team_id: tp.teams.id, team_name: tp.teams.team_name }]
+      : []
+  );
 }
 
 /**

@@ -76,7 +76,7 @@ The brainstorm walked Percentage 5-Man (5v5%) and FargoRate 10-Point 5-Man end-t
 
 ### Methodology — taking old code and reshaping it into Modules
 
-*These four items are **methodology observations** surfaced during the brainstorm — they describe HOW future work should approach doc-vs-code alignment, not WHAT to build. Listed with R-numbers for cross-reference convenience, but they are not implementation requirements like R1-R11; they're process notes that will become a polished methodology doc in /ce:plan.*
+*These four items are **methodology observations** surfaced during the brainstorm — they describe HOW future work should approach doc-vs-code alignment, not WHAT to build. Listed with R-numbers for cross-reference convenience, but they are not implementation requirements like R1-R11; they're process notes that will become a polished methodology doc in /compound-engineering:ce-plan.*
 
 - **R12.** **Doc-first sketch + code-reality audit.** Sketch Modules from PRINCIPLES.md first; audit against the code that runs the league today; when they diverge, default is that docs are the target per Principle 6. Code shape ≠ Module shape; bundled function outputs are code artifacts, not architecture.
 
@@ -155,7 +155,7 @@ This section documents what was actually walked through the framework end-to-end
 This brainstorm validated architectural VIABILITY of the modular system for scoring. The following are deliberately **out of scope**:
 
 - **Compare stage** — quantifying "how much better than hardcoded" (LO flexibility gain vs refactoring cost vs added complexity). This is a separate brainstorm + analysis that consumes THIS doc as input.
-- **Methodology doc writing** — the brainstorm SURFACED the methodology insights (R12–R15); writing them as a polished standalone doc is /ce:plan territory.
+- **Methodology doc writing** — the brainstorm SURFACED the methodology insights (R12–R15); writing them as a polished standalone doc is /compound-engineering:ce-plan territory.
 - **Module taxonomy doc updates** — locked README.md and locked Module READMEs may need rewrites based on this brainstorm's findings (e.g., Points System README's (A/B/C/D) framing collapses into (T+T) pairs). All such edits are lock-gate territory per Principle 7; they happen in a separate branch with explicit "unlock and make the changes" invocations.
 - **Stats/Analytics Module, Confirmation/Audit System, Forfeit Policy** — the scoring modal is already built and handles these concerns directly. Not in scope for the modular Scoring System architecture; their own follow-up work if surfaced.
 - **Detailed Win Calculator per-system rules** — Win Calc's 4-sub-mechanism shape is *hypothesized* (R7 is a Hypothesis, not Requirement); the actual primary rules, tiebreakers, and playoff specifications per Scoring System are content for the per-Scoring-System pages (Unit 9 in the locked doc plan) and/or a Win-Calc-specific brainstorm.
@@ -214,9 +214,9 @@ The viability question is answered positively for the 3 shipped prepackaged Scor
 **Once those resolve, three possible next phases (not mutually exclusive):**
 
 1. **Compare stage** (separate brainstorm) — weigh "modular vs hardcoded" with effort/benefit tradeoffs. Inputs: this doc + survey of current hardcoded code's pain points + LO-demand signals.
-2. **Planning** (`/ce:plan`) — structured implementation plan for the actual rework: which locked docs need unlock, in what order, with what changes. Inputs: this doc.
+2. **Planning** (`/compound-engineering:ce-plan`) — structured implementation plan for the actual rework: which locked docs need unlock, in what order, with what changes. Inputs: this doc.
 3. **Win Calc detail brainstorm** (separate, lower priority since v1 ships `win_condition` binary) — fully specify the per-Scoring-System primary rules, tiebreaker chains, and playoff escalation per system. Inputs: this doc + R7's hypothesis.
 
-`-> Resume /ce:brainstorm` if Resolve-Before-Planning items, Win Calc detail, or compare stage should happen before planning.
+`-> Resume /compound-engineering:ce-brainstorm` if Resolve-Before-Planning items, Win Calc detail, or compare stage should happen before planning.
 
-`-> /ce:plan` if proceeding directly to structured implementation planning (assumes Resolve-Before-Planning items get addressed inside planning or the user accepts their risk).
+`-> /compound-engineering:ce-plan` if proceeding directly to structured implementation planning (assumes Resolve-Before-Planning items get addressed inside planning or the user accepts their risk).

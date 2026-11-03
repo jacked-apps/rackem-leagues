@@ -97,7 +97,8 @@ export const SeasonScheduleManager: React.FC = () => {
           .single();
 
         if (leagueError) throw leagueError;
-        setLeague(leagueData);
+        // Text enum columns (game_type, day_of_week…) are CHECK-limited to League's unions.
+        setLeague(leagueData as League);
 
         // Fetch season
         const { data: seasonData, error: seasonError } = await supabase
@@ -107,7 +108,7 @@ export const SeasonScheduleManager: React.FC = () => {
           .single();
 
         if (seasonError) throw seasonError;
-        setSeason(seasonData);
+        setSeason(seasonData as SeasonData); // status is CHECK-limited text
 
         // Fetch season weeks
         const { data: weeksData, error: weeksError } = await supabase
@@ -138,7 +139,7 @@ export const SeasonScheduleManager: React.FC = () => {
             conflicts: [],
             dbId: week.id, // Store DB ID for updates/deletes
             weekCompleted: week.week_completed,
-            dbWeekType: week.week_type, // Store original DB week_type
+            dbWeekType: week.week_type as WeekEntry['dbWeekType'], // Store original DB week_type (CHECK-limited)
             notes: week.notes, // Blackout label (holiday / "Season End Break")
           };
         });

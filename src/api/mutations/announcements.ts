@@ -98,7 +98,7 @@ export async function createLeagueAnnouncement(
   }
 
   // Get unique member IDs
-  const memberIds = [...new Set((teamPlayers || []).map((tp: any) => tp.member_id))];
+  const memberIds = [...new Set((teamPlayers || []).map((tp) => tp.member_id))];
 
   if (memberIds.length === 0) {
     throw new Error('No players found in league');
@@ -192,7 +192,7 @@ export async function createOrganizationAnnouncement(
   }
 
   // Get unique member IDs
-  const memberIds = [...new Set((teamPlayers || []).map((tp: any) => tp.member_id))];
+  const memberIds = [...new Set((teamPlayers || []).map((tp) => tp.member_id))];
 
   if (memberIds.length === 0) {
     throw new Error('No active players found in organization');

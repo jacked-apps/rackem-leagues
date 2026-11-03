@@ -32,7 +32,8 @@ import {
   type DroppedTeam,
 } from '@/utils/finances';
 import { TeamPayoutsTable } from './TeamPayoutsTable';
-import { IndividualAwardsEditor, defaultIndividualAwards } from './IndividualAwardsEditor';
+import { IndividualAwardsEditor } from './IndividualAwardsEditor';
+import { defaultIndividualAwards } from './individualAwards';
 import {
   useSeasonLockedPayouts,
   useLockSeasonPayouts,

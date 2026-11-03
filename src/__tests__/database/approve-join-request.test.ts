@@ -24,7 +24,7 @@ import {
   destroyOnboardingFixture,
   type OnboardingFixture,
 } from '@/test/onboardingFixtures';
-import type { PoolClient } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
 
 /** Run fn in a transaction, always rolling back. */
 async function inTx(fn: (c: PoolClient) => Promise<void>): Promise<void> {
@@ -67,7 +67,7 @@ async function approve(
   requestId: string,
   action: 'add' | 'replace' | 'decline',
   claimedMemberId?: string | null
-): Promise<any> {
+): Promise<QueryResultRow> {
   const res = await c.query(
     `SELECT approve_join_request($1, $2, $3) AS r`,
     [requestId, action, claimedMemberId ?? null]

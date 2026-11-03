@@ -19,7 +19,7 @@ import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { useFeatsStats } from '@/api/hooks/useFeatsStats';
 import { StatsNavBar } from '@/components/StatsNavBar';
 import { PageHeader } from '@/components/PageHeader';
-import { useCurrentMember } from '@/api/hooks/useCurrentMember';
+import { useIsOperator } from '@/api/hooks';
 import { ArrowLeft } from 'lucide-react';
 
 /**
@@ -36,10 +36,9 @@ import { ArrowLeft } from 'lucide-react';
 export function FeatsOfExcellence() {
   const { seasonId, leagueId } = useParams<{ seasonId: string; leagueId: string }>();
   const navigate = useNavigate();
-  const { data: member } = useCurrentMember();
 
-  // Check if current user is a league operator
-  const isOperator = member?.role === 'league_operator';
+  // Check if current user is a league operator (resolved live from staff grants)
+  const isOperator = useIsOperator();
 
   const { feats, isLoading, error } = useFeatsStats(seasonId!);
 

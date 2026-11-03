@@ -212,8 +212,9 @@ serve(async (req) => {
         .select("seasons!inner(leagues!inner(organization_id))")
         .eq("id", tokenData.team_id)
         .single();
-      // deno-lint-ignore no-explicit-any
-      organizationId = (teamRow as any)?.seasons?.leagues?.organization_id ?? null;
+      // The client here is untyped, so describe the embedded shape we selected.
+      type TeamOrgRow = { seasons?: { leagues?: { organization_id?: string | null } | null } | null };
+      organizationId = (teamRow as TeamOrgRow | null)?.seasons?.leagues?.organization_id ?? null;
     }
 
     if (!organizationId) {
@@ -269,8 +270,9 @@ serve(async (req) => {
       .eq("id", result.archive_id)
       .single();
 
-    // deno-lint-ignore no-explicit-any
-    const rows: any[] = Array.isArray(archive?.transferred_rows) ? archive.transferred_rows : [];
+    // transferred_rows is JSONB: one { t: table, op: action } entry per moved row.
+    type TransferredRow = { t?: string; op?: string } | null;
+    const rows: TransferredRow[] = Array.isArray(archive?.transferred_rows) ? archive.transferred_rows : [];
     const teamsJoined = rows.filter((r) => r?.t === "team_players" && r?.op === "inserted_for_target").length;
     const lineupsTransferred = rows.filter((r) => r?.t === "match_lineups" && r?.op === "rewritten").length;
     const gamesTransferred = rows.filter((r) => r?.t === "match_games" && r?.op === "rewritten").length;

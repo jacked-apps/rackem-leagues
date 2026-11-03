@@ -38,7 +38,8 @@ export async function getMemberProfile(userId: string): Promise<Member> {
     .single();
 
   if (error) throw error;
-  return data;
+  // `role` is nullable in the generated type but defaults to 'player'.
+  return data as Member;
 }
 
 /**
@@ -62,7 +63,8 @@ export async function getMemberById(memberId: string): Promise<Member> {
     .single();
 
   if (error) throw error;
-  return data;
+  // `role` is nullable in the generated type but defaults to 'player'.
+  return data as Member;
 }
 
 /**
@@ -232,16 +234,16 @@ export async function getAllMembers(
 
   // Defensive client-side BCA# trim — empty strings shouldn't count as a
   // BCA#. PostgREST `not.is.null` doesn't catch ''.
-  const rows = (data ?? []) as PartialMember[];
-  if (!organizationId) return rows;
+  // Filter on the raw rows (they carry organization_id; PartialMember doesn't).
+  const rows = data ?? [];
+  if (!organizationId) return rows as PartialMember[];
 
   return rows.filter((m) => {
     if (m.user_id) return true;
-    // deno-lint-ignore no-explicit-any
-    if ((m as any).organization_id === organizationId) return true;
+    if (m.organization_id === organizationId) return true;
     const bca = m.bca_member_number?.trim();
     return !!bca;
-  });
+  }) as PartialMember[];
 }
 
 /**
@@ -315,5 +317,6 @@ export async function getMemberProfanitySettings(
 
   if (error) throw error;
 
-  return data;
+  // Column is nullable but defaults to false.
+  return data as MemberProfanitySettings;
 }

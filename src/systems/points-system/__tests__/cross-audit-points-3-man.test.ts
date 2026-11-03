@@ -73,7 +73,6 @@ describe('Cross-audit: Points 3-Man composed vs. linear_above_threshold legacy',
 
     for (const diff of HANDICAP_DIFFS) {
       for (const multiplier of MULTIPLIERS) {
-        // eslint-disable-next-line vitest/valid-title
         describe(`diff=${diff}, multiplier=${multiplier}`, () => {
           it.each(outcomes)(
             'home=%i, away=%i: composed home/away points match legacy',

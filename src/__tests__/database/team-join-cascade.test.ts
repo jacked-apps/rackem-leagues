@@ -101,7 +101,7 @@ describe('Onboarding cascade Unit 1 — schema migration', () => {
            FROM information_schema.columns
           WHERE table_schema = 'public' AND table_name = 'team_join_requests'`
       );
-      const byName = Object.fromEntries(rows.map((r: any) => [r.column_name, r]));
+      const byName = Object.fromEntries(rows.map((r: { column_name: string; column_default: string | null; is_nullable: string }) => [r.column_name, r]));
       expect(byName.status).toBeTruthy();
       expect(String(byName.status.column_default)).toContain('pending');
       expect(byName.expires_at).toBeTruthy();
@@ -114,7 +114,7 @@ describe('Onboarding cascade Unit 1 — schema migration', () => {
         `SELECT indexname FROM pg_indexes
           WHERE schemaname = 'public' AND tablename = 'team_join_requests'`
       );
-      const names = rows.map((r: any) => r.indexname);
+      const names = rows.map((r: { indexname: string }) => r.indexname);
       expect(names).toContain('team_join_requests_team_status_idx');
       expect(names).toContain('team_join_requests_user_pending_uniq');
       expect(names).toContain('team_join_requests_spot_pending_uniq');

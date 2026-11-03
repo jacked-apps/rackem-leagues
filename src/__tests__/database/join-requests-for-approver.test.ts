@@ -17,7 +17,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { executeSql, getPostgresPool } from '@/test/dbTestUtils';
-import type { PoolClient } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
 
 async function inTx(fn: (c: PoolClient) => Promise<void>): Promise<void> {
   const c = await getPostgresPool().connect();
@@ -36,7 +36,7 @@ async function setJwt(c: PoolClient, sub: string | null): Promise<void> {
   ]);
 }
 
-async function feed(c: PoolClient): Promise<any[]> {
+async function feed(c: PoolClient): Promise<QueryResultRow[]> {
   const res = await c.query(`SELECT get_join_requests_for_approver() AS f`);
   return res.rows[0].f;
 }
@@ -115,7 +115,7 @@ describe('Onboarding cascade Unit 5 — get_join_requests_for_approver', () => {
       const id = await seedPending(c);
       await setJwt(c, captainUser);
       const rows = await feed(c);
-      const mine = rows.find((r) => r.request_id === id);
+      const mine = rows.find((r) => r.request_id === id)!;
       expect(mine).toBeTruthy();
       expect(mine.team_id).toBe(teamId);
       expect(typeof mine.team_name).toBe('string');

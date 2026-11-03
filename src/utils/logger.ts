@@ -18,6 +18,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import type { Json } from '@/types/database.types';
 
 type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -44,7 +45,8 @@ async function sendToSupabase(entry: LogEntry): Promise<void> {
     await supabase.from('app_logs').insert({
       level: entry.level,
       message: entry.message,
-      context: entry.context || {},
+      // jsonb column; log context is caller-supplied plain data.
+      context: (entry.context || {}) as Json,
       url: typeof window !== 'undefined' ? window.location.href : null,
       user_id: user?.id || null,
     });

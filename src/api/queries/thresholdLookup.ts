@@ -113,7 +113,9 @@ export async function lookupThresholdRaw(
   const { data, error } = await supabase.rpc('lookup_threshold', {
     p_chart_id: chartId,
     p_comp_1: comp1,
-    p_comp_2: comp2,
+    // The generated type only knows "optional"; an explicit null is valid SQL
+    // (the param is DEFAULT NULL) and is what this call has always sent.
+    p_comp_2: comp2 as number,
   });
 
   if (error) {
@@ -131,10 +133,10 @@ export async function lookupThresholdRaw(
   // version. Normalize.
   const row = Array.isArray(data) ? data[0] : data;
   return {
-    result_1: (row as any).result_1 ?? null,
-    result_2: (row as any).result_2 ?? null,
-    result_3: (row as any).result_3 ?? null,
-    was_swapped: (row as any).was_swapped ?? false,
+    result_1: row.result_1 ?? null,
+    result_2: row.result_2 ?? null,
+    result_3: row.result_3 ?? null,
+    was_swapped: row.was_swapped ?? false,
   };
 }
 

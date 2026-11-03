@@ -101,4 +101,4 @@ This feature delivers a single, well-formatted, searchable home for the official
 
 ## Next Steps
 
--> `/ce:plan` for structured implementation planning of Branch 1 (Official Rulebook Reader).
+-> `/compound-engineering:ce-plan` for structured implementation planning of Branch 1 (Official Rulebook Reader).

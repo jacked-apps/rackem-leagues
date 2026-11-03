@@ -21,6 +21,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
+import { fetchAllRows, type PageResult } from './fetchAllRows';
 import { toPlayerGameRows, type RawGame } from '@/stats/toPlayerGameRows';
 import type { PlayerGameRow } from '@/stats/playerGameRow';
 
@@ -104,19 +105,27 @@ function displayName(m: {
 export async function fetchPlayerGameHistory(
   memberId: string
 ): Promise<PlayerGameRow[]> {
-  const { data: games, error } = await supabase
-    .from('match_games')
-    .select(GAME_SELECT)
-    .or(`home_player_id.eq.${memberId},away_player_id.eq.${memberId}`)
-    .eq('is_tiebreaker', false)
-    .in('match.status', COUNTED_STATUSES as unknown as string[]);
+  // Paged via fetchAllRows. This one spans EVERY season a member has played,
+  // so a long-tenured player reaches PostgREST's 1000-row response cap sooner
+  // than any single season does — and a truncated history silently shortens
+  // both the My Stats page and the Fargo handicap fallback that reads it.
+  // `.order('id')` keeps the paging stable.
+  const games = await fetchAllRows<RawGame>(
+    (from, to) =>
+      supabase
+        .from('match_games')
+        .select(GAME_SELECT, { count: 'exact' })
+        .or(`home_player_id.eq.${memberId},away_player_id.eq.${memberId}`)
+        .eq('is_tiebreaker', false)
+        .in('match.status', COUNTED_STATUSES as unknown as string[])
+        .order('id')
+        .range(from, to) as unknown as PromiseLike<PageResult<RawGame>>,
+    { label: 'player game history' }
+  );
 
-  if (error) {
-    throw new Error(`Failed to fetch game history: ${error.message}`);
-  }
   if (!games || games.length === 0) return [];
 
-  const raw = games as unknown as RawGame[];
+  const raw = games;
 
   // Opponents: whichever side isn't this member.
   const opponentIds = new Set<string>();

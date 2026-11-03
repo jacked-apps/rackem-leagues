@@ -31,14 +31,15 @@ import { REPORT_CATEGORIES } from '@/utils/reportingQueries';
 import type { ReportCategory } from '@/utils/reportingQueries';
 import { Modal } from '@/components/shared';
 import { logger } from '@/utils/logger';
+import type { Json } from '@/types/database.types';
 import { toast } from 'sonner';
 
 interface ReportUserModalProps {
   reportedUserId: string;
   reportedUserName: string;
   onClose: () => void;
-  contextData?: Record<string, any>; // conversation_id, match_id, etc.
-  evidenceSnapshot?: Record<string, any>; // message_text, score_data, etc.
+  contextData?: { [key: string]: Json | undefined }; // conversation_id, match_id, etc.
+  evidenceSnapshot?: { [key: string]: Json | undefined }; // message_text, score_data, etc.
   defaultCategory?: ReportCategory;
 }
 

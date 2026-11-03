@@ -3,13 +3,9 @@
  *
  * Calculates the effective profanity filter setting for the current user.
  *
- * Two-tier rule:
- *   1. If we know the user is under 18 (DOB on file → `isMinor()` true),
- *      the filter is forced ON and the user cannot toggle it. This is the
- *      R4 under-18 enforcement path.
- *   2. Otherwise (adult OR unknown DOB), we respect the user's own
- *      `members.profanity_filter_enabled` preference and they can toggle
- *      it freely in settings.
+ * Everyone respects their own `members.profanity_filter_enabled` preference
+ * and can toggle it in settings. The R4 under-18 lock (forced ON for a known
+ * minor) is PAUSED — see the TODO(under-18-filter) in the hook body.
  *
  * DOB is optional on the profile — some users will have it (CSI/BCA
  * partnerships may require it for identification), some won't.
@@ -25,7 +21,6 @@
 import { useMemo } from 'react';
 import { useUser } from '@/context/useUser';
 import { useMemberProfanitySettings } from '@/api/hooks';
-import { isMinor } from '@/utils/age';
 import { logger } from '@/utils/logger';
 
 interface ProfanityFilterState {
@@ -53,12 +48,11 @@ export function useProfanityFilter(): ProfanityFilterState {
       return { shouldFilter: false, canToggle: true, isLoading: false };
     }
 
-    // R4: known-minor → filter forced ON, no toggle.
-    if (isMinor(settings.date_of_birth)) {
-      return { shouldFilter: true, canToggle: false, isLoading: false };
-    }
-
-    // Adult or unknown DOB → respect user's stored preference.
+    // TODO(under-18-filter): the R4 minor lock (filter forced ON, no toggle
+    // when isMinor(settings.date_of_birth)) is paused — everyone gets their
+    // own choice until Ed revisits it. Restore it together with the matching
+    // check in updateProfanityFilter. `canToggle` stays so the screens'
+    // locked state is ready to come back.
     return {
       shouldFilter: settings.profanity_filter_enabled || false,
       canToggle: true,

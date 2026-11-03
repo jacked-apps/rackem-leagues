@@ -52,7 +52,7 @@ export async function setMatchLineupRating(
     p_match_lineup_id: args.matchLineupId,
     p_member_id: args.memberId,
     p_rating_value: args.ratingValue,
-    p_reason: args.reason ?? null,
+    p_reason: args.reason ?? undefined, // omitted → the SQL DEFAULT NULL
   });
 
   if (error) {
@@ -147,7 +147,7 @@ export async function setMemberStartingHandicap(
     p_member_id: args.memberId,
     p_rating_system: args.ratingSystem,
     p_new_value: args.newValue,
-    p_reason: args.reason ?? null,
+    p_reason: args.reason ?? undefined, // omitted → the SQL DEFAULT NULL
   });
 
   if (error) {
@@ -182,7 +182,7 @@ export async function vacateAndRescoreAuditMarker(
 ): Promise<string> {
   const { data, error } = await supabase.rpc('vacate_and_rescore_audit_marker', {
     p_match_id: args.matchId,
-    p_reason: args.reason ?? null,
+    p_reason: args.reason ?? undefined, // omitted → the SQL DEFAULT NULL
   });
 
   if (error) {

@@ -73,7 +73,7 @@ export function AnnouncementModal({
       // Get unique league and season IDs
       const leagueSeasonPairs = new Map<string, { leagueId: string; seasonId: string }>();
 
-      (captainTeams || []).forEach((item: any) => {
+      (captainTeams || []).forEach((item) => {
         const team = item.teams;
         const leagueId = team.league_id;
         const seasonId = team.season_id;
@@ -145,7 +145,7 @@ export function AnnouncementModal({
           .maybeSingle();
 
         if (staffData && staffData.organizations) {
-          const org = staffData.organizations as any;
+          const org = staffData.organizations;
           allTargets.push({
             id: org.id,
             name: `${org.organization_name} (Organization)`,

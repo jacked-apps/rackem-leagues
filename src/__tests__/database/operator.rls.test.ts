@@ -12,20 +12,9 @@ import type { Database } from '@/types/database.types';
 
 describe('Organizations Table - RLS Tests', () => {
   let client: SupabaseClient<Database>;
-  let testOrgId: string;
 
   beforeAll(async () => {
     client = createTestClient();
-
-    const { data: org } = await client
-      .from('organizations')
-      .select('id')
-      .limit(1)
-      .single();
-
-    if (org) {
-      testOrgId = org.id;
-    }
   });
 
   describe('SELECT Operations', () => {

@@ -13,7 +13,7 @@
 import { useEffect, useRef } from 'react';
 import type { SeasonFormData, ChampionshipPreference } from '@/data/seasonWizardSteps';
 import type { League } from '@/types/league';
-import type { Season, ChampionshipEvent, WeekEntry } from '@/types/season';
+import type { Season, ChampionshipEvent, WeekEntry, Holiday } from '@/types/season';
 import type { ChampionshipDateOption } from '@/utils/tournamentUtils';
 import { formatDayOfWeek } from '@/types/league';
 import { parseLocalDate } from '@/utils/formatters';
@@ -51,7 +51,7 @@ export interface UseScheduleGenerationParams {
   /** Callback to update season start date */
   onSeasonStartDateUpdate: (startDate: string) => void;
   /** Callback to update holidays */
-  onHolidaysUpdate: (holidays: any[]) => void;
+  onHolidaysUpdate: (holidays: Holiday[]) => void;
   /** Callback to update BCA championship event */
   onBcaChampionshipUpdate: (championship: ChampionshipEvent | undefined) => void;
   /** Callback to update APA championship event */

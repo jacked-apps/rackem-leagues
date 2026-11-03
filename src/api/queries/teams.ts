@@ -123,7 +123,7 @@ export async function getPlayerTeams(memberId: string) {
 
   // Filter for active/upcoming seasons and sort by start date (most recent first)
   const filteredData = data
-    ?.filter((item: any) => {
+    ?.filter((item) => {
       // Type guard: ensure teams and season are objects, not arrays
       const teams = item.teams;
       if (!teams || Array.isArray(teams)) return false;
@@ -134,7 +134,7 @@ export async function getPlayerTeams(memberId: string) {
       const status = season.status;
       return status === 'active' || status === 'upcoming';
     })
-    .sort((a: any, b: any) => {
+    .sort((a, b) => {
       const teamsA = a.teams;
       const teamsB = b.teams;
 

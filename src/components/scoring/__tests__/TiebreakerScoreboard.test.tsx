@@ -2,11 +2,9 @@
  * @fileoverview Tests for TiebreakerScoreboard — Unit 6 of the
  * unified-scoreboard plan covers the R18 team-name fix.
  *
- * R20 "don't lock things down" is verified by inspection in code review,
- * not by a runtime test. The component remains hardcoded to "first to 2
- * wins" and a 3-game best-of-3 format because those are the only method
- * wired today; the hardcodes don't paint the component into a corner
- * that would prevent a future tiebreaker_format axis from plugging in.
+ * The finish line comes from the tiebreak record's games_needed (Unit 4 of
+ * docs/plans/2026-10-28-001-feat-tiebreaker-record-plan.md) — the last block
+ * pins that it is no longer a hardcoded 2.
  */
 
 import { describe, it, expect, vi } from 'vitest';
@@ -43,6 +41,7 @@ describe('TiebreakerScoreboard — R18 team-name display', () => {
         gameResults={gameResults}
         isHomeTeam={true}
         gameType="8-ball"
+        gamesNeeded={2}
         {...noopHandlers}
       />,
     );
@@ -67,6 +66,7 @@ describe('TiebreakerScoreboard — R18 team-name display', () => {
         gameResults={gameResults}
         isHomeTeam={true}
         gameType="8-ball"
+        gamesNeeded={2}
         {...noopHandlers}
       />,
     );
@@ -84,6 +84,7 @@ describe('TiebreakerScoreboard — R18 team-name display', () => {
         gameResults={gameResults}
         isHomeTeam={true}
         gameType="8-ball"
+        gamesNeeded={2}
         {...noopHandlers}
       />,
     );
@@ -93,5 +94,65 @@ describe('TiebreakerScoreboard — R18 team-name display', () => {
     // The "First to 2 Wins" rule label is preserved (R20 — don't lock
     // things down, but don't gratuitously change either).
     expect(screen.getByText(/first to 2 wins/i)).toBeInTheDocument();
+  });
+});
+
+/** A confirmed tiebreak game won by one side. */
+function wonBy(team: string, id: string) {
+  return { id, winner_team_id: team, confirmed_by_home: true, confirmed_by_away: true };
+}
+
+describe('TiebreakerScoreboard — finish line comes from the record', () => {
+  it('does NOT finish at 2 wins when the record needs 3', () => {
+    const gameResults = new Map([
+      [19, wonBy('home', 'g19')],
+      [20, wonBy('home', 'g20')],
+    ]);
+    renderWithProviders(
+      <TiebreakerScoreboard
+        match={buildTiebreakerMatch()}
+        gameResults={gameResults}
+        isHomeTeam={true}
+        gameType="8-ball"
+        gamesNeeded={3}
+        {...noopHandlers}
+      />,
+    );
+    // Still the live scoreboard (not the end-of-match verification panel).
+    expect(screen.getByText(/first to 3 wins/i)).toBeInTheDocument();
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
+
+  it('labels a single-race tiebreaker "First to 1 Win"', () => {
+    renderWithProviders(
+      <TiebreakerScoreboard
+        match={buildTiebreakerMatch()}
+        gameResults={new Map()}
+        isHomeTeam={true}
+        gameType="8-ball"
+        gamesNeeded={1}
+        {...noopHandlers}
+      />,
+    );
+    expect(screen.getByText(/first to 1 win$/i)).toBeInTheDocument();
+  });
+
+  it('ignores unconfirmed games when counting toward the finish line', () => {
+    const gameResults = new Map([
+      [19, wonBy('home', 'g19')],
+      [20, { ...wonBy('home', 'g20'), confirmed_by_away: false }],
+    ]);
+    renderWithProviders(
+      <TiebreakerScoreboard
+        match={buildTiebreakerMatch()}
+        gameResults={gameResults}
+        isHomeTeam={true}
+        gameType="8-ball"
+        gamesNeeded={2}
+        {...noopHandlers}
+      />,
+    );
+    expect(screen.getByText(/first to 2 wins/i)).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
   });
 });

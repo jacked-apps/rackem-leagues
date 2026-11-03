@@ -17,7 +17,7 @@ export type ClaimState =
   | 'rejected'
   | 'error';
 
-/** Data returned from get_invite_details(). */
+/** A valid invite's details, from get_invite_details() when is_valid is true. */
 export interface InviteDetails {
   member_id: string;
   placeholder_first_name: string;
@@ -25,7 +25,6 @@ export interface InviteDetails {
   team_name: string;
   captain_name: string | null;
   expires_at: string;
-  status: string;
 }
 
 /** Team info for displaying all teams the PP belongs to. */

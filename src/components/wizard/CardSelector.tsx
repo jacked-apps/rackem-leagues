@@ -76,7 +76,7 @@ export function CardSelector<T>({
       >
         {options.map((option, i) => (
           <SelectableCard
-            key={String(option.value) ?? i}
+            key={String(option.value ?? i)}
             option={option}
             isSelected={option.value === value}
             onSelect={onChange}

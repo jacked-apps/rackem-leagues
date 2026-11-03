@@ -2,8 +2,8 @@
  * @fileoverview Privacy Settings Section Component
  *
  * Displays user privacy settings including profanity filter toggle.
- * For users under 18, the filter is forced ON and cannot be disabled.
- * For users 18+, the filter can be toggled on/off.
+ * Every user can toggle the filter (the under-18 lock is paused — see
+ * TODO(under-18-filter) in useProfanityFilter). The locked UI stays for its return.
  */
 
 import React, { useState } from 'react';

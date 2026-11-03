@@ -15,6 +15,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import type { Lineup, MatchGame } from '@/types/match';
+import type { TablesInsert } from '@/types/database.types';
 import { queryKeys } from '@/api/queryKeys';
 import { populateMatchSnapshotIfNeeded, updateMatchRunningTotals } from '@/api/queries/matches';
 import { appendConfirmation, type ConfirmationResult } from '@/api/mutations/appendConfirmation';
@@ -409,9 +410,9 @@ export function useMatchScoringMutations({
         }, 500);
 
         return true;
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Error confirming game', { error: err instanceof Error ? err.message : String(err) });
-        toast.error(`Failed to confirm game: ${err.message}`);
+        toast.error(`Failed to confirm game: ${(err as { message?: string }).message}`);
         return false;
       }
     },
@@ -555,9 +556,9 @@ export function useMatchScoringMutations({
 
         // Game results will be automatically refreshed by real-time subscription
         return true;
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Error denying game', { error: err instanceof Error ? err.message : String(err) });
-        toast.error(`Failed to deny game: ${err.message}`);
+        toast.error(`Failed to deny game: ${(err as { message?: string }).message}`);
         return false;
       }
     },
@@ -818,7 +819,12 @@ export function useMatchScoringMutations({
           }
         } else {
           // Insert new game (includes game_type from league)
-          const { error } = await supabase.from('match_games').insert(gameData);
+          // TODO(typed-client): unreachable — `existingGame` is guaranteed above —
+          // and `gameData` lacks the NOT NULL `game_type`, so this
+          // insert would fail if it ever ran. Cast keeps the code as-is.
+          const { error } = await supabase
+            .from('match_games')
+            .insert(gameData as unknown as TablesInsert<'match_games'>);
 
           if (error) throw error;
         }
@@ -852,9 +858,9 @@ export function useMatchScoringMutations({
 
         // Close modal and reset state
         onSuccess();
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Error saving game score', { error: err instanceof Error ? err.message : String(err) });
-        toast.error(`Failed to save game score: ${err.message}`);
+        toast.error(`Failed to save game score: ${(err as { message?: string }).message}`);
       }
     },
     [match, homeLineup, awayLineup, userTeamId, gameResults, memberId]

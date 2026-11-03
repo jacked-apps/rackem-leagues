@@ -85,7 +85,7 @@ describe('playerGameHistory — the select PostgREST has to answer', () => {
 
     // Cast through unknown: the generated types don't describe aliased embeds,
     // and this test is about the runtime shape rather than the declared one.
-    const row = data[0] as unknown as Record<string, any>;
+    const row = data[0] as unknown as Record<string, unknown> & { match: { lineups: unknown } };
 
     // Each of these is a field the page reads. A renamed column or a dropped
     // relationship shows up here rather than as a blank column in the UI.

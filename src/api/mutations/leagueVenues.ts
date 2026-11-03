@@ -76,7 +76,8 @@ export async function addLeagueVenue(params: AddLeagueVenueParams): Promise<Leag
     throw new Error(`Failed to add venue to league: ${error.message}`);
   }
 
-  return newLeagueVenue;
+  // available_table_numbers is nullable in the DB but always written here.
+  return newLeagueVenue as LeagueVenue;
 }
 
 /**
@@ -108,7 +109,8 @@ export async function updateLeagueVenue(params: UpdateLeagueVenueParams): Promis
     throw new Error(`Failed to update league venue limits: ${error.message}`);
   }
 
-  return updatedLeagueVenue;
+  // available_table_numbers is nullable in the DB but always written here.
+  return updatedLeagueVenue as LeagueVenue;
 }
 
 /**

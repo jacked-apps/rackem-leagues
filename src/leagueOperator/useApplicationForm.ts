@@ -165,7 +165,7 @@ export const useApplicationForm = () => {
       setCurrentInput(''); // Clear input after saving
       setError(''); // Clear any errors
       return true;
-    } catch (validationError) {
+    } catch {
       setError('Please enter a valid value');
       return false;
     }

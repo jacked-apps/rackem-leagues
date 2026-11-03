@@ -47,7 +47,7 @@ export function useOperatorId() {
     queryFn: () => getOperatorIdByUserId(user!.id),
     enabled: !!user?.id,
     staleTime: STALE_TIME.MEMBER, // 15 minutes
-    retry: (failureCount, error: any) => {
+    retry: (failureCount, error: Error & { code?: string }) => {
       // Don't retry if not an operator (PGRST116 = no rows)
       if (error?.code === 'PGRST116') return false;
       return failureCount < 1;

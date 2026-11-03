@@ -26,9 +26,8 @@ import { CheckCircle2, Pencil } from 'lucide-react';
 import { useSubmitCaptainReup, useDismissCaptainReup } from '@/api/hooks/useCaptainReup';
 import { CaptainReupForm, type CaptainReupFormTeamContext } from './CaptainReupForm';
 
-export interface CaptainReupModalTeam extends CaptainReupFormTeamContext {
-  // (alias — kept distinct so callers can extend later)
-}
+/** Alias — kept distinct so callers can extend later. */
+export type CaptainReupModalTeam = CaptainReupFormTeamContext;
 
 interface CaptainReupModalProps {
   open: boolean;

@@ -37,6 +37,7 @@ import WhatsNewPage from '../whatsNew/WhatsNewPage';
 import { useShowWhatsNewAfterUpdate } from '../whatsNew/useShowWhatsNewAfterUpdate';
 import { Pricing } from '../about/Pricing';
 import { PrivacyPolicy } from '../about/PrivacyPolicy';
+import { StopStopExplainer } from '../about/StopStopExplainer';
 import { NewPlayerForm } from '../newPlayer/NewPlayerForm';
 import { CompleteProfileForm } from '../completeProfile';
 import { Profile } from '../profile/Profile';
@@ -52,6 +53,7 @@ import { SpectateLiveMatches } from '../player/SpectateLiveMatches';
 import { SpectateMyLiveMatches } from '../player/SpectateMyLiveMatches';
 import { BecomeLeagueOperator } from '../leagueOperator/BecomeLeagueOperator';
 import { LeagueOperatorApplication } from '../leagueOperator/LeagueOperatorApplication';
+import { BecomeHost } from '../host/BecomeHost';
 import { Messages } from '../pages/Messages';
 import { PlayerProfile } from '../pages/PlayerProfile';
 import { AdminReports } from '../pages/AdminReports';
@@ -192,13 +194,9 @@ export const router = createBrowserRouter([
       // === Public Routes ===
       { index: true, element: <Home /> },
       { path: 'about', element: <About /> },
-      // What's New — public, so someone deciding whether to sign up can see a
-      // record of steady work. One component serves both: bare shows the
-      // newest, /:version shows that one.
-      { path: 'whats-new', element: <WhatsNewPage /> },
-      { path: 'whats-new/:version', element: <WhatsNewPage /> },
-      { path: 'pricing', element: <Pricing /> },
       { path: 'privacy', element: <PrivacyPolicy /> },
+      // Stop Stop explainer for invited readers: unlinked, noindex, never on production.
+      { path: 'aboutstopstop', element: <NonProdGate><StopStopExplainer /></NonProdGate> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'claim-player', element: <ClaimPlayer /> },
@@ -219,19 +217,39 @@ export const router = createBrowserRouter([
 
       // === Development-only Routes ===
       { path: 'dev/rls-tests', element: <DevOnly><RLSTestPage /></DevOnly> },
-      // --- Handicap Calculator (dev/staging only) — remove this line + the import above to delete the feature ---
-      { path: 'tools/calc', element: <NonProdGate>{withMember(<HandicapCalculator />)}</NonProdGate> },
 
       // === Auth Routes (require login) ===
       { path: 'complete-profile', element: withAuth(<CompleteProfileForm />) },
       { path: 'new-player', element: withAuth(<NewPlayerForm />) },
-      { path: 'become-league-operator', element: withAuth(<BecomeLeagueOperator />) },
-      { path: 'league-operator-application', element: withAuth(<LeagueOperatorApplication />) },
 
       // === Authenticated Routes (wrapped in MemberLayout for shared nav) ===
       {
         element: <MemberLayout />,
         children: [
+          // --- Public pages a signed-in member also reaches from the nav or a
+          //     member page. Inside MemberLayout (like Rules, below) so members
+          //     keep the sidebar / tab bar; both gate their nav on login, so a
+          //     signed-out visitor sees minimal chrome. ---
+          // What's New — public, so someone deciding whether to sign up can see
+          // a record of steady work. Bare shows the newest, /:version that one.
+          { path: 'whats-new', element: <WhatsNewPage /> },
+          { path: 'whats-new/:version', element: <WhatsNewPage /> },
+          // Pricing — linked from Become a League Operator.
+          { path: 'pricing', element: <Pricing /> },
+
+          // --- Signed-in pages reached from Profile (same reason). ---
+          { path: 'become-league-operator', element: withAuth(<BecomeLeagueOperator />) },
+          { path: 'league-operator-application', element: withAuth(<LeagueOperatorApplication />) },
+          // Become a Host — gated off in production until the game room ships.
+          // What it sells is the ability to host game rooms, which production does
+          // not have yet, and the page takes card details on a mock payment form
+          // that bills nothing. Un-gate this AND the Profile CTA together.
+          ...(!isProduction
+            ? [{ path: 'become-host', element: withAuth(<BecomeHost />) }]
+            : []),
+          // --- Handicap Calculator (dev/staging only) — remove this line + the import above to delete the feature ---
+          { path: 'tools/calc', element: <NonProdGate>{withMember(<HandicapCalculator />)}</NonProdGate> },
+
           // --- Member Routes (require login + approved application) ---
           { path: 'dashboard', element: <Navigate to="/my-teams" replace /> },
           { path: 'profile', element: withMember(<Profile />) },

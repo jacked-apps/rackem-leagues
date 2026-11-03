@@ -61,13 +61,13 @@ export function mapStandingsSort(value: string | undefined): SortKey[] {
  * in `preferences.tiebreaker_trigger` + `preferences.tiebreaker_format`.
  *
  * The wizard collapses these two DB axes into a single user choice
- * because the meaningful combinations are coupled: trigger=never always
- * pairs with format=accept_tie, and trigger=even_total_games_only
- * always pairs with one of the two short-race formats.
+ * because the meaningful combinations are coupled.
  *
- * Unknown / undefined defaults to (never, accept_tie) — the safest
- * choice when the user skipped the step (which only happens when the
- * configured lineup geometry can't tie anyway).
+ * Unknown / undefined (the step is skipped when the configured lineup
+ * geometry can't tie) maps to (never, best_of_3_short_race): "never" is
+ * true for that geometry, and best-of-3 is the safety net if a tie ever
+ * does happen. 'accept_tie' is no longer a wizard choice and is never the
+ * default (Ed, 2026-10-28 — see migration 20261028204853).
  */
 export function mapTiebreaker(value: string | undefined): {
   tiebreaker_trigger: 'even_total_games_only' | 'never';
@@ -92,11 +92,10 @@ export function mapTiebreaker(value: string | undefined): {
         tiebreaker_trigger: 'even_total_games_only',
         tiebreaker_format: 'manual',
       };
-    case 'accept_tie':
     default:
       return {
         tiebreaker_trigger: 'never',
-        tiebreaker_format: 'accept_tie',
+        tiebreaker_format: 'best_of_3_short_race',
       };
   }
 }
@@ -148,9 +147,10 @@ export const PRESET_MAPPINGS: Record<string, PresetMapping> = {
       win_condition: 'points',
       mechanism: 'start_points',
       standings_sort: ['points_earned', 'match_wins', 'games_won'],
-      // 5v5 single-RR = 25 games (odd) → no tiebreaker possible
+      // 5v5 single-RR = 25 games (odd) → no tiebreaker possible; best-of-3
+      // is the safety net, never 'accept_tie' (see mapTiebreaker).
       tiebreaker_trigger: 'never',
-      tiebreaker_format: 'accept_tie',
+      tiebreaker_format: 'best_of_3_short_race',
       race_length: null,
     },
   },
@@ -194,9 +194,10 @@ export const PRESET_MAPPINGS: Record<string, PresetMapping> = {
       win_condition: 'games',
       mechanism: 'extra_games',
       standings_sort: ['match_wins', 'games_won', 'points_earned'],
-      // 5v5 single-RR = 25 games (odd) → no tiebreaker possible
+      // 5v5 single-RR = 25 games (odd) → no tiebreaker possible; best-of-3
+      // is the safety net, never 'accept_tie' (see mapTiebreaker).
       tiebreaker_trigger: 'never',
-      tiebreaker_format: 'accept_tie',
+      tiebreaker_format: 'best_of_3_short_race',
       race_length: null,
     },
   },

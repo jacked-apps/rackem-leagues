@@ -60,14 +60,14 @@ import { supabase } from '@/supabaseClient';
  */
 function mockMatchesQuery(matches: Array<{ winner_team_id: string }>) {
   vi.mocked(supabase.from).mockImplementation(() => {
-    const finalChain = Promise.resolve({ data: matches, error: null }) as any;
+    const finalChain = Promise.resolve({ data: matches, error: null });
     return {
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           eq: vi.fn(() => finalChain),
         })),
       })),
-    } as any;
+    } as unknown as ReturnType<typeof supabase.from>;
   });
 }
 
@@ -76,14 +76,14 @@ function mockMatchesQueryError(message: string) {
     const finalChain = Promise.resolve({
       data: null,
       error: { message },
-    }) as any;
+    });
     return {
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           eq: vi.fn(() => finalChain),
         })),
       })),
-    } as any;
+    } as unknown as ReturnType<typeof supabase.from>;
   });
 }
 

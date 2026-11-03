@@ -95,25 +95,3 @@ export const DateField: React.FC<DateFieldProps> = ({
     </div>
   );
 };
-
-/**
- * Utility function for external use - format dates safely
- * @param dateString - ISO date string (YYYY-MM-DD)
- * @param format - 'short' for M/D/YYYY or 'long' for full format
- * @returns Formatted date string
- */
-export const formatDateSafe = (dateString: string, format: 'short' | 'long' = 'short'): string => {
-  if (!dateString) return '';
-  const [year, month, day] = dateString.split('-');
-
-  if (format === 'short') {
-    return `${parseInt(month)}/${parseInt(day)}/${year}`;
-  }
-
-  // For long format, create date with explicit components to avoid timezone issues
-  const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-  const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
-  const monthName = date.toLocaleDateString('en-US', { month: 'long' });
-
-  return `${weekday}, ${monthName} ${parseInt(day)}, ${year}`;
-};

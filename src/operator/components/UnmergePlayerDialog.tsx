@@ -34,8 +34,6 @@ import { MemberCombobox } from '@/components/MemberCombobox';
 import { getAllMembers } from '@/api/queries/members';
 import { queryKeys } from '@/api/queryKeys';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
-// deno-lint-ignore no-explicit-any
-type AnyMember = any;
 
 interface UnmergePlayerDialogProps {
   open: boolean;
@@ -78,7 +76,7 @@ export const UnmergePlayerDialog: React.FC<UnmergePlayerDialogProps> = ({
     enabled: open,
   });
 
-  const registeredMembers = (allMembers as AnyMember[]).filter((m) => m?.user_id);
+  const registeredMembers = allMembers.filter((m) => m?.user_id);
 
   const { data: merges = [], isLoading: mergesLoading } = useQuery({
     queryKey: ['merges-into-member', organizationId, targetId],

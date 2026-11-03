@@ -14,7 +14,11 @@ vi.mock('@/components/PageHeader', () => ({
 }));
 vi.mock('@/components/InfoButton', () => ({ InfoButton: () => null }));
 vi.mock('./TeamManagementContent', () => ({
-  TeamManagementContent: ({ renderFooter }: any) => (
+  TeamManagementContent: ({
+    renderFooter,
+  }: {
+    renderFooter?: (ctx: { leagueId: string; seasonId: string; hasTeams: boolean }) => React.ReactNode;
+  }) => (
     <div>{renderFooter?.({ leagueId: 'L1', seasonId: 'S1', hasTeams: true })}</div>
   ),
 }));

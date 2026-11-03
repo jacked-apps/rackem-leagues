@@ -20,6 +20,8 @@ import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { useCaptainReupPrompt } from '@/hooks/useCaptainReupPrompt';
 import { queryKeys } from '@/api/queryKeys';
 import { TeamEditorModal } from '@/operator/TeamEditorModal';
+import type { Venue, LeagueVenue } from '@/types/venue';
+import type { TeamWithQueryDetails } from '@/types/team';
 import {
   Accordion,
   AccordionContent,
@@ -30,6 +32,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 // import { Link } from 'react-router-dom';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
+import type { GameType, DayOfWeek } from '@/types/league';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { PlayerRoster } from '@/components/PlayerRoster';
 import { VenueWithMaps } from '@/components/VenueWithMaps';
@@ -168,7 +171,7 @@ function TeamAccordionItem({
                     year: parseLocalDate(team.season.league.league_start_date).getFullYear(),
                   })
                 ) : (
-                  `${formatGameType(team.season.league.game_type as any)} ${formatDayOfWeek(team.season.league.day_of_week as any)}`
+                  `${formatGameType(team.season.league.game_type as GameType)} ${formatDayOfWeek(team.season.league.day_of_week as DayOfWeek)}`
                 )}
               </h3>
             </div>
@@ -482,11 +485,13 @@ export function MyTeams() {
           seasonId={editData.seasonId}
           rosterSize={editData.rosterSize}
           lineupSize={editData.lineupSize}
-          venues={editData.venues}
-          leagueVenues={editData.leagueVenues}
+          // Raw rows: a few columns (table counts / number arrays, team stat
+          // counters) are schema-nullable but the editor's app types aren't.
+          venues={editData.venues as Venue[]}
+          leagueVenues={editData.leagueVenues as LeagueVenue[]}
           members={editData.members}
           defaultTeamName={editData.team.team_name}
-          allTeams={editData.allTeams}
+          allTeams={editData.allTeams as TeamWithQueryDetails[]}
           existingTeam={{
             id: editData.team.id,
             team_name: editData.team.team_name,

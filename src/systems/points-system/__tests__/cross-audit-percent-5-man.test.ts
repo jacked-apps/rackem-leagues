@@ -97,7 +97,6 @@ describe('Cross-audit: Percentage 5-Man composed vs. accumulate_with_milestone_j
 
     for (let i = 0; i < PARAM_SETS.length; i++) {
       const params = PARAM_SETS[i]!;
-      // eslint-disable-next-line vitest/valid-title
       describe(`param set ${i + 1}`, () => {
         it.each(outcomes)(
           'home=%i, away=%i: composed matches legacy for both sides',

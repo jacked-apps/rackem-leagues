@@ -8,6 +8,18 @@
 
 import { supabase } from '@/supabaseClient';
 import { SUB_SENTINEL_IDS } from '@/utils/lineup/substituteHelpers';
+import { fetchAllRows, type PageResult } from './fetchAllRows';
+
+/**
+ * One game row as this query selects it. The `match` embed is join-only (it
+ * carries the season + verification filters), so nothing downstream reads it.
+ */
+interface SeasonStatsGameRow {
+  home_player_id: string | null;
+  away_player_id: string | null;
+  winner_player_id: string | null;
+  game_type: string;
+}
 
 /**
  * Player season stats from match games
@@ -46,10 +58,19 @@ export interface PlayerSeasonStats {
  * });
  */
 export async function fetchSeasonPlayerStats(seasonId: string): Promise<PlayerSeasonStats[]> {
-  // Fetch all games from completed/verified matches in this season (excluding tiebreakers)
-  const { data: gamesData, error: gamesError } = await supabase
-    .from('match_games')
-    .select(`
+  // Fetch all games from completed/verified matches in this season (excluding
+  // tiebreakers).
+  //
+  // Paged via fetchAllRows: a season crossing PostgREST's 1000-row response cap
+  // would otherwise come back silently truncated and understate EVERY player's
+  // totals (see fetchAllRows's header for how that shipped undetected). The
+  // `.order('id')` is load-bearing — `.range()` over an unordered query can
+  // overlap or skip pages.
+  const gamesData = await fetchAllRows<SeasonStatsGameRow>(
+    (from, to) =>
+      supabase
+        .from('match_games')
+        .select(`
       home_player_id,
       away_player_id,
       winner_player_id,
@@ -61,16 +82,18 @@ export async function fetchSeasonPlayerStats(seasonId: string): Promise<PlayerSe
         home_team_verified_by,
         away_team_verified_by
       )
-    `)
-    .eq('match.season_id', seasonId)
-    .eq('match.status', 'completed')
-    .not('match.home_team_verified_by', 'is', null)
-    .not('match.away_team_verified_by', 'is', null)
-    .eq('is_tiebreaker', false) as any; // TypeScript struggles with nested filters
-
-  if (gamesError) {
-    throw new Error(`Failed to fetch season player stats: ${gamesError.message}`);
-  }
+    `, { count: 'exact' })
+        .eq('match.season_id', seasonId)
+        .eq('match.status', 'completed')
+        .not('match.home_team_verified_by', 'is', null)
+        .not('match.away_team_verified_by', 'is', null)
+        .eq('is_tiebreaker', false)
+        .order('id')
+        .range(from, to) as unknown as PromiseLike<
+          PageResult<SeasonStatsGameRow>
+        >, // nested-filter selects defeat supabase-js type inference
+    { label: 'season player stats' }
+  );
 
   if (!gamesData || gamesData.length === 0) {
     return [];
@@ -78,7 +101,7 @@ export async function fetchSeasonPlayerStats(seasonId: string): Promise<PlayerSe
 
   // Extract player IDs from games (players can be home OR away)
   const playerIds = new Set<string>();
-  gamesData.forEach((game: any) => {
+  gamesData.forEach((game) => {
     if (game.home_player_id) playerIds.add(game.home_player_id);
     if (game.away_player_id) playerIds.add(game.away_player_id);
   });
@@ -103,7 +126,7 @@ export async function fetchSeasonPlayerStats(seasonId: string): Promise<PlayerSe
   // Calculate stats per player
   const playerStatsMap = new Map<string, { wins: number; losses: number }>();
 
-  gamesData.forEach((game: any) => {
+  gamesData.forEach((game) => {
     const homePlayerId = game.home_player_id;
     const awayPlayerId = game.away_player_id;
     const winnerPlayerId = game.winner_player_id;

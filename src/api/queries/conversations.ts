@@ -156,7 +156,7 @@ export async function getOtherParticipantId(
 
   // DMs have exactly 2 participants
   if (participants && participants.length === 2) {
-    const otherParticipant = participants.find((p: any) => p.user_id !== currentUserId);
+    const otherParticipant = participants.find((p) => p.user_id !== currentUserId);
     return otherParticipant?.user_id || null;
   }
 
@@ -217,7 +217,7 @@ export async function getConversationParticipants(
     return [];
   }
 
-  return data.map((p: any) => {
+  return data.map((p) => {
     const member = Array.isArray(p.members) ? p.members[0] : p.members;
     return {
       userId: p.user_id,

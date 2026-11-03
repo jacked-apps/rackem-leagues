@@ -84,7 +84,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
         // Group matches by week
         const grouped = new Map<string, WeekGroup>();
 
-        matches?.forEach((match: any) => {
+        matches?.forEach((match) => {
           const weekId = match.season_week.id;
 
           if (!grouped.has(weekId)) {

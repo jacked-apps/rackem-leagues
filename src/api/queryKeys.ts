@@ -67,8 +67,17 @@ export const queryKeys = {
     /** All teams a member is on */
     byMember: (memberId: string) => [...queryKeys.teams.all, 'member', memberId] as const,
 
-    /** Team roster (players on team) */
+    /** Team roster (players on team) — membership ids + captain flag only */
     roster: (teamId: string) => [...queryKeys.teams.detail(teamId), 'roster'] as const,
+
+    /**
+     * Team roster WITH member details (names, player numbers) for display.
+     * A separate key from `roster` on purpose: same table, different shape.
+     * Sharing one key would mean whichever query ran first decided what the
+     * other consumer got back.
+     */
+    rosterWithMembers: (teamId: string) =>
+      [...queryKeys.teams.detail(teamId), 'roster', 'members'] as const,
   },
 
   /**
@@ -171,6 +180,10 @@ export const queryKeys = {
     /** Match games/scoring */
     games: (matchId: string) => [...queryKeys.matches.detail(matchId), 'games'] as const,
 
+    /** Tiebreak record (match_tiebreakers + its lineups) */
+    tiebreaker: (matchId: string) =>
+      [...queryKeys.matches.detail(matchId), 'tiebreaker'] as const,
+
     /** Match game confirmations (many-eyes Layer-2 witness records) */
     confirmations: (matchId: string) =>
       [...queryKeys.matches.detail(matchId), 'confirmations'] as const,
@@ -258,6 +271,31 @@ export const queryKeys = {
 
     /** @deprecated Use byOrganization instead */
     byOperator: (operatorId: string) => [...queryKeys.venues.all, 'organization', operatorId] as const,
+  },
+
+  /**
+   * Permission / authorization query keys.
+   * A member's staff grants (organization_staff rows) are resolved live and
+   * feed the `can(...)` check layer.
+   */
+  permissions: {
+    /** Base key for all permission queries */
+    all: ['permissions'] as const,
+
+    /** A member's staff grants across all organizations */
+    grants: (memberId: string) => [...queryKeys.permissions.all, 'grants', memberId] as const,
+  },
+
+  /**
+   * Designation query keys. A designation describes the PERSON (developer today;
+   * host / may-own-org later), resolved live from the member_designations store.
+   */
+  designations: {
+    /** Base key for all designation queries */
+    all: ['designations'] as const,
+
+    /** A member's active designations */
+    byMember: (memberId: string) => [...queryKeys.designations.all, 'member', memberId] as const,
   },
 
   /**

@@ -177,7 +177,7 @@ export function GamesList({
             // Check game status
             const hasWinner = gameResult.winner_player_id;
             const isConfirmed = gameResult.confirmed_by_home && gameResult.confirmed_by_away;
-            const isVacateRequested = !!(gameResult as any).vacate_requested_by;
+            const isVacateRequested = !!gameResult.vacate_requested_by;
             const isPending = hasWinner && !isConfirmed && !isVacateRequested;
 
             // Determine left/right won status based on display mode
@@ -192,7 +192,7 @@ export function GamesList({
 
               // If vacate requested, show distinctive styling
               if (isVacateRequested) {
-                const vacateRequestedBy = (gameResult as any).vacate_requested_by;
+                const vacateRequestedBy = gameResult.vacate_requested_by;
                 const requestedByHome = vacateRequestedBy === 'home';
                 const iRequestedVacate = (isHomeTeam && requestedByHome) || (!isHomeTeam && !requestedByHome);
 

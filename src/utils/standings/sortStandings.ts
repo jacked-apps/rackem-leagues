@@ -18,8 +18,10 @@
  * Behavior is locked by characterization tests in
  * src/utils/__tests__/playoffGenerator.standingsSort.characterization.test.ts.
  *
- * Default priority remains [match_wins, games_won, points_earned] —
- * matches today's behavior across all systems. The eventual config
+ * Default priority is [match_wins, points_earned, games_won] — wins, then
+ * points, then games. That is the league scoresheet's order and what the
+ * app did before this file existed (the consolidation accidentally swapped
+ * points and games; restored 2026-10-27). The eventual config
  * value lives in `preferences.standings_sort` (DB column added in
  * 20260429000001_extend_preferences_phase2_modular_axes.sql).
  */
@@ -32,8 +34,8 @@ export type StandingsSortKey = 'match_wins' | 'games_won' | 'points_earned';
 /** Default priority list. Wins-first, matching the pre-Phase-5 behavior. */
 export const DEFAULT_STANDINGS_SORT_PRIORITY: StandingsSortKey[] = [
   'match_wins',
-  'games_won',
   'points_earned',
+  'games_won',
 ];
 
 /**
@@ -50,7 +52,7 @@ export const DEFAULT_STANDINGS_SORT_PRIORITY: StandingsSortKey[] = [
  *                    Empty arrays use the default priority.
  *
  * @example
- * // Default behavior (wins → games → points)
+ * // Default behavior (wins → points → games)
  * sortStandings(standings);
  *
  * @example

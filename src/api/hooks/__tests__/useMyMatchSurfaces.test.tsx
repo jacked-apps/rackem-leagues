@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { formatLocalDate, parseLocalDate } from '@/utils/formatters';
@@ -28,8 +28,8 @@ vi.mock('@/api/queries/matches', () => ({
   getMyMatchMatches: queriesMock.getMyMatchMatches,
 }));
 
-const { supabaseMock, channelMock } = vi.hoisted(() => {
-  const channelMock: any = { on: vi.fn(), subscribe: vi.fn() };
+const { supabaseMock } = vi.hoisted(() => {
+  const channelMock: { on: Mock; subscribe: Mock } = { on: vi.fn(), subscribe: vi.fn() };
   channelMock.on.mockReturnValue(channelMock);
   channelMock.subscribe.mockReturnValue(channelMock);
   return {
@@ -45,8 +45,8 @@ import {
   resolveMyMatchNavState,
   buildMyMatchDrawerItems,
   useMyMatchSurfaces,
-  type MyMatchRow,
 } from '../useMyMatchSurfaces';
+import type { MatchWithDetails } from '@/types';
 
 // --- Fixtures --------------------------------------------------------------
 
@@ -59,7 +59,7 @@ const TODAY = formatLocalDate(new Date());
 const YESTERDAY = isoOffset(-1);
 const TOMORROW = isoOffset(1);
 
-function row(o: Partial<MyMatchRow> & { id: string }): MyMatchRow {
+function row(o: Partial<MatchWithDetails> & { id: string }): MatchWithDetails {
   return {
     status: 'in_progress',
     started_at: null,
@@ -71,7 +71,7 @@ function row(o: Partial<MyMatchRow> & { id: string }): MyMatchRow {
     home_team: { id: 't1', team_name: 'Sharks', captain_id: null, status: 'active' },
     away_team: { id: 't2', team_name: 'Cues', captain_id: null, status: 'active' },
     ...o,
-  } as unknown as MyMatchRow;
+  } as unknown as MatchWithDetails;
 }
 
 // --- Pure resolvers --------------------------------------------------------
@@ -90,7 +90,7 @@ describe('classifyTier', () => {
     expect(classifyTier(row({ id: 'm', status: 'scheduled', scheduled_date: TOMORROW }), TODAY)).toBeNull();
   });
   it('does not classify a terminal status (defensive)', () => {
-    expect(classifyTier(row({ id: 'm', status: 'completed' as any }), TODAY)).toBeNull();
+    expect(classifyTier(row({ id: 'm', status: 'completed' as unknown as MyMatchRow['status'] }), TODAY)).toBeNull();
   });
   it('does not classify a BYE matchup, even today or past-due', () => {
     const bye = { id: 't2', team_name: 'BYE', captain_id: null, status: 'bye' as const };

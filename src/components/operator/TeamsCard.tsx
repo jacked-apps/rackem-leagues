@@ -47,7 +47,8 @@ export const TeamsCard: React.FC<TeamsCardProps> = ({ leagueId }) => {
         const { data, error } = await fetchTeamsWithDetails(leagueId);
 
         if (error) throw error;
-        setTeams(data || []);
+        // Raw join rows: stat columns are schema-nullable but DB-defaulted to 0.
+        setTeams((data || []) as TeamWithQueryDetails[]);
       } catch (err) {
         logger.error('Error fetching teams', { error: err instanceof Error ? err.message : String(err) });
       } finally {

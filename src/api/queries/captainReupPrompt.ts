@@ -49,7 +49,7 @@ export async function getCaptainReupPrompt(
     throw new Error(`Failed to load captain re-up prompt: ${error.message}`);
   }
 
-  const candidates = (teams ?? []).filter((t: any) => {
+  const candidates = (teams ?? []).filter((t) => {
     const season = Array.isArray(t.season) ? t.season[0] : t.season;
     if (!season?.end_date) return false;
     if (season.status !== 'active') return false; // upcoming/completed don't qualify
@@ -61,8 +61,8 @@ export async function getCaptainReupPrompt(
 
   // 2. Look up any existing re-up responses for these (season, team)
   //    pairs to filter out already-submitted-or-dismissed ones.
-  const seasonIds = [...new Set(candidates.map((t: any) => t.season_id))];
-  const teamIds = candidates.map((t: any) => t.id);
+  const seasonIds = [...new Set(candidates.map((t) => t.season_id))];
+  const teamIds = candidates.map((t) => t.id);
 
   const { data: existing, error: existingErr } = await supabase
     .from('season_reup_responses')
@@ -87,7 +87,7 @@ export async function getCaptainReupPrompt(
   // 3. Filter: keep teams where there's no submitted answer AND no
   //    active dismissal. Map to the shape the modal expects.
   return candidates
-    .filter((t: any) => {
+    .filter((t) => {
       const key = `${t.season_id}:${t.id}`;
       const row = byKey.get(key);
       if (!row) return true; // no row → definitely show
@@ -95,8 +95,8 @@ export async function getCaptainReupPrompt(
       if (row.dismissed_at) return false; // dismissed and not cleared → don't show
       return true;
     })
-    .map((t: any): CaptainReupModalTeam => {
-      const rosterRaw = (t.team_players ?? []) as { members: any }[];
+    .map((t): CaptainReupModalTeam => {
+      const rosterRaw = t.team_players ?? [];
       const eligibleCaptains: PartialMember[] = rosterRaw
         .map((p) => (Array.isArray(p.members) ? p.members[0] : p.members))
         .filter((m): m is NonNullable<typeof m> => !!m)
@@ -112,7 +112,8 @@ export async function getCaptainReupPrompt(
         seasonId: t.season_id,
         teamId: t.id,
         teamName: t.team_name,
-        currentCaptainId: t.captain_id,
+        // Non-null: the query filtered on captain_id = captainId.
+        currentCaptainId: t.captain_id as string,
         eligibleCaptains,
       };
     });

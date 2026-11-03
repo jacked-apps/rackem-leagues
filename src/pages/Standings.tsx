@@ -23,8 +23,9 @@ import { ArrowLeft, Lock, Trophy, Award } from 'lucide-react';
 import { useStandings } from '@/api/hooks/useStandings';
 import { StatsNavBar } from '@/components/StatsNavBar';
 import { PageHeader } from '@/components/PageHeader';
-import { useCurrentMember } from '@/api/hooks/useCurrentMember';
+import { useIsOperator } from '@/api/hooks';
 import { useSeasonLockedPayouts } from '@/api/hooks/useSeasonLockedPayouts';
+import { TeamNameLink } from '@/components/TeamNameLink';
 
 /**
  * Standings Component
@@ -38,7 +39,6 @@ export function Standings() {
 
   // Fetch standings data
   const { standings, isLoading, error } = useStandings(seasonId || '');
-  const { data: member } = useCurrentMember();
   const { data: lockedPayouts } = useSeasonLockedPayouts(seasonId || undefined);
 
   // Build a place → amount lookup so we can map rank-by-index to prize
@@ -46,8 +46,8 @@ export function Standings() {
     (lockedPayouts?.team_payouts ?? []).map((p) => [p.place, p.amount]),
   );
 
-  // Check if current user is a league operator
-  const isOperator = member?.role === 'league_operator';
+  // Check if current user is a league operator (resolved live from staff grants)
+  const isOperator = useIsOperator();
 
   // Loading state
   if (isLoading) {
@@ -181,7 +181,11 @@ export function Standings() {
                 return (
                   <TableRow key={team.teamId}>
                     <TableCell className="font-medium px-1 sm:px-4 text-center text-xs sm:text-base">{rank}</TableCell>
-                    <TableCell className="px-1 sm:px-4 text-xs sm:text-base">{team.teamName}</TableCell>
+                    <TableCell className="px-1 sm:px-4 text-xs sm:text-base">
+                      {/* Tap the name to see who is on the team — the standings
+                          list ranks teams without ever saying who they are. */}
+                      <TeamNameLink teamId={team.teamId} teamName={team.teamName} />
+                    </TableCell>
                     <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base">{team.matchWins}</TableCell>
                     <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base">{team.matchLosses}</TableCell>
                     <TableCell className="text-center px-1 sm:px-4 text-xs sm:text-base">

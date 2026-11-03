@@ -148,8 +148,8 @@ serve(async (req) => {
       5000
     );
 
-    // deno-lint-ignore no-explicit-any
-    const existingUsers: any[] = listUsersResult?.data?.users ?? [];
+    // Only the email is read; keep it optional since auth users may lack one.
+    const existingUsers: Array<{ email?: string | null } | null> = listUsersResult?.data?.users ?? [];
     const isExistingUser = existingUsers.some(
       (u) => u?.email?.toLowerCase?.() === emailLower
     );

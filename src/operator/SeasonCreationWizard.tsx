@@ -30,7 +30,8 @@ import { fetchChampionshipDateOptions } from '@/utils/tournamentUtils';
 import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { PageHeader } from '@/components/PageHeader';
 import { InfoButton } from '@/components/InfoButton';
-import type { WeekEntry } from '@/types/season';
+import type { Season, WeekEntry } from '@/types/season';
+import type { League } from '@/types/league';
 import { formatDayOfWeek } from '@/types/league';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
@@ -92,7 +93,8 @@ export const SeasonCreationWizard: React.FC = () => {
           .single();
 
         if (leagueError) throw leagueError;
-        dispatch({ type: 'SET_LEAGUE', payload: leagueData });
+        // Text enum columns (game_type, day_of_week…) are CHECK-limited to League's unions.
+        dispatch({ type: 'SET_LEAGUE', payload: leagueData as League });
 
         // Fetch championship date options for both BCA and APA
         const bcaDates = await fetchChampionshipDateOptions('BCA');
@@ -115,7 +117,8 @@ export const SeasonCreationWizard: React.FC = () => {
         if (seasonsError) throw seasonsError;
 
         // Set existing seasons array
-        dispatch({ type: 'SET_EXISTING_SEASONS', payload: existingSeasons || [] });
+        // seasons.status is CHECK-limited text.
+        dispatch({ type: 'SET_EXISTING_SEASONS', payload: (existingSeasons || []) as Season[] });
 
         // If editing existing season, load season data and jump to schedule review
         if (seasonId) {

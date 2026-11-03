@@ -12,6 +12,7 @@
 
 import { supabase } from '@/supabaseClient';
 import type { OperatorBlackoutPreference } from '@/types/operator';
+import type { TablesUpdate } from '@/types/database.types';
 
 /**
  * Parameters for creating an operator blackout preference
@@ -163,7 +164,7 @@ export async function updateOperatorBlackoutPreference(
   }
 
   // Build update object with only provided fields
-  const updates: Record<string, any> = {};
+  const updates: TablesUpdate<'operator_blackout_preferences'> = {};
 
   if (params.preference_action !== undefined) {
     updates.preference_action = params.preference_action;

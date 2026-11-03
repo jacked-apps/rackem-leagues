@@ -1,23 +1,23 @@
 /**
  * @fileoverview `linear_above_threshold` points calculator —
- * three-band linear formula (Phase 1 Unit 1.2 of the modular-league-system v2 plan).
+ * one linear line through PAR (Phase 1 Unit 1.2 of the modular-league-system v2 plan).
  *
  * Lifts the existing `src/types/match.ts:calculatePoints` formula into a
  * standalone PointsCalculator so it can be dispatched by name from the
  * runtime. Behavior is identical to the legacy function — characterization
  * tests guard the equivalence.
  *
- * THE TIE-BAND RULE — locked invariant from the supplement (Section 4
- * anti-pattern). Three bands, given thresholds W = games_to_win,
- * T = games_to_tie:
+ * THE RULE — Ed's league scoresheet formula, byte-for-byte (TABLE n!O19/P19:
+ * `points = games_won − IF(to_tie = "X", to_win, to_tie)`). Given thresholds
+ * W = games_to_win and T = games_to_tie, a side's PAR is T when a tie is
+ * possible, else W, and:
  *
- *   - Above-win:    games_won > W            → (games_won - W) * multiplier
- *   - Tie band:     T <= games_won <= W      → 0  (always 0, regardless of multiplier)
- *   - Below-tie:    games_won < T            → (games_won - T) * multiplier
+ *   points = (games_won − par) × multiplier
  *
- * When ties are NOT possible (games_to_tie === null), the tie band collapses
- * to a single value at games_won === W (still 0) and the formula reduces to
- * `(games_won - W) * multiplier`.
+ * Example, tie possible with T = 9 / W = 10: win 10–8 → +1 / −1;
+ * 12–6 → +3 / −3; 9–9 → 0 / 0. An earlier version scored winners from W
+ * instead (10–8 → 0), leaking −1 into the league total on every decided
+ * tie-possible match (fixed 2026-10-27).
  *
  * **The user-specified rule:** "If I need 10 to win or 9 to tie, and the
  * regular games end 9-9, the match goes to a tiebreaker. If I win the
@@ -25,12 +25,12 @@
  * target) — I get **0 points**. If I lose the tiebreaker, I do NOT get -1
  * points either — I still get **0 points**. The tiebreaker decides
  * match-win/loss; per-match points come from the regular-game count only,
- * and the tie band absorbs both outcomes at 0."
+ * and par absorbs both outcomes at 0."
  *
- * The tie-band absorption rule is implemented HERE (in the formula). The
+ * Par absorbing a tied match is implemented HERE (in the formula). The
  * caller is responsible for passing in the regular-only games_won (excluding
  * tiebreakers); this calculator's contract is "given a games_won number,
- * apply the three-band formula." It does not filter — that's the caller's
+ * apply the par formula." It does not filter — that's the caller's
  * job in the per-game scoring mutation (Phase 5 Unit 5.5).
  *
  * @see docs/plans/2026-05-01-001-feat-modular-league-system-v2-plan.md (Unit 1.2)
@@ -86,13 +86,12 @@ export const LINEAR_ABOVE_THRESHOLD_DEFAULT_PARAMS: LinearAboveThresholdParams =
 // ============================================================================
 
 /**
- * Apply the three-band formula. Pure function — no side effects.
+ * Apply the par formula. Pure function — no side effects.
  *
  * Returns 0 when:
  *   - thresholds.games_to_win is null (caller passed bad input — defensive)
- *   - games_won lands in the tie band (the locked invariant)
- *   - games_won === games_to_win when ties are not possible (the tie band
- *     collapses to a single value at W)
+ *   - games_won === par (a tie at the tie target, or exactly the win target
+ *     when ties are not possible)
  */
 /**
  * Normalize -0 to +0. JavaScript distinguishes them (Object.is(-0, 0) === false),
@@ -110,20 +109,9 @@ function computePoints(
   gamesToTie: number | null,
   multiplier: number,
 ): number {
-  if (gamesToTie !== null) {
-    // Three bands.
-    if (gamesWon > gamesToWin) {
-      return normZero((gamesWon - gamesToWin) * multiplier);
-    }
-    if (gamesWon >= gamesToTie && gamesWon <= gamesToWin) {
-      // Tie band — always 0, multiplier never moves this off zero.
-      return 0;
-    }
-    // Below-tie band — negative when multiplier is positive.
-    return normZero((gamesWon - gamesToTie) * multiplier);
-  }
-  // No tie possible — formula collapses to (games_won - W) * multiplier.
-  return normZero((gamesWon - gamesToWin) * multiplier);
+  // Par = the tie target when a tie is possible, else the win target.
+  const par = gamesToTie ?? gamesToWin;
+  return normZero((gamesWon - par) * multiplier);
 }
 
 // ============================================================================
