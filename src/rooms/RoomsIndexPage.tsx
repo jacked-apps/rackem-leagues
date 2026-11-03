@@ -4,21 +4,24 @@
  * Two things, because a room is perishable and a phone is not: "Start a room"
  * for tonight, and the rooms this member already has a device in, so someone
  * who walked away from the table (or whose browser dropped the tab) has a way
- * back that is not "find the QR again." Swept rooms fall out of the list on
- * their own — their phones went with them.
+ * back that is not "find the QR again." A deleted room falls out of the list on
+ * its own — its phones went with it.
  *
  * Any member can start a FREE room. Opening it to others is behind the host
  * gate, explained inside the dialog. Gated non-production as a whole (Unit 7).
+ *
+ * Each row (`RoomListRow`) also gives the room's host a Delete, so old rooms
+ * can be cleared out from here without opening them.
  */
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCurrentMember } from '@/api/hooks/useCurrentMember';
 import { useCreateRoom, useMyRooms } from '@/api/hooks/useRooms';
 import { CreateRoomDialog } from './CreateRoomDialog';
 import { getDeviceId } from './deviceId';
-import { gameName } from './games/registry';
+import { RoomListRow } from './RoomListRow';
 import { roomRefusalCopy } from './roomRefusalCopy';
 import type { GameDefinition } from './games/types';
 
@@ -68,19 +71,7 @@ export function RoomsIndexPage() {
           ) : (
             <ul className="divide-y">
               {rooms.map((r) => (
-                <li key={r.room_id} className="flex items-center justify-between py-2">
-                  <div>
-                    <p className="font-medium">{gameName(r.game_key)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {[r.is_host && 'host', r.shared ? 'open to others' : 'private']
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                  </div>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={`/rooms/${r.room_id}`}>Open</Link>
-                  </Button>
-                </li>
+                <RoomListRow key={r.room_id} room={r} />
               ))}
             </ul>
           )}
