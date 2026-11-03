@@ -156,6 +156,11 @@ For Friends and Tournament it's the same room and the same race. Only the way in
   and confirmations), so it's its own small piece, built after the hosted
   race works.
 - **No spectators** (more than 2 screens).
+- **Registered members only (Ed, 2026-11-03).** An unregistered "Player 1 /
+  Player 2" guest comes with tournaments, solved once alongside tournament
+  security.
+- **No saved friendly stats.** Hosts may later be allowed to keep stats for
+  friendly games. For now everything is deleted with the room.
 
 ## Key Decisions
 
