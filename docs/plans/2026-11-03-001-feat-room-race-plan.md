@@ -138,7 +138,7 @@ sequenceDiagram
 
 ## Implementation Units
 
-- [ ] **Unit 1: Bring the three branches together**
+- [x] **Unit 1: Bring the three branches together** *(done 2026-11-03: `883c477e`, `7731d334`; 5995 tests green)*
 
 **Goal:** `feat/room-race` contains the room, the race engine and current main, building and testing green before any new work.
 
@@ -160,7 +160,7 @@ sequenceDiagram
 **Verification:**
 - Build is clean, the room and race test suites are green, and there are no duplicate migration versions.
 
-- [ ] **Unit 2: Room changes: host designation, no sweep, room cap**
+- [x] **Unit 2: Room changes: host designation, no sweep, room cap** *(done 2026-11-03: `53a39b32`)*
 
 **Goal:** Host-designation members can open shared rooms, rooms no longer self-delete, and a host can hold at most `room_cap_per_host()` rooms.
 
