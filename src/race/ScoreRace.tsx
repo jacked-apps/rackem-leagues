@@ -31,6 +31,13 @@ interface ScoreRaceProps {
   raceId: string;
   /** Names the host already knows, so the room does not look them up. */
   names?: RaceNameOverrides;
+  /**
+   * Whether to collect "how the game ended" extras (break & run, golden break,
+   * early 8, break foul, runout). Defaults to true, so the sandbox and future
+   * tournaments are unchanged. A casual host (a game room) passes false: the
+   * dialog only confirms the winner and every extra flag is recorded as false.
+   */
+  extras?: boolean;
 }
 
 /** A result being entered, held while the extras dialog is open. */
@@ -45,7 +52,7 @@ interface PendingResult {
   runout: boolean;
 }
 
-export function ScoreRace({ raceId, names }: ScoreRaceProps) {
+export function ScoreRace({ raceId, names, extras = true }: ScoreRaceProps) {
   const { view, isLoading, error } = useRaceView(raceId, names);
   // The refusal copy for a who-breaks clash names the player who picked first,
   // so the actions read names from the view once it has loaded.
@@ -159,6 +166,7 @@ export function ScoreRace({ raceId, names }: ScoreRaceProps) {
         // stay out of the way. A league race would pass its calculator here.
         pointsCalculator={null}
         hideForfeit
+        hideExtras={!extras}
         breakAndRun={pending?.breakAndRun ?? false}
         goldenBreak={pending?.goldenBreak ?? false}
         earlyEight={pending?.earlyEight ?? false}
@@ -172,14 +180,17 @@ export function ScoreRace({ raceId, names }: ScoreRaceProps) {
         onCancel={() => setPending(null)}
         onConfirm={() => {
           if (!pending) return;
+          // Winner-only: force every extra off rather than trusting that the
+          // hidden toggles were never touched.
+          const flag = (v: boolean) => extras && v;
           record.mutate({
             gameNumber: pending.gameNumber,
             winnerPlayerId: pending.winner.memberId,
-            breakAndRun: pending.breakAndRun,
-            goldenBreak: pending.goldenBreak,
-            earlyEight: pending.earlyEight,
-            breakFouled: pending.breakFouled,
-            runout: pending.runout,
+            breakAndRun: flag(pending.breakAndRun),
+            goldenBreak: flag(pending.goldenBreak),
+            earlyEight: flag(pending.earlyEight),
+            breakFouled: flag(pending.breakFouled),
+            runout: flag(pending.runout),
           });
           setPending(null);
         }}

@@ -33,6 +33,12 @@
  *   calculator name is null, unknown, or the spec has no per-side inputs
  *   (aggregate calculators), no scoring inputs render.
  *
+ * Winner-only mode (`hideExtras`): hides every section above — achievements,
+ * state modifiers (break foul, forfeit) and the per-side inputs — leaving just
+ * the winner confirmation and Save. Used by casual races (a game room) that
+ * record only who won. The parent is responsible for sending every extra flag
+ * as false; the dialog only stops offering them.
+ *
  * Winner points and loser points are NOT captured here — they derive at
  * read time from the league's snapshotted calculator + params.
  *
@@ -156,6 +162,12 @@ interface ScoringDialogProps {
    * is played-only (no forfeit entry in v1). Defaults to false (toggle shown).
    */
   hideForfeit?: boolean;
+  /**
+   * Winner-only mode. Hides break & run, golden break, early 8, break foul,
+   * runout, forfeit and the calculator per-side inputs, so the dialog only
+   * confirms who won. Defaults to false (league scoring unchanged).
+   */
+  hideExtras?: boolean;
   /** Handler for runout toggle */
   onRunoutChange?: (checked: boolean) => void;
   onEarlyEightChange?: (checked: boolean) => void;
@@ -188,6 +200,7 @@ export function ScoringDialog({
   breakFouled = false,
   winByForfeit = false,
   hideForfeit = false,
+  hideExtras = false,
   runout = false,
   earlyEight = false,
   loserValue = null,
@@ -251,9 +264,11 @@ export function ScoringDialog({
 
   // Submit is blocked when any side declares 'counter' and the value is
   // still null. value === 0 is a valid explicit choice (current Fargo UX).
+  // Winner-only mode hides the counters, so they can never block Save.
   const counterValueMissing =
-    (winnerNeedsCounter && winnerValue === null) ||
-    (loserNeedsCounter && loserValue === null);
+    !hideExtras &&
+    ((winnerNeedsCounter && winnerValue === null) ||
+    (loserNeedsCounter && loserValue === null));
 
   // Early 8 only exists in 8-ball: in rotation games the 8 is just another
   // ball. Same string the golden-break label switches on.
@@ -356,7 +371,9 @@ export function ScoringDialog({
         <DialogHeader>
           <DialogTitle>Confirm Game Result</DialogTitle>
           <DialogDescription>
-            Confirm the game outcome and any special achievements.
+            {hideExtras
+              ? 'Confirm who won this game.'
+              : 'Confirm the game outcome and any special achievements.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -375,6 +392,9 @@ export function ScoringDialog({
             </p>
           </div>
 
+          {/* Everything below the winner line is an "extra" — hidden in
+              winner-only mode (hideExtras). */}
+          {!hideExtras && (<>
           {/* Section 1: role-conditional achievements as compact inline
               checkboxes. Most leagues see at most 2 visible at a time
               (B&R + Golden Break for breaker-side wins, or just Runout
@@ -501,6 +521,7 @@ export function ScoringDialog({
               Tap a value to continue.
             </p>
           )}
+          </>)}
         </div>
 
         <DialogFooter>
