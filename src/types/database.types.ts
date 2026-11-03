@@ -3157,6 +3157,58 @@ export type Database = {
           },
         ]
       }
+      room_races: {
+        Row: {
+          created_at: string
+          id: string
+          owns_race: boolean
+          race_id: string
+          rematch_requested_by: string | null
+          room_id: string
+          seq: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          owns_race?: boolean
+          race_id: string
+          rematch_requested_by?: string | null
+          room_id: string
+          seq: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owns_race?: boolean
+          race_id?: string
+          rematch_requested_by?: string | null
+          room_id?: string
+          seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_races_race_id_fkey"
+            columns: ["race_id"]
+            isOneToOne: false
+            referencedRelation: "races"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_races_rematch_requested_by_fkey"
+            columns: ["rematch_requested_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_races_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           created_at: string
@@ -4280,6 +4332,10 @@ export type Database = {
         Args: { p_match_id: string; p_winner_participant_id: string }
         Returns: boolean
       }
+      answer_room_race_rematch: {
+        Args: { p_accept: boolean; p_room_id: string }
+        Returns: Json
+      }
       approve_join_request: {
         Args: {
           p_action: string
@@ -4695,6 +4751,10 @@ export type Database = {
           total_rows_updated: number
         }[]
       }
+      open_room_race: {
+        Args: { p_room_id: string }
+        Returns: Json
+      }
       placeholder_has_stats: {
         Args: { p_member_id: string }
         Returns: boolean
@@ -4764,6 +4824,10 @@ export type Database = {
       reopen_bracket_match: {
         Args: { p_match_id: string }
         Returns: boolean
+      }
+      request_room_race_rematch: {
+        Args: { p_room_id: string }
+        Returns: Json
       }
       request_team_join: {
         Args: { p_claimed_member_id?: string; p_token: string }
@@ -4857,6 +4921,23 @@ export type Database = {
       room_presence_grace: {
         Args: Record<PropertyKey, never>
         Returns: unknown
+      }
+      room_race_create: {
+        Args: {
+          p_away: string
+          p_home: string
+          p_room: Database["public"]["Tables"]["rooms"]["Row"]
+          p_seq: number
+        }
+        Returns: Json
+      }
+      room_race_rematch_accept: {
+        Args: {
+          p_link: Database["public"]["Tables"]["room_races"]["Row"]
+          p_race: Database["public"]["Tables"]["races"]["Row"]
+          p_room: Database["public"]["Tables"]["rooms"]["Row"]
+        }
+        Returns: Json
       }
       room_seats: {
         Args: { p_room_id: string }
