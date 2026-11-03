@@ -195,7 +195,7 @@ sequenceDiagram
 **Verification:**
 - Room DB suites are green with the updated expectations, and the sweep test file is removed.
 
-- [ ] **Unit 3: Engine: who breaks becomes propose / confirm**
+- [x] **Unit 3: Engine: who breaks becomes propose / confirm** *(done 2026-11-03: `95d016fa`)*
 
 **Goal:** A race starts only after both players agree who breaks.
 
