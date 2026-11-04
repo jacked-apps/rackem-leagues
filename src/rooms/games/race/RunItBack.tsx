@@ -14,7 +14,6 @@
  */
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { roomRaceRefusalCopy } from './roomRaceRefusalCopy';
 import { useAnswerRoomRaceRematch, useRequestRoomRaceRematch } from './useRoomRace';
 import type { RoomRaceResult } from './roomRaceApi';
@@ -47,7 +46,7 @@ export function RunItBack({ roomId, myMemberId, homeMemberId, awayMemberId, requ
   if (!requestedBy) {
     if (!isPlayer) return null;
     body = (
-      <Button className="w-full" loadingText="Asking…" disabled={busy} onClick={async () => report(await request.mutateAsync())}>
+      <Button size="sm" className="w-full" loadingText="Asking…" disabled={busy} onClick={async () => report(await request.mutateAsync())}>
         Run it back
       </Button>
     );
@@ -55,13 +54,13 @@ export function RunItBack({ roomId, myMemberId, homeMemberId, awayMemberId, requ
     body = <p className="text-sm">Waiting for {otherName} to answer.</p>;
   } else if (isPlayer) {
     body = (
-      <div className="space-y-3">
+      <div className="space-y-2">
         <p className="text-sm">{askerName} wants to run it back.</p>
         <div className="flex gap-2">
-          <Button className="flex-1" loadingText="Starting…" disabled={busy} onClick={async () => report(await answer.mutateAsync(true))}>
+          <Button size="sm" className="flex-1" loadingText="Starting…" disabled={busy} onClick={async () => report(await answer.mutateAsync(true))}>
             Accept
           </Button>
-          <Button className="flex-1" variant="outline" loadingText="none" disabled={busy} onClick={async () => report(await answer.mutateAsync(false))}>
+          <Button size="sm" className="flex-1" variant="outline" loadingText="none" disabled={busy} onClick={async () => report(await answer.mutateAsync(false))}>
             Deny
           </Button>
         </div>
@@ -72,8 +71,7 @@ export function RunItBack({ roomId, myMemberId, homeMemberId, awayMemberId, requ
   }
 
   return (
-    <Card className="mx-auto w-full max-w-2xl">
-      <CardContent className="py-4">{body}</CardContent>
-    </Card>
+    // A strip under the games, matching the who-breaks strip above them.
+    <section className="mx-auto w-full max-w-2xl border-t py-2">{body}</section>
   );
 }

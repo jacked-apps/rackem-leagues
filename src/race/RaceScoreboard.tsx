@@ -1,19 +1,24 @@
 /**
- * @fileoverview The race scoreboard: two players, what each has won, and what
- * each of them needs.
+ * @fileoverview The race scoreboard: two players side by side, what each has
+ * won out of what each needs.
  *
- * Both targets are shown, always, even when they are the same number. In a
- * handicapped race they differ — one player is racing to 7 while the other
- * races to 4 — and a scoreboard that showed a single target would be quietly
- * wrong for one of them. Showing both makes the equal case obvious and the
- * unequal case correct, at the cost of one extra word.
+ * It wears the league scoreboard's clothes on purpose — the same blue home /
+ * orange away cards from `scoreboardColors`, the name-and-side header line,
+ * the big `won/goal` figure labelled "Wins" — so a player moving between a
+ * league night and a race sees one app, not two. It is a stand-in: when the
+ * modular scoreboard is rebuilt, the race gets that instead, and keeping this
+ * one close to the league look makes the swap a small step.
  *
- * Nothing here signals by colour alone: the leader is marked with weight and a
- * word, so it reads the same to someone who cannot separate the hues.
+ * Both targets are always shown, even when equal. In a handicapped race one
+ * player races to 7 while the other races to 4, and a single target would be
+ * quietly wrong for one of them.
+ *
+ * Nothing signals by colour alone: each card says Home or Away (and You), and
+ * the winner gets a trophy and the words "Won the race".
  */
 
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
+import { getTeamColors } from '@/components/scoring/scoreboardColors';
 import type { RaceSeat, RaceSide } from './types';
 
 interface RaceScoreboardProps {
@@ -21,67 +26,51 @@ interface RaceScoreboardProps {
   away: RaceSeat;
   homeWon: number;
   awayWon: number;
-  /** The viewer's side, so their own row can be marked. Null for a spectator. */
+  /** The viewer's side, so their own card can be marked. Null for a spectator. */
   mySide: RaceSide | null;
   /** Set once someone has reached their target. */
   winnerSide: RaceSide | null;
 }
 
-function SeatRow({
-  seat,
-  won,
-  isMe,
-  hasWon,
-}: {
-  seat: RaceSeat;
-  won: number;
-  isMe: boolean;
-  hasWon: boolean;
-}) {
+/** One player's card — mirrors the league scoreboard's TeamCard, minus lineups. */
+function SeatCard({ seat, won, isMe, hasWon }: { seat: RaceSeat; won: number; isMe: boolean; hasWon: boolean }) {
+  const colors = getTeamColors(seat.side === 'home');
   return (
-    <div className="flex items-baseline justify-between gap-4 py-2">
-      <div className="min-w-0">
-        <div className={cn('truncate text-lg font-semibold', hasWon && 'underline')}>
-          {seat.displayName}
+    <Card className={`${colors.border} ${colors.bg} gap-0 p-0`}>
+      <div className="p-2 text-sm">
+        <div
+          className={`flex items-center justify-center gap-1 border-b py-1 text-base font-bold ${colors.borderDark} ${colors.headerText}`}
+        >
+          <span className="truncate">{seat.displayName}</span>
+          <span className="text-xs font-normal opacity-70">·</span>
+          <span className="text-xs font-normal opacity-70">
+            {seat.side === 'home' ? 'Home' : 'Away'}
+            {isMe ? ' (You)' : ''}
+          </span>
         </div>
-        <div className="text-xs text-muted-foreground">
-          {isMe ? 'You' : null}
-          {isMe && hasWon ? ' · ' : null}
-          {hasWon ? 'Won the race' : null}
+        <div className="flex flex-col items-center pt-2">
+          <span className={`text-3xl font-bold tabular-nums ${colors.accentText}`}>
+            {won}/{seat.goal}
+          </span>
+          <span className="text-[10px] text-muted-foreground">Wins</span>
         </div>
+        {hasWon ? (
+          <div className={`pt-1 text-center text-xs font-semibold ${colors.headerText}`}>
+            🏆 Won the race
+          </div>
+        ) : null}
       </div>
-      <div className="flex items-baseline gap-1 tabular-nums">
-        <span className="text-3xl font-bold">{won}</span>
-        <span className="text-sm text-muted-foreground">of {seat.goal}</span>
-      </div>
-    </div>
+    </Card>
   );
 }
 
-export function RaceScoreboard({
-  home,
-  away,
-  homeWon,
-  awayWon,
-  mySide,
-  winnerSide,
-}: RaceScoreboardProps) {
+export function RaceScoreboard({ home, away, homeWon, awayWon, mySide, winnerSide }: RaceScoreboardProps) {
   return (
-    <Card>
-      <CardContent className="divide-y py-2">
-        <SeatRow
-          seat={home}
-          won={homeWon}
-          isMe={mySide === 'home'}
-          hasWon={winnerSide === 'home'}
-        />
-        <SeatRow
-          seat={away}
-          won={awayWon}
-          isMe={mySide === 'away'}
-          hasWon={winnerSide === 'away'}
-        />
-      </CardContent>
-    </Card>
+    <div className="rounded-md border bg-card p-2 shadow-sm">
+      <div className="grid grid-cols-2 gap-2">
+        <SeatCard seat={home} won={homeWon} isMe={mySide === 'home'} hasWon={winnerSide === 'home'} />
+        <SeatCard seat={away} won={awayWon} isMe={mySide === 'away'} hasWon={winnerSide === 'away'} />
+      </div>
+    </div>
   );
 }

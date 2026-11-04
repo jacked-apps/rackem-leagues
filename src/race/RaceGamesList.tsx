@@ -1,24 +1,22 @@
 /**
- * @fileoverview The list of games in a race — what happened, and what is
- * waiting on whom.
+ * @fileoverview The list of games in a race, drawn with the league's own game
+ * row (`GameButtonRow`) so a race scores the way a league match does: breaker
+ * on the left, racker on the right, tap the player who won.
  *
- * Showing two names nine times over would be noise, so each row leads with the
- * game number and who broke it, and names only the winner. The rows carry the
- * whole state of the race, which is why they are also the only recovery path:
- * to fix a game you reverse back to it, one game at a time.
+ * What differs from a league night is only which actions each row allows:
  *
- * The Reverse button appears on exactly one row — the last game with a result.
- * That is the linear rule made visible: a race is two people at one table, so
- * games happen in order and are undone in order. The server enforces the same
- * rule, so a stale screen cannot talk it into anything.
- *
- * Status is carried by words and an icon, never by colour alone.
+ * - Only the ACTIVE game (the newest, unplayed one) takes a tap. Games are
+ *   appended one at a time, so there is never more than one unscored row.
+ * - "Vacate" sits on exactly one row — the last game with a result. A race is
+ *   two people at one table, so games are undone in order, newest first. The
+ *   server enforces the same rule, so a stale screen cannot talk it into
+ *   anything; the row simply never offers what would be refused.
+ * - "Confirm" sits on the pending game waiting on THIS viewer, so a player who
+ *   waved the confirm dialog away can bring it back.
+ * - A spectator sees the same rows with every button disabled.
  */
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Check, Clock, Undo2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { GameButtonRow } from '@/components/scoring/GameButtonRow';
 import { isSettled, winnerSideOf, type Race, type RaceGame, type RaceSeat } from './types';
 
 interface RaceGamesListProps {
@@ -28,12 +26,16 @@ interface RaceGamesListProps {
   away: RaceSeat;
   /** The game a result may be entered on. */
   activeGameNumber: number | null;
-  /** The only game that may be reversed. */
+  /** The only game that may be vacated. */
   vacatableGameNumber: number | null;
-  /** Null for a spectator, who gets no buttons at all. */
+  /** The pending game waiting on this viewer's answer, if any. */
+  awaitingGameNumber?: number | null;
+  /** False for a spectator: every button is disabled. */
   isPlayer: boolean;
   onScore: (gameNumber: number, winnerSeat: RaceSeat, winnerWasBreaker: boolean) => void;
   onVacate: (gameNumber: number) => void;
+  /** Re-open the confirm dialog for a game waiting on this viewer. */
+  onConfirm?: (gameNumber: number) => void;
   busy?: boolean;
 }
 
@@ -44,86 +46,70 @@ export function RaceGamesList({
   away,
   activeGameNumber,
   vacatableGameNumber,
+  awaitingGameNumber = null,
   isPlayer,
   onScore,
   onVacate,
+  onConfirm,
   busy,
 }: RaceGamesListProps) {
   if (games.length === 0) {
     return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        No games yet — the race starts once someone breaks.
+      <p className="py-3 text-center text-sm text-muted-foreground">
+        No games yet. The race starts once someone breaks.
       </p>
     );
   }
 
+  const played = games.filter(isSettled).length;
+
   return (
-    <div className="space-y-2">
+    <div>
+      {/* Same header as the league's games list: a count, then the columns. */}
+      <div className="pt-2 pb-1 text-sm font-semibold">
+        Games played: <span className="text-lg">{played}</span>
+      </div>
+      <div className="grid grid-cols-[auto_1fr_auto_1fr] gap-2 border-b pb-1 text-xs text-muted-foreground">
+        <div className="w-5" />
+        <div className="text-center">Break</div>
+        <div className="text-center font-semibold">vs</div>
+        <div className="text-center">Rack</div>
+      </div>
+
       {games.map((game) => {
-        const breakerSide = game.home_action === 'breaks' ? 'home' : 'away';
-        const breaker = breakerSide === 'home' ? home : away;
+        const breaker = game.home_action === 'breaks' ? home : away;
+        const racker = breaker.side === 'home' ? away : home;
         const winnerSide = winnerSideOf(game, race);
-        const winner = winnerSide === 'home' ? home : winnerSide === 'away' ? away : null;
-        const settled = isSettled(game);
-        const isActive = game.game_number === activeGameNumber;
-        const canReverse = isPlayer && game.game_number === vacatableGameNumber;
+        const state = winnerSide === null ? 'unscored' : isSettled(game) ? 'confirmed' : 'pending';
+        const n = game.game_number;
+        const canScore = isPlayer && n === activeGameNumber && state === 'unscored';
 
         return (
-          <Card key={game.id} className={cn(isActive && 'border-foreground')}>
-            <CardContent className="flex items-center justify-between gap-3 py-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium tabular-nums">
-                    Game {game.game_number}
-                  </span>
-                  {settled ? (
-                    <Check className="h-4 w-4 shrink-0" aria-hidden />
-                  ) : winner ? (
-                    <Clock className="h-4 w-4 shrink-0" aria-hidden />
-                  ) : null}
-                </div>
-                <div className="truncate text-sm text-muted-foreground">
-                  {winner ? (
-                    <>
-                      <span className="font-medium text-foreground">{winner.displayName}</span>
-                      {settled ? ' won' : ' won — waiting to be agreed'}
-                    </>
-                  ) : (
-                    `${breaker.displayName} breaks`
-                  )}
-                </div>
-              </div>
-
-              <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                {canReverse ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={busy}
-                    onClick={() => onVacate(game.game_number)}
-                  >
-                    <Undo2 className="mr-1 h-4 w-4" aria-hidden />
-                    Reverse
-                  </Button>
-                ) : null}
-                {isPlayer && isActive && !winner
-                  ? [home, away].map((seat) => (
-                      <Button
-                        key={seat.side}
-                        size="sm"
-                        variant="outline"
-                        disabled={busy}
-                        onClick={() =>
-                          onScore(game.game_number, seat, seat.side === breakerSide)
-                        }
-                      >
-                        {seat.displayName} won
-                      </Button>
-                    ))
-                  : null}
-              </div>
-            </CardContent>
-          </Card>
+          <GameButtonRow
+            key={game.id}
+            gameNumber={n}
+            breakerName={breaker.displayName}
+            breakerPlayerId={breaker.memberId}
+            breakerTeamId={breaker.side}
+            breakerIsHome={breaker.side === 'home'}
+            rackerName={racker.displayName}
+            rackerPlayerId={racker.memberId}
+            rackerTeamId={racker.side}
+            rackerIsHome={racker.side === 'home'}
+            state={state}
+            winnerPlayerId={game.winner_player_id}
+            // Tapping a name only means something on the game being played.
+            onPlayerClick={(_, playerId) => {
+              if (!canScore) return;
+              const seat = playerId === home.memberId ? home : away;
+              onScore(n, seat, seat.side === breaker.side);
+            }}
+            onConfirmClick={
+              isPlayer && onConfirm && n === awaitingGameNumber ? () => onConfirm(n) : undefined
+            }
+            onVacateClick={isPlayer && n === vacatableGameNumber ? () => onVacate(n) : undefined}
+            disabled={!isPlayer || busy}
+          />
         );
       })}
     </div>

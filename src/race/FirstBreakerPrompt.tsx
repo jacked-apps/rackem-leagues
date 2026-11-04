@@ -18,7 +18,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getTeamColors } from '@/components/scoring/scoreboardColors';
 import type { BreakerProposal, RaceSeat, RaceSide } from './types';
 
 interface FirstBreakerPromptProps {
@@ -49,17 +49,17 @@ export function FirstBreakerPrompt({
   const theyPicked = proposal !== null && proposal.bySide !== mySide;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Who breaks first?</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    // A thin strip, not a card: it sits between the scoreboard and the games
+    // list for one moment, and should not push the table off the screen.
+    <section className="space-y-2 border-b py-2">
+      <h2 className="text-sm font-semibold">Who breaks first?</h2>
         {theyPicked && picked ? (
           <>
             <p className="text-sm">
               {opponent.displayName} picked {picked.displayName} to break.
             </p>
             <Button
+              size="sm"
               className="w-full"
               // The mutation is fire-and-forget; the parent's busy flag disables it.
               loadingText="none"
@@ -80,11 +80,14 @@ export function FirstBreakerPrompt({
                 confirm.
               </p>
             ) : null}
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="grid grid-cols-2 gap-2">
               {[home, away].map((s) => (
                 <Button
                   key={s.side}
-                  className="flex-1"
+                  size="sm"
+                  // Same blue / orange as the game rows until picked; the
+                  // picked one turns solid AND says "(your pick)".
+                  className={picked?.side === s.side ? 'w-full' : `w-full ${getTeamColors(s.side === 'home').bg} ${getTeamColors(s.side === 'home').bgHover}`}
                   variant={picked?.side === s.side ? 'default' : 'outline'}
                   loadingText="none"
                   disabled={disabled}
@@ -103,7 +106,6 @@ export function FirstBreakerPrompt({
             ? 'After this, the winner of each game breaks the next one.'
             : 'After this, the break passes back and forth every game.'}
         </p>
-      </CardContent>
-    </Card>
+    </section>
   );
 }

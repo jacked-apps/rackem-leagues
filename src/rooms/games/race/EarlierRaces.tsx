@@ -6,7 +6,6 @@
  * race's own scoreboard uses. The winner is named in words, never marked by
  * colour alone.
  */
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { RoomRaceLink } from './roomRaceApi';
 
 interface EarlierRacesProps {
@@ -35,11 +34,8 @@ export function EarlierRaces({ links, nameOf }: EarlierRacesProps) {
   if (shown.length === 0) return null;
 
   return (
-    <Card className="mx-auto w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle className="text-base">Earlier races</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <section className="mx-auto w-full max-w-2xl border-t py-2">
+      <h2 className="pb-1 text-sm font-semibold">Earlier races</h2>
         <ul className="space-y-1 text-sm">
           {shown.map((l) => (
             <li key={l.id}>
@@ -47,7 +43,6 @@ export function EarlierRaces({ links, nameOf }: EarlierRacesProps) {
             </li>
           ))}
         </ul>
-      </CardContent>
-    </Card>
+    </section>
   );
 }

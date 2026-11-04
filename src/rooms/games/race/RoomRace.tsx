@@ -22,7 +22,7 @@ import { RunItBack } from './RunItBack';
 import { roomRaceRefusalCopy } from './roomRaceRefusalCopy';
 import { useOpenRoomRace, useRoomRaceLinks } from './useRoomRace';
 
-const panel = 'rounded-md border border-dashed px-3 py-8 text-center text-sm text-muted-foreground';
+const panel = 'rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground';
 
 export function RoomRace({ roomId, myPhone, phones }: GamePlayProps) {
   // The host is home; anyone else on the guest list can be the opponent. A
@@ -52,7 +52,7 @@ export function RoomRace({ roomId, myPhone, phones }: GamePlayProps) {
   const earlier = all.filter((l) => l.seq < opened.seq);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* A new race id is a new race: remount so no dialog state carries over. */}
       <ScoreRace key={opened.race_id} raceId={opened.race_id} names={names} extras={false} />
       {race?.status === 'finished' && (

@@ -18,7 +18,6 @@
 import { useState } from 'react';
 import { ScoringDialog } from '@/components/scoring/ScoringDialog';
 import { ConfirmationDialog } from '@/components/scoring/ConfirmationDialog';
-import { Card, CardContent } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useRaceView, type RaceNameOverrides } from './useRaceView';
 import { useRaceActions } from './useRaceActions';
@@ -66,11 +65,9 @@ export function ScoreRace({ raceId, names, extras = true }: ScoreRaceProps) {
   if (isLoading) return <LoadingSpinner />;
   if (error || !view) {
     return (
-      <Card>
-        <CardContent className="py-6 text-center text-sm text-muted-foreground">
-          This race could not be loaded.
-        </CardContent>
-      </Card>
+      <p className="rounded-md border px-3 py-3 text-center text-sm text-muted-foreground">
+        This race could not be loaded.
+      </p>
     );
   }
 
@@ -80,15 +77,18 @@ export function ScoreRace({ raceId, names, extras = true }: ScoreRaceProps) {
 
   // The one game waiting on this viewer: the opponent entered a result and this
   // side has not answered it. A spectator is never asked.
-  const awaitingMe = !mySide
+  const waitingOnMe = !mySide
     ? null
     : games.find(
         (g) =>
           g.winner_player_id !== null &&
           !isSettled(g) &&
-          (mySide === 'home' ? g.confirmed_by_home : g.confirmed_by_away) === null &&
-          !dismissed.includes(g.game_number)
+          (mySide === 'home' ? g.confirmed_by_home : g.confirmed_by_away) === null
       ) ?? null;
+  // The dialog opens for it unless this viewer waved it off; the row's
+  // Confirm button brings it back.
+  const awaitingMe =
+    waitingOnMe && !dismissed.includes(waitingOnMe.game_number) ? waitingOnMe : null;
 
   const awaitingWinner = awaitingMe
     ? winnerSideOf(awaitingMe, race) === 'home'
@@ -97,7 +97,7 @@ export function ScoreRace({ raceId, names, extras = true }: ScoreRaceProps) {
     : null;
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-4 p-4">
+    <div className="mx-auto w-full max-w-2xl space-y-2">
       <RaceScoreboard
         home={home}
         away={away}
@@ -132,6 +132,8 @@ export function ScoreRace({ raceId, names, extras = true }: ScoreRaceProps) {
         away={away}
         activeGameNumber={view.activeGameNumber}
         vacatableGameNumber={view.vacatableGameNumber}
+        awaitingGameNumber={waitingOnMe?.game_number ?? null}
+        onConfirm={(gameNumber) => setDismissed((d) => d.filter((n) => n !== gameNumber))}
         isPlayer={isPlayer}
         busy={busy}
         onScore={(gameNumber, winner, winnerWasBreaker) =>

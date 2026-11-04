@@ -28,8 +28,8 @@ interface RpcResult {
 /** Refusals a player can act on, in words rather than codes. */
 const REASONS: Record<string, string> = {
   not_in_race: "You're not one of the players in this race.",
-  not_last_game: 'Only the last game played can be reversed — work back one game at a time.',
-  not_next_game: 'That game is already agreed. Reverse back to it to change it.',
+  not_last_game: 'Only the last game played can be vacated — work back one game at a time.',
+  not_next_game: 'That game is already agreed. Vacate back to it to change it.',
   nothing_to_confirm: 'There is no result on that game yet.',
   race_not_live: 'This race is not running.',
   winner_not_in_race: 'That player is not in this race.',

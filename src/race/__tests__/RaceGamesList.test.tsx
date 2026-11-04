@@ -3,12 +3,12 @@
  * linear rule visible.
  *
  * A race is two people at one table, so games happen in order and come undone
- * in order: to fix game 3 of 5 you reverse 5, then 4, then 3. The server
+ * in order: to fix game 3 of 5 you vacate 5, then 4, then 3. The server
  * enforces that, but the list is where a player meets it, and the way they meet
- * it is that Reverse exists on exactly one row.
+ * it is that Vacate exists on exactly one row.
  *
  * These tests exist because the button placement IS the rule as far as a player
- * is concerned. If Reverse ever appeared on a middle game, the server would
+ * is concerned. If Vacate ever appeared on a middle game, the server would
  * refuse it and the player would just see a failure they could not explain.
  */
 
@@ -86,47 +86,72 @@ function renderList(overrides: Partial<React.ComponentProps<typeof RaceGamesList
 }
 
 describe('RaceGamesList', () => {
-  it('offers Reverse on exactly one game — the last one played', () => {
+  it('offers Vacate on exactly one game — the last one played', () => {
     renderList();
     // Three games have results, but only game 3 can come off.
-    expect(screen.getAllByRole('button', { name: /reverse/i })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /vacate/i })).toHaveLength(1);
   });
 
-  it('reverses the game it is shown against', async () => {
+  it('vacates the game it is shown against', () => {
     const { onVacate } = renderList();
-    screen.getByRole('button', { name: /reverse/i }).click();
+    screen.getByRole('button', { name: /vacate/i }).click();
     expect(onVacate).toHaveBeenCalledWith(3);
   });
 
-  it('offers both players as the winner of the game being played', () => {
+  it('draws the league columns: Break, vs, Rack', () => {
     renderList();
-    expect(screen.getByRole('button', { name: 'Ace won' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Bee won' })).toBeInTheDocument();
+    expect(screen.getByText('Break')).toBeInTheDocument();
+    expect(screen.getByText('Rack')).toBeInTheDocument();
+  });
+
+  it('puts the breaker on the left of the game being played', () => {
+    // Game 4 is an even game, so under alternate the AWAY player breaks it.
+    renderList();
+    const [left, right] = screen.getAllByRole('button').filter((b) => /^(Ace|Bee)$/.test(b.textContent ?? ''));
+    expect(left).toHaveTextContent('Bee');
+    expect(right).toHaveTextContent('Ace');
   });
 
   it('passes whether the winner was the one who broke', () => {
-    // Game 4 is an even game, so under alternate the AWAY player breaks it.
     const { onScore } = renderList();
-    screen.getByRole('button', { name: 'Bee won' }).click();
+    screen.getByRole('button', { name: 'Bee' }).click();
     expect(onScore).toHaveBeenCalledWith(4, away, true);
 
-    screen.getByRole('button', { name: 'Ace won' }).click();
+    screen.getByRole('button', { name: 'Ace' }).click();
     expect(onScore).toHaveBeenLastCalledWith(4, home, false);
   });
 
-  it('gives a spectator no buttons at all', () => {
-    renderList({ isPlayer: false });
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  it('marks agreed winners with a trophy, not colour alone', () => {
+    renderList();
+    expect(screen.getAllByText('🏆')).toHaveLength(3);
   });
 
-  it('says a result is waiting when only one player has agreed', () => {
+  it('gives a spectator no working buttons', () => {
+    const { onScore } = renderList({ isPlayer: false });
+    for (const b of screen.queryAllByRole('button')) expect(b).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /vacate/i })).not.toBeInTheDocument();
+    expect(onScore).not.toHaveBeenCalled();
+  });
+
+  it('offers Confirm on the pending game waiting on this viewer', () => {
     const halfAgreed = { ...settled(1, HOME_ID), confirmed_by_away: null } as RaceGame;
-    renderList({ games: [halfAgreed], activeGameNumber: 1, vacatableGameNumber: 1 });
-    expect(screen.getByText(/waiting to be agreed/i)).toBeInTheDocument();
+    const onConfirm = vi.fn();
+    renderList({ games: [halfAgreed], activeGameNumber: null, vacatableGameNumber: 1, awaitingGameNumber: 1, onConfirm });
+    // A pending result has no trophy yet.
+    expect(screen.queryByText('🏆')).not.toBeInTheDocument();
+    screen.getByRole('button', { name: 'Confirm' }).click();
+    expect(onConfirm).toHaveBeenCalledWith(1);
   });
 
-  it('names who breaks on a game nobody has played', () => {
-    renderList({ games: [empty(1)], activeGameNumber: 1, vacatableGameNumber: null });
-    expect(screen.getByText(/Ace breaks/)).toBeInTheDocument();
+  it('offers Vacate instead when the pending game waits on the other player', () => {
+    const halfAgreed = { ...settled(1, HOME_ID), confirmed_by_away: null } as RaceGame;
+    renderList({ games: [halfAgreed], activeGameNumber: null, vacatableGameNumber: 1 });
+    expect(screen.queryByRole('button', { name: 'Confirm' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /vacate/i })).toBeInTheDocument();
+  });
+
+  it('says so when no game exists yet', () => {
+    renderList({ games: [], activeGameNumber: null, vacatableGameNumber: null });
+    expect(screen.getByText(/No games yet/)).toBeInTheDocument();
   });
 });
