@@ -13,8 +13,8 @@ size to their content — "vs" is narrow, "Vacate" wider, "Vacate Request"
 wider still — and the player buttons shift width row to row.
 
 **The fix is already built for the race:** `GAME_ROW_GRID` in
-`src/components/scoring/GameButtonRow.tsx` (number column `1.25rem`, middle
-`3.75rem`, middle buttons `w-full` with `px-0.5`). Use the same grid in
+`src/components/scoring/GameButtonRow.tsx` (`gap-1`, number column `1.25rem` right-aligned, middle
+`3.5rem` with the middle buttons at their natural `text-xs px-1` width, centred). Use the same grid in
 `GamesList` (rows + the column-heading bar). One thing to decide on the way:
 "Vacate Request" won't fit the narrow middle on one line — let it wrap to two
 lines, or shorten the word. Own small branch off main; touches live league

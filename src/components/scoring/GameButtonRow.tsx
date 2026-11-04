@@ -78,11 +78,14 @@ interface Slot {
 /**
  * Fixed widths for the game number and the middle slot, so the two player
  * buttons are the same size on every row whatever sits between them ("vs",
- * "Vacate", "Confirm") and whether the game is 9 or 10. An `auto` column would
+ * "Vacate", "Confirm") and whether the game is 9 or 10. The number is
+ * right-aligned so it sits one small gap from its button; the middle buttons
+ * keep their natural width (text-xs px-1, as in the league list) and centre in
+ * a slot just wide enough for "Confirm". An `auto` column would
  * size each row to its own content, and the buttons would shift row to row.
  * Exported so a list's column-heading row can line up with its rows.
  */
-export const GAME_ROW_GRID = 'grid grid-cols-[1.25rem_1fr_3.75rem_1fr] gap-2 items-center';
+export const GAME_ROW_GRID = 'grid grid-cols-[1.25rem_1fr_3.5rem_1fr] gap-1 items-center';
 
 const rowClass = `${GAME_ROW_GRID} text-sm py-2 border-b`;
 const vs = <div className="text-center font-semibold text-muted-foreground">vs</div>;
@@ -143,7 +146,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
     <Button
       variant="outline"
       size="sm"
-      className="w-full text-xs px-0.5"
+      className="justify-self-center text-xs px-1"
       disabled={disabled}
       onClick={() => onVacateClick(gameNumber, winnerName)}
     >
@@ -161,7 +164,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
       <Button
         variant="outline"
         size="sm"
-        className="w-full text-xs px-0.5 bg-info/10 hover:bg-info/20 text-info font-semibold"
+        className="justify-self-center text-xs px-1 bg-info/10 hover:bg-info/20 text-info font-semibold"
         disabled={disabled}
         onClick={() => onConfirmClick(gameNumber)}
       >
@@ -172,7 +175,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
     );
     return (
       <div className={rowClass}>
-        <div className="font-semibold">{gameNumber}.</div>
+        <div className="text-right font-semibold">{gameNumber}.</div>
         <Button variant="outline" size="sm" className={cls(left)} disabled={disabled} onClick={click(left)}>
           <SlotName slot={left} />
         </Button>
@@ -195,7 +198,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
     );
     return (
       <div className={rowClass}>
-        <div className="font-semibold">{gameNumber}.</div>
+        <div className="text-right font-semibold">{gameNumber}.</div>
         {cell(left)}
         {vacateButton}
         {cell(right)}
@@ -210,7 +213,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
   };
   return (
     <div className={rowClass}>
-      <div className="font-semibold">{gameNumber}.</div>
+      <div className="text-right font-semibold">{gameNumber}.</div>
       <Button variant="outline" size="sm" className={cls(left)} disabled={disabled} onClick={click(left)}>
         <SlotName slot={left} />
       </Button>
