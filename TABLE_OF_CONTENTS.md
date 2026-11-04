@@ -966,13 +966,13 @@ LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade int
 Shared chrome that wraps all authenticated routes. `MemberLayout` is mounted by `NavRoutes.tsx` as a parent route; child routes render into its `<Outlet/>`.
 
 - `MemberLayout.tsx` - Persistent layout shell. Desktop: left sidebar (`<AppSidebar>`). Mobile: bottom tab bar (`<BottomTabBar>`). Also hosts global features previously on the Dashboard (e.g., pending-invites modal). Pages still own their own `<PageHeader>`.
-- `AppSidebar.tsx` - Desktop persistent sidebar — brand, primary nav, theme toggle, drawer trigger. Auth-aware: minimal chrome for public visitors, full nav for logged-in users. Renders the shared **`MyMatchPanel`** at the top (mirrors the drawer's Live/Makeup chips + lists), replacing the old static `/my-match` link. **Rooms** link GATED by `!isProduction` (same condition as the `rooms/**` routes).
+- `AppSidebar.tsx` - Desktop persistent sidebar — brand, primary nav, theme toggle, drawer trigger. Auth-aware: minimal chrome for public visitors, full nav for logged-in users. Renders the shared **`MyMatchPanel`** at the top (mirrors the drawer's Live/Makeup chips + lists), replacing the old static `/my-match` link.
 - `AppSidebar.test.tsx` - Tests that the sidebar wires in the My Match panel (chips + matchup, chip switching, hidden-when-empty).
 - `MyMatchPanel.tsx` - **✅ Shared My Match panel** used by BOTH the drawer and the desktop sidebar (so they can't drift). Live/Makeup filter chips (icons on phones, text on `sm+`), radio-select with a 0-count chip dimmed/disabled; revealed list under a small heading; rows lead with date + matchup that wraps instead of truncating. `inSheet` wraps rows in `SheetClose` for the drawer.
 - `BottomTabBar.tsx` - Mobile fixed bottom tab bar (My Teams / My Match / Messages / Profile, + Manage for operators). Auth-aware like the sidebar. Generic tabs render via a local `TabLink`; the My Match slot renders `<MyMatchTab>`.
 - `MyMatchTab.tsx` - **✅ My Match tab (Unit 3)** — state-driven bottom-nav tab consuming `useMyMatchSurfaces`. Links to the player's current match (Tiers 1–3, accent live dot on Tier 1); dims + toasts as a non-navigating button on Tier 4 / error; neutral silent no-op while hydrating.
 - `MyMatchTab.test.tsx` - Tests for the My Match tab's five postures (live/today/makeup Link, Tier-4 toast, hydrating no-op, error toast).
-- `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out) + the shared **`MyMatchPanel`** pinned at the TOP (`inSheet`). Drawer is the home for nav items that don't fit on the sidebar/tab bar. **Rooms** link GATED by `!isProduction` (same condition as the `rooms/**` routes).
+- `AppDrawer.tsx` - Slide-in drawer with secondary nav (profile, settings, operator-org switcher, sign-out) + the shared **`MyMatchPanel`** pinned at the TOP (`inSheet`). Drawer is the home for nav items that don't fit on the sidebar/tab bar.
 - `AppDrawer.test.tsx` - Tests for the drawer's per-org operator shortcuts and auth-gated content.
 - `OperatorOrgRow.tsx` - Per-org entry in the Operator nav section (shared by `<AppDrawer>` + `<AppSidebar>`). Exposes **Dashboard** + **Reports** per org (Reports carries the pending-reports doorbell badge); **Create League removed** from nav (page still routable). Owns `usePendingReportsCount(orgId)`. Flat mode = inline links (single-org); collapsible `<details>` group (multi-org).
 
@@ -1933,7 +1933,7 @@ Supabase real-time subscription hooks for live data updates
 - `NavBar.tsx` - Main navigation bar
 - `OperatorNavBar.tsx` - Operator navigation
 - `NavRoutes.tsx` - Route definitions. GATED (non-prod) routes: `tools/calc`, `rooms`, `rooms/join/:joinToken`, `rooms/:roomId` — each wrapped in `NonProdGate`
-- `roomsGate.test.tsx` - **Game Room / Unit 7** — pins that the room and its doors hide TOGETHER: every `rooms/**` route element is `NonProdGate` (walks `router.routes`); the gate renders off production and redirects home on it; the sidebar + drawer "Rooms" links render exactly when the gate is open (one `isProduction` getter flipped per test); signed out, `/rooms/join/x` → `/login?redirect=…` (the QR funnel)
+- `roomsGate.test.tsx` - **Game Room / Unit 7** — pins that the room and its doors hide TOGETHER: every `rooms/**` route element is `NonProdGate` (walks `router.routes`); the gate renders off production and redirects home on it; the menu’s Rooms door is NOT here — it is one gated entry in the menu PR’s `navEntries.ts` (#311), kept out of the drawer/sidebar files so the two PRs never conflict; signed out, `/rooms/join/x` → `/login?redirect=…` (the QR funnel)
 - `NavRoutes.test.tsx` - Guard: every page a member reaches from the nav or Profile (What's New, Rules, Pricing, Become LO, …) renders inside `MemberLayout`, so it keeps the sidebar / tab bar
 
 ---

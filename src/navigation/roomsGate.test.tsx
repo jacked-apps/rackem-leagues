@@ -3,12 +3,16 @@
  *
  * The half-gated bug (CLAUDE.md, 2026-06-21): a route behind `!isProduction`
  * whose button was not, so production showed a door to a room that was gone.
- * This file pins the three things that keep that from happening here:
+ * This file pins the two things that keep that from happening here:
  *
  *  1. Every `rooms/**` route in NavRoutes is wrapped in `NonProdGate`.
  *  2. `NonProdGate` renders its child off production and redirects home on it.
- *  3. The drawer and sidebar "Rooms" links render exactly when the gate is
- *     open — same `isProduction` flag, flipped per test through a getter.
+ *
+ * The menu's "Rooms" door is NOT here: it is one entry in the shared menu
+ * list (`src/components/layout/navEntries.ts`, from the menu-favorites PR),
+ * gated `!isProduction` like these routes, and its own test pins that. Keeping
+ * the door out of the drawer/sidebar files on this branch is what lets the two
+ * PRs merge in either order without a conflict.
  *
  * Plus the funnel: signed out, `/rooms/join/x` goes to login with the join
  * URL as the redirect target (existing ProtectedRoute behaviour, pinned for
@@ -36,7 +40,7 @@ vi.mock('@/config/environment', () => ({
   applyEnvironmentBranding: () => {},
 }));
 
-// The nav surfaces pull a lot of data; none of it matters to the gate.
+// Route modules can pull these hooks in; none of it matters to the gate.
 vi.mock('@/api/hooks/useUserProfile', () => ({
   useUserProfile: () => ({
     member: { id: 'm1', first_name: 'Pat', last_name: 'Player' },
@@ -58,9 +62,6 @@ vi.mock('sonner', () => ({ toast: Object.assign(vi.fn(), { error: vi.fn(), succe
 
 import { NonProdGate } from '@/components/NonProdGate';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { AppSidebar } from '@/components/layout/AppSidebar';
-import { AppDrawer } from '@/components/layout/AppDrawer';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { router } from './NavRoutes';
 
 const ROOM_PATHS = ['rooms', 'rooms/join/:joinToken', 'rooms/:roomId'];
@@ -124,42 +125,5 @@ describe('Game Room gate — routes', () => {
     );
     expect(screen.queryByText('JOIN PAGE')).toBeNull();
     expect(screen.getByText(`/login?redirect=${encodeURIComponent('/rooms/join/x')}`)).toBeInTheDocument();
-  });
-});
-
-describe('Game Room gate — doors', () => {
-  // Rendered one at a time: an open Radix Sheet marks everything outside it
-  // aria-hidden, which would hide the sidebar from role queries.
-  const renderSidebar = () => renderWithProviders(<AppSidebar />, { userContext: { isLoggedIn: true } });
-  const renderDrawer = () =>
-    renderWithProviders(
-      <Sheet open onOpenChange={() => {}}>
-        <SheetContent side="left">
-          <AppDrawer open onOpenChange={() => {}} />
-        </SheetContent>
-      </Sheet>,
-      { userContext: { isLoggedIn: true } }
-    );
-
-  it("off production: the Rooms link renders in the sidebar AND the drawer", () => {
-    const sidebar = renderSidebar();
-    expect(screen.getByRole("link", { name: "Rooms" })).toHaveAttribute("href", "/rooms");
-    sidebar.unmount();
-
-    renderDrawer();
-    expect(screen.getByRole("link", { name: "Rooms" })).toHaveAttribute("href", "/rooms");
-  });
-
-  it("on production: neither door renders — the room and its doors hide together", () => {
-    env.production = true;
-    const sidebar = renderSidebar();
-    expect(screen.queryByRole("link", { name: "Rooms" })).toBeNull();
-    // The neighbouring, un-gated door is still there — the gate is precise.
-    expect(screen.getByRole("link", { name: "Tournaments" })).toBeInTheDocument();
-    sidebar.unmount();
-
-    renderDrawer();
-    expect(screen.queryByRole("link", { name: "Rooms" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Tournaments" })).toBeInTheDocument();
   });
 });

@@ -296,10 +296,13 @@ from this list when un-gated.
 - **Game Room** (`feat/game-room` — 13 UNITS BUILT, incl. the two-phone coin
   flip) — gated in FOUR places, one condition: `<NonProdGate>` on the three
   routes in `src/navigation/NavRoutes.tsx` (`rooms`, `rooms/join/:joinToken`,
-  `rooms/:roomId`) + `!isProduction &&` on the "Rooms" link in
-  `src/components/layout/AppDrawer.tsx` AND `AppSidebar.tsx`.
-  `src/navigation/roomsGate.test.tsx` pins that all four hide together. Verify on staging
-  (the "Rooms" link is in the drawer/sidebar next to Tournaments):
+  `rooms/:roomId`) + the menu's "Rooms" entry, which lives in the menu PR
+  (#311, `src/components/layout/navEntries.ts`, `show: () => !isProduction`) so
+  the two PRs never touch the same lines. `src/navigation/roomsGate.test.tsx`
+  pins the routes; #311's nav tests pin the entry. **Until BOTH PRs are on
+  main, staging has a gap** (non-prod only): menu first = a Rooms link with no
+  page yet; rooms first = no menu link (type `/rooms`). Verify on staging
+  (the "Rooms" link is in the menu's Extras fold next to Tournaments):
   start a room on one phone, open the door, scan the QR on a second phone
   (signed out → login → lands back on the join page), join, both see "2 here ·
   2 seats open"; open a SECOND room as the same host and check its counter
