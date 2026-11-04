@@ -13,7 +13,7 @@
  * player races to 7 while the other races to 4, and a single target would be
  * quietly wrong for one of them.
  *
- * Nothing signals by colour alone: each card says Home or Away (and You), and
+ * Nothing signals by colour alone: each card says Player 1 or Player 2 (and You), and
  * the winner gets a trophy and the words "Won the race".
  */
 
@@ -44,7 +44,7 @@ function SeatCard({ seat, won, isMe, hasWon }: { seat: RaceSeat; won: number; is
           <span className="truncate">{seat.displayName}</span>
           <span className="text-xs font-normal opacity-70">·</span>
           <span className="text-xs font-normal opacity-70">
-            {seat.side === 'home' ? 'Home' : 'Away'}
+            {seat.side === 'home' ? 'Player 1' : 'Player 2'}
             {isMe ? ' (You)' : ''}
           </span>
         </div>

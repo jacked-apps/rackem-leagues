@@ -5,6 +5,9 @@
  *
  * What differs from a league night is only which actions each row allows:
  *
+ * - Columns default to Player 1 left / Player 2 right; the "B" badge on a
+ *   button says who breaks. Tapping the headings flips to Break / Rack, as in
+ *   the league list.
  * - Only the ACTIVE game (the newest, unplayed one) takes a tap. Games are
  *   appended one at a time, so there is never more than one unscored row.
  * - "Vacate" sits on exactly one row — the last game with a result. A race is
@@ -16,8 +19,13 @@
  * - A spectator sees the same rows with every button disabled.
  */
 
+import { Button } from '@/components/ui/button';
 import { GameButtonRow } from '@/components/scoring/GameButtonRow';
+import { useGameDisplayMode } from '@/hooks/useGameDisplayMode';
 import { isSettled, winnerSideOf, type Race, type RaceGame, type RaceSeat } from './types';
+
+/** The race's own column preference, separate from league scoring's. */
+const RACE_DISPLAY_MODE = { storageKey: 'rackem-race-display-mode', defaultMode: 'home-away' } as const;
 
 interface RaceGamesListProps {
   race: Race;
@@ -53,6 +61,10 @@ export function RaceGamesList({
   onConfirm,
   busy,
 }: RaceGamesListProps) {
+  // A race starts on Player 1 left / Player 2 right (the "B" badge says who
+  // breaks); its own key, so the league list keeps its own preference.
+  const { displayMode, toggleDisplayMode } = useGameDisplayMode(RACE_DISPLAY_MODE);
+
   if (games.length === 0) {
     return (
       <p className="py-3 text-center text-sm text-muted-foreground">
@@ -62,19 +74,27 @@ export function RaceGamesList({
   }
 
   const played = games.filter(isSettled).length;
+  const byBreak = displayMode === 'break-rack';
 
   return (
     <div>
-      {/* Same header as the league's games list: a count, then the columns. */}
+      {/* Same header as the league's games list: a count, then the columns.
+          Tapping the column headings flips the layout, as in the league. */}
       <div className="pt-2 pb-1 text-sm font-semibold">
         Games played: <span className="text-lg">{played}</span>
       </div>
-      <div className="grid grid-cols-[auto_1fr_auto_1fr] gap-2 border-b pb-1 text-xs text-muted-foreground">
-        <div className="w-5" />
-        <div className="text-center">Break</div>
-        <div className="text-center font-semibold">vs</div>
-        <div className="text-center">Rack</div>
-      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={toggleDisplayMode}
+        className="grid h-auto w-full grid-cols-[auto_1fr_auto_1fr] gap-2 rounded-none border-b px-0 pb-1 pt-0 text-xs font-normal text-muted-foreground hover:bg-transparent hover:text-foreground"
+        aria-label={byBreak ? 'Show Player 1 on the left' : 'Show the breaker on the left'}
+      >
+        <span className="w-5" />
+        <span className="text-center">{byBreak ? 'Break' : 'Player 1'}</span>
+        <span className="text-center font-semibold">vs</span>
+        <span className="text-center">{byBreak ? 'Rack' : 'Player 2'}</span>
+      </Button>
 
       {games.map((game) => {
         const breaker = game.home_action === 'breaks' ? home : away;
@@ -96,6 +116,7 @@ export function RaceGamesList({
             rackerPlayerId={racker.memberId}
             rackerTeamId={racker.side}
             rackerIsHome={racker.side === 'home'}
+            leftIsBreaker={byBreak}
             state={state}
             winnerPlayerId={game.winner_player_id}
             // Tapping a name only means something on the game being played.

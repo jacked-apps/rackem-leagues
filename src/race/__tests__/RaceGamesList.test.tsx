@@ -12,7 +12,8 @@
  * refuse it and the player would just see a failure they could not explain.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders, screen } from '@/test/utils';
 import { RaceGamesList } from '../RaceGamesList';
 import type { Race, RaceGame, RaceSeat } from '../types';
@@ -85,7 +86,15 @@ function renderList(overrides: Partial<React.ComponentProps<typeof RaceGamesList
   return props;
 }
 
+/** The two name buttons on the game being played, left then right. */
+function nameButtons() {
+  return screen.getAllByRole('button').filter((b) => /^B?(Ace|Bee)$/.test(b.textContent ?? ''));
+}
+
 describe('RaceGamesList', () => {
+  // The column layout is a remembered preference; start every test fresh.
+  beforeEach(() => localStorage.clear());
+
   it('offers Vacate on exactly one game — the last one played', () => {
     renderList();
     // Three games have results, but only game 3 can come off.
@@ -98,26 +107,35 @@ describe('RaceGamesList', () => {
     expect(onVacate).toHaveBeenCalledWith(3);
   });
 
-  it('draws the league columns: Break, vs, Rack', () => {
+  it('starts with Player 1 on the left and Player 2 on the right', () => {
     renderList();
-    expect(screen.getByText('Break')).toBeInTheDocument();
-    expect(screen.getByText('Rack')).toBeInTheDocument();
+    expect(screen.getByText('Player 1')).toBeInTheDocument();
+    expect(screen.getByText('Player 2')).toBeInTheDocument();
+    // Game 4 is even, so under alternate the AWAY player (Bee) breaks it —
+    // but Player 1 (Ace) still sits left. The B badge says who breaks.
+    const [left, right] = nameButtons();
+    expect(left).toHaveTextContent(/^Ace$/);
+    expect(right).toHaveTextContent(/^BBee$/);
   });
 
-  it('puts the breaker on the left of the game being played', () => {
-    // Game 4 is an even game, so under alternate the AWAY player breaks it.
+  it('flips to Break / Rack when the headings are tapped', async () => {
+    const user = userEvent.setup();
     renderList();
-    const [left, right] = screen.getAllByRole('button').filter((b) => /^(Ace|Bee)$/.test(b.textContent ?? ''));
-    expect(left).toHaveTextContent('Bee');
-    expect(right).toHaveTextContent('Ace');
+    await user.click(screen.getByRole('button', { name: /breaker on the left/i }));
+    expect(screen.getByText('Break')).toBeInTheDocument();
+    expect(screen.getByText('Rack')).toBeInTheDocument();
+    const [left, right] = nameButtons();
+    expect(left).toHaveTextContent(/^BBee$/);
+    expect(right).toHaveTextContent(/^Ace$/);
   });
 
   it('passes whether the winner was the one who broke', () => {
     const { onScore } = renderList();
-    screen.getByRole('button', { name: 'Bee' }).click();
+    const [ace, bee] = nameButtons();
+    bee.click();
     expect(onScore).toHaveBeenCalledWith(4, away, true);
 
-    screen.getByRole('button', { name: 'Ace' }).click();
+    ace.click();
     expect(onScore).toHaveBeenLastCalledWith(4, home, false);
   });
 
@@ -126,9 +144,10 @@ describe('RaceGamesList', () => {
     expect(screen.getAllByText('🏆')).toHaveLength(3);
   });
 
-  it('gives a spectator no working buttons', () => {
+  it('gives a spectator no working score buttons', () => {
     const { onScore } = renderList({ isPlayer: false });
-    for (const b of screen.queryAllByRole('button')) expect(b).toBeDisabled();
+    // The column switch is a view preference, so a spectator keeps it.
+    for (const b of nameButtons()) expect(b).toBeDisabled();
     expect(screen.queryByRole('button', { name: /vacate/i })).not.toBeInTheDocument();
     expect(onScore).not.toHaveBeenCalled();
   });
