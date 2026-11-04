@@ -58,8 +58,7 @@ The format is flexible - focus on capturing valuable insights that help me work 
 
 **Update process:**
 1. Add/update/remove the file entry in the appropriate section
-2. Update the "Last Updated" date at the top of TABLE_OF_CONTENTS.md
-3. If the change affects a feature, update the "Quick Reference: Find By Feature" section
+2. If the change affects a feature, update the "Quick Reference: Find By Feature" section
 
 The table of contents is a critical navigation tool for both you and the user. Keeping it current is mandatory.
 

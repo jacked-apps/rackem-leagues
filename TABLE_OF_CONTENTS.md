@@ -1,6 +1,5 @@
 # Complete Project Table of Contents
 
-> **Last Updated**: 2026-11-04 (Room Race games default to Player 1 left / Player 2 right with the league "B" breaker badge, headings flip to Break / Rack like the league list. Earlier: Room Race looks like league scoring: games drawn with the league's `GameButtonRow` (now shared, opt-in Confirm / Vacate middle slot), scoreboard mirrors the league team cards, prompts are thin strips instead of padded cards.) Previous: 2026-11-03 (Room Race Unit 6: **Race is the room's second game** (GATED non-prod in `games/registry.ts`) — `src/rooms/games/race/` (definition, `RoomRace` Play → `ScoreRace` winner-only, `RunItBack`, `EarlierRaces`, api + hooks + refusal copy, `raceDefaults` = the one source of base 5 / winner-breaks / 8-ball, forwarded on create via the new `GameDefinition.defaultSettings`); `useHiddenRelease` moved to `src/realtime/` and shared by the room AND race channels; the race channel now refetches on every SUBSCRIBED. Earlier today, Room Race Unit 3: who breaks first is now PROPOSED by one player and CONFIRMED by the other — `start_race` records a proposal, the other player naming the same side starts the race, a different side is refused `not_your_proposal`; the prompt shows nobody picked / I picked (waiting) / they picked (Confirm only). Earlier today, Room Race Unit 2: shared rooms need the Host DESIGNATION, not the operator role; the daily room sweep is retired; an owner may keep at most 10 rooms, free and shared together (`too_many_rooms`). Earlier today: Room Race requirements brainstorm added — the race as the Game Room's second game.) Previous: 2026-10-10 (Game Room: rooms now have an OCCUPANCY declared by their game — coin flip seats exactly 2, so the chip reads "Players 1 of 2" (this room) and the host's house figure moved into the panel. Two limits, two refusals: `room_full` ("this game seats N") vs `full` (host out of seats). Scoreboards stay each game's own job. Earlier today: guest list vs who's here, Exit frees the seat now, heartbeat clears "left", Switch game + Make private deleted.)
 > **Purpose**: Comprehensive index of EVERY file in this project for quick navigation and organization analysis
 > **Maintenance**: Update this file whenever you create, move, rename, or delete ANY file or folder
 
@@ -2256,7 +2255,6 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 ### When Creating a File
 1. Add entry to appropriate section in this table of contents
 2. Include file purpose and relationships
-3. Update "Last Updated" date at top
 
 ### When Moving a File
 1. Update file location in table of contents
