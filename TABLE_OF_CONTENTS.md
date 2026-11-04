@@ -1933,7 +1933,7 @@ Supabase real-time subscription hooks for live data updates
 - `NavBar.tsx` - Main navigation bar
 - `OperatorNavBar.tsx` - Operator navigation
 - `NavRoutes.tsx` - Route definitions. GATED (non-prod) routes: `tools/calc`, `rooms`, `rooms/join/:joinToken`, `rooms/:roomId` — each wrapped in `NonProdGate`
-- `roomsGate.test.tsx` - **Game Room / Unit 7** — pins that the room and its doors hide TOGETHER: every `rooms/**` route element is `NonProdGate` (walks `router.routes`); the gate renders off production and redirects home on it; the menu’s Rooms door is NOT here — it is one gated entry in the menu PR’s `navEntries.ts` (#311), kept out of the drawer/sidebar files so the two PRs never conflict; signed out, `/rooms/join/x` → `/login?redirect=…` (the QR funnel)
+- `roomsGate.test.tsx` - **Game Room / Unit 7** — pins that the room and its doors hide TOGETHER: every `rooms/**` route element is `NonProdGate` (walks `router.routes`); the gate renders off production and redirects home on it; the menu’s Rooms door is deliberately NOT on this branch — once the menu PR (#311) is on main it becomes one gated entry in `navEntries.ts`; staying out of the drawer/sidebar files keeps the two PRs conflict-free; signed out, `/rooms/join/x` → `/login?redirect=…` (the QR funnel)
 - `NavRoutes.test.tsx` - Guard: every page a member reaches from the nav or Profile (What's New, Rules, Pricing, Become LO, …) renders inside `MemberLayout`, so it keeps the sidebar / tab bar
 
 ---

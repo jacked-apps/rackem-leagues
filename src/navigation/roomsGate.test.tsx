@@ -8,11 +8,12 @@
  *  1. Every `rooms/**` route in NavRoutes is wrapped in `NonProdGate`.
  *  2. `NonProdGate` renders its child off production and redirects home on it.
  *
- * The menu's "Rooms" door is NOT here: it is one entry in the shared menu
- * list (`src/components/layout/navEntries.ts`, from the menu-favorites PR),
- * gated `!isProduction` like these routes, and its own test pins that. Keeping
- * the door out of the drawer/sidebar files on this branch is what lets the two
- * PRs merge in either order without a conflict.
+ * The menu's "Rooms" door is NOT on this branch on purpose. The menu PR
+ * (#311) rewrites the drawer + sidebar into one shared list
+ * (`src/components/layout/navEntries.ts`); staying out of those files is what
+ * lets the two PRs merge in either order without a conflict. Once both are on
+ * main the door is one gated entry there (`show: () => !isProduction`, the same
+ * condition as these routes), and #311's tests pin it.
  *
  * Plus the funnel: signed out, `/rooms/join/x` goes to login with the join
  * URL as the redirect target (existing ProtectedRoute behaviour, pinned for

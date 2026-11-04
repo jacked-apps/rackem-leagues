@@ -296,13 +296,17 @@ from this list when un-gated.
 - **Game Room** (`feat/game-room` — 13 UNITS BUILT, incl. the two-phone coin
   flip) — gated in FOUR places, one condition: `<NonProdGate>` on the three
   routes in `src/navigation/NavRoutes.tsx` (`rooms`, `rooms/join/:joinToken`,
-  `rooms/:roomId`) + the menu's "Rooms" entry, which lives in the menu PR
-  (#311, `src/components/layout/navEntries.ts`, `show: () => !isProduction`) so
-  the two PRs never touch the same lines. `src/navigation/roomsGate.test.tsx`
-  pins the routes; #311's nav tests pin the entry. **Until BOTH PRs are on
-  main, staging has a gap** (non-prod only): menu first = a Rooms link with no
-  page yet; rooms first = no menu link (type `/rooms`). Verify on staging
-  (the "Rooms" link is in the menu's Extras fold next to Tournaments):
+  `rooms/:roomId`) + ONE menu entry still to add. The menu door is NOT on
+  this branch on purpose: the menu PR (#311) rewrites the drawer + sidebar into
+  one shared list (`src/components/layout/navEntries.ts`), so this branch stays
+  out of those files and the two PRs never conflict. **Once #311 is on main**,
+  add `{ id: 'rooms', label: 'Rooms', path: '/rooms', group: 'extras',
+  show: () => !isProduction }` after Stats (#311's NavRoutes test then checks
+  the page exists inside MemberLayout — it does). Best order: merge #311 first,
+  then the line goes into this PR before it merges. Until then, reach the room
+  on staging by typing `/rooms`. `src/navigation/roomsGate.test.tsx` pins the
+  routes. Verify on staging (once the entry is in, "Rooms" is in the menu's
+  Extras fold next to Tournaments):
   start a room on one phone, open the door, scan the QR on a second phone
   (signed out → login → lands back on the join page), join, both see "2 here ·
   2 seats open"; open a SECOND room as the same host and check its counter
