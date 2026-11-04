@@ -20,7 +20,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { GameButtonRow } from '@/components/scoring/GameButtonRow';
+import { GameButtonRow, GAME_ROW_GRID } from '@/components/scoring/GameButtonRow';
 import { useGameDisplayMode } from '@/hooks/useGameDisplayMode';
 import { isSettled, winnerSideOf, type Race, type RaceGame, type RaceSeat } from './types';
 
@@ -87,10 +87,10 @@ export function RaceGamesList({
         type="button"
         variant="ghost"
         onClick={toggleDisplayMode}
-        className="grid h-auto w-full grid-cols-[auto_1fr_auto_1fr] gap-2 rounded-none border-b px-0 pb-1 pt-0 text-xs font-normal text-muted-foreground hover:bg-transparent hover:text-foreground"
+        className={`${GAME_ROW_GRID} h-auto w-full rounded-none border-b px-0 pb-1 pt-0 text-xs font-normal text-muted-foreground hover:bg-transparent hover:text-foreground`}
         aria-label={byBreak ? 'Show Player 1 on the left' : 'Show the breaker on the left'}
       >
-        <span className="w-5" />
+        <span />
         <span className="text-center">{byBreak ? 'Break' : 'Player 1'}</span>
         <span className="text-center font-semibold">vs</span>
         <span className="text-center">{byBreak ? 'Rack' : 'Player 2'}</span>

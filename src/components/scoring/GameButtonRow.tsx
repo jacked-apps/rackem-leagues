@@ -75,7 +75,16 @@ interface Slot {
   isBreaker: boolean;
 }
 
-const rowClass = 'grid grid-cols-[auto_1fr_auto_1fr] gap-2 items-center text-sm py-2 border-b';
+/**
+ * Fixed widths for the game number and the middle slot, so the two player
+ * buttons are the same size on every row whatever sits between them ("vs",
+ * "Vacate", "Confirm") and whether the game is 9 or 10. An `auto` column would
+ * size each row to its own content, and the buttons would shift row to row.
+ * Exported so a list's column-heading row can line up with its rows.
+ */
+export const GAME_ROW_GRID = 'grid grid-cols-[1.75rem_1fr_4.5rem_1fr] gap-2 items-center';
+
+const rowClass = `${GAME_ROW_GRID} text-sm py-2 border-b`;
 const vs = <div className="text-center font-semibold text-muted-foreground">vs</div>;
 
 /**
@@ -134,7 +143,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
     <Button
       variant="outline"
       size="sm"
-      className="text-xs px-1"
+      className="w-full text-xs px-1"
       disabled={disabled}
       onClick={() => onVacateClick(gameNumber, winnerName)}
     >
@@ -152,7 +161,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
       <Button
         variant="outline"
         size="sm"
-        className="text-xs px-1 bg-info/10 hover:bg-info/20 text-info font-semibold"
+        className="w-full text-xs px-1 bg-info/10 hover:bg-info/20 text-info font-semibold"
         disabled={disabled}
         onClick={() => onConfirmClick(gameNumber)}
       >
