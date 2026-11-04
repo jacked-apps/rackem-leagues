@@ -82,7 +82,7 @@ interface Slot {
  * size each row to its own content, and the buttons would shift row to row.
  * Exported so a list's column-heading row can line up with its rows.
  */
-export const GAME_ROW_GRID = 'grid grid-cols-[1.75rem_1fr_4.5rem_1fr] gap-2 items-center';
+export const GAME_ROW_GRID = 'grid grid-cols-[1.25rem_1fr_3.75rem_1fr] gap-2 items-center';
 
 const rowClass = `${GAME_ROW_GRID} text-sm py-2 border-b`;
 const vs = <div className="text-center font-semibold text-muted-foreground">vs</div>;
@@ -143,7 +143,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
     <Button
       variant="outline"
       size="sm"
-      className="w-full text-xs px-1"
+      className="w-full text-xs px-0.5"
       disabled={disabled}
       onClick={() => onVacateClick(gameNumber, winnerName)}
     >
@@ -161,7 +161,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
       <Button
         variant="outline"
         size="sm"
-        className="w-full text-xs px-1 bg-info/10 hover:bg-info/20 text-info font-semibold"
+        className="w-full text-xs px-0.5 bg-info/10 hover:bg-info/20 text-info font-semibold"
         disabled={disabled}
         onClick={() => onConfirmClick(gameNumber)}
       >

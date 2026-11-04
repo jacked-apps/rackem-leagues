@@ -4,6 +4,24 @@ Tasks and refactoring items for Ed to work on.
 
 ---
 
+## 📐 2026-11-04 — League games list: line the buttons up like the room race
+
+**Ed liked it on the room race; do the same for the league match.** The
+league games list (`src/components/scoring/GamesList.tsx`) builds each row as
+its own `grid-cols-[auto_1fr_auto_1fr]`, so the game-number and middle columns
+size to their content — "vs" is narrow, "Vacate" wider, "Vacate Request"
+wider still — and the player buttons shift width row to row.
+
+**The fix is already built for the race:** `GAME_ROW_GRID` in
+`src/components/scoring/GameButtonRow.tsx` (number column `1.25rem`, middle
+`3.75rem`, middle buttons `w-full` with `px-0.5`). Use the same grid in
+`GamesList` (rows + the column-heading bar). One thing to decide on the way:
+"Vacate Request" won't fit the narrow middle on one line — let it wrap to two
+lines, or shorten the word. Own small branch off main; touches live league
+scoring, so check a real match after.
+
+---
+
 ## 🌙 2026-10-29 — Dark mode: scoreboard numbers turn white on the light team panels
 
 **Found by Ed** while testing the tiebreaker. On the live scoreboard, the
