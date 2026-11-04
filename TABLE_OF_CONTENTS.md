@@ -1809,7 +1809,6 @@ The player-facing release notes. Waiting notes are one file per PR (never confli
 - `releases.ts` — every shipped release (history) plus the `unreleased` block, whose entries come from the note files; the stamp inserts below its STAMP marker.
 - `pendingNotes.ts` — reads `notes/*.json` (one note or an array per file) into the `unreleased` block, in file-name order.
 - `notes/README.md` — the note-file format; one `.json` per user-facing PR, named after the branch.
-- `notes/fix-lineup-save-offline-message.json` — fix note: a lineup save that loses connection says so, instead of "not a member of this team" (removed by the release stamp).
 - `releaseSelectors.ts` — pure lookups: grouping by kind, which release is current, what the New marker compares against.
 - `WhatsNewPage.tsx` — `/whats-new` and `/whats-new/:version`.
 - `useWhatsNewSeen.ts` / `useShowWhatsNewAfterUpdate.ts` — the New marker and the after-update prompt.
