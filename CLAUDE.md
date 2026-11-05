@@ -84,18 +84,55 @@ a Match" button + lms-sheet printer icon were ungated while their routes were
 `!isProduction`, so they 404'd in production.)
 
 When I gate a feature (or a newly-merged gated feature lands):
-1. **Add it to `LIST_FOR_ED.md`** under the "🚪 Gated — awaiting staging review
-   + un-gate" section: feature name, where the gate lives (file + the
-   flag/conditional **and every entry point gated**), and one line on what Ed
-   should verify on staging.
+1. **Add a gated item** (see "The list" below): a `docs/list/` file whose body
+   has three headings — `## Gate` (the flag/conditional), `## Entry points`
+   (the route **and every door into it**, each with its file), and
+   `## Verify on staging` (what Ed should check) — plus one line under
+   `## Gated` in `LIST_FOR_ED.md`.
 2. **Tell Ed in chat** that it's gated, so he knows to review it on staging.
 3. Ed reviews on staging → tells me to un-gate.
 4. **On un-gate:** flip the conditional/flag (route **and all entry points**) to
-   expose it in production, AND **remove its entry from `LIST_FOR_ED.md`**.
+   expose it in production, AND **delete the item file and its line** in the
+   same PR.
 
-So the gated section of `LIST_FOR_ED.md` is always the live list of "built +
-merged but not yet turned on for users." (Per the notes-files rule, these edits
-ride with the related working commit.)
+So the Gated group of `LIST_FOR_ED.md` is always the live list of "built +
+merged but not yet turned on for users." These edits ride with the related
+working commit.
+
+### The list (`LIST_FOR_ED.md` + `docs/list/`)
+`LIST_FOR_ED.md` is a short list: a few header lines, then five groups in this
+order — `## Now`, `## Next`, `## Later`, `## Wish list`, `## Gated` — with one
+bullet per item. A bullet's **first local link** is its target: an item file in
+`docs/list/`, or an existing plan/brainstorm/audit doc that already holds the
+detail. **Priority lives only in the group; detail lives only in the target.**
+`src/__tests__/unit/listForEd.test.ts` fails CI if a link is dead, an item file
+has no line (or two), a heading isn't one of the five, or frontmatter is bad.
+
+**Item file:** `docs/list/YYYY-MM-DD-short-slug.md` (the date the item was
+first written down). Flat frontmatter, then a short body with the detail:
+`summary:` (one line, also used on the list line), `kind:` (`task` or `idea`),
+`added:` and `checked:` (`YYYY-MM-DD`), optional `owner:` (`ed`, `jack` or
+`both`; missing means Ed). No priority field, ever.
+
+**Group rules:**
+- New items go to **Later** (ideas to **Wish list**). Only Ed moves things into
+  Now or Next. Now holds about 3.
+- Within Later and Wish list, lines are sorted by file name.
+- **The PR that finishes an item deletes its file and its line.** A gated item
+  goes in its un-gate PR.
+
+**What's next — runs whenever I choose or suggest the next task**, including
+after "your call", "pick", "go" or "what's next":
+1. Re-check every Now and Next item against main and update its `checked` date.
+2. Report anything already done instead of offering it (and delete it in the
+   next PR that touches the list).
+3. If Now holds more than about 3, ask Ed which one to move down.
+4. If Now is empty, offer the top of Next.
+5. If Next is empty too, propose up to 3 Later items for Ed to promote. Never
+   list all of Later.
+
+`LIST_FOR_JACK.md` is separate and untouched for now; `owner:` is reserved so it
+can fold in later.
 
 ### Pre-approved Commands
 The following commands can be run without explicit user permission:

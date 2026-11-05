@@ -38,7 +38,7 @@ export const OperatorDashboard: React.FC = () => {
   const { member } = useUserProfile();
   const { count: pendingReportsCount } = usePendingReportsCount(orgId);
 
-  // Closes LIST_FOR_ED #8 — React Router doesn't reset window scroll
+  // React Router doesn't reset window scroll
   // on navigation, so coming from a scrolled-down page (e.g. a long
   // player-management list) would land the user partway down the
   // OperatorDashboard. Force scroll-to-top on mount. No global

@@ -152,5 +152,5 @@ Hand the structured output back. Ed will review it and decide:
 
 - **The prompt assumes the agent has access to the locked docs.** If you're using claude.ai instead of Claude Code, upload at minimum: `PRINCIPLES.md`, `README.md`, the 9 Module READMEs, and any variant pages relevant to the LO's likely encoding (e.g., if they use FargoRate, include the FargoRate variants).
 - **The agent will be only as good as the LO's clarity.** Some LOs describe their league fluently; others ramble. The intake question playbook helps surface what you need.
-- **The structured output is the deliverable** — copy it into LIST_FOR_ED.md or wherever you track operator onboarding. It becomes the working spec for either configuring an existing prepackaged Scoring System OR for the next architectural conversation.
+- **The structured output is the deliverable** — save it as a `docs/list/` item or wherever you track operator onboarding. It becomes the working spec for either configuring an existing prepackaged Scoring System OR for the next architectural conversation.
 - **This works because the framework is precise enough to classify against.** The whole point of the lock-readiness work was making the docs trustworthy as a classification target. This intake agent is the payoff.
