@@ -204,6 +204,7 @@ look. So the fix has two parts:
   |---|---|---|
   | Scoring games, incl. a race | `src/player/ScoreMatch.tsx` | `src/components/scoring/` (scoreboard, GameButtonRow) |
   | Picking a lineup | `src/player/MatchLineup.tsx` | `src/hooks/lineup/` |
+  | A one-page form (not a wizard) | `src/newPlayer/NewPlayerForm.tsx` | `src/newPlayer/FormField.tsx` fields, `src/components/forms/DateField.tsx`, a form hook + a submit hook |
   | A multi-step setup flow | `src/wizards/league-v2/` | `src/components/forms/` steps, the wizard state hook |
   | An operator page of cards | `src/operator/LeagueDetail.tsx` | `src/components/operator/` cards |
   | Stats with filters | `src/player/PlayerStats.tsx` | `src/stats/` |
