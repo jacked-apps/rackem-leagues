@@ -46,6 +46,7 @@ import { PlayerStats } from '../player/PlayerStats';
 import { TeamSchedule } from '../player/TeamSchedule';
 import { MatchLineup } from '../player/MatchLineup';
 import { ScoreMatch } from '../player/ScoreMatch';
+import { ScoreRacePage } from '../race/ScoreRacePage';
 import { SpectateLiveMatches } from '../player/SpectateLiveMatches';
 import { SpectateMyLiveMatches } from '../player/SpectateMyLiveMatches';
 import { BecomeLeagueOperator } from '../leagueOperator/BecomeLeagueOperator';
@@ -68,9 +69,13 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import HandicapLookupTest from '../pages/HandicapLookupTest';
 import { DevOnly } from '../dev/DevOnly';
 import RLSTestPage from '../dev/RLSTestPage';
-import CoinFlipSandbox from '../dev/CoinFlipSandbox';
 // --- Handicap Calculator (dev/staging only) — remove this import + the route below to delete the feature ---
-import { HandicapCalculator, NonProdGate } from '../handicapCalculator';
+import { HandicapCalculator } from '../handicapCalculator';
+import { NonProdGate } from '../components/NonProdGate';
+// --- Game Room (GATED: dev/staging only until Ed reviews on staging; see docs/list/2026-11-04-gated-game-room.md) ---
+import { RoomsIndexPage } from '../rooms/RoomsIndexPage';
+import { RoomPage } from '../rooms/RoomPage';
+import { JoinRoomPage } from '../rooms/JoinRoomPage';
 
 // Lazy-loaded public rules reader (keeps the cleaned rulebook data out of the main bundle).
 const RulesPage = lazy(() => import('../rules/RulesPage'));
@@ -206,9 +211,6 @@ export const router = createBrowserRouter([
 
       // === Development-only Routes ===
       { path: 'dev/rls-tests', element: <DevOnly><RLSTestPage /></DevOnly> },
-      // Sandbox for the reusable CoinFlip component — unlinked on purpose;
-      // reach it by typing the URL. Delete once a real caller mounts CoinFlip.
-      { path: 'dev/coin-flip', element: <DevOnly><CoinFlipSandbox /></DevOnly> },
 
       // === Auth Routes (require login) ===
       { path: 'complete-profile', element: withAuth(<CompleteProfileForm />) },
@@ -269,6 +271,13 @@ export const router = createBrowserRouter([
           // Printable / big-screen join QR sign (organizer only).
           { path: 'brackets/:bracketId/qr', element: withMember(<JoinQrPoster />) },
           { path: 'brackets/:bracketId', element: withMember(<BracketView />) },
+          // --- Game Room — GATED non-production (route + every door share
+          // this one `NonProdGate`; flip them together when Ed un-gates).
+          // Member routes: the join link is the sign-in funnel, so a
+          // signed-out scanner goes through login/register and back.
+          { path: 'rooms', element: <NonProdGate>{withMember(<RoomsIndexPage />)}</NonProdGate> },
+          { path: 'rooms/join/:joinToken', element: <NonProdGate>{withMember(<JoinRoomPage />)}</NonProdGate> },
+          { path: 'rooms/:roomId', element: <NonProdGate>{withMember(<RoomPage />)}</NonProdGate> },
           // Rules pages — public (no auth wrapper) but rendered inside
           // MemberLayout so logged-in users keep their sidebar/tab bar.
           // AppSidebar and BottomTabBar both auth-gate their nav content,
@@ -332,6 +341,16 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId', element: withOperator(LeagueDetail) },
           { path: 'league/:leagueId/finances', element: withOperator(LeagueFinancesPage) },
           { path: 'league/:leagueId/dues', element: withOperator(LeagueDuesPage) },
+          // Individual races — a dev entrance to one race by id. The real
+          // entrance is the Race game in a room (its registry entry is gated
+          // by the same !isProduction). /race/new was a disposable stand-in
+          // and is gone; rooms create races server-side (open_room_race).
+          ...(!isProduction
+            ? [
+                { path: 'race/:raceId', element: withMember(<ScoreRacePage />) },
+              ]
+            : []),
+
           // Scoring Workshop — in active development; gated off in production
           // (route + dashboard card) until it's ready. Dev/staging only.
           ...(!isProduction

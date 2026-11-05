@@ -190,6 +190,24 @@ export const queryKeys = {
   },
 
   /**
+   * Race-related query keys (individual races — two players, a goal each)
+   */
+  races: {
+    /** Base key for all race queries */
+    all: ['races'] as const,
+
+    /** Race by ID */
+    detail: (id: string) => [...queryKeys.races.all, id] as const,
+
+    /** The games played so far in a race */
+    games: (raceId: string) => [...queryKeys.races.detail(raceId), 'games'] as const,
+
+    /** The many-eyes witness records for a race's games */
+    confirmations: (raceId: string) =>
+      [...queryKeys.races.detail(raceId), 'confirmations'] as const,
+  },
+
+  /**
    * Messaging-related query keys
    */
   messages: {
@@ -339,6 +357,36 @@ export const queryKeys = {
     /** The current organizer's list of brackets */
     byCreator: (memberId: string) =>
       [...queryKeys.brackets.all, 'creator', memberId] as const,
+  },
+
+  /**
+   * Game Room — a generic multi-device container games plug into.
+   *
+   * The shape IS the realtime contract: the room hook invalidates
+   * `rooms.table(roomId, tableName)` whenever a listed game table changes, and
+   * `rooms.detail(roomId)` is a PREFIX of every table key, so invalidating the
+   * detail key on (re)subscribe refreshes the room and every game table at
+   * once. Games MUST key their queries with `rooms.table`.
+   */
+  rooms: {
+    /** Base key for all room queries */
+    all: ['room'] as const,
+
+    /** One room's state (row + seats + phones) — a prefix of every table key */
+    detail: (roomId: string) => [...queryKeys.rooms.all, roomId] as const,
+
+    /** The room's devices (a view of the same state, split so it can poll on its own cadence) */
+    phones: (roomId: string) => [...queryKeys.rooms.all, roomId, 'room_phones'] as const,
+
+    /** A game table's rows for this room — the key a game MUST use */
+    table: (roomId: string, tableName: string) =>
+      [...queryKeys.rooms.all, roomId, tableName] as const,
+
+    /** The join page's read, keyed by the link/QR token */
+    byToken: (joinToken: string) => [...queryKeys.rooms.all, 'token', joinToken] as const,
+
+    /** Rooms the signed-in member currently has a device in */
+    mine: (memberId: string) => [...queryKeys.rooms.all, 'mine', memberId] as const,
   },
 
   /**

@@ -16,6 +16,15 @@
  * already in the air. That is the difference between a flip people watch and a
  * result they are asked to believe.
  *
+ * CONTROLLED path (the Game Room's two-phone flip): pass `controlled` with
+ * the `call` and `face` on record plus `onCall` / `onThrow`. The component
+ * then renders FROM those props — the phase is derived (no call → calling;
+ * call, no face → called; face → flipping, then result) and every tap is
+ * reported up instead of changing local state. The face comes from whoever
+ * owns the record (the database, for the room), so two screens cannot
+ * disagree about who won, and `tossCoin` is never consulted. Without
+ * `controlled`, nothing here changes.
+ *
  * @example
  * <CoinFlip
  *   participantA={{ id: 'p1', name: 'John' }}
@@ -50,7 +59,7 @@ const FLIP_DURATION_MS = 1400;
  */
 type Phase = 'idle' | 'calling' | 'called' | 'assigned' | 'flipping' | 'result';
 
-interface CoinFlipProps {
+interface CoinFlipBaseProps {
   /** One side of the flip. */
   participantA: Participant;
   /** The other side. */
@@ -91,6 +100,35 @@ interface CoinFlipProps {
   random?: RandomSource;
 }
 
+/**
+ * The controlled path: the flip's record lives elsewhere (a database row) and
+ * this screen renders it. Supplied as one object so it is all-or-nothing —
+ * half a controlled flip is a flip two screens can disagree about.
+ */
+export interface ControlledFlip {
+  /** The call on record, or null before the caller has made one. */
+  call: Call | null;
+  /** The face on record, or null before the throw. Never tossed locally. */
+  face: Face | null;
+  /** The caller tapped a side. The owner of the record decides what happens. */
+  onCall: (call: Call) => void;
+  /** The flipper tapped throw. The owner of the record picks the face. */
+  onThrow: () => void;
+  /** "Flip again." Omitted → the control is not offered. */
+  onFlipAgain?: () => void;
+}
+
+interface CoinFlipProps extends CoinFlipBaseProps {
+  /** Render from an external record instead of local state. See @fileoverview. */
+  controlled?: ControlledFlip;
+}
+
+/** Where a controlled flip is, given only its record. */
+function controlledPhase(c: ControlledFlip): Phase {
+  if (c.face) return 'result';
+  return c.call ? 'called' : 'calling';
+}
+
 export function CoinFlip({
   participantA,
   participantB,
@@ -101,10 +139,11 @@ export function CoinFlip({
   onResult,
   allowReflip = true,
   random = Math.random,
+  controlled,
 }: CoinFlipProps) {
-  const [phase, setPhase] = useState<Phase>('idle');
+  const [phase, setPhase] = useState<Phase>(controlled ? controlledPhase(controlled) : 'idle');
   const [assignment, setAssignment] = useState<FaceAssignment | null>(null);
-  const [landedFace, setLandedFace] = useState<Face>('heads');
+  const [landedFace, setLandedFace] = useState<Face>(controlled?.face ?? 'heads');
   const [result, setResult] = useState<FlipResult | null>(null);
   /** The call, held between the caller making it and the flipper throwing. */
   const [pendingCall, setPendingCall] = useState<Call | null>(null);
@@ -113,13 +152,61 @@ export function CoinFlip({
   // Shuffled once, not per render, so the order does not jitter as state
   // changes. Cosmetic only — `flipCoin.test.ts` pins that it cannot affect
   // who wins.
-  const [[first, second]] = useState(() => shuffleOrder(participantA, participantB, random));
+  // Controlled: no shuffle, so two phones show the same order — and the
+  // random source is never consulted at all.
+  const [[first, second]] = useState(() =>
+    controlled ? [participantA, participantB] : shuffleOrder(participantA, participantB, random)
+  );
 
   // Under reduced motion the coin does not spin, but every state is still
   // entered in order — the assignment is still shown before the winner.
   const spinDuration = usePrefersReducedMotion() ? 0 : FLIP_DURATION_MS;
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  // Controlled: the record drives the phase. Participants and onResult are
+  // read through refs so a parent that rebuilds them every render (the room
+  // does) cannot restart the spin mid-air.
+  const resolveRef = useRef({ participantA, participantB, callerId, onResult });
+  resolveRef.current = { participantA, participantB, callerId, onResult };
+  // A screen that mounts with the face already on record (a refresh after
+  // the throw) shows the result at once; only a face ARRIVING gets the spin.
+  const skipSpin = useRef(controlled?.face != null);
+  const cCall = controlled?.call ?? null;
+  const cFace = controlled?.face ?? null;
+  const isControlled = controlled !== undefined;
+
+  useEffect(() => {
+    if (!isControlled) return;
+    if (timer.current) clearTimeout(timer.current);
+
+    if (!cFace) {
+      // A new record (or one not yet thrown): back to the beat the record is at.
+      setResult(null);
+      setPhase(cCall ? 'called' : 'calling');
+      return;
+    }
+    if (!cCall) return; // cannot happen on a well-formed record; render nothing new
+
+    const { participantA: a, participantB: b, callerId: cid, onResult: report } = resolveRef.current;
+    const callerP = a.id === cid ? a : b;
+    const other = callerP.id === a.id ? b : a;
+    const settle = () => {
+      const settled = resolveFlip(cCall, cFace, callerP, other);
+      setResult(settled);
+      setPhase('result');
+      report?.(settled);
+    };
+
+    setLandedFace(cFace);
+    if (skipSpin.current) {
+      skipSpin.current = false;
+      settle();
+      return;
+    }
+    setPhase('flipping');
+    timer.current = setTimeout(settle, spinDuration);
+  }, [isControlled, cCall, cFace, spinDuration]);
 
   /** Toss the coin, then settle after it lands. */
   const launch = useCallback(
@@ -166,17 +253,25 @@ export function CoinFlip({
    * caller while the other watches.
    */
   const handleCall = useCallback((call: Call) => {
+    if (controlled) {
+      controlled.onCall(call);
+      return;
+    }
     setPendingCall(call);
     setPhase('called');
-  }, []);
+  }, [controlled]);
 
   /** The flipper throws the coin, against the call already on record. */
   const handleThrow = useCallback(() => {
+    if (controlled) {
+      controlled.onThrow();
+      return;
+    }
     if (!pendingCall) return;
     const callerP = participantA.id === callerId ? participantA : participantB;
     const other = callerP.id === participantA.id ? participantB : participantA;
     launch(pendingCall, callerP, other);
-  }, [pendingCall, participantA, participantB, callerId, launch]);
+  }, [controlled, pendingCall, participantA, participantB, callerId, launch]);
 
   /**
    * Flip again, straight back into the flip rather than out to idle.
@@ -188,14 +283,23 @@ export function CoinFlip({
    * call buttons in called mode, a freshly assigned pair of faces in quick.
    */
   const flipAgain = useCallback(() => {
+    if (controlled) {
+      // A new record is the owner's to make; the effect above follows it.
+      controlled.onFlipAgain?.();
+      return;
+    }
     setResult(null);
     setAssignment(null);
     setPendingCall(null);
     start();
-  }, [start]);
+  }, [controlled, start]);
 
   const caller = participantA.id === callerId ? participantA : participantB;
   const flipper = participantB.id === flipperId ? participantB : participantA;
+
+  // Controlled: the call shown between the beats is the one on record.
+  const shownCall = controlled ? controlled.call : pendingCall;
+  const offerReflip = allowReflip && (!controlled || !!controlled.onFlipAgain);
 
   // With no viewer named, one screen carries both roles in turn — the
   // standalone case, and two people sharing a phone. With a viewer named,
@@ -245,10 +349,10 @@ export function CoinFlip({
         {/* The call is on record and the coin has not been thrown. Both sides
             can see what was called, so the throw settles something already
             agreed rather than something announced afterwards. */}
-        {phase === 'called' && pendingCall && (
+        {phase === 'called' && shownCall && (
           <>
             <p className="text-sm text-muted-foreground">
-              {caller.name} called {pendingCall}
+              {caller.name} called {shownCall}
             </p>
             {viewerThrows ? (
               <Button loadingText="none" onClick={handleThrow}>
@@ -282,7 +386,7 @@ export function CoinFlip({
             <p className="text-sm text-muted-foreground">
               Called {result.call} &middot; landed {result.face}
             </p>
-            {allowReflip && (
+            {offerReflip && (
               <Button variant="outline" onClick={flipAgain}>
                 Flip again
               </Button>

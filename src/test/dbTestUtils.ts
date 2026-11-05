@@ -50,11 +50,22 @@ export const TEST_USERS = {
  * Create a Supabase client for testing
  * Uses local Supabase instance with anon key (for RLS testing)
  */
-export function createTestClient(): SupabaseClient<Database> {
+export function createTestClient(storageKey?: string): SupabaseClient<Database> {
   const supabaseUrl = 'http://127.0.0.1:54321';
   const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
-  return createClient<Database>(supabaseUrl, supabaseAnonKey);
+  // Under jsdom every client persists its session to the same localStorage
+  // slot by default, so signing in a SECOND user silently overwrites the
+  // first client's session — a test that thinks it holds "operator" is
+  // really acting as "player". Isolate each client: no persistence, and a
+  // distinct storageKey so nothing is shared even if persistence is on.
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      storageKey: storageKey ?? `test-${Math.random().toString(36).slice(2)}`,
+    },
+  });
 }
 
 /**
@@ -74,7 +85,7 @@ export function createServiceClient(): SupabaseClient<Database> {
 export async function createAuthenticatedClient(
   userType: keyof typeof TEST_USERS
 ): Promise<SupabaseClient<Database>> {
-  const client = createTestClient();
+  const client = createTestClient(`test-${userType}`);
   const user = TEST_USERS[userType];
 
   const { error } = await client.auth.signInWithPassword({

@@ -1,0 +1,230 @@
+/**
+ * @fileoverview The race room — the page two players actually use.
+ *
+ * It is a COMPONENT that takes a race id, not a page that finds one. Whoever
+ * hosts a race decides who is playing and what to call them; the room is handed
+ * that and renders it. So the same room works inside a game room, inside a
+ * tournament, or — later — inside a league night where the two players also
+ * have teams, positions and a lineup behind them. None of that is the room's
+ * business, and nothing here would have to change to gain it.
+ *
+ * Everything a player does routes through the same dialogs the league uses:
+ * `ScoringDialog` to enter a result, `ConfirmationDialog` to agree with one.
+ * That is deliberate rather than convenient — a race that collected results in
+ * its own way would be a second scoring implementation, and merging it back
+ * into league scoring later would mean rewriting one of them.
+ */
+
+import { useState } from 'react';
+import { ScoringDialog } from '@/components/scoring/ScoringDialog';
+import { ConfirmationDialog } from '@/components/scoring/ConfirmationDialog';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { useRaceView, type RaceNameOverrides } from './useRaceView';
+import { useRaceActions } from './useRaceActions';
+import { RaceScoreboard } from './RaceScoreboard';
+import { RaceGamesList } from './RaceGamesList';
+import { FirstBreakerPrompt } from './FirstBreakerPrompt';
+import { isSettled, proposalOf, winnerSideOf, type RaceSeat } from './types';
+
+interface ScoreRaceProps {
+  raceId: string;
+  /** Names the host already knows, so the room does not look them up. */
+  names?: RaceNameOverrides;
+  /**
+   * Whether to collect "how the game ended" extras (break & run, golden break,
+   * early 8, break foul, runout). Defaults to true, so the sandbox and future
+   * tournaments are unchanged. A casual host (a game room) passes false: the
+   * dialog only confirms the winner and every extra flag is recorded as false.
+   */
+  extras?: boolean;
+}
+
+/** A result being entered, held while the extras dialog is open. */
+interface PendingResult {
+  gameNumber: number;
+  winner: RaceSeat;
+  winnerWasBreaker: boolean;
+  breakAndRun: boolean;
+  goldenBreak: boolean;
+  earlyEight: boolean;
+  breakFouled: boolean;
+  runout: boolean;
+}
+
+export function ScoreRace({ raceId, names, extras = true }: ScoreRaceProps) {
+  const { view, isLoading, error } = useRaceView(raceId, names);
+  // The refusal copy for a who-breaks clash names the player who picked first,
+  // so the actions read names from the view once it has loaded.
+  const { start, record, confirm, vacate } = useRaceActions(raceId, {
+    nameOf: (side) => (side === 'home' ? view?.home : view?.away)?.displayName,
+  });
+  const [pending, setPending] = useState<PendingResult | null>(null);
+  /** Games this viewer waved off — neither agreed nor denied — for this session. */
+  const [dismissed, setDismissed] = useState<number[]>([]);
+
+  if (isLoading) return <LoadingSpinner />;
+  if (error || !view) {
+    return (
+      <p className="rounded-md border px-3 py-3 text-center text-sm text-muted-foreground">
+        This race could not be loaded.
+      </p>
+    );
+  }
+
+  const { race, home, away, games, mySide, homeWon, awayWon } = view;
+  const isPlayer = mySide !== null;
+  const busy = start.isPending || record.isPending || confirm.isPending || vacate.isPending;
+
+  // The one game waiting on this viewer: the opponent entered a result and this
+  // side has not answered it. A spectator is never asked.
+  const waitingOnMe = !mySide
+    ? null
+    : games.find(
+        (g) =>
+          g.winner_player_id !== null &&
+          !isSettled(g) &&
+          (mySide === 'home' ? g.confirmed_by_home : g.confirmed_by_away) === null
+      ) ?? null;
+  // The dialog opens for it unless this viewer waved it off; the row's
+  // Confirm button brings it back.
+  const awaitingMe =
+    waitingOnMe && !dismissed.includes(waitingOnMe.game_number) ? waitingOnMe : null;
+
+  const awaitingWinner = awaitingMe
+    ? winnerSideOf(awaitingMe, race) === 'home'
+      ? home
+      : away
+    : null;
+
+  return (
+    <div className="mx-auto w-full max-w-2xl space-y-2">
+      <RaceScoreboard
+        home={home}
+        away={away}
+        homeWon={homeWon}
+        awayWon={awayWon}
+        mySide={mySide}
+        winnerSide={
+          race.winner_player_id === null
+            ? null
+            : race.winner_player_id === race.home_member_id
+              ? 'home'
+              : 'away'
+        }
+      />
+
+      {race.status === 'created' && mySide ? (
+        <FirstBreakerPrompt
+          home={home}
+          away={away}
+          breakRule={race.break_rule}
+          mySide={mySide}
+          proposal={proposalOf(race)}
+          disabled={busy}
+          onChoose={(side) => start.mutate({ firstBreakerSide: side })}
+        />
+      ) : null}
+
+      <RaceGamesList
+        race={race}
+        games={games}
+        home={home}
+        away={away}
+        activeGameNumber={view.activeGameNumber}
+        vacatableGameNumber={view.vacatableGameNumber}
+        awaitingGameNumber={waitingOnMe?.game_number ?? null}
+        onConfirm={(gameNumber) => setDismissed((d) => d.filter((n) => n !== gameNumber))}
+        isPlayer={isPlayer}
+        busy={busy}
+        onScore={(gameNumber, winner, winnerWasBreaker) =>
+          setPending({
+            gameNumber,
+            winner,
+            winnerWasBreaker,
+            breakAndRun: false,
+            goldenBreak: false,
+            earlyEight: false,
+            breakFouled: false,
+            runout: false,
+          })
+        }
+        onVacate={(gameNumber) => vacate.mutate({ gameNumber })}
+      />
+
+      <ScoringDialog
+        open={pending !== null}
+        game={
+          pending
+            ? {
+                gameNumber: pending.gameNumber,
+                winnerPlayerName: pending.winner.displayName,
+                winnerWasScheduledBreaker: pending.winnerWasBreaker,
+              }
+            : null
+        }
+        gameType={race.game_type}
+        goldenBreakCountsAsWin
+        // A race tracks no points, so the calculator-driven per-side inputs
+        // stay out of the way. A league race would pass its calculator here.
+        pointsCalculator={null}
+        hideForfeit
+        hideExtras={!extras}
+        breakAndRun={pending?.breakAndRun ?? false}
+        goldenBreak={pending?.goldenBreak ?? false}
+        earlyEight={pending?.earlyEight ?? false}
+        breakFouled={pending?.breakFouled ?? false}
+        runout={pending?.runout ?? false}
+        onBreakAndRunChange={(v) => setPending((p) => (p ? { ...p, breakAndRun: v } : p))}
+        onGoldenBreakChange={(v) => setPending((p) => (p ? { ...p, goldenBreak: v } : p))}
+        onEarlyEightChange={(v) => setPending((p) => (p ? { ...p, earlyEight: v } : p))}
+        onBreakFouledChange={(v) => setPending((p) => (p ? { ...p, breakFouled: v } : p))}
+        onRunoutChange={(v) => setPending((p) => (p ? { ...p, runout: v } : p))}
+        onCancel={() => setPending(null)}
+        onConfirm={() => {
+          if (!pending) return;
+          // Winner-only: force every extra off rather than trusting that the
+          // hidden toggles were never touched.
+          const flag = (v: boolean) => extras && v;
+          record.mutate({
+            gameNumber: pending.gameNumber,
+            winnerPlayerId: pending.winner.memberId,
+            breakAndRun: flag(pending.breakAndRun),
+            goldenBreak: flag(pending.goldenBreak),
+            earlyEight: flag(pending.earlyEight),
+            breakFouled: flag(pending.breakFouled),
+            runout: flag(pending.runout),
+          });
+          setPending(null);
+        }}
+      />
+
+      <ConfirmationDialog
+        open={awaitingMe !== null}
+        gameType={race.game_type}
+        game={
+          awaitingMe && awaitingWinner
+            ? {
+                gameNumber: awaitingMe.game_number,
+                winnerPlayerName: awaitingWinner.displayName,
+                breakAndRun: awaitingMe.break_and_run,
+                goldenBreak: awaitingMe.golden_break,
+                earlyEight: awaitingMe.early_eight,
+                breakFouled: awaitingMe.break_fouled,
+                runout: awaitingMe.runout,
+                winByForfeit: awaitingMe.win_by_forfeit,
+                winnerValue: awaitingMe.winner_value,
+                loserValue: awaitingMe.loser_value,
+              }
+            : null
+        }
+        onConfirm={(gameNumber) => confirm.mutate({ gameNumber })}
+        // Denying is a reversal: the result comes off and the game is replayed
+        // or re-entered. It is the same act as reversing the last game, so it
+        // goes through the same path rather than inventing a second one.
+        onDeny={(gameNumber) => vacate.mutate({ gameNumber })}
+        onDismiss={(gameNumber) => setDismissed((d) => [...d, gameNumber])}
+        onClose={() => undefined}
+      />
+    </div>
+  );
+}

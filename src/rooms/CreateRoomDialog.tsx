@@ -1,0 +1,122 @@
+/**
+ * @fileoverview Start a room: pick a game, decide whether anyone else can
+ * get in.
+ *
+ * It used to do double duty — the same picker switched the game in an
+ * existing room. That button is gone (Ed, 2026-10-10): a room is cheap and
+ * disposable, so a different game is a different room, and in-place
+ * switching would have meant carrying a wipe-and-rebuild path through every
+ * future game for a convenience nobody asked for.
+ *
+ * Dumb on purpose: it never calls an RPC. The opener owns the mutation and
+ * hands back a sentence when the server refuses, which the dialog shows in
+ * place — that keeps "navigate into the new room" out of here.
+ *
+ * The shared toggle is disabled with a note unless the viewer passes the host
+ * gate: the Host designation (`hasDesignation('host')`; the developer key
+ * passes too). Shared rooms cost sockets; the server enforces the same gate
+ * (`room_member_is_host`), this just explains it before the tap.
+ */
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
+import { useUserProfile } from '@/api/hooks/useUserProfile';
+import { listGames } from './games/registry';
+import type { GameDefinition } from './games/types';
+
+interface CreateRoomDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Start the room; return a problem sentence to show, or null when it went through. */
+  onSubmit: (game: GameDefinition, shared: boolean) => Promise<string | null>;
+}
+
+export function CreateRoomDialog({ open, onOpenChange, onSubmit }: CreateRoomDialogProps) {
+  const games = listGames();
+  const canShare = useUserProfile().hasDesignation('host');
+  const [gameKey, setGameKey] = useState(games[0]?.key ?? '');
+  const [shared, setShared] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const game = games.find((g) => g.key === gameKey);
+
+  const submit = async () => {
+    if (!game) return;
+    setProblem(null);
+    const result = await onSubmit(game, shared);
+    if (result) setProblem(result);
+    else onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Start a room</DialogTitle>
+          <DialogDescription>
+            A room is for tonight. Nothing in it counts toward stats.
+          </DialogDescription>
+        </DialogHeader>
+
+        {games.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No games are available yet.</p>
+        ) : (
+          <RadioGroup value={gameKey} onValueChange={setGameKey} className="space-y-2">
+            {games.map((g) => (
+              <Label
+                key={g.key}
+                htmlFor={`game-${g.key}`}
+                className="flex cursor-pointer items-start gap-3 rounded-md border p-3"
+              >
+                <RadioGroupItem value={g.key} id={`game-${g.key}`} className="mt-0.5" />
+                <div className="space-y-0.5">
+                  <div className="font-medium">{g.name}</div>
+                  <p className="text-sm text-muted-foreground">{g.description}</p>
+                </div>
+              </Label>
+            ))}
+          </RadioGroup>
+        )}
+
+        <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+          <div className="space-y-1">
+            <Label htmlFor="shared-toggle">Open to others</Label>
+            <p className="text-sm text-muted-foreground">
+              {canShare
+                ? 'People you invite can join on their own phones.'
+                : 'Opening a room to others is a host feature. You can still play on this device.'}
+            </p>
+          </div>
+          <Switch
+            id="shared-toggle"
+            checked={shared}
+            onCheckedChange={setShared}
+            disabled={!canShare}
+            aria-label="Open to others"
+          />
+        </div>
+
+        {problem && <p className="text-sm text-destructive">{problem}</p>}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button loadingText="Starting…" onClick={submit} disabled={!game}>
+            Start
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -44,6 +44,16 @@
     - `share_token` has no independent TTL — a failed close/sweep leaves a bracket
       readable at its URL until the next sweep. Acceptable for disposable v1;
       revisit if brackets ever carry PII (paid tier).
+  - **Game Room (`feat/game-room`):** `rooms` / `room_phones` need policies keyed
+    on `member_id` (every RPC already resolves `auth.uid()` → `members`). **Watch
+    the realtime payload:** `src/rooms/useRoomRealtime.ts` drops UPDATEs where
+    only the heartbeat column moved (`rooms.last_activity_at`,
+    `room_phones.last_seen_at`) by comparing `old` vs `new` — which works because
+    both tables have REPLICA IDENTITY FULL with RLS off. With RLS ON, Supabase
+    narrows `old` to the primary key, so the filter fails OPEN and every 30 s
+    heartbeat from every phone refetches the room. Not wrong, but noisy; after the
+    RLS pass either confirm `old` still arrives full or move the filter server-side
+    (e.g. a trigger that suppresses heartbeat-only publication).
 
 - [ ] **Auth: email confirmations ON.** Verify the **production** Supabase project
   has *Authentication → Providers → Email → "Confirm email"* **enabled**. This is

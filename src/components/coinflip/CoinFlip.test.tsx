@@ -7,6 +7,11 @@
  *
  * The randomness is injected rather than mocked, so "the coin lands tails" is
  * expressed as a value rather than a spy.
+ *
+ * The last block covers the CONTROLLED path (the Game Room's two-phone flip):
+ * the record lives elsewhere, the component renders it, taps are reported up,
+ * and the random source is never consulted. Everything above it is the
+ * uncontrolled component and is untouched by that addition.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -509,5 +514,100 @@ describe('CoinFlip — lifecycle', () => {
     settle();
 
     expect(onResult).not.toHaveBeenCalled();
+  });
+});
+
+describe('CoinFlip — controlled (the record lives elsewhere)', () => {
+  // The Game Room's two-phone flip: the database holds the call and the face,
+  // each phone renders the row. Nothing here tosses a coin.
+  const noop = () => {};
+  const base = { participantA: john, participantB: mike, callerId: mike.id, flipperId: john.id };
+
+  it('with call=heads and face=heads on record, the caller is announced by name', () => {
+    render(<CoinFlip {...base} controlled={{ call: 'heads', face: 'heads', onCall: noop, onThrow: noop }} />);
+    // Mounted with the face already known: result at once, no spin.
+    expect(screen.getByText('Mike wins the flip')).toBeInTheDocument();
+    expect(screen.getByText(/Called heads · landed heads/)).toBeInTheDocument();
+  });
+
+  it('with face=tails against a heads call, the other participant wins', () => {
+    render(<CoinFlip {...base} controlled={{ call: 'heads', face: 'tails', onCall: noop, onThrow: noop }} />);
+    expect(screen.getByText('John wins the flip')).toBeInTheDocument();
+  });
+
+  it('never consults the injected random source', () => {
+    const random = vi.fn(() => 0);
+    const { rerender } = render(
+      <CoinFlip {...base} random={random} controlled={{ call: null, face: null, onCall: noop, onThrow: noop }} />
+    );
+    rerender(<CoinFlip {...base} random={random} controlled={{ call: 'heads', face: null, onCall: noop, onThrow: noop }} />);
+    rerender(<CoinFlip {...base} random={random} controlled={{ call: 'heads', face: 'tails', onCall: noop, onThrow: noop }} />);
+    settle();
+    expect(random).not.toHaveBeenCalled();
+    expect(screen.getByText('John wins the flip')).toBeInTheDocument();
+  });
+
+  it('a face ARRIVING spins the coin, then settles and reports the result once', () => {
+    const onResult = vi.fn();
+    const { rerender } = render(
+      <CoinFlip {...base} onResult={onResult} controlled={{ call: 'tails', face: null, onCall: noop, onThrow: noop }} />
+    );
+    expect(screen.getByText(/Mike called tails/)).toBeInTheDocument();
+
+    rerender(<CoinFlip {...base} onResult={onResult} controlled={{ call: 'tails', face: 'tails', onCall: noop, onThrow: noop }} />);
+    expect(screen.getByTestId('coin')).toHaveAttribute('data-spinning', 'true');
+    expect(screen.queryByText(/wins the flip/)).not.toBeInTheDocument();
+
+    settle();
+    expect(screen.getByText('Mike wins the flip')).toBeInTheDocument();
+    expect(onResult).toHaveBeenCalledTimes(1);
+    expect(onResult.mock.calls[0][0].winner).toEqual(mike);
+  });
+
+  it("the caller's device gets heads/tails (reported up, not stored), then waits for the throw", () => {
+    const onCall = vi.fn();
+    const { rerender } = render(
+      <CoinFlip {...base} viewerId={mike.id} controlled={{ call: null, face: null, onCall, onThrow: noop }} />
+    );
+    // No idle beat in a controlled flip — the record exists, so the call is up.
+    expect(screen.queryByRole('button', { name: 'Flip for it' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Heads' }));
+    expect(onCall).toHaveBeenCalledWith('heads');
+    // Nothing changed locally: the record has not come back yet.
+    expect(screen.getByRole('button', { name: 'Tails' })).toBeInTheDocument();
+
+    rerender(<CoinFlip {...base} viewerId={mike.id} controlled={{ call: 'heads', face: null, onCall, onThrow: noop }} />);
+    expect(screen.getByText(/Waiting for John to throw/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Throw the coin' })).not.toBeInTheDocument();
+  });
+
+  it("the flipper's device gets only the throw, only once a call is on record", () => {
+    const onThrow = vi.fn();
+    const { rerender } = render(
+      <CoinFlip {...base} viewerId={john.id} controlled={{ call: null, face: null, onCall: noop, onThrow }} />
+    );
+    expect(screen.getByText(/Waiting for Mike to call it/)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+
+    rerender(<CoinFlip {...base} viewerId={john.id} controlled={{ call: 'tails', face: null, onCall: noop, onThrow }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Throw the coin' }));
+    expect(onThrow).toHaveBeenCalledTimes(1);
+  });
+
+  it('"Flip again" is offered only when the owner can make a new record, and a new record resets the beat', () => {
+    const onFlipAgain = vi.fn();
+    const { rerender } = render(
+      <CoinFlip {...base} controlled={{ call: 'heads', face: 'heads', onCall: noop, onThrow: noop }} />
+    );
+    expect(screen.queryByRole('button', { name: 'Flip again' })).not.toBeInTheDocument();
+
+    rerender(<CoinFlip {...base} controlled={{ call: 'heads', face: 'heads', onCall: noop, onThrow: noop, onFlipAgain }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Flip again' }));
+    expect(onFlipAgain).toHaveBeenCalledTimes(1);
+
+    // The owner made a new record: back to the call.
+    rerender(<CoinFlip {...base} controlled={{ call: null, face: null, onCall: noop, onThrow: noop, onFlipAgain }} />);
+    expect(screen.queryByText(/wins the flip/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Heads' })).toBeInTheDocument();
   });
 });

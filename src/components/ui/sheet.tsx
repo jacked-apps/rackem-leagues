@@ -1,8 +1,9 @@
 /**
  * @fileoverview Sheet — a side-anchored modal (drawer) built on the Radix
  * Dialog primitive. Canonical shadcn pattern. Slides in from a configurable
- * side (default: right). Used by RuleDetailPage for the mobile game-TOC
- * drawer; available to any other feature that wants a side drawer.
+ * side (default: right; `bottom` for a phone-thumb sheet). Used by
+ * RuleDetailPage for the mobile game-TOC drawer and by the Game Room's
+ * InviteSheet (bottom); available to any other feature that wants a drawer.
  */
 
 import * as React from 'react';
@@ -35,6 +36,7 @@ export const SheetOverlay = React.forwardRef<
 const SIDE_CLASSES = {
   left: 'left-0 top-0 h-full w-3/4 max-w-sm border-r data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left',
   right: 'right-0 top-0 h-full w-3/4 max-w-sm border-l data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right',
+  bottom: 'inset-x-0 bottom-0 rounded-t-lg border-t data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
 } as const;
 
 type SheetContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {

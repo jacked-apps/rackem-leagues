@@ -32,6 +32,7 @@ const ALLOWED_FILES: Record<string, string> = {
   'src/login/Register.tsx': 'Google sign-in button uses Google brand colours',
   'src/brackets/paid/JoinQrPoster.tsx': 'printed poster — fixed black on white',
   'src/brackets/paid/qrExport.ts': 'exported QR image — fixed black on white',
+  'src/rooms/InviteSheet.tsx': 'on-screen room QR — fixed black on white so any phone camera reads it',
   'src/config/environment.ts': 'staging/prod banner must never be themed away',
   'src/dev/': 'developer-only pages, never shown to users',
 };

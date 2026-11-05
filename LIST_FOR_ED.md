@@ -32,6 +32,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Finish the last notification controls - rate limits, pause-until, @mention alerts](docs/list/2026-11-02-notification-leftovers.md)
 - [Give matches one full-record query, and make every mutation refresh stale data](docs/list/2026-11-04-consolidate-match-queries.md)
 - [Around 2026-12-02, count how many Now and Next items had gone stale](docs/list/2026-11-04-four-week-list-check.md)
+- [Line up the league games-list buttons the way the room race does](docs/list/2026-11-04-league-games-list-alignment.md)
 - [Move to Supabase CLI v3 on purpose (config.toml, CI and both deploys together)](docs/list/2026-11-05-supabase-cli-v3.md)
 
 ## Wish list
@@ -52,5 +53,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 
 - [Custom colour schemes (preview), a fourth theme choice beside Light, Dark and System](docs/list/2026-11-01-gated-custom-colour-schemes.md)
 - [Become a Host, the $1/mo or $10/yr purchase that makes you a host](docs/list/2026-11-04-gated-become-a-host.md)
+- [Game Room - multi-phone rooms with the two-phone coin flip](docs/list/2026-11-04-gated-game-room.md)
 - [LMS handicap calculator, a dev and staging tool](docs/list/2026-11-04-gated-lms-handicap-calculator.md)
+- [Room Race - a race to 5 as the room's second game](docs/list/2026-11-04-gated-room-race.md)
 - [Scoring Workshop, still in active development](docs/list/2026-11-04-gated-scoring-workshop.md)
