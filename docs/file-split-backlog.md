@@ -49,7 +49,7 @@ Ordered best-first within each tier. Check items off as they ship.
   fat handler block. Extract `useTeamManagementActions.ts` + `VenuesPanel.tsx` +
   `TeamsPanel.tsx`. **Effort: L.** ⚠️ `handleImportTeams` is a **dead stub** (builds
   arrays, discards them, fakes a success toast) — confirm intent with the owner, don't
-  carry it forward as if real. *(This is LIST_FOR_ED #5.)*
+  carry it forward as if real.
 - [ ] **`src/operator/SeasonScheduleManager.tsx`** (532) — extract `useSeasonSchedule.ts`
   (load/transform/conflict-detect + blackout add/remove/renumber + save) and a
   `ChampionshipSummary.tsx` for the BCA/APA range block. Keep the renumbering logic

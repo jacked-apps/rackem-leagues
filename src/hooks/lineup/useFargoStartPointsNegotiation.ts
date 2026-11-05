@@ -50,7 +50,7 @@ import type { SystemOverrides } from '@/types/systemOverrides';
  * restore the manual two-captain confirmation flow — no other code
  * change required.
  *
- * Replaces LIST_FOR_ED #22 and #24 (both were UX bugs against the now-
+ * Replaces two old list items (both were UX bugs against the now-
  * hidden negotiation flow; obsolete once auto-agree is on).
  */
 const AUTO_AGREE_START_POINTS = true;
