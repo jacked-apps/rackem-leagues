@@ -1,7 +1,7 @@
 /**
  * @fileoverview Load the cleaned rulebook data into a typed singleton.
  *
- * The cleaned modules under `src/officalBCARulebook/cleaned/` are static data
+ * The cleaned modules under `src/bcaRulebook/cleaned/` are static data
  * emitted by `scripts/clean-rulebook.ts`. This module imports them all once
  * at module load and exposes both the resolved `Rulebook` and a tiny React
  * hook wrapper. There is no asynchronous loading step — the data ships with
@@ -12,16 +12,16 @@
  * routes catches this and shows the user-facing "Couldn't load" fallback.
  */
 
-import index from '@/officalBCARulebook/cleaned/index';
-import general from '@/officalBCARulebook/cleaned/general';
-import eightBall from '@/officalBCARulebook/cleaned/8-ball';
-import nineBall from '@/officalBCARulebook/cleaned/9-ball';
-import tenBall from '@/officalBCARulebook/cleaned/10-ball';
-import onePocket from '@/officalBCARulebook/cleaned/one-pocket';
-import fourteenOne from '@/officalBCARulebook/cleaned/14-1-continuous';
-import bankPool from '@/officalBCARulebook/cleaned/bank-pool';
-import wheelchair from '@/officalBCARulebook/cleaned/wheelchair';
-import scotchDoubles from '@/officalBCARulebook/cleaned/scotch-doubles';
+import index from '@/bcaRulebook/cleaned/index';
+import general from '@/bcaRulebook/cleaned/general';
+import eightBall from '@/bcaRulebook/cleaned/8-ball';
+import nineBall from '@/bcaRulebook/cleaned/9-ball';
+import tenBall from '@/bcaRulebook/cleaned/10-ball';
+import onePocket from '@/bcaRulebook/cleaned/one-pocket';
+import fourteenOne from '@/bcaRulebook/cleaned/14-1-continuous';
+import bankPool from '@/bcaRulebook/cleaned/bank-pool';
+import wheelchair from '@/bcaRulebook/cleaned/wheelchair';
+import scotchDoubles from '@/bcaRulebook/cleaned/scotch-doubles';
 
 import type { Rule, Rulebook } from './rulebook.types';
 

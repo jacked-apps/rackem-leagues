@@ -7,7 +7,7 @@
  * `index.ts` default-exports the `RulebookIndex` metadata plus the global
  * `(game, ruleId)` lookup map.
  *
- * Files go under `src/officalBCARulebook/cleaned/`. Existing files there are
+ * Files go under `src/bcaRulebook/cleaned/`. Existing files there are
  * overwritten on each run — the cleaned output is a deterministic artifact of
  * the source PDF, not hand-edited content.
  */
@@ -19,7 +19,7 @@ import type { Rule, RulebookIndex } from '../../src/rules/rulebook.types';
 import type { GameMeta } from './games';
 
 /** Where the cleaned modules land, relative to the repo root. */
-const OUTPUT_DIR = 'src/officalBCARulebook/cleaned';
+const OUTPUT_DIR = 'src/bcaRulebook/cleaned';
 
 /** Path to the rulebook.types module, written relative to a cleaned/*.ts file. */
 const TYPES_RELATIVE_IMPORT = '../../rules/rulebook.types';

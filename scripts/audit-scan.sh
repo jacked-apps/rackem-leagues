@@ -16,7 +16,7 @@
 # Exclusions:
 #   - src/components/ui/**   (shadcn primitives are correct by definition)
 #   - **/*.test.tsx          (tests can hardcode whatever)
-#   - src/officalBCARulebook/cleaned/** (auto-generated rulebook data)
+#   - src/bcaRulebook/cleaned/** (auto-generated rulebook data)
 #
 # Also emits a cascade-priority section: shared components in src/components/
 # (outside ui/) by count of imports from page-level directories. Fixing a
@@ -44,7 +44,7 @@ PAGE_DIRS="$ROOT/pages $ROOT/player $ROOT/operator $ROOT/profile $ROOT/login $RO
 all_src_files() {
   find "$ROOT" -type f \( -name "*.tsx" -o -name "*.jsx" \) \
     ! -path "*/components/ui/*" \
-    ! -path "*/officalBCARulebook/cleaned/*" \
+    ! -path "*/bcaRulebook/cleaned/*" \
     ! -name "*.test.tsx" \
     ! -name "*.test.jsx" \
     | sort
