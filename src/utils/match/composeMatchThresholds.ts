@@ -54,9 +54,8 @@ export interface ComposeThresholdsInput {
   homeLineup: Lineup;
   /** Away team's lineup (post-swap handicaps already applied by the caller). */
   awayLineup: Lineup;
-  homeTeamId: string;
-  awayTeamId: string;
-  seasonId: string;
+  /** The match — the team bonus reads its week (no bonus in playoffs). */
+  matchId: string;
 }
 
 /** A fresh all-null payload — "no match-level thresholds apply." */
@@ -88,7 +87,7 @@ function extractRatings(lineup: Lineup): number[] {
 export async function composeMatchThresholds(
   input: ComposeThresholdsInput,
 ): Promise<ThresholdPayload> {
-  const { prefs, homeLineup, awayLineup, homeTeamId, awayTeamId, seasonId } = input;
+  const { prefs, homeLineup, awayLineup, matchId } = input;
   const overrides = prefs.overrides;
 
   const system = buildSystemFromPreferences(prefs, overrides);
@@ -111,9 +110,7 @@ export async function composeMatchThresholds(
     const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
       homeLineup,
       awayLineup,
-      homeTeamId,
-      awayTeamId,
-      seasonId,
+      matchId,
       prefs.handicap_type,
     );
     return {

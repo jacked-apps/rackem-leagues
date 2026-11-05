@@ -225,9 +225,7 @@ export async function loSetupMatch(params: LoSetupMatchParams): Promise<void> {
     systemOverrides: params.systemOverrides,
     // Non-null here: a bye (null team) has no saved lineup, so the lineup
     // check above has already thrown for it.
-    homeTeamId: match.home_team_id!,
-    awayTeamId: match.away_team_id!,
-    seasonId: match.season_id,
+    matchId,
     gameType: params.gameType,
   });
 

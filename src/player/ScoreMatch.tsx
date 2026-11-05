@@ -22,6 +22,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
+import { useTiebreakLineupRedirect } from '@/hooks/useTiebreakLineupRedirect';
 import { useMatchTiebreaker } from '@/api/hooks/useMatchTiebreaker';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -201,7 +202,8 @@ function ScoreMatchBody() {
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
 
   // Tiebreak record — its lineups' lock flags gate tiebreaker mode below.
-  const { data: tiebreakRecord } = useMatchTiebreaker(matchId);
+  const tiebreakQuery = useMatchTiebreaker(matchId);
+  const tiebreakRecord = tiebreakQuery.data;
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
   // Resolve the active points calculator name with live-prefs fallback.
@@ -862,6 +864,20 @@ function ScoreMatchBody() {
   // renders this body when matches.status='in_progress', so the prior
   // 10-retry waiting loop here was redundant once the guard wired in
   // and is now removed.
+
+  // Tied match whose tiebreak lineups still need setting → send this team to
+  // the lineup page. Backstop for the phone that loses the completion race
+  // (see the hook's header). Called before the early returns below so the
+  // hook order stays fixed.
+  useTiebreakLineupRedirect({
+    matchId,
+    status: match?.status,
+    matchResult: match?.match_result,
+    tiebreakerGamesExist: Array.from(gameResults.values()).some((g) => g.is_tiebreaker),
+    record: tiebreakRecord,
+    refetchRecord: tiebreakQuery.refetch,
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">

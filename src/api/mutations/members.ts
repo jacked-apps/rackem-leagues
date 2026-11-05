@@ -167,6 +167,29 @@ export async function updateProfanityFilter(
 }
 
 /**
+ * Save which menu entries a member starred into Favorites.
+ *
+ * Writes the WHOLE list (not a single add/remove) so the saved value always
+ * equals what the menu showed after the tap. Saved on the member so favorites
+ * follow the player between phone and computer.
+ *
+ * @param memberId The member's `members.id` (not the auth user id).
+ * @param favoriteIds Entry ids from `navEntries.ts`; `[]` = un-starred all.
+ * @throws Error when the update fails — the caller rolls the star back.
+ * @example await updateNavFavorites(member.id, ['rules', 'stats']);
+ */
+export async function updateNavFavorites(memberId: string, favoriteIds: string[]): Promise<void> {
+  const { error } = await supabase
+    .from('members')
+    .update({ nav_favorites: favoriteIds })
+    .eq('id', memberId);
+
+  if (error) {
+    throw new Error(`Failed to save favorites: ${error.message}`);
+  }
+}
+
+/**
  * Parameters for marking the profanity-filter onboarding modal as completed.
  */
 export interface MarkProfanityOnboardingCompleteParams {

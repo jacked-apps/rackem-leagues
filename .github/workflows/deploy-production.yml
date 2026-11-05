@@ -98,7 +98,11 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v2
         with:
-          version: latest
+          # Pinned to the version the Checks workflow tests with. "latest" pulled
+          # CLI v3.0.0 on 2026-11-05, which rejects [inbucket] in config.toml
+          # and failed the deploy before the S3 upload. Upgrade on purpose,
+          # together with config.toml (see docs/list/2026-11-05-supabase-cli-v3.md).
+          version: 2.117.0
 
       # Guard: a duplicate migration version aborts the migration step below with
       # an opaque Postgres duplicate-key error, AFTER the build but BEFORE the S3
