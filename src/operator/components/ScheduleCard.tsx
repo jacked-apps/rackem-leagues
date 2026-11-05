@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard';
+import { SectionCard, SectionCardLoading, SectionCardEmpty } from '../../components/SectionCard';
 import { deriveWeekLabels } from '@/utils/scheduleDisplayUtils';
 import { logger } from '@/utils/logger';
 

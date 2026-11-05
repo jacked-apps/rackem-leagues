@@ -2,7 +2,7 @@
  * @fileoverview League Operator Application Types
  * TypeScript interfaces and types for the league operator application form
  */
-import type { Venue, ContactVisibilityLevel } from '../schemas/leagueOperatorSchema';
+import type { Venue, ContactVisibilityLevel } from '../../schemas/leagueOperatorSchema';
 
 /**
  * Application state management action types for useReducer

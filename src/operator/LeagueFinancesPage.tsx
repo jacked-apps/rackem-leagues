@@ -21,7 +21,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { PageHeader } from '@/components/PageHeader';
-import { LeagueFinancesSection } from '@/components/operator/finances/LeagueFinancesSection';
+import { LeagueFinancesSection } from '@/operator/components/finances/LeagueFinancesSection';
 import { LoadingState } from '@/components/shared';
 
 interface SeasonHandle {

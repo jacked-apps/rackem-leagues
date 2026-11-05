@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { SectionCard } from './SectionCard';
+import { SectionCard } from '../../components/SectionCard';
 import type { League } from '@/types/league';
 import { logger } from '@/utils/logger';
 

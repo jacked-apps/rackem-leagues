@@ -12,7 +12,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard';
+import { SectionCard, SectionCardLoading, SectionCardEmpty } from '../../components/SectionCard';
 import { useResolvedPlayoffConfig } from '@/api/hooks/usePlayoffConfigurations';
 import {
   checkRegularSeasonComplete,

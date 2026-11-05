@@ -15,7 +15,7 @@
 import React from 'react';
 import { Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlayoffStandingsTable } from '@/components/playoff/PlayoffStandingsTable';
+import { PlayoffStandingsTable } from '@/operator/components/playoff/PlayoffStandingsTable';
 
 /**
  * Props for PlayoffSeedingCard component

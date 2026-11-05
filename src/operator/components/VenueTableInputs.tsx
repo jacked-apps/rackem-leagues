@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { VenueTableSummaryCard } from './VenueTableSummaryCard';
 import { TableConfigureModal } from './TableConfigureModal';
-import { TableSizeLabel } from '@/components/TableSizeLabel';
+import { TableSizeLabel } from '@/operator/components/TableSizeLabel';
 import { TABLE_SIZES } from '@/constants/tables';
 import type { TableSizeKey, TableNumbers } from '@/types/venue';
 

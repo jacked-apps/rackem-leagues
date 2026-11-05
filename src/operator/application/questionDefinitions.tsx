@@ -3,15 +3,15 @@
  * Configuration objects for all survey questions in the application flow
  */
 import React from 'react';
-import type { LeagueOperatorApplication } from '../schemas/leagueOperatorSchema';
+import type { LeagueOperatorApplication } from '../../schemas/leagueOperatorSchema';
 import type { ApplicationAction } from './types';
 import type { Member } from '@/types';
 import {
   leagueNameSchema,
   leagueEmailSchema,
   leaguePhoneSchema,
-} from '../schemas/leagueOperatorSchema';
-import { ContactInfoExposure } from '@/components/privacy/ContactInfoExposure';
+} from '../../schemas/leagueOperatorSchema';
+import { ContactInfoExposure } from '@/operator/application/privacy/ContactInfoExposure';
 import {
   organizationNameInfo,
   addressPrivacyInfo,
@@ -23,8 +23,8 @@ import {
   formatLeagueName,
   formatZipCode,
   formatPhoneNumber,
-} from '../utils/formatters';
-import { US_STATES } from '../constants/states';
+} from '../../utils/formatters';
+import { US_STATES } from '../../constants/states';
 import {
   Select,
   SelectContent,

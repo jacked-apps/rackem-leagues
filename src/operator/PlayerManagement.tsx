@@ -29,10 +29,10 @@ import {
 import { InfoButton } from '@/components/InfoButton';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { TeamNameLink } from '@/components/TeamNameLink';
-import { AuthorizeNewPlayersCard } from '@/components/operator/AuthorizeNewPlayersCard';
-import { PendingInvitesList } from '@/components/operator/PendingInvitesList';
+import { AuthorizeNewPlayersCard } from '@/operator/components/AuthorizeNewPlayersCard';
+import { PendingInvitesList } from '@/operator/components/PendingInvitesList';
 import { OrgPlaceholdersCard } from '@/operator/components/OrgPlaceholdersCard';
-import { RecordDuesModal } from '@/components/RecordDuesModal';
+import { RecordDuesModal } from '@/operator/components/RecordDuesModal';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { Users, AlertCircle, Mail } from 'lucide-react';
 import { useIsDeveloper } from '@/api/hooks/useUserProfile';

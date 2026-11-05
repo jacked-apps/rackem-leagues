@@ -6,7 +6,7 @@
  * component (keeps React fast-refresh working).
  */
 
-import type { ContactVisibilityLevel } from '../../schemas/leagueOperatorSchema';
+import type { ContactVisibilityLevel } from '../../../schemas/leagueOperatorSchema';
 
 /**
  * User roles that can use the ContactInfoExposure component

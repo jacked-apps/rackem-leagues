@@ -26,7 +26,7 @@ import { queryKeys } from '@/api/queryKeys';
 import { ReportUserModal } from '@/components/ReportUserModal';
 import { InvitePlayerModal } from '@/components/InvitePlayerModal';
 import { PlaceholderBadge } from '@/components/PlaceholderBadge';
-import { RecordDuesModal } from '@/components/RecordDuesModal';
+import { RecordDuesModal } from '@/operator/components/RecordDuesModal';
 import { ConfirmDialog } from '@/components/shared';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';

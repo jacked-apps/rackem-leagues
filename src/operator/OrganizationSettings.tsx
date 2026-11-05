@@ -9,15 +9,15 @@ import { useOrganization } from '@/api/hooks';
 import { useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { DashboardCard } from '@/components/operator/DashboardCard';
+import { DashboardCard } from '@/operator/components/DashboardCard';
 import { PageHeader } from '@/components/PageHeader';
 import { BookOpen, Building2, Trophy } from 'lucide-react';
-import { OrganizationBasicInfoCard } from '@/components/operator/OrganizationBasicInfoCard';
-import { ContactInfoCard } from '@/components/operator/ContactInfoCard';
-import { PaymentMethodCard } from '@/components/operator/PaymentMethodCard';
-import { OrganizationPreferencesCard } from '@/components/operator/OrganizationPreferencesCard';
-import { BlackoutDatesCard } from '@/components/operator/BlackoutDatesCard';
-import { OrgFinanceDefaultsCard } from '@/components/operator/finances/OrgFinanceDefaultsCard';
+import { OrganizationBasicInfoCard } from '@/operator/components/OrganizationBasicInfoCard';
+import { ContactInfoCard } from '@/operator/components/ContactInfoCard';
+import { PaymentMethodCard } from '@/operator/components/PaymentMethodCard';
+import { OrganizationPreferencesCard } from '@/operator/components/OrganizationPreferencesCard';
+import { BlackoutDatesCard } from '@/operator/components/BlackoutDatesCard';
+import { OrgFinanceDefaultsCard } from '@/operator/components/finances/OrgFinanceDefaultsCard';
 
 /**
  * Organization Settings Component

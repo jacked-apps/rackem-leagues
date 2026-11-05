@@ -10,7 +10,7 @@ import type { League } from '@/types/league';
 import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { parseLocalDate } from '@/utils/formatters';
 import { LeagueStatusCard } from './LeagueStatusCard';
-import { DeleteLeagueModal } from '@/components/modals/DeleteLeagueModal';
+import { DeleteLeagueModal } from '@/operator/components/DeleteLeagueModal';
 import { isNextSeasonRipe } from '@/utils/seasonLifecycle';
 
 interface ActiveLeaguesProps {

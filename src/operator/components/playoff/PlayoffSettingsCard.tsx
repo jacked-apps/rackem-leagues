@@ -18,10 +18,10 @@
 import React from 'react';
 import { Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ExampleTeamCountCard } from '@/components/playoff/ExampleTeamCountCard';
-import { PlayoffWeeksCard } from '@/components/playoff/PlayoffWeeksCard';
-import { ParticipationSettingsCard } from '@/components/playoff/ParticipationSettingsCard';
-import { WildcardSettingsCard } from '@/components/playoff/WildcardSettingsCard';
+import { ExampleTeamCountCard } from '@/operator/components/playoff/ExampleTeamCountCard';
+import { PlayoffWeeksCard } from '@/operator/components/playoff/PlayoffWeeksCard';
+import { ParticipationSettingsCard } from '@/operator/components/playoff/ParticipationSettingsCard';
+import { WildcardSettingsCard } from '@/operator/components/playoff/WildcardSettingsCard';
 import type { PlayoffSettingsState, PlayoffSettingsAction } from '@/hooks/playoff/usePlayoffSettingsReducer';
 
 /**

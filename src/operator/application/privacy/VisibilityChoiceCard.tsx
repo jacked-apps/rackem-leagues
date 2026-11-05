@@ -3,7 +3,7 @@
  * Reusable card component for displaying contact visibility choices with explanations
  */
 import React from 'react';
-import type { ContactVisibilityLevel } from '../../schemas/leagueOperatorSchema';
+import type { ContactVisibilityLevel } from '../../../schemas/leagueOperatorSchema';
 
 /**
  * Contact visibility option configuration

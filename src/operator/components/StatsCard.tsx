@@ -13,7 +13,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { SectionCard } from './SectionCard';
+import { SectionCard } from '../../components/SectionCard';
 import { Trophy, SquarePen } from 'lucide-react';
 
 interface StatsCardProps {

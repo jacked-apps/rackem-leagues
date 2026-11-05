@@ -17,8 +17,8 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Check } from 'lucide-react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { VenueCreationModal } from '@/components/operator/VenueCreationModal';
-import { VenueCard } from '@/components/operator/VenueCard';
+import { VenueCreationModal } from '@/operator/components/VenueCreationModal';
+import { VenueCard } from '@/operator/components/VenueCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';

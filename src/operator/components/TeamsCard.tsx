@@ -8,7 +8,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import { fetchTeamsWithDetails } from '@/api/hooks';
 import { Button } from '@/components/ui/button';
 import { InfoButton } from '@/components/InfoButton';
-import { SectionCard, SectionCardLoading, SectionCardEmpty } from './SectionCard';
+import { SectionCard, SectionCardLoading, SectionCardEmpty } from '../../components/SectionCard';
 import type { TeamWithQueryDetails } from '@/types/team';
 import { logger } from '@/utils/logger';
 import { useFlowStageDetection } from '@/wizards/league-v2/useFlowStageDetection';

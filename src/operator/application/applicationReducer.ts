@@ -5,7 +5,7 @@
 import { logger } from '@/utils/logger';
 import type {
   LeagueOperatorApplication as ApplicationData
-} from '../schemas/leagueOperatorSchema';
+} from '../../schemas/leagueOperatorSchema';
 import type { ApplicationAction } from './types';
 
 /**

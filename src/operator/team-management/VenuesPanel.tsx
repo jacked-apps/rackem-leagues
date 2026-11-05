@@ -9,7 +9,7 @@
 
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { VenueListItem } from '@/components/VenueListItem';
+import { VenueListItem } from '@/operator/components/VenueListItem';
 import type { Venue, LeagueVenue } from '@/types/venue';
 import type { TeamWithQueryDetails } from '@/types/team';
 

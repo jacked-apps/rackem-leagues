@@ -3,7 +3,7 @@
  * Reusable component for setting contact information visibility preferences
  */
 import React from 'react';
-import { type ContactVisibilityLevel } from '../../schemas/leagueOperatorSchema';
+import { type ContactVisibilityLevel } from '../../../schemas/leagueOperatorSchema';
 import { VisibilityChoiceCard } from './VisibilityChoiceCard';
 import { VISIBILITY_OPTIONS, type UserRole } from './contactVisibilityOptions';
 

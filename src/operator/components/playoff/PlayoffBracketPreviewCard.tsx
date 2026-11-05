@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PlayoffMatchupCard } from '@/components/playoff/PlayoffMatchupCard';
+import { PlayoffMatchupCard } from '@/operator/components/playoff/PlayoffMatchupCard';
 import {
   generateMatchupPairs,
   getMatchupStyleLabel,

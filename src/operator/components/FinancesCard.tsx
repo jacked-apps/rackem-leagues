@@ -10,7 +10,7 @@
 
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { SectionCard } from './SectionCard';
+import { SectionCard } from '../../components/SectionCard';
 import { Users, Calculator } from 'lucide-react';
 
 interface FinancesCardProps {
