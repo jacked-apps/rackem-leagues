@@ -37,7 +37,6 @@ import WhatsNewPage from '../whatsNew/WhatsNewPage';
 import { useShowWhatsNewAfterUpdate } from '../whatsNew/useShowWhatsNewAfterUpdate';
 import { Pricing } from '../about/Pricing';
 import { PrivacyPolicy } from '../about/PrivacyPolicy';
-import { StopStopExplainer } from '../about/StopStopExplainer';
 import { NewPlayerForm } from '../newPlayer/NewPlayerForm';
 import { CompleteProfileForm } from '../completeProfile';
 import { Profile } from '../profile/Profile';
@@ -73,7 +72,7 @@ import RLSTestPage from '../dev/RLSTestPage';
 // --- Handicap Calculator (dev/staging only) — remove this import + the route below to delete the feature ---
 import { HandicapCalculator } from '../handicapCalculator';
 import { NonProdGate } from '../components/NonProdGate';
-// --- Game Room (GATED: dev/staging only until Ed reviews on staging; see LIST_FOR_ED.md) ---
+// --- Game Room (GATED: dev/staging only until Ed reviews on staging; see docs/list/2026-11-04-gated-game-room.md) ---
 import { RoomsIndexPage } from '../rooms/RoomsIndexPage';
 import { RoomPage } from '../rooms/RoomPage';
 import { JoinRoomPage } from '../rooms/JoinRoomPage';
@@ -194,8 +193,6 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'about', element: <About /> },
       { path: 'privacy', element: <PrivacyPolicy /> },
-      // Stop Stop explainer for invited readers: unlinked, noindex, never on production.
-      { path: 'aboutstopstop', element: <NonProdGate><StopStopExplainer /></NonProdGate> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'claim-player', element: <ClaimPlayer /> },

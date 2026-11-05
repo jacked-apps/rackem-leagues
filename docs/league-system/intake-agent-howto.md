@@ -55,7 +55,7 @@ You can be **anywhere inside the repo** when you start Claude Code. The cwd does
 
 8. The session will work through the intake playbook (Team Geometry → Match Format → Handicap System → etc.) and produce a structured summary at the end.
 
-9. **Save the summary somewhere useful** — copy it into `LIST_FOR_ED.md`, paste into Notes, screenshot it, whatever works.
+9. **Save the summary somewhere useful** — save it as a `docs/list/` item, paste into Notes, screenshot it, whatever works.
 
 ### What to do with the output
 
@@ -106,7 +106,7 @@ The full `docs/league-system/` folder is large but Claude Code reads files on de
 
 If you're in a marathon intake session and Claude Code starts feeling sluggish or losing the thread, you can:
 - Start a fresh session and re-paste the prompt (Claude Code sessions are isolated)
-- Drop the conversation into a `LIST_FOR_ED.md` note so you don't lose the LO's description
+- Drop the conversation into a `docs/list/` item so you don't lose the LO's description
 
 ---
 
@@ -131,4 +131,4 @@ If you're in a marathon intake session and Claude Code starts feeling sluggish o
 | Where is the prompt? | `docs/league-system/intake-agent-prompt.md` → `## The prompt` section |
 | How long does intake take per LO? | 15-30 min if the LO knows their league well |
 | What's the output? | A structured Module-composition table flagging ✓/⚠/🔴 per Module |
-| What do I do with the output? | Save it somewhere (LIST_FOR_ED.md, Notes, screenshot); use it as the spec for onboarding or for blueprint authoring |
+| What do I do with the output? | Save it somewhere (a `docs/list/` item, Notes, screenshot); use it as the spec for onboarding or for blueprint authoring |

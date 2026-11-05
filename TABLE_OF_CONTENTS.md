@@ -38,7 +38,8 @@
 |------|---------|--------|
 | `MVP_FEATURE_LIST.md` | Minimum viable product feature list | **Active - MVP tracker** |
 | `LIST_FOR_JACK.md` | Design and styling tasks for Jack | **Active - UI/UX improvements** |
-| `LIST_FOR_ED.md` | Tasks and refactoring items for Ed | **Active - travels with branch commits** |
+| `LIST_FOR_ED.md` | The short list for Ed: one line per item under Now / Next / Later / Wish list / Gated, each linking its detail | **Active** — rules in `CLAUDE.md` ("The list"); kept matched to `docs/list/` by `listForEd.test.ts` |
+| `docs/list/` | One small file per list item (`YYYY-MM-DD-slug.md`): flat frontmatter (summary, kind, added, checked, optional owner) plus the detail | Deleted with its line when the item is finished |
 | `PRE_LAUNCH_CHECKLIST.md` | Single source of "must do before production go-live" | **🚨 GATE** — RLS pass + auth email-confirmations + passwordless go-live items |
 
 ### Reference Documentation Folder
@@ -51,7 +52,9 @@
 | `docs/file-split-backlog.md` | Ranked do-one-at-a-time list of files worth splitting (single-responsibility, not line count) | Refactor backlog from the 2026-06-06 sweep; each is a behavior-preserving PR |
 | `docs/guides/captain-onboarding-guide.md` | Long-form, hand-holdy captain how-to for the link-share onboarding (copy message → paste → send → wait → approve). Source for the in-app `InviteHelpContent` popup; train-the-trainer reference | Active guide; foundation for a future wizard/video |
 | `docs/audits/2026-10-28-tiebreaker-audit.md` | **Phase 3 tiebreaker audit (read-only)** — what the tiebreaker reads/writes vs the agreed rule; finds that `locked` is a flag with no DB enforcement and four unguarded lineup writers live in `MatchLineup.tsx` | Investigation only, no fix; recommends a brainstorm before Phase 4 |
+| `docs/audits/2026-11-04-list-for-ed-migration.md` | **LIST_FOR_ED migration audit** — every old section checked against main: dropped (with evidence), gated, or kept with a proposed group | Dated snapshot, never maintained |
 | `docs/brainstorms/2026-10-28-tiebreaker-requirements.md` | **Tiebreaker requirements** — the anti-sandbagging rule (winning team’s 3 players each get a win, losing team nothing) and the CORRECTED finding that the rule is live today, produced by overwriting all three tiebreak games | Requirements agreed and planned; forward-only, no backfill |
+| `docs/brainstorms/2026-11-04-tracking-docs-requirements.md` | REQUIREMENTS for replacing the TOC and reshaping LIST_FOR_ED so both stay true | TOC → a `CLAUDE.md` "start from the closest existing screen" rule + model-screen table (test keeps its paths real), a required "Model screen:" line in every UI plan, a one-screen folder map; delete the TOC + COMPONENTS_INDEX drift. Per-folder READMEs decided AGAINST. LIST_FOR_ED → a short list grouped Now (≤3, Ed curates) / Next / Later / Wish / Gated, each line linking to a plan doc or an item file; finished = deleted; "what is next?" re-checks Now+Next against main; audit of the 33 sections, Ed approves. Two plans, LIST_FOR_ED first |
 | `docs/plans/2026-11-01-001-fix-whats-new-zero-step-release-plan.md` | **What's New ships itself** — the stamp runs inside Jack's existing `npm version` (zero new steps for him), one file per note so PRs never conflict, release PRs always pass the check | BUILT on `fix/whats-new-zero-step-release` |
 | `docs/plans/2026-10-28-001-feat-tiebreaker-record-plan.md` | **Tiebreaker-as-its-own-record plan** — 7 units; a tie writes a parallel mini-match record so match lineups are never unlocked. REVISED after a 4-persona document review caught two P0s: the anti-sandbagging rule is LIVE (not off), and the lineup unlock is a signal three other paths depend on | IN PROGRESS on `feat/tiebreaker-record` (Unit 1 built); handicap work IN scope |
 | `docs/audits/2026-10-28-duplicate-week-14-findings.md` | **Phase 6 duplicate “Week 14” findings** — week numbers used to be stored text written by two disagreeing counters; already fixed by derived labels (shipped v1.8.0, after the season was built) | Investigation only; past data left as-is by Ed, no guard needed |
@@ -554,7 +557,6 @@ how to add a new test, demo recording, cleanup model).
 | `supabaseClient.test.ts` | Tests for the realtime survival heartbeat handler (worker + reconnect-on-dead-socket) |
 | `vite-env.d.ts` | Vite TypeScript definitions |
 | `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
-| `config/envBannerVisibility.ts` | Lets a page hide the staging/dev banner while open (`useHideEnvBanner`) |
 | `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
 
 ---
@@ -576,6 +578,7 @@ how to add a new test, demo recording, cleanup model).
 - `scheduleUtils.test.ts` - Schedule utilities
 - `cleanup.smoke.test.ts` - Rulebook cleanup output smoke checks (18 tests)
 - `resolveRuleId.test.ts` - Deep-link rule resolver
+- `listForEd.test.ts` + `listForEd.helpers.ts` - Keeps `LIST_FOR_ED.md` and the `docs/list/` item files matched (every line links a real file; every item has exactly one line)
 - `useRulebookSearch.test.ts` - In-memory substring search hook
 - `searchSnippet.test.ts` - Snippet extraction + highlight helpers
 - `copyLinkButton.test.tsx` - Share-link clipboard button
@@ -629,7 +632,7 @@ how to add a new test, demo recording, cleanup model).
 - `useMessageComposerStatus.ts` - **Messaging Phase 1 / Unit 6** — TanStack Query hook. Returns `{ readOnly, reason }` for a conversation. Looks up the current user's participant row + (for announcement channels) their `organization_staff` membership. Consumed by `MessageView` to choose between `MessageInput` and `ReadOnlyBanner`.
 - `useCaptainTeamsMissingChat.ts` - **Messaging Phase 1 / Unit 3 helper 6/6** — TanStack Query hook. Returns the list of teams the current user captains in an active season that lack an auto-managed team chat. Used by `CreateTeamChatPrompt`.
 - `messaging-phase1-season-activation.rls.test.ts` - **Messaging Phase 1 / Unit 4** — DB-backed coverage of the season-activation trigger: team chats per team, captain chat, season + org announcements, idempotent re-fire, no-fire on non-status UPDATEs, no-fire when status flips away from active.
-- `messaging-phase1-roster-triggers.rls.test.ts` - **Messaging Phase 1 / Unit 5** — DB-backed coverage of the four roster/captain lifecycle triggers: INSERT (join + msg only on real inserts), DELETE (deferred constraint trigger; sets `left_at` and posts "left" only on real removals, silent on wholesale-replace), captain change (cannot_leave flip in team + captain chats; multi-team captain edge case), member soft-delete. **Note:** the three messaging DB-backed test files race each other under default vitest file parallelism — run with `--no-file-parallelism` when executing the full directory. See `LIST_FOR_ED.md` #27.
+- `messaging-phase1-roster-triggers.rls.test.ts` - **Messaging Phase 1 / Unit 5** — DB-backed coverage of the four roster/captain lifecycle triggers: INSERT (join + msg only on real inserts), DELETE (deferred constraint trigger; sets `left_at` and posts "left" only on real removals, silent on wholesale-replace), captain change (cannot_leave flip in team + captain chats; multi-team captain edge case), member soft-delete. **Note:** the three messaging DB-backed test files race each other under default vitest file parallelism — run with `--no-file-parallelism` when executing the full directory.
 - `brackets.lifecycle.db.test.ts` - **Tournament bracket tool / Unit 3** — lifecycle tests for the write RPCs (`start_bracket` + `advance_bracket_winner`), driven via raw `pg`: tree persists with pointers resolved + bracket goes live; advance propagates winner→next and readies the next match; terminal completion flips the bracket to `complete`; the guard makes a duplicate/conflicting advance a no-op; a non-participant winner is rejected; double-elim loser drops into the losers bracket; grand-final reset activates on an LB-champ win and is removed on a WB-champ win. 7 tests.
 - `brackets.reopen.db.test.ts` - **Tournament bracket tool / reopen (undo)** — `reopen_bracket_match`: clears a decided match's winner (→ ready) + pulls the advanced player back out of the next match (→ pending); the downstream guard refuses when a later match was already played; reopening the terminal match flips the bracket complete→live; no-op on a not-complete match. 4 tests.
 - `brackets.sweep.db.test.ts` - **Tournament bracket tool / Unit 7** — close-tombstone + inactivity sweep: `sweep_stale_brackets` hard-deletes closed + past-idle brackets and cascades to children, while keeping a recently-active live bracket AND a just-touched setup bracket (the "setup trap" — never sweep an organizer mid-configuration); a truly-abandoned setup bracket (idle past threshold) IS swept. 5 tests.
@@ -674,8 +677,6 @@ how to add a new test, demo recording, cleanup model).
 - `about/About.tsx` - About page
 - `about/Pricing.tsx` - Pricing breakdown page
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
-- `about/StopStopExplainer.tsx` - Stop Stop explainer at `/aboutstopstop` (staging only, unlinked, noindex)
-- `about/stopStopContent.ts` - Text of the Stop Stop explainer (copied from the stop-stop repo)
 - `home/Home.tsx` - Landing/home page
 - `dashboard/Dashboard.tsx` - Main dashboard
 
@@ -771,7 +772,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `../utils/scheduleDisplayUtils.ts` → `deriveWeekLabels(weeks)` - Derives every week's display label ("Week N" by regular-week position, blackout→its label, playoffs→"Playoffs[ Week k]") from a loaded week list; the single source of truth for week numbers, replacing stored `week_name`. Tested in `src/__tests__/unit/deriveWeekLabels.test.ts`.
 
 **Team & Venue Management**
-- `TeamManagement.tsx` - The standalone `/manage-teams` edit page — now a ~100-line thin wrapper: page chrome (header + footer) around `TeamManagementContent`. (Decomposed from an 860-line god-component; advances LIST_FOR_ED #5.)
+- `TeamManagement.tsx` - The standalone `/manage-teams` edit page — now a ~100-line thin wrapper: page chrome (header + footer) around `TeamManagementContent`. (Decomposed from an 860-line god-component.)
 - `TeamManagementContent.tsx` - The reusable Manage Teams editing area with NO page chrome — wires the data hook + the focused logic hooks + derived stats into the panels + modals, and exposes a `renderFooter` slot so each wrapper (edit page vs season-setup step) supplies its own exit. Shared by both contexts.
 - `SetupTeamsPage.tsx` - The season-setup chain's Teams step (`/league/:leagueId/season/:seasonId/setup-teams`): same `TeamManagementContent` as the edit page, but footer = "Save & Exit → league" + "Continue → Playoffs." The setup chain (`SeasonCreationWizard` → here → `PlayoffsSetupWizard` → `ScheduleSetupPage`) points here, so the standalone edit page stays free of playoffs knowledge. See `docs/conventions/standalone-vs-flow-pages.md`.
 - `team-management/SetupSummaryCard.tsx` - Presentational "Setup Summary" card (league type, venue/table counts, teams-vs-max).
@@ -1101,7 +1102,7 @@ Subtree behind the **message settings modal** — per-user messaging preferences
 - `DashboardCard.tsx` - Dashboard card wrapper
 - `DuesRosterList.tsx` - Renders the per-player rows of the league **Dues Roster** (`LeagueDuesPage`). Each row is a `PlayerNameLink` (mark dues paid inline via its popover) + a dues-status pill shown as **icon + text label** (`Paid 2026` / `Expired 2024` / `Never Paid`) — never color alone, semantic tokens for dark mode.
 - `FinancesCard.tsx` - **Finances** card on the league page (on `SectionCard`; two slim icon-left buttons mirroring the Scoring card): **Dues** → `/league/:id/dues` (annual membership dues roster) and **Payout Calculator** → `/league/:id/finances`. Replaced the former single "Open Finances" `DashboardCard`.
-- `MatchupsCard.tsx` - The **Matchups** part of a league (header-only `SectionCard`). Subtitle "Set" / "Not set yet" / "Create a season first"; button launches the create-league wizard's matchups stage (the only place matchups are set/edited today). Follow-up in LIST_FOR_ED #36: give matchups its own edit surface for unfinished matches.
+- `MatchupsCard.tsx` - The **Matchups** part of a league (header-only `SectionCard`). Subtitle "Set" / "Not set yet" / "Create a season first"; button launches the create-league wizard's matchups stage (the only place matchups are set/edited today).
 - `LmsEnteredCheckbox.tsx` - The "Entered / Not entered" checkbox an operator ticks after hand-entering a match into CSI/FargoRate LMS. Rendered in BOTH places that job happens — the manual-scoring match picker (the at-a-glance backlog) and the printable LMS results sheet (tick it and hit Next, no trip back). State is shared league-wide, so two operators can't double-enter. Reads done/not-done by word as well as by the box (colorblind-safe), and flips instantly while the write is in flight. Tested in `__tests__/LmsEnteredCheckbox.test.tsx` (6 cases).
 - `SectionCard.tsx` - **Shared league-detail section shell** (built on shadcn Card). `SectionCard` (title + subtitle + right-aligned actions, optional `collapsible`/`defaultOpen`, trimmed padding) + `SectionCardLoading` / `SectionCardEmpty`. Teams / Schedule / Season / Stats all use it so the cards look + behave identically.
 - `SeasonCard.tsx` - The **Season** part of a league (was `LeagueOverviewCard`). Collapsed: "Season · *name* · *status*"; expand for dates/format/team+week counts + **Next holiday** (blackout weeks are a season concept; moved here from the Schedule card). Actions: Manage Season + Delete Season (incomplete only), or Create Season when none exists. Setup-flow buttons (Create Schedule / Add Teams / Set Matchups) + the old inline-styled wizard button were dropped — setup is driven by the Status card's Next Steps + the ActionCard. Grouped with Teams + Schedule on the league page.

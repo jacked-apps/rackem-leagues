@@ -83,7 +83,7 @@ export function useCreateOrganization() {
         queryKey: queryKeys.permissions.grants(variables.created_by),
         refetchType: 'all',
       });
-      // Invalidate AND wait for refetch — closes LIST_FOR_ED #7. The
+      // Invalidate AND wait for refetch. The
       // dashboard's org-list query (`useOrganizations(memberId)`) is
       // typically NOT mounted during the LO-application flow, so a
       // plain `invalidateQueries` only marks the cache stale without

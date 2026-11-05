@@ -11,7 +11,7 @@
  * MVP: games listed in order with full names + winner. The exact LMS round /
  * handicap-column mirroring comes after the first LO (Ben) says what's easiest.
  *
- * @see LIST_FOR_ED.md / docs — CSI LMS results-entry project
+ * @see docs — CSI LMS results-entry project
  */
 
 import { useMemo } from 'react';
