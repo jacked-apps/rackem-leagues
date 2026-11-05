@@ -42,7 +42,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { AlertCircle, Clock, CheckCircle, XCircle, ArrowUp } from 'lucide-react';
-import { AlertDialog } from '@/components/AlertDialog';
+import { AlertDialog } from '@/components/shared/AlertDialog';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface Report {
