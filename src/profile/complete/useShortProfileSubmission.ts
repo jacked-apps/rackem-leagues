@@ -7,12 +7,12 @@
  */
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { shortProfileSchema } from '../schemas/shortProfileSchema';
-import { capitalizeWords } from '../utils/formatters';
-import { generateNickname } from '../utils/nicknameGenerator';
-import { supabase } from '../supabaseClient';
-import { useUser } from '../context/useUser';
-import { getSafeRedirectPath } from '../login/redirect';
+import { shortProfileSchema } from '../../schemas/shortProfileSchema';
+import { capitalizeWords } from '../../utils/formatters';
+import { generateNickname } from '../../utils/nicknameGenerator';
+import { supabase } from '../../supabaseClient';
+import { useUser } from '../../context/useUser';
+import { getSafeRedirectPath } from '../../login/redirect';
 import { queryKeys } from '@/api/queryKeys';
 import type { ShortProfileFormState } from './types';
 import { logger } from '@/utils/logger';

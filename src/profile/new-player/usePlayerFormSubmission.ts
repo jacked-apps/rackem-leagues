@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { playerFormSchema } from '../schemas/playerSchema';
-import { capitalizeWords, formatFinalPhoneNumber } from '../utils/formatters';
-import { generateNickname } from '../utils/nicknameGenerator';
-import { supabase } from '../supabaseClient';
-import { useUser } from '../context/useUser';
+import { playerFormSchema } from '../../schemas/playerSchema';
+import { capitalizeWords, formatFinalPhoneNumber } from '../../utils/formatters';
+import { generateNickname } from '../../utils/nicknameGenerator';
+import { supabase } from '../../supabaseClient';
+import { useUser } from '../../context/useUser';
 import { queryKeys } from '@/api/queryKeys';
 import type { FormState } from './types';
 import { logger } from '@/utils/logger';

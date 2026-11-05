@@ -4,13 +4,13 @@
  */
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { LoginCard } from '../login/LoginCard';
-import { US_STATES } from '../constants/states';
-import { formatPhoneNumber } from '../utils/formatters';
+import { LoginCard } from '../../login/LoginCard';
+import { US_STATES } from '../../constants/states';
+import { formatPhoneNumber } from '../../utils/formatters';
 import { usePlayerForm } from './usePlayerForm';
 import { usePlayerFormSubmission } from './usePlayerFormSubmission';
-import { TextField, SelectField } from '../components/forms/FormField';
-import { nicknameInfo } from '../constants/infoContent/profileInfoContent';
+import { TextField, SelectField } from '../../components/forms/FormField';
+import { nicknameInfo } from '../../constants/infoContent/profileInfoContent';
 import { DateField } from '@/components/forms/DateField';
 
 // TODO: Future feature - Add country selection for international phone numbers

@@ -15,11 +15,11 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
-import { US_STATES } from '../constants/states';
+import { US_STATES } from '../../constants/states';
 import { useShortProfileForm } from './useShortProfileForm';
 import { useShortProfileSubmission } from './useShortProfileSubmission';
-import { TextField, SelectField } from '../components/forms/FormField';
-import { nicknameInfo } from '../constants/infoContent/profileInfoContent';
+import { TextField, SelectField } from '../../components/forms/FormField';
+import { nicknameInfo } from '../../constants/infoContent/profileInfoContent';
 
 /**
  * Short Profile Registration Form Component
