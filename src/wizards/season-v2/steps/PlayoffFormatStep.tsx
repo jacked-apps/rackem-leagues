@@ -14,12 +14,12 @@
  */
 
 import { useEffect, useState } from 'react';
-import { CardSelector } from '@/components/wizard';
+import { CardSelector } from '@/wizards/shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { InfoButton } from '@/components/InfoButton';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { SeasonWizardFormData } from '../seasonWizardTypes';
 import { PLAYOFF_OPTIONS } from './playoffFormatOptions';
 

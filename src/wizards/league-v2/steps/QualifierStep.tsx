@@ -11,7 +11,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InfoButton } from '@/components/InfoButton';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 
 export function QualifierStep({

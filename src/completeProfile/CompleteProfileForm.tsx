@@ -18,7 +18,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { US_STATES } from '../constants/states';
 import { useShortProfileForm } from './useShortProfileForm';
 import { useShortProfileSubmission } from './useShortProfileSubmission';
-import { TextField, SelectField } from '../newPlayer/FormField';
+import { TextField, SelectField } from '../components/forms/FormField';
 import { nicknameInfo } from '../constants/infoContent/profileInfoContent';
 
 /**

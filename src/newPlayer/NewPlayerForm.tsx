@@ -9,7 +9,7 @@ import { US_STATES } from '../constants/states';
 import { formatPhoneNumber } from '../utils/formatters';
 import { usePlayerForm } from './usePlayerForm';
 import { usePlayerFormSubmission } from './usePlayerFormSubmission';
-import { TextField, SelectField } from './FormField';
+import { TextField, SelectField } from '../components/forms/FormField';
 import { nicknameInfo } from '../constants/infoContent/profileInfoContent';
 import { DateField } from '@/components/forms/DateField';
 

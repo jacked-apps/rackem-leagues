@@ -105,7 +105,7 @@ const WorkshopHomePage = lazy(
   () => import('../operator/scoring-workshop/WorkshopHomePage'),
 );
 const LeagueSettings = lazy(() => import('../operator/LeagueSettings'));
-const SeasonCreationWizard = lazy(() => import('../operator/SeasonCreationWizard'));
+const SeasonCreationWizard = lazy(() => import('../wizards/season-v1/SeasonCreationWizard'));
 const SeasonScheduleManager = lazy(() => import('../operator/SeasonScheduleManager'));
 const VenueManagement = lazy(() => import('../operator/VenueManagement'));
 const TeamManagement = lazy(() => import('../operator/TeamManagement'));
@@ -116,7 +116,7 @@ const LmsResultsSheet = lazy(() => import('../operator/LmsResultsSheet'));
 const PlayoffSetup = lazy(() => import('../operator/PlayoffSetup'));
 const OrganizationPlayoffSettings = lazy(() => import('../operator/OrganizationPlayoffSettings'));
 const LeaguePlayoffSettings = lazy(() => import('../operator/LeaguePlayoffSettings'));
-const PlayoffsSetupWizard = lazy(() => import('../operator/PlayoffsSetupWizard'));
+const PlayoffsSetupWizard = lazy(() => import('../wizards/playoffs-setup/PlayoffsSetupWizard'));
 const Learn = lazy(() => import('../pages/Learn'));
 const ManualScoringMatchPicker = lazy(() => import('../operator/ManualScoringMatchPicker'));
 const ManualScoringPage = lazy(() => import('../operator/ManualScoringPage'));

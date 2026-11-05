@@ -18,7 +18,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
-import type { ReupResponseContextEntry } from '@/components/wizard';
+import type { ReupResponseContextEntry } from '@/wizards/shared';
 import { buildLeagueTitle } from '@/utils/leagueUtils';
 
 interface NextSeasonStageDetectionResult {

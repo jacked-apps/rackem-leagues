@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/supabaseClient';
 import { assignRandomPositions } from '@/utils/scheduleGenerator';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { MatchupsWizardFormData, MatchupTeamPosition } from '../matchupsWizardTypes';
 
 type ModeValue = NonNullable<MatchupsWizardFormData['matchups-mode']>;

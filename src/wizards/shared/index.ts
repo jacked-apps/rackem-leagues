@@ -1,7 +1,7 @@
 /**
  * @fileoverview Wizard 2.0 Framework — Public API
  *
- * Barrel exports for the wizard framework. Import from '@/components/wizard'
+ * Barrel exports for the wizard framework. Import from '@/wizards/shared'
  * instead of individual files — this keeps call sites stable as the
  * framework evolves internally.
  *

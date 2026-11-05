@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { InfoButton } from '../InfoButton';
+import { InfoButton } from '../../components/InfoButton';
 
 interface SimpleChoiceOption {
   value: string;

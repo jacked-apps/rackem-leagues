@@ -19,8 +19,8 @@
  */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { QuestionStep } from '@/components/forms/QuestionStep';
-import { ChoiceStep } from '@/components/forms/ChoiceStep';
+import { QuestionStep } from '@/wizards/shared/QuestionStep';
+import { ChoiceStep } from '@/wizards/shared/ChoiceStep';
 import { ApplicationPreview } from '@/components/previews/ApplicationPreview';
 import { Button } from '@/components/ui/button';
 import { SecurityDisclaimerModal } from '@/components/modals/SecurityDisclaimerModal';

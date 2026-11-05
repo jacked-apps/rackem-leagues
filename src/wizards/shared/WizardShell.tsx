@@ -8,7 +8,7 @@
  * useWizardShell. All navigation buttons live in WizardNavigation.
  */
 
-import { WizardProgress } from '@/components/forms/WizardProgress';
+import { WizardProgress } from '@/wizards/shared/WizardProgress';
 import type { WizardConfig } from './flowTypes';
 import type { WizardStepProps } from './types';
 import { useWizardShell } from './useWizardShell';

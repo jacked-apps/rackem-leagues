@@ -11,8 +11,8 @@
 
 import { toast } from 'sonner';
 import { useCallback } from 'react';
-import { CardSelector } from '@/components/wizard';
-import type { WizardStepProps } from '@/components/wizard';
+import { CardSelector } from '@/wizards/shared';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 import { LEAGUE_FORMAT_OPTIONS } from './leagueFormatOptions';
 

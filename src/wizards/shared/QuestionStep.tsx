@@ -6,7 +6,7 @@ import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { CapitalizeInput } from '@/components/ui/capitalize-input';
-import { InfoButton } from '../InfoButton';
+import { InfoButton } from '../../components/InfoButton';
 
 interface QuestionStepProps {
   title: string;

@@ -15,7 +15,7 @@
  * has values without the editor steps rendering.
  */
 
-import type { WizardConfig } from '@/components/wizard';
+import type { WizardConfig } from '@/wizards/shared';
 import { VenuesModeStep } from './steps/VenuesModeStep';
 import { VenueSelectionStep } from './steps/VenueSelectionStep';
 import { CaptainsModeStep } from './steps/CaptainsModeStep';

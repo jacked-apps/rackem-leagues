@@ -8,7 +8,7 @@
 import type { League } from '@/types/league';
 import type { Season, ChampionshipEvent, WeekEntry, Holiday } from '@/types/season';
 import type { ChampionshipDateOption } from '@/utils/tournamentUtils';
-import type { ChampionshipPreference } from '@/data/seasonWizardSteps';
+import type { ChampionshipPreference } from '@/wizards/season-v1/seasonWizardSteps';
 
 /**
  * Wizard state shape

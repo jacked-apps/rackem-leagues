@@ -7,7 +7,7 @@
 
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
-import { WizardFlowShell } from '@/components/wizard';
+import { WizardFlowShell } from '@/wizards/shared';
 import { createNewLeagueFlow } from '@/flows/createNewLeagueFlow';
 import { useFlowStageDetection } from './useFlowStageDetection';
 import { useFlowStageHandlers } from './useFlowStageHandlers';

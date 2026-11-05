@@ -14,10 +14,10 @@
  */
 
 import { useEffect, useState } from 'react';
-import { NumberStepper } from '@/components/wizard';
+import { NumberStepper } from '@/wizards/shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { SeasonWizardFormData } from '../seasonWizardTypes';
 
 const DEFAULT_LENGTH = 16;

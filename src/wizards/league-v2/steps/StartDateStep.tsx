@@ -13,7 +13,7 @@
 import { Calendar } from '@/components/ui/calendar';
 import { GlossaryInfoButton } from '@/components/GlossaryInfoButton';
 import { formatLocalDate, getDayOfWeekName } from '@/utils/formatters';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 
 export function StartDateStep({

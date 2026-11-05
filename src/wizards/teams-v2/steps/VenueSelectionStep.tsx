@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { InfoButton } from '@/components/InfoButton';
 import { VenueCreationModal } from '@/components/operator/VenueCreationModal';
 import { useVenuesByOrganization } from '@/api/hooks/useVenues';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { TeamsWizardFormData } from '../teamsWizardTypes';
 
 export function VenueSelectionStep({

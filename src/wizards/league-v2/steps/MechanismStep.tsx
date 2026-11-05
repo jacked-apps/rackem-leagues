@@ -10,9 +10,9 @@
  * Phase 4 Unit 4.1 of the modular-league plan.
  */
 
-import { CardSelector } from '@/components/wizard';
-import type { SelectableCardOption } from '@/components/wizard';
-import type { WizardStepProps } from '@/components/wizard';
+import { CardSelector } from '@/wizards/shared';
+import type { SelectableCardOption } from '@/wizards/shared';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 
 const MECHANISM_OPTIONS: SelectableCardOption<string>[] = [

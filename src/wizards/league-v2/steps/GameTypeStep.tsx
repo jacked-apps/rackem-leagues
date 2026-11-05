@@ -5,8 +5,8 @@
  * Uses CardSelector with vertical layout for mobile-friendly tap targets.
  */
 
-import { CardSelector } from '@/components/wizard';
-import type { WizardStepProps } from '@/components/wizard';
+import { CardSelector } from '@/wizards/shared';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { GameType } from '@/types/league';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 

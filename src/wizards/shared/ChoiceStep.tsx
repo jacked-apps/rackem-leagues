@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { InfoButton } from '../InfoButton';
+import { InfoButton } from '../../components/InfoButton';
 
 interface ChoiceOption {
   value: string;

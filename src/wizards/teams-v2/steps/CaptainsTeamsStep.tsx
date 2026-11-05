@@ -19,7 +19,7 @@ import { getAllMembers } from '@/api/queries/members';
 import { queryKeys } from '@/api/queryKeys';
 import { useCurrentMember } from '@/api/hooks';
 import type { PartialMember } from '@/types/member';
-import type { WizardStepProps, FlowContext } from '@/components/wizard';
+import type { WizardStepProps, FlowContext } from '@/wizards/shared';
 import type { TeamsWizardFormData, TeamCaptainEntry } from '../teamsWizardTypes';
 
 export function CaptainsTeamsStep({

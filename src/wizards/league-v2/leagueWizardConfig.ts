@@ -20,7 +20,7 @@
  * league name building in real time as the user answers questions.
  */
 
-import type { WizardConfig } from '@/components/wizard';
+import type { WizardConfig } from '@/wizards/shared';
 import { ReviewStep } from './steps/ReviewStep';
 import { evaluateCombo } from './comboCoherence';
 import { LeagueIntroStep } from './steps/LeagueIntroStep';

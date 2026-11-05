@@ -25,7 +25,7 @@ import type { MatchEditState, TeamVenueMap } from '@/components/schedule/useWeek
 import type { TeamOption } from '@/components/schedule/TeamSelect';
 import type { VenueOption } from '@/components/schedule/VenueSelect';
 import type { MatchWithDetails } from '@/types';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { MatchupsWizardFormData } from '../matchupsWizardTypes';
 
 function toEditState(matches: MatchWithDetails[]): MatchEditState[] {

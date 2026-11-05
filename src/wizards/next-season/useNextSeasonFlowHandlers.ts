@@ -15,11 +15,11 @@ import { parseLocalDate, formatLocalDate } from '@/utils/formatters';
 import { useCreateSeasonV2 } from '@/wizards/season-v2/useCreateSeasonV2';
 import { useSaveScheduleV2 } from '@/wizards/schedule-v2/useSaveScheduleV2';
 import { useSaveTeamsV2 } from '@/wizards/teams-v2/useSaveTeamsV2';
-import type { StageHandlers } from '@/components/wizard/WizardFlowShell';
+import type { StageHandlers } from '@/wizards/shared/WizardFlowShell';
 import type { SeasonWizardFormData } from '@/wizards/season-v2/seasonWizardTypes';
 import type { ScheduleWizardFormData } from '@/wizards/schedule-v2/scheduleWizardTypes';
 import type { TeamsWizardFormData } from '@/wizards/teams-v2/teamsWizardTypes';
-import type { FlowContext } from '@/components/wizard';
+import type { FlowContext } from '@/wizards/shared';
 
 interface UseNextSeasonFlowHandlersArgs {
   context: FlowContext;

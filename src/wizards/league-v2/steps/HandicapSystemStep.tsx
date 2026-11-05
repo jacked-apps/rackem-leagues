@@ -6,9 +6,9 @@
  * that's disabled with a "Coming soon" toast.
  */
 
-import { CardSelector } from '@/components/wizard';
-import type { SelectableCardOption } from '@/components/wizard';
-import type { WizardStepProps } from '@/components/wizard';
+import { CardSelector } from '@/wizards/shared';
+import type { SelectableCardOption } from '@/wizards/shared';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 
 const HANDICAP_OPTIONS: SelectableCardOption<string>[] = [

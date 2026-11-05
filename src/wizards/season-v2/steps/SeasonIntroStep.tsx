@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { getDayOfWeekName } from '@/utils/formatters';
 import { Button } from '@/components/ui/button';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { SeasonWizardFormData } from '../seasonWizardTypes';
 
 interface IntroValue {

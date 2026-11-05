@@ -17,7 +17,7 @@ import { fetchHolidaysForSeason, filterHolidaysByType } from '@/utils/holidayUti
 import { parseLocalDate } from '@/utils/formatters';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { useExistingWeeks } from './useExistingWeeks';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { WeekEntry } from '@/types/season';
 import type { ScheduleWizardFormData } from './scheduleWizardTypes';
 

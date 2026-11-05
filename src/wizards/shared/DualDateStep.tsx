@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { InfoButton } from '../InfoButton';
+import { InfoButton } from '../../components/InfoButton';
 
 interface DualDateStepProps {
   title: string;

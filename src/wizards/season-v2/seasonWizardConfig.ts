@@ -11,8 +11,8 @@
  * is injected via the intro step's initial value.
  */
 
-import type { WizardConfig } from '@/components/wizard';
-import { ReviewStep } from '@/components/wizard';
+import type { WizardConfig } from '@/wizards/shared';
+import { ReviewStep } from '@/wizards/shared';
 import { SeasonIntroStep } from './steps/SeasonIntroStep';
 import { SeasonStartDateStep } from './steps/SeasonStartDateStep';
 import { SeasonSettingsModeStep } from './steps/SeasonSettingsModeStep';

@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { renderWithProviders } from '@/test/utils';
-import { SeasonCreationWizard } from '@/operator/SeasonCreationWizard';
+import { SeasonCreationWizard } from '@/wizards/season-v1/SeasonCreationWizard';
 import * as useOperatorIdModule from '@/api/hooks';
 
 // Mock the Supabase client with chainable query builder
