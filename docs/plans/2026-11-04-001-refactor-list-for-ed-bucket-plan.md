@@ -166,7 +166,7 @@ All five also delete TOC line 3 (the old "Last Updated" line).
 
 ## Implementation Units
 
-- [ ] **Unit 1: The guard test's helpers**
+- [x] **Unit 1: The guard test's helpers**
 
 **Goal:** The parsing and checking logic exists and has its own tests, before any content moves. That way CI stays green while the audit waits for Ed.
 
@@ -199,7 +199,7 @@ All five also delete TOC line 3 (the old "Last Updated" line).
 **Verification:**
 - The self-tests pass, and the unit suite stays green on the branch.
 
-- [ ] **Unit 2: The audit table (Ed approves)**
+- [x] **Unit 2: The audit table (Ed approves)**
 
 **Goal:** Every one of the 33 sections gets a verdict and a new home, and Ed signs off before anything is deleted.
 
@@ -233,7 +233,7 @@ All five also delete TOC line 3 (the old "Last Updated" line).
 - Each of the 33 headings appears once in the table, and every "done" row cites evidence that's on main.
 - Ed has approved the table.
 
-- [ ] **Unit 3: Move the content and rewrite the list**
+- [x] **Unit 3: Move the content and rewrite the list**
 
 **Goal:** The approved table becomes item files plus the short list, and the real-file checks are switched on.
 
@@ -261,7 +261,7 @@ All five also delete TOC line 3 (the old "Last Updated" line).
 **Verification:**
 - The list fits on about one screen. Each surviving row in the audit table matches exactly one list line.
 
-- [ ] **Unit 4: Repoint references, rules and memory**
+- [x] **Unit 4: Repoint references, rules and memory**
 
 **Goal:** Nothing points at the old numbered sections any more, and the rules describe the new form.
 
