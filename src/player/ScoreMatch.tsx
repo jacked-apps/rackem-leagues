@@ -210,7 +210,7 @@ function ScoreMatchBody() {
   // Mirrors src/components/scoring/UnifiedScoreboard.tsx:614-617. The snapshot
   // is captured lazily at the first scoring event (PR #98), so on game 1 it's
   // null — falling back to the live league preference avoids hiding calculator-
-  // aware modal sections (LIST_FOR_ED #23). Uses `!== undefined` (not `??`) so
+  // aware modal sections. Uses `!== undefined` (not `??`) so
   // a deliberately-null snapshot value (a league opting out of points tracking)
   // is preserved.
   const snapshotPointsCalculator = (
