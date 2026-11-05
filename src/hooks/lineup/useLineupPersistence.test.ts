@@ -125,6 +125,23 @@ describe('useLineupPersistence — tiebreaker keeps the initial lineup intact', 
     });
   });
 
+  it('first team to lock does NOT start the match (the database does, once both lock)', async () => {
+    // The opponent's lineup id is always filled in on the match row (the
+    // create-match trigger sets it), so it must not be read as "opponent locked".
+    const params = {
+      ...tiebreakerScreenParams(false),
+      matchData: { home_team_id: 't-home', away_lineup_id: 'lineup-away', started_at: null },
+    };
+    const { result } = renderHook(() => useLineupPersistence(params));
+
+    await act(async () => {
+      await result.current.handleLockLineup();
+    });
+
+    const { updates } = matchMutateAsync.mock.calls[0][0];
+    expect(updates).not.toHaveProperty('started_at');
+  });
+
   it('normal pre-match UNLOCK still clears a player listed twice', async () => {
     const params = tiebreakerScreenParams(false);
     const { result } = renderHook(() => useLineupPersistence(params));

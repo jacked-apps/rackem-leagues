@@ -584,6 +584,7 @@ how to add a new test, demo recording, cleanup model).
 #### Database Tests (`/__tests__/database/`)
 - `autoForfeitSweep.db.test.ts` - **Auto-forfeit sweep.** Builds one league with five past/future matches and calls `sweep_auto_forfeits()` once, asserting every branch: past-due + one-captainless → forfeit to the captained team; both-captained → ignored; neither → skipped; future (not past-due) → untouched; already-completed → untouched. Requires local Supabase + the 20260611000000 migration.
 - `convertTeamToBye.db.test.ts` - **Drop team to BYE (pre-season).** Exercises `convertTeamToBye()` against local Supabase: reshapes an active team to the canonical bye shape (status='bye', captain cleared, name 'BYE', roster released), and asserts all three guards reject (non-active team, season already has a bye, any match already played).
+- `startMatchWhenBothLineupsLocked.db.test.ts` - **Match start trigger.** In a rolled-back transaction: first lock leaves `started_at` NULL, second lock sets it (either order), lock → unlock → other lock does not, and a tiebreaker unlock → re-lock keeps the original start.
 - `dropTeamMidSeason.db.test.ts` - **Drop team mid-season (atomic RPC).** Exercises `drop_team_mid_season()`: withdraws a team that has already played (past results preserved) and replaces it with a fresh BYE on every remaining match, asserting upcoming opponents get bye weeks and the operation is atomic. Requires local Supabase + the 20260611000001 migration.
 - `applySeasonLengthChange.db.test.ts` - **Change season length (apply).** DB-backed coverage of `applySeasonLengthChange()`: lengthen appends weeks and generates their matches; shorten deletes only the unplayed tail (guarded). Requires local Supabase.
 - `scheduleDecoupleMigration.db.test.ts` - **Schedule decouple migration (B1).** Verifies the `week_type` CHECK accepts regular/blackout/playoffs and rejects the dropped `season_end_break`, and that a blackout stores its label in `notes`. Requires local Supabase.
@@ -678,6 +679,7 @@ how to add a new test, demo recording, cleanup model).
 - `SpectateLiveMatches.tsx` - League-scoped spectator view: lists currently-live matches in a league.
 - `SpectateMyLiveMatches.tsx` - Spectator view scoped to the current user's teams' live matches.
 - `SpectateMatchCard.tsx` - Per-match card used inside the spectate pages; routes through `UnifiedScoreboard`.
+- `SpectateMatchCard.test.tsx` - A card that can't draw a scoreboard says "couldn't load" or "waiting for lineups" instead of spinning forever.
 
 #### Operator Pages (`/operator/`)
 
@@ -1268,7 +1270,7 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 
 - `useLineupState.ts` - Owns the in-flight lineup form state (slots, substitute flags) before persistence.
 - `useLineupPersistence.ts` - Save/load mutations for the lineup row + optimistic update wiring. In tiebreaker mode lock/unlock flip ONLY the lock flag — players, handicaps and team bonus stay as initially locked.
-- `useLineupPersistence.test.ts` - Pins the tiebreaker rule: tiebreaker lock/unlock send only `locked`/`locked_at`; normal pre-match lock/unlock unchanged.
+- `useLineupPersistence.test.ts` - Pins the tiebreaker rule: tiebreaker lock/unlock send only `locked`/`locked_at`; normal pre-match lock/unlock unchanged. Also pins that the first lock never sets `started_at` (the database does).
 - `useLineupValidation.ts` - Pre-submit validation (roster coverage, handicap totals, duplicate nicknames).
 - `useMatchPreparation.ts` - Drives the `prep_match` RPC + reads/writes the prep status banner state.
 - `useOpponentStatus.ts` - Tracks the opponent's lineup state for the "waiting on opponent" UI. In a tiebreak it is handed the opponent's TIEBREAK lineup (same slot + locked shape).
@@ -2049,6 +2051,7 @@ Supabase local configuration and migrations
 | `supabase/migrations/20260906204115_my_tournaments.sql` | **Tournament PAID foundation — "tournaments I'm in".** `get_my_tournaments()` returns the tournaments the CALLER is playing in (from their `bracket_hopper` row), excluding closed ones and ones they created. Returns each **`join_token`**, because a player's home for a tournament is the join page — deliberately NOT the `share_token`, which is the spectator view. Member resolved from `auth.uid()`; an anonymous caller gets `[]` rather than an error. A walk-up can't appear here and can't be made to: there's no account to look them up by, so their only route back is the link their own browser remembered. Test: `bracket.myTournaments.db.test.ts`. |
 | `supabase/migrations/20260906205201_organizer_add_registered.sql` | **Tournament PAID foundation — organizer search-add.** `add_registered_to_hopper(bracket_id, member_id)`. **An RPC rather than a client insert because the display name must be derived the SAME WAY `join_bracket_hopper` derives it** (nickname → full name → 'Player'): a name picked in the browser could differ from the one that player gets by scanning the code, and since a name may appear only once per tournament, that mismatch would surface as a phantom collision nobody could explain. Setup-only, registered-only (a placeholder belongs to a league), `already_in` as a no-op answered before the name check, and `name_taken` reported rather than a constraint error. Test: `bracket.organizerAdd.db.test.ts`. |
 | `supabase/migrations/20261028204853_tiebreaker_default_best_of_3.sql` | **"Accept tie" off default** — `preferences.tiebreaker_format` default + every stored `accept_tie` row + the `resolved_league_preferences` fallback all become `best_of_3_short_race`. Value stays legal in the CHECK because frozen match snapshots may carry it. `tiebreaker_trigger` untouched (nothing acts on it). |
+| `supabase/migrations/20261101223223_start_match_when_both_lineups_locked.sql` | **Match starts only when BOTH lineups lock** — trigger on `match_lineups` (unlocked → locked) sets `matches.started_at` once the home and away lineups are both locked; locks the match row so simultaneous locks can't both miss it; never moves an existing start (tiebreaker re-lock). Replaces the lineup screen's guess, which always started the match on the first lock. |
 | `supabase/migrations/20261028194312_tiebreak_records.sql` | **Tiebreak record (Unit 1 of the tiebreaker-record plan)** — `match_tiebreakers` (one per match: games_needed, game_count, players_per_side, game_type, winning_team_id, resolved_at) + `match_tiebreaker_lineups` (one per side, five slots + handicaps + own lock). The winning side's tiebreak lineup is the anti-sandbagging credit list. No RLS (same as match_lineups); both on realtime. |
 | `supabase/migrations/20261028043311_restore_profanity_filter_to_resolved_view.sql` | **Restores `profanity_filter_enabled` to `resolved_league_preferences`** (league → org → off, the original 20251202194308 chain). It fell out when 20260417000000 rebuilt the view, so `getOperatorProfanityFilter` threw on every call and the team editor's profanity check never ran. `CREATE OR REPLACE` so it only appends the column and keeps grants. |
 | `supabase/migrations/20260919182736_add_host_designation.sql` | **Game-room host designation** — one catalog row (`host`) so the game room (separate service) can check host status via `member_has_designation(user_id, 'host')` instead of `members.role`, and the app via `useUserProfile().hasDesignation('host')`. Granted by manual SQL (no UI). |
@@ -2151,7 +2154,6 @@ See [RESTRUCTURE_PLAN.md](RESTRUCTURE_PLAN.md) for complete list of 20 organizat
 ### When Creating a File
 1. Add entry to appropriate section in this table of contents
 2. Include file purpose and relationships
-3. Update "Last Updated" date at top
 
 ### When Moving a File
 1. Update file location in table of contents
