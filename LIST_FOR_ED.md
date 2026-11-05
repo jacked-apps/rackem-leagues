@@ -8,8 +8,6 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 ## Now
 
 - [Return async calls from sync click handlers so buttons block double taps](docs/list/2026-09-05-double-tap-promise-sweep.md)
-- [Retest - the first team to lock its lineup gets stuck on Match Setup](docs/list/2026-05-02-first-lineup-lock-stuck.md)
-- [Retest - a brand-new match shows "tiebreak needed" after leaving another match](docs/list/2026-05-03-fresh-match-tiebreak-needed.md)
 
 ## Next
 
@@ -17,23 +15,21 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Two screens still spot a bye by an empty team slot instead of its status](docs/list/2026-06-09-bye-detection-two-places.md)
 - [Add a way to remove a bye team (only "Fill" exists today)](docs/list/2026-06-09-remove-bye-team.md)
 - [Check on staging that schedule week numbers run 1 to N with no duplicates](docs/list/2026-06-30-staging-week-numbers-check.md)
-- [Staging sends no email, so email invites and confirmations can't be tested](docs/list/2026-04-21-staging-email.md)
+- [Set up a verified sending address so email invites work (all environments)](docs/list/2026-04-21-staging-email.md)
 
 ## Later
 
-- [One team's screen flashes and re-renders around the tiebreak](docs/list/2026-05-02-tiebreak-screen-flash.md)
 - [Database rules so removed members and announcement chats are truly read-only](docs/list/2026-05-12-past-member-readonly-rls.md)
 - [Add a test proving one failed team chat does not break season activation](docs/list/2026-05-12-season-activation-failure-test.md)
 - [Make every nickname tappable to show the player's full name](docs/list/2026-05-27-tappable-player-name.md)
 - [Write full glossary entries for the scoring-system and win-calculator stubs](docs/list/2026-05-30-glossary-scoring-stubs.md)
-- [Re-check scoring-page buttons for unreadable text in dark mode](docs/list/2026-06-14-scoring-button-contrast.md)
-- [Only the two teams in a match should see a working Verify Scores button](docs/list/2026-06-14-verify-scores-viewers.md)
 - [Drop the unused week_name column once the staging week check passes](docs/list/2026-06-30-drop-week-name-column.md)
 - [Decide what happens to beta mock cards on file once real Stripe is live](docs/list/2026-09-05-mock-cards-on-file.md)
 - [Make the LO application use the shared PaymentMethodSetup component](docs/list/2026-09-05-reuse-payment-method-setup.md)
 - [Let a league operator fix a lineup on a match that has already started](docs/list/2026-10-28-lo-fix-finished-lineup.md)
 - [Playoffs page shows the final standings and the playoff matchups once set](docs/list/2026-11-01-playoffs-page-standings-and-matchups.md)
 - [Let an operator switch the team bonus on or off for league and playoffs](docs/list/2026-11-01-team-bonus-on-off-setting.md)
+- [Finish the last notification controls - rate limits, pause-until, @mention alerts](docs/list/2026-11-02-notification-leftovers.md)
 - [Give matches one full-record query, and make every mutation refresh stale data](docs/list/2026-11-04-consolidate-match-queries.md)
 - [Around 2026-12-02, count how many Now and Next items had gone stale](docs/list/2026-11-04-four-week-list-check.md)
 - [Move to Supabase CLI v3 on purpose (config.toml, CI and both deploys together)](docs/list/2026-11-05-supabase-cli-v3.md)
@@ -49,7 +45,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [A modules instruction manual on the Learn page, separate from the glossary](docs/list/2026-05-31-modules-manual.md)
 - [Resume the player-picker consolidation brainstorm](docs/list/2026-06-09-player-picker-consolidation.md)
 - [Optionally rename leftover "View Schedule" buttons to "Matchups"](docs/list/2026-06-13-matchups-label-sweep.md)
-- [Seed a scored match and a finished season for testing](docs/list/2026-06-13-seed-played-match-and-finished-season.md)
+- [Seed a finished season so the playoff fill-in can be watched locally](docs/list/2026-06-13-seed-played-match-and-finished-season.md)
 - [Past-match result cards on the schedule could show more in less room](docs/list/2026-10-29-past-match-result-cards.md)
 
 ## Gated

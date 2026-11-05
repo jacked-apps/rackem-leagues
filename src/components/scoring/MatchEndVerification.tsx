@@ -65,8 +65,12 @@ interface MatchEndVerificationProps {
   awayVerifiedBy: string | null;
   /** Is current user on home team? */
   isHomeTeam: boolean;
-  /** Handler when user clicks verify */
-  onVerify: () => void;
+  /**
+   * Handler when user clicks verify. Leave it out when the viewer is NOT on
+   * either team in this match: the Verify button is then hidden, since only
+   * the two teams playing can verify.
+   */
+  onVerify?: () => void;
   /** Is verification in progress? */
   isVerifying?: boolean;
   /** Game type for tiebreaker games (eight_ball, nine_ball, ten_ball) */
@@ -687,7 +691,10 @@ export function MatchEndVerification({
               </div>
             </div>
 
-            {/* Verify Button Row */}
+            {/* Verify Button Row. Only the two teams playing get a button:
+                callers leave `onVerify` out for anyone else (spectators,
+                players from other matches), who still see the status above. */}
+            {onVerify && (
             <div className="text-center">
               <Button
                 onClick={onVerify}
@@ -704,6 +711,7 @@ export function MatchEndVerification({
                   : 'Verify Scores'}
               </Button>
             </div>
+            )}
           </div>
         )}
 

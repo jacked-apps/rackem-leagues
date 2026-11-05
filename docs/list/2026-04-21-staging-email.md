@@ -1,11 +1,13 @@
 ---
-summary: Staging sends no email, so email invites and confirmations can't be tested
+summary: Set up a verified sending address so email invites work (all environments)
 kind: task
 added: 2026-04-21
-checked: 2026-11-04
+checked: 2026-11-05
 ---
 
 Needs Ed. This is environment setup, not app code.
+
+**Re-checked 2026-11-02: bigger than staging.** Email invites are switched off on every environment (`EMAIL_INVITES_ENABLED` in `src/config/featureFlags.ts`), because the invite function still sends from Resend's sandbox address, which only delivers to the account owner. The real task is a verified sending address for invites, everywhere. Invites by link or QR still work meanwhile.
 
 Found 2026-04-21 during the first real-player staging test. The staging
 Supabase environment sends no email. A captain's email invite for a

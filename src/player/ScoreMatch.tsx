@@ -1107,7 +1107,7 @@ function ScoreMatchBody() {
           }}
           gameResults={filteredGameResults}
           isHomeTeam={isHomeTeam ?? false}
-          onVerify={handleVerify}
+          onVerify={isHomeTeam === null ? undefined : handleVerify}
           isVerifying={isVerifying}
           gameType={gameType}
           gamesNeeded={tiebreakRecord.games_needed}
@@ -1127,7 +1127,7 @@ function ScoreMatchBody() {
           awayLosses={awayStats.losses}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
-          onVerify={handleVerify}
+          onVerify={isHomeTeam === null ? undefined : handleVerify}
           isVerifying={isVerifying}
           gameType={gameType}
           winCondition={winCondition}
