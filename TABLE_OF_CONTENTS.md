@@ -1529,6 +1529,7 @@ High-level business logic services
 
 - `matches.ts` - **✅ Match mutations** (generic updateMatch for any match field updates)
 - `matchLineups.ts` - **✅ Match lineup mutations** (generic updateMatchLineup + specific save/lock/unlock)
+- `matchLineups.test.ts` - Team-membership check on lineup writes: a failed lookup says "couldn't reach the server", only a missing roster row says "not a member"
 - `announcements.ts` - Announcement-channel mutations (post / edit / archive).
 - `autoConversations.ts` - Helper mutations for the season-activation auto-chats (manual create-missing-chat path).
 - `championshipDates.ts` - Championship date CRUD.
