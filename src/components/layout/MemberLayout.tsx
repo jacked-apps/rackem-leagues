@@ -5,6 +5,8 @@
  * page content:
  * - Desktop (`lg+`): persistent left sidebar
  * - Mobile (`<lg`): fixed bottom tab bar
+ * Both are shown to signed-in members only; public pages inside this layout
+ * render full-width with no menu for signed-out visitors.
  *
  * Also hosts global member features that were previously on the Dashboard:
  * - Pending invites modal (checks for unclaimed player invites on mount)
@@ -21,6 +23,7 @@ import { AppSidebar } from './AppSidebar';
 import { PendingInvitesModal } from '@/components/modals/PendingInvitesModal';
 import { ApprovedJoinModal } from '@/components/modals/ApprovedJoinModal';
 import { usePendingInvites } from '@/api/hooks';
+import { useUser } from '@/context/useUser';
 import {
   useApprovedJoinRequests,
   useAcknowledgeJoinRequest,
@@ -43,6 +46,15 @@ export function MemberLayout() {
   const acknowledge = useAcknowledgeJoinRequest();
   const nextApproved = approvedJoins?.[0] ?? null;
 
+  // The menu is for members. Public pages also sit in this layout (Home,
+  // Rules, What's New…) so members keep their menu there, but a signed-out
+  // visitor would only see an empty sidebar and tabs that bounce to sign-in,
+  // so they get neither (Ed, 2026-11-01). While the session is still being
+  // checked we keep the nav, so a signed-in member's page doesn't jump
+  // sideways on every refresh.
+  const { isLoggedIn, loading: authLoading } = useUser();
+  const showNav = isLoggedIn || authLoading;
+
   return (
     <>
       <PendingInvitesModal
@@ -56,16 +68,17 @@ export function MemberLayout() {
         onAcknowledge={(id) => acknowledge.mutate(id)}
       />
 
-      <AppSidebar />
+      {showNav ? <AppSidebar /> : null}
       {/* Mobile bottom padding must CLEAR the fixed bottom tab bar (4rem,
           `--tab-bar-height`) with breathing room — `pb-16` (exactly 4rem) left
           zero gap, so page action buttons (Save / Continue / etc.) at the
           bottom of a page sat flush against or under the bar. `pb-24` (6rem)
-          gives ~2rem clearance app-wide. Desktop uses the sidebar, no bar. */}
-      <div className="pb-24 lg:pb-0 lg:ml-[var(--sidebar-width)]">
+          gives ~2rem clearance app-wide. Desktop uses the sidebar, no bar.
+          Signed-out visitors get neither, so the page uses the full width. */}
+      <div className={showNav ? 'pb-24 lg:pb-0 lg:ml-[var(--sidebar-width)]' : undefined}>
         <Outlet />
       </div>
-      <BottomTabBar />
+      {showNav ? <BottomTabBar /> : null}
     </>
   );
 }

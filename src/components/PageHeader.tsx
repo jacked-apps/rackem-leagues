@@ -2,7 +2,9 @@
  * @fileoverview Reusable Page Header — the global sticky header on every page.
  *
  * The slim ~48px sticky bar hosts:
- * - Hamburger trigger (left) — opens the global navigation drawer.
+ * - Hamburger trigger — opens the global navigation drawer. Phone/tablet
+ *   only, and signed-in members only: signed-out visitors get no menu, just
+ *   the Sign in button (Ed, 2026-11-01).
  * - Back arrow (immediately right of hamburger, conditional on `backTo` or
  *   `onBackClick`). Mobile: icon only. Desktop ≥1024px (`lg:`): icon + label.
  * - Title (flex-1, truncates with ellipsis).
@@ -43,9 +45,6 @@ import { OrgSwitcher } from '@/components/OrgSwitcher';
 import { useOrganization } from '@/api/hooks/useOrganizations';
 import { useUser } from '@/context/useUser';
 
-/** Routes where the right-slot Sign-in button is suppressed (rendering it
- *  would be redundant on the login page or contextually wrong on the other
- *  auth-flow pages). The hamburger menu itself remains available. */
 /** Route patterns where the org-switcher dropdown appears in the header. */
 const OPERATOR_ROUTE_PATTERNS: readonly RegExp[] = [
   /^\/operator-/,
@@ -56,6 +55,9 @@ const OPERATOR_ROUTE_PATTERNS: readonly RegExp[] = [
   /^\/league-rules\//,
 ];
 
+/** Routes where the right-slot Sign-in button is suppressed (rendering it
+ *  would be redundant on the login page or contextually wrong on the other
+ *  auth-flow pages). */
 const AUTH_FLOW_ROUTES: readonly string[] = [
   '/login',
   '/register',
@@ -114,6 +116,7 @@ export function PageHeader({
   children,
 }: PageHeaderProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { isLoggedIn } = useUser();
   // Rendered pixel width of the back button (icon + label + padding).
   // BackAffordance measures itself via ResizeObserver and reports here.
   // SubHeader consumes it on desktop to indent so subtitle/org-badge
@@ -170,25 +173,29 @@ export function PageHeader({
           <IdentitySlot pathname={location.pathname} />
         ) : null}
 
-        {/* Hamburger menu — hidden on desktop where the persistent sidebar takes over */}
-        <div className="lg:hidden">
-          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                aria-label="Open menu"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              {drawerOpen ? (
-                <AppDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
-              ) : null}
-            </SheetContent>
-          </Sheet>
-        </div>
+        {/* Hamburger menu — hidden on desktop where the persistent sidebar
+            takes over, and hidden for signed-out visitors: the menu is for
+            members (the header's Sign in button is their way in). */}
+        {isLoggedIn ? (
+          <div className="lg:hidden">
+            <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Open menu"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/10"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right">
+                {drawerOpen ? (
+                  <AppDrawer open={drawerOpen} onOpenChange={setDrawerOpen} />
+                ) : null}
+              </SheetContent>
+            </Sheet>
+          </div>
+        ) : null}
       </header>
 
       {hasSubHeaderLeftContent ? (
