@@ -64,6 +64,36 @@ export interface UnlockLineupParams {
 export type MatchLineup = Tables<'match_lineups'>;
 
 /**
+ * Confirm the member is on the team before a lineup write.
+ *
+ * Keeps two failures apart that used to share one message: a query that
+ * FAILED (no connection, server hiccup) versus a query that worked and found
+ * no roster row. Before, a captain on spotty bar wifi tapping Lock was told
+ * "You are not a member of this team", which sent them looking for the wrong
+ * problem. Uses maybeSingle so "no row" is a normal empty result, not an error.
+ *
+ * @param teamId - The team whose lineup is being written
+ * @param memberId - The member doing the write
+ * @throws Error "Couldn't reach the server…" when the lookup itself fails
+ * @throws Error "You are not a member of this team" when no roster row exists
+ */
+async function assertTeamMember(teamId: string, memberId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('team_players')
+    .select('member_id')
+    .eq('team_id', teamId)
+    .eq('member_id', memberId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Couldn't reach the server. Check your connection and try again.");
+  }
+  if (!data) {
+    throw new Error('You are not a member of this team');
+  }
+}
+
+/**
  * Save or update a match lineup
  *
  * Creates a new lineup if existingLineupId is not provided, otherwise updates.
@@ -74,17 +104,7 @@ export type MatchLineup = Tables<'match_lineups'>;
  * @throws Error if validation fails or database operation fails
  */
 export async function saveMatchLineup(params: SaveLineupParams): Promise<MatchLineup> {
-  // Verify user is on the team
-  const { data: teamCheck, error: teamCheckError } = await supabase
-    .from('team_players')
-    .select('*')
-    .eq('team_id', params.teamId)
-    .eq('member_id', params.memberId)
-    .single();
-
-  if (teamCheckError || !teamCheck) {
-    throw new Error('You are not a member of this team');
-  }
+  await assertTeamMember(params.teamId, params.memberId);
 
   // Build lineup data object dynamically based on player count
   const fields: Record<string, unknown> = {
@@ -138,17 +158,7 @@ export async function saveMatchLineup(params: SaveLineupParams): Promise<MatchLi
  * @throws Error if validation fails or database operation fails
  */
 export async function lockMatchLineup(params: LockLineupParams): Promise<MatchLineup> {
-  // Verify user is on the team
-  const { data: teamCheck, error: teamCheckError } = await supabase
-    .from('team_players')
-    .select('*')
-    .eq('team_id', params.teamId)
-    .eq('member_id', params.memberId)
-    .single();
-
-  if (teamCheckError || !teamCheck) {
-    throw new Error('You are not a member of this team');
-  }
+  await assertTeamMember(params.teamId, params.memberId);
 
   const { data, error } = await supabase
     .from('match_lineups')
@@ -174,17 +184,7 @@ export async function lockMatchLineup(params: LockLineupParams): Promise<MatchLi
  * @throws Error if validation fails or database operation fails
  */
 export async function unlockMatchLineup(params: UnlockLineupParams): Promise<MatchLineup> {
-  // Verify user is on the team
-  const { data: teamCheck, error: teamCheckError } = await supabase
-    .from('team_players')
-    .select('*')
-    .eq('team_id', params.teamId)
-    .eq('member_id', params.memberId)
-    .single();
-
-  if (teamCheckError || !teamCheck) {
-    throw new Error('You are not a member of this team');
-  }
+  await assertTeamMember(params.teamId, params.memberId);
 
   const { data, error } = await supabase
     .from('match_lineups')
@@ -592,9 +592,7 @@ async function composeThresholdsForApproval(args: {
     prefs,
     homeLineup: applyPostSwap(homeRow),
     awayLineup: applyPostSwap(awayRow),
-    homeTeamId: match.home_team_id as string,
-    awayTeamId: match.away_team_id as string,
-    seasonId: match.season_id as string,
+    matchId,
   });
 }
 
