@@ -179,6 +179,28 @@ one whose version is already recorded in `schema_migrations`). Renumber *down*
 when later migrations depend on it, so dependent files keep their order and
 don't need touching.
 
+### Where files go
+Rules of thumb, not a strict rule: a judgment call that breaks one for a
+clear reason is fine (the repo is large, and Jack likes it flat-ish).
+
+1. **Feature first.** If a feature has a folder (`rooms/`, `brackets/`,
+   `messages/`, `stats/`, `wizards/`...), its screens, pieces and hooks go
+   there. A feature folder beats a role folder.
+2. **Role folders** (`player/` = match night, `operator/` = league
+   management) hold role-only screens that have no feature folder.
+3. **Feature-specific pieces live in the feature; generic UI stays in
+   `components/`**, even if one feature uses it today. `App.tsx`,
+   `navigation/` and `components/` itself don't count as features.
+4. **Flat until it hurts.** Add a subfolder only when about 5+ files clearly
+   belong together, or names would clash.
+5. **Standalone pages** that belong to no feature go in `pages/`.
+6. **Layers stay put:** `api/`, `hooks/` (shared hooks), `utils/`, `types/`,
+   `schemas/`, `components/ui/` (shadcn), `lib/`.
+
+To move files, use `scripts/reorg/move.ts` (it rewrites every import,
+`vi.mock` and lazy route that points at them). Background:
+`docs/plans/2026-11-05-002-refactor-src-folder-reorg-plan.md`.
+
 ### Testing Conventions
 **Where you put a test file determines how vitest schedules it.** The
 `vitest.config.ts` has two projects (`unit` + `db`) that auto-route

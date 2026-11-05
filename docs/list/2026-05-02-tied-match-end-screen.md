@@ -22,6 +22,6 @@ at 9–9 because tiebreak games are left out of the count by design.
 
 ## Where to look
 
-- `src/components/scoring/ThreeVThreeScoreboard.tsx`
+- `src/components/scoring/TiebreakerScoreboard.tsx` (replaced `ThreeVThreeScoreboard` in PR 99)
 - `src/components/scoring/MatchEndVerification.tsx` (its TIEBREAKER
   REQUIRED banner could carry into the tiebreak scoring view)

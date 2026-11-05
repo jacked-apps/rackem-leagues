@@ -481,7 +481,7 @@ Once swap is complete (separate follow-up branch after wizard-v2 merges):
 
 **Goal:** Get the framework files in place with empty implementations.
 
-- [ ] **0.1** Create folder structure: `src/components/wizard/` for framework components (both layers)
+- [ ] **0.1** Create folder structure: `src/wizards/shared/` for framework components (both layers)
 - [ ] **0.2** Create folder structure: `src/wizards/league-v2/` for league wizard implementation
 - [ ] **0.3** Create folder structure: `src/flows/` for flow registries
 - [ ] **0.4** Add `zod` to dependencies if not already present
@@ -799,7 +799,7 @@ Confirmed. Run zod validation only when the user clicks Next. If errors, display
 
 ### ✅ 7. Progress bar component — **Reuse existing `WizardProgress.tsx`**
 
-Confirmed. Reuse `src/components/forms/WizardProgress.tsx` as-is. It's already a pure presentation component (takes `currentStep` and `totalSteps`, renders progress bar + counter, no coupling to old wizard internals). Works for both layers:
+Confirmed. Reuse `src/wizards/shared/WizardProgress.tsx` as-is. It's already a pure presentation component (takes `currentStep` and `totalSteps`, renders progress bar + counter, no coupling to old wizard internals). Works for both layers:
 - **WizardFlow layer:** pass `currentStage` and `totalStages` for the unified flow progress bar
 - **Wizard layer (standalone only):** pass `currentStep` and `totalSteps` when a wizard runs outside a flow
 

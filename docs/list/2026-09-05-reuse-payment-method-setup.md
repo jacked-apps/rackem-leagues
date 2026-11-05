@@ -12,7 +12,7 @@ returns the card data for the caller to save.
 
 The League Operator application does not use it. It wires `PaymentCardForm`
 and the application reducer inline in
-`src/leagueOperator/questionDefinitions.tsx` (the `paymentInfo` question).
+`src/operator/application/questionDefinitions.tsx` (the `paymentInfo` question).
 
 To do: refactor the LO application to use `PaymentMethodSetup`, so payment
 setup is one consistent component everywhere.

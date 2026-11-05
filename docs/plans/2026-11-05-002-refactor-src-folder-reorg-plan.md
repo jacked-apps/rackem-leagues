@@ -1,7 +1,7 @@
 ---
 title: "refactor: Reorganise src/ folders (moves and renames only)"
 type: refactor
-status: active
+status: completed
 date: 2026-11-05
 ---
 
@@ -12,10 +12,11 @@ behaves.
 
 ## Status
 
-Not started. Planned 2026-11-05, and revised the same day after a
-feasibility review and an adversarial review. Runs **before** the build work
-of `docs/plans/2026-11-05-001-refactor-toc-replacement-plan.md`, so that
-plan's folder map and model-screen table point at final paths.
+Units 0–8 done 2026-11-05. Before the moves, 53 files nothing used were
+deleted (5, then 48). The app had 43 top-level `src/` folders and now has 38.
+Every commit passed the build, lint (0 errors) and all 388 test files
+(6,125 tests). Tests ran with 2 workers to fit in memory. Next: Ed reviews,
+then a PR with `[no-changelog]`, then the TOC plan build.
 
 ## Overview
 
@@ -257,7 +258,7 @@ for a clear reason is fine.
 - the path checker (Unit 1) is clean
 - the rename check is clean: no file shows as deleted plus added
 
-- [ ] **Unit 0: Branch triage**
+- [x] **Unit 0: Branch triage**
 
 **Goal:** No unfinished work gets stranded by the move without a decision.
 
@@ -286,7 +287,7 @@ for a clear reason is fine.
 
 **Verification:** Every branch on the list has an outcome.
 
-- [ ] **Unit 1: Tools, baseline and the map**
+- [x] **Unit 1: Tools, baseline and the map**
 
 **Goal:** A safe way to move, a check for what the build can't see, and a
 map Ed approves before anything moves.
@@ -340,7 +341,7 @@ planted bad path before relying on it.
 - The script's dry run is correct.
 - Ed has approved the map.
 
-- [ ] **Unit 2: Small fixes**
+- [x] **Unit 2: Small fixes**
 
 **Goal:** Fix the misspelt folder and fold the single-file page folders.
 Delete only the zero-importer files Ed approved.
@@ -368,7 +369,7 @@ Delete only the zero-importer files Ed approved.
 - `audit:scan` still skips the cleaned rulebook.
 - Nothing outside historic docs mentions `officalBCARulebook`.
 
-- [ ] **Unit 3: Wizards**
+- [x] **Unit 3: Wizards**
 
 **Goal:** Every wizard part lives under `wizards/`, and `components/forms/`
 holds only the generic fields.
@@ -388,7 +389,7 @@ holds only the generic fields.
 **Verification:** The gate is green. The league, season and playoffs wizards
 load in the browser.
 
-- [ ] **Unit 4: Profile forms**
+- [x] **Unit 4: Profile forms**
 
 **Goal:** One `profile/` home for editing a profile, a new player and
 completing a profile.
@@ -409,7 +410,7 @@ are subfolders.
 **Verification:** The gate is green. The new-player, complete-profile and
 profile pages render.
 
-- [ ] **Unit 5: Operator**
+- [x] **Unit 5: Operator**
 
 **Goal:** One operator tree.
 
@@ -428,7 +429,7 @@ profile pages render.
 **Verification:** The gate is green. The operator dashboard, league detail
 and Become-an-LO pages render.
 
-- [ ] **Unit 6: Messages, stats and match pieces**
+- [x] **Unit 6: Messages, stats and match pieces**
 
 **Goal:** Messaging and stats each live in one feature folder. Match-night
 pieces join `player/`.
@@ -451,7 +452,7 @@ pieces join `player/`.
 **Verification:** The gate is green. Messages, My Stats, Top Shooters and My
 Match render.
 
-- [ ] **Unit 7: Loose components**
+- [x] **Unit 7: Loose components**
 
 **Goal:** `components/` holds generic and shared things only.
 
@@ -471,7 +472,7 @@ Match render.
 **Verification:** The gate is green. Every remaining loose file in
 `components/` is generic or has two or more feature users.
 
-- [ ] **Unit 8: Docs and the guide**
+- [x] **Unit 8: Docs and the guide**
 
 **Goal:** Every living doc points at the new paths, and the guide is
 written down.

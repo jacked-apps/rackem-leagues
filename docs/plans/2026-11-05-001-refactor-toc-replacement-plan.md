@@ -78,7 +78,7 @@ look. So the fix has two parts:
   - `archive/`, `docs/archive/`, `future/` (last edited 2025) and
     `memory-bank/`
   - the `MERGE_NOTES_*` files
-- No source folders get reorganised.
+- No source folders get reorganised here. That was done first, in `docs/plans/2026-11-05-002-refactor-src-folder-reorg-plan.md`.
 - `LIST_FOR_ED.md` and `docs/list/` are not touched.
 
 ## Context & Research
@@ -95,7 +95,7 @@ look. So the fix has two parts:
 - **README.md:** "Project structure" (about lines 123–162) is one fenced
   block.
   - The `src/` children are indented two spaces, alphabetical, with no
-    groups. It lists 10 of the 43 top-level `src/` folders.
+    groups. It lists 10 of the (then) 43 top-level `src/` folders.
   - Children of `supabase/`, `tests/` and `docs/` are indented the same way.
 - **Live TOC instructions in the repo:**
   - `CLAUDE.md:52`
@@ -158,7 +158,7 @@ look. So the fix has two parts:
     memory, NonProdGate is in Feature Gating, shadcn-first is in User
     Preferences.
   - Its "Component Patterns" become reuse entries in the table: the wizard
-    row names `src/components/forms/`, and a draft payment row names
+    row names `src/wizards/shared/`, and a draft payment row names
     `PaymentMethodSetup`.
   - The privacy pieces (`ContactInfoExposure`, `VisibilityChoiceCard`) serve
     one flow and get no row.
@@ -204,16 +204,16 @@ look. So the fix has two parts:
   |---|---|---|
   | Scoring games, incl. a race | `src/player/ScoreMatch.tsx` | `src/components/scoring/` (scoreboard, GameButtonRow) |
   | Picking a lineup | `src/player/MatchLineup.tsx` | `src/hooks/lineup/` |
-  | A one-page form (not a wizard) | `src/newPlayer/NewPlayerForm.tsx` | `src/newPlayer/FormField.tsx` fields, `src/components/forms/DateField.tsx`, a form hook + a submit hook |
-  | A multi-step setup flow | `src/wizards/league-v2/` | `src/components/forms/` steps, the wizard state hook |
-  | An operator page of cards | `src/operator/LeagueDetail.tsx` | `src/components/operator/` cards |
-  | Stats with filters | `src/player/PlayerStats.tsx` | `src/stats/` |
-  | Chat / messages | `src/pages/Messages.tsx` | `src/components/messages/` |
+  | A one-page form (not a wizard) | `src/profile/new-player/NewPlayerForm.tsx` | `src/components/forms/FormField.tsx` fields, `src/components/forms/DateField.tsx`, a form hook + a submit hook |
+  | A multi-step setup flow | `src/wizards/league-v2/` | `src/wizards/shared/` (wizard shell, steps, state hook) |
+  | An operator page of cards | `src/operator/LeagueDetail.tsx` | `src/operator/components/` cards |
+  | Stats with filters | `src/stats/PlayerStats.tsx` | `src/stats/` |
+  | Chat / messages | `src/messages/Messages.tsx` | `src/messages/` |
   | Settings and toggles | `src/operator/LeagueSettings.tsx` | its preference cards |
   | Taking a payment / card on file | `src/components/PaymentMethodSetup.tsx` | `src/components/PaymentCardForm.tsx` |
-  | A pop-up or confirm | `src/components/modals/` | shadcn `Dialog` |
+  | A pop-up or confirm | `src/components/modals/` | `src/components/shared/` (`Modal`, `ConfirmDialog`, `AlertDialog`), shadcn `Dialog` |
 
-- **The one-line descriptions** for each of the 43 folders, written while
+- **The one-line descriptions** for each of the 38 folders (after the 002 reorg), written while
   reading each folder.
 
 ## Implementation Units
@@ -343,7 +343,7 @@ no live repo doc names the TOC.
 - Modify: `README.md`, `CHEATSHEET.md`, `MERGE_GUIDE.md`
 
 **Approach:**
-- README "Project structure" covers all 43 top-level `src/` folders: one
+- README "Project structure" covers all 38 top-level `src/` folders: one
   short line each, alphabetical, no blank lines.
   - That includes `__tests__`, `test`, `assets`, `dev` and
     `officalBCARulebook` (spelled as on disk).
