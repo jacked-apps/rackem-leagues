@@ -20,7 +20,7 @@
  * announcements-feel-one-way decision from 2026-05-12).
  *
  * Data-layer enforcement (RLS) is intentionally deferred — see
- * `LIST_FOR_ED.md` #29. This hook is the UI gate today; defense-in-depth
+ * `docs/list/2026-05-12-past-member-readonly-rls.md`. This hook is the UI gate today; defense-in-depth
  * via RLS lands with the RLS-enablement project.
  */
 

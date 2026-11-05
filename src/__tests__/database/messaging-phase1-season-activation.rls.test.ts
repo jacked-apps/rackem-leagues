@@ -378,6 +378,6 @@ describe('season-activation trigger → auto_create_season_conversations()', () 
   // either deleting from members (cascades destroy the roster) or
   // bypassing FKs (session_replication_role hacks). The BEGIN/EXCEPTION
   // blocks ARE present in the function source (see migration file); their
-  // runtime behavior is documented in LIST_FOR_ED #26 as a follow-up test
-  // scenario when a less destructive trigger is available.
+  // runtime test waits for a less destructive way to force a failure
+  // (docs/list/2026-05-12-season-activation-failure-test.md).
 });

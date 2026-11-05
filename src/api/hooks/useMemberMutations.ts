@@ -47,8 +47,8 @@ import {
  *
  * @param queryClient - the active TanStack Query client.
  * @param refetchAll - when true, also refetch INACTIVE queries (used by the role
- *   change, whose LO-application flow navigates to a page gated on fresh data —
- *   closes LIST_FOR_ED #7). Returns the invalidation promise so callers can await.
+ *   change, whose LO-application flow navigates to a page gated on fresh data).
+ *   Returns the invalidation promise so callers can await.
  */
 function invalidateMemberEmbedders(
   queryClient: QueryClient,
@@ -266,7 +266,7 @@ export function useUpdateMemberRole() {
     onSuccess: async () => {
       // Refresh role everywhere it's embedded (members, operator/staff lists…)
       // AND wait for the refetch — paired with the same treatment in
-      // useCreateOrganization (closes LIST_FOR_ED #7). The LO-application flow
+      // useCreateOrganization. The LO-application flow
       // runs both mutations back-to-back then navigates to /dashboard, which
       // gates the org-list on BOTH the new role AND the new org. If either is
       // stale when the dashboard mounts, the user sees the empty/wrong state.

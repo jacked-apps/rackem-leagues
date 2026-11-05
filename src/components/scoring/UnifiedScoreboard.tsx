@@ -313,7 +313,7 @@ function TeamCard({
         >
           {/* Wins column.
               - games-mode: `wins/to_win` slash format reads as "0 of 7"
-                (LIST_FOR_ED #10 fix).
+                (an old fix).
               - points-mode: just the wins count, no slash. There's no
                 match-level games-to-win target in points-mode (per
                 Ed 2026-05-04 — useMatchPreparation now writes to_win=null

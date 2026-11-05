@@ -8,7 +8,8 @@
  *
  * Reusable anywhere a card is set up on file — the tournament paid flow uses it
  * inside a dialog; the League Operator application should adopt it too (it
- * currently wires `PaymentCardForm` + reducer inline). See LIST_FOR_ED.md.
+ * currently wires `PaymentCardForm` + reducer inline). See
+ * `docs/list/2026-09-05-reuse-payment-method-setup.md`.
  *
  * This component only VERIFIES + returns the card (no charge, no persistence);
  * where the card is stored (payment_methods, org, ...) is the caller's job.
