@@ -1,234 +1,149 @@
 /**
- * @fileoverview Characterization tests for getTeamHandicapBonus.
+ * @fileoverview Tests for the ONE team handicap bonus helper.
  *
- * Locks the season-level team handicap bonus formula used by BCA 3v3
- * points-handicap leagues. The bonus is applied ONLY to the home team's
- * effective handicap (added before chart lookup) and ONLY when the
- * league's handicap_type is 'points'.
+ * The home team's bonus in points-system leagues = floor(win gap ÷ divisor),
+ * where the divisor comes from the league's team-bonus setting (standard 2,
+ * reduced 3, none → 0). Since 2026-11-01:
+ *  - it is NEVER applied in a playoff week (user complaint: a playoff match
+ *    was decided with a bonus that shouldn't exist), and
+ *  - the lineup screen and match setup both use this helper, so they can't
+ *    disagree (the old setup copy always divided by 2).
  *
- * Formula:
- *   bonus = Math.floor((homeWins - awayWins) / 2)
- *
- * Where homeWins and awayWins are counts of completed matches the home
- * team and away team have won this season, respectively. The bonus can
- * be negative (penalty) when the away team is ahead. Returns 0 for
- * non-points handicap types and on DB errors (defensive default).
- *
- * Why this matters for the modular-league refactor: Phase 5 (Unit 5.1
- * runtime resolver) and the broader rating-mutation work in Phase 6
- * may touch the team-bonus calculation indirectly when restructuring
- * how preferences flow into the threshold computation. Locking the
- * formula here means we'd catch any silent change to the bonus math.
+ * Two layers: `computeTeamBonus` (pure rule, every case) and
+ * `getTeamHandicapBonus` (database lookup, supabase mocked per table).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getTeamHandicapBonus } from '../getTeamHandicapBonus';
-
-// Mock the supabase client. The function does ONE query
-// (matches.select('winner_team_id').eq.eq) and we simulate its result
-// by returning canned data per test.
-vi.mock('@/supabaseClient', () => {
-  const eqChain = {
-    eq: vi.fn(),
-  };
-  return {
-    supabase: {
-      from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => eqChain),
-        })),
-      })),
-    },
-  };
-});
 
 vi.mock('@/utils/logger', () => ({
-  logger: {
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn(),
-  },
+  logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
-import { supabase } from '@/supabaseClient';
+/** Canned answers per table; each test fills these in. */
+const db: {
+  match: unknown;
+  matchError: { message: string } | null;
+  prefs: unknown;
+  completed: Array<{ winner_team_id: string | null }>;
+} = { match: null, matchError: null, prefs: null, completed: [] };
 
-/**
- * Helper to set up the supabase mock to return a specific list of matches.
- * The real query chain is .from('matches').select(...).eq(season_id).eq(status).
- * We return the canned `matches` array from the final eq.
- */
-function mockMatchesQuery(matches: Array<{ winner_team_id: string }>) {
-  vi.mocked(supabase.from).mockImplementation(() => {
-    const finalChain = Promise.resolve({ data: matches, error: null });
-    return {
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() => finalChain),
-        })),
-      })),
-    } as unknown as ReturnType<typeof supabase.from>;
-  });
+const from = vi.fn();
+vi.mock('@/supabaseClient', () => ({ supabase: { from: (t: string) => from(t) } }));
+
+import { computeTeamBonus, getTeamHandicapBonus } from '../getTeamHandicapBonus';
+
+/** A chain whose every filter returns itself and resolves to `result`. */
+function chain(result: unknown) {
+  const c: Record<string, unknown> = {};
+  for (const m of ['select', 'eq']) c[m] = () => c;
+  c.single = () => Promise.resolve(result);
+  c.maybeSingle = () => Promise.resolve(result);
+  c.then = (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve);
+  return c;
 }
 
-function mockMatchesQueryError(message: string) {
-  vi.mocked(supabase.from).mockImplementation(() => {
-    const finalChain = Promise.resolve({
-      data: null,
-      error: { message },
-    });
-    return {
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          eq: vi.fn(() => finalChain),
-        })),
-      })),
-    } as unknown as ReturnType<typeof supabase.from>;
+let matchesCalls = 0;
+beforeEach(() => {
+  matchesCalls = 0;
+  db.matchError = null;
+  db.prefs = { team_handicap_variant: 'standard' };
+  db.completed = [];
+  db.match = {
+    home_team_id: 'H',
+    away_team_id: 'A',
+    season_id: 'S',
+    season_week: { week_type: 'regular' },
+    season: { league_id: 'L' },
+  };
+  from.mockReset().mockImplementation((table: string) => {
+    if (table === 'resolved_league_preferences') return chain({ data: db.prefs, error: null });
+    // matches: first call reads the match, second reads completed results.
+    matchesCalls += 1;
+    return matchesCalls === 1
+      ? chain({ data: db.match, error: db.matchError })
+      : chain({ data: db.completed, error: null });
   });
-}
+});
 
-const HOME = 'home-team-id';
-const AWAY = 'away-team-id';
-const SEASON = 'season-id';
+const wins = (home: number, away: number) => [
+  ...Array.from({ length: home }, () => ({ winner_team_id: 'H' })),
+  ...Array.from({ length: away }, () => ({ winner_team_id: 'A' })),
+  { winner_team_id: 'OTHER' },
+];
 
-describe('getTeamHandicapBonus — characterization', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+describe('computeTeamBonus — the rule', () => {
+  const rule = (homeWins: number, awayWins: number, variant: 'standard' | 'reduced' | 'none', isPlayoff = false) =>
+    computeTeamBonus({ homeWins, awayWins, variant, isPlayoff });
 
-  describe('handicap_type gate (only points uses team bonus)', () => {
-    it('returns 0 for percentage handicap (no DB call)', async () => {
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'percentage');
-      expect(result).toBe(0);
-      expect(supabase.from).not.toHaveBeenCalled();
-    });
-
-    it('returns 0 for fargo handicap (no DB call)', async () => {
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'fargo');
-      expect(result).toBe(0);
-      expect(supabase.from).not.toHaveBeenCalled();
-    });
-
-    it('returns 0 for none handicap type (no DB call)', async () => {
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'none');
-      expect(result).toBe(0);
-      expect(supabase.from).not.toHaveBeenCalled();
-    });
-
-    it('returns 0 for unknown handicap types (no DB call, defensive default)', async () => {
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'made_up');
-      expect(result).toBe(0);
-      expect(supabase.from).not.toHaveBeenCalled();
-    });
+  it('standard: every 2 wins ahead is +1, floored (negative gaps floor down)', () => {
+    expect(rule(4, 4, 'standard')).toBe(0);
+    expect(rule(8, 7, 'standard')).toBe(0);
+    expect(rule(4, 2, 'standard')).toBe(1);
+    expect(rule(8, 3, 'standard')).toBe(2);
+    expect(rule(3, 7, 'standard')).toBe(-2);
+    expect(rule(0, 5, 'standard')).toBe(-3);
+    expect(rule(0, 1, 'standard')).toBe(-1);
   });
 
-  describe('formula: floor((homeWins - awayWins) / 2)', () => {
-    it('returns 0 when no matches have been played', async () => {
-      mockMatchesQuery([]);
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      expect(result).toBe(0);
-    });
-
-    it('returns 0 when home and away have equal wins', async () => {
-      // 3 home wins, 3 away wins → diff 0 → bonus 0
-      mockMatchesQuery([
-        { winner_team_id: HOME },
-        { winner_team_id: HOME },
-        { winner_team_id: HOME },
-        { winner_team_id: AWAY },
-        { winner_team_id: AWAY },
-        { winner_team_id: AWAY },
-      ]);
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      expect(result).toBe(0);
-    });
-
-    it('+1 bonus when home leads by 2 wins (home up 4-2)', async () => {
-      mockMatchesQuery([
-        { winner_team_id: HOME },
-        { winner_team_id: HOME },
-        { winner_team_id: HOME },
-        { winner_team_id: HOME },
-        { winner_team_id: AWAY },
-        { winner_team_id: AWAY },
-      ]);
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      // (4 - 2) / 2 = 1
-      expect(result).toBe(1);
-    });
-
-    it('+2 bonus when home leads by 5 wins (home up 8-3, floors to +2)', async () => {
-      const matches = [
-        ...Array(8).fill({ winner_team_id: HOME }),
-        ...Array(3).fill({ winner_team_id: AWAY }),
-      ];
-      mockMatchesQuery(matches);
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      // (8 - 3) / 2 = 2.5 → floor → 2
-      expect(result).toBe(2);
-    });
-
-    it('+0 bonus when home leads by 1 win (1/2 = 0.5 floors to 0)', async () => {
-      mockMatchesQuery([
-        { winner_team_id: HOME },
-        { winner_team_id: HOME },
-        { winner_team_id: AWAY },
-      ]);
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      // (2 - 1) / 2 = 0.5 → floor → 0
-      expect(result).toBe(0);
-    });
-
-    it('-2 penalty when away leads by 4 wins (home down 3-7)', async () => {
-      const matches = [
-        ...Array(3).fill({ winner_team_id: HOME }),
-        ...Array(7).fill({ winner_team_id: AWAY }),
-      ];
-      mockMatchesQuery(matches);
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      // (3 - 7) / 2 = -2 → floor → -2
-      expect(result).toBe(-2);
-    });
-
-    it('-3 penalty when away leads by 5 wins (home down 0-5, floor of -2.5)', async () => {
-      mockMatchesQuery([
-        { winner_team_id: AWAY },
-        { winner_team_id: AWAY },
-        { winner_team_id: AWAY },
-        { winner_team_id: AWAY },
-        { winner_team_id: AWAY },
-      ]);
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      // (0 - 5) / 2 = -2.5 → floor → -3 (Math.floor rounds toward -Infinity)
-      expect(result).toBe(-3);
-    });
-
-    it('ignores matches won by neither team (forfeits, etc.)', async () => {
-      mockMatchesQuery([
-        { winner_team_id: HOME },
-        { winner_team_id: HOME },
-        { winner_team_id: 'unrelated-team-id' }, // not home or away
-        { winner_team_id: AWAY },
-      ]);
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      // Counted: 2 home, 1 away → (2 - 1) / 2 = 0.5 → 0
-      expect(result).toBe(0);
-    });
+  it('reduced: every 3 wins ahead is +1', () => {
+    expect(rule(2, 0, 'reduced')).toBe(0);
+    expect(rule(3, 0, 'reduced')).toBe(1);
+    expect(rule(5, 0, 'reduced')).toBe(1);
+    expect(rule(6, 0, 'reduced')).toBe(2);
+    expect(rule(0, 3, 'reduced')).toBe(-1);
   });
 
-  describe('error and edge handling (defensive 0 default)', () => {
-    it('returns 0 when the supabase query returns an error', async () => {
-      mockMatchesQueryError('connection refused');
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      expect(result).toBe(0);
-    });
+  it('none: always 0', () => {
+    expect(rule(10, 0, 'none')).toBe(0);
+  });
 
-    it('returns 0 when the supabase query throws (catch handler)', async () => {
-      vi.mocked(supabase.from).mockImplementation(() => {
-        throw new Error('network exploded');
-      });
-      const result = await getTeamHandicapBonus(HOME, AWAY, SEASON, 'points');
-      expect(result).toBe(0);
-    });
+  it('playoffs: always 0, whatever the setting or gap', () => {
+    expect(rule(8, 3, 'standard', true)).toBe(0);
+    expect(rule(0, 9, 'reduced', true)).toBe(0);
+  });
+});
+
+describe('getTeamHandicapBonus — database lookup', () => {
+  it('returns 0 for non-points systems without touching the database', async () => {
+    for (const type of ['percentage', 'fargo', 'none', 'mystery']) {
+      expect(await getTeamHandicapBonus('m1', type)).toBe(0);
+    }
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it('regular week, standard league: home 8–3 → +2 (other teams ignored)', async () => {
+    db.completed = wins(8, 3);
+    expect(await getTeamHandicapBonus('m1', 'points')).toBe(2);
+  });
+
+  it('PLAYOFF week → 0, and stops before reading standings', async () => {
+    db.match = { ...(db.match as object), season_week: { week_type: 'playoffs' } };
+    db.completed = wins(8, 3);
+    expect(await getTeamHandicapBonus('m1', 'points')).toBe(0);
+    expect(from).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the league's resolved setting: reduced 8–3 → +1", async () => {
+    db.prefs = { team_handicap_variant: 'reduced' };
+    db.completed = wins(8, 3);
+    expect(await getTeamHandicapBonus('m1', 'points')).toBe(1);
+  });
+
+  it("'none' league → 0", async () => {
+    db.prefs = { team_handicap_variant: 'none' };
+    db.completed = wins(8, 3);
+    expect(await getTeamHandicapBonus('m1', 'points')).toBe(0);
+  });
+
+  it('no stored setting falls back to standard', async () => {
+    db.prefs = null;
+    db.completed = wins(4, 2);
+    expect(await getTeamHandicapBonus('m1', 'points')).toBe(1);
+  });
+
+  it('a failed match read returns 0 (neutral) instead of throwing', async () => {
+    db.match = null;
+    db.matchError = { message: 'boom' };
+    expect(await getTeamHandicapBonus('m1', 'points')).toBe(0);
   });
 });

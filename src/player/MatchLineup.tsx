@@ -67,6 +67,7 @@ import {
 import { useMatchRealtime } from '@/realtime/useMatchRealtime';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { shouldUseTeamBonus } from '@/utils/calculateHandicapThresholds';
+import { getTeamHandicapBonus } from '@/utils/getTeamHandicapBonus';
 import { logger } from '@/utils/logger';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
@@ -255,28 +256,16 @@ function MatchLineupBody() {
     }
 
     const fetchTeamHandicap = async () => {
-      const { calculateTeamHandicap } = await import('@/utils/handicapCalculations');
-
-      // Use team_handicap_variant if set, otherwise fall back to main handicap_variant
-      // This gives operators fine-grained control: they can override team bonus separately if needed
-      const teamHandicapVariant = (
-        matchData?.league?.team_handicap_variant ||
-        matchData?.league?.handicap_variant ||
-        'standard'
-      ) as 'standard' | 'reduced' | 'none';
-
-      const bonus = await calculateTeamHandicap(
-        matchData.home_team_id,
-        matchData.away_team_id,
-        matchData.season_id,
-        teamHandicapVariant
-      );
+      // Same shared helper match setup uses, so the bonus shown here is the
+      // one that sets the race. It reads the league's team-bonus setting and
+      // returns 0 in a playoff week.
+      const bonus = matchId ? await getTeamHandicapBonus(matchId, handicapType) : 0;
 
       setTeamHandicap(bonus);
     };
 
     void fetchTeamHandicap();
-  }, [matchData?.home_team_id, matchData?.away_team_id, matchData?.season_id, matchData?.league?.team_handicap_variant, matchData?.league?.handicap_variant, useTeamBonus]);
+  }, [matchId, handicapType, matchData?.home_team_id, matchData?.away_team_id, matchData?.season_id, useTeamBonus]);
 
   // Derive values (safe to use optional chaining since hooks are called)
   const isHomeTeam = userTeamData?.isHomeTeam || false;

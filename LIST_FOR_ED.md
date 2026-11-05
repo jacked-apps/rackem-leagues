@@ -33,6 +33,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Make the LO application use the shared PaymentMethodSetup component](docs/list/2026-09-05-reuse-payment-method-setup.md)
 - [Let a league operator fix a lineup on a match that has already started](docs/list/2026-10-28-lo-fix-finished-lineup.md)
 - [Dark mode turns scoreboard numbers near-white on the light team panels](docs/list/2026-10-29-dark-mode-scoreboard-numbers.md)
+- [Let an operator switch the team bonus on or off for league and playoffs](docs/list/2026-11-01-team-bonus-on-off-setting.md)
 - [Give matches one full-record query, and make every mutation refresh stale data](docs/list/2026-11-04-consolidate-match-queries.md)
 - [Around 2026-12-02, count how many Now and Next items had gone stale](docs/list/2026-11-04-four-week-list-check.md)
 - [Move to Supabase CLI v3 on purpose (config.toml, CI and both deploys together)](docs/list/2026-11-05-supabase-cli-v3.md)

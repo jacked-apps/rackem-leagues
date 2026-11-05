@@ -592,9 +592,7 @@ async function composeThresholdsForApproval(args: {
     prefs,
     homeLineup: applyPostSwap(homeRow),
     awayLineup: applyPostSwap(awayRow),
-    homeTeamId: match.home_team_id as string,
-    awayTeamId: match.away_team_id as string,
-    seasonId: match.season_id as string,
+    matchId,
   });
 }
 
