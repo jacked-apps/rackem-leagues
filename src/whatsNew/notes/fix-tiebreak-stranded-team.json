@@ -1,0 +1,4 @@
+{
+  "text": "When a match ended in a tie, one team could get stuck on the scoring screen instead of moving to the tiebreaker lineup, and refreshing didn't help. Both teams now go to the tiebreaker lineup.",
+  "kind": "fix"
+}

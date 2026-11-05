@@ -198,7 +198,7 @@ function TeamAccordionItem({
                 e.stopPropagation();
                 navigate('/reup');
               }}
-              className="self-start flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-3 py-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+              className="self-start flex items-center gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-sm font-medium text-warning hover:bg-warning/20 transition-colors"
             >
               <Bell className="size-4" />
               Re-up needed for next season
@@ -295,7 +295,7 @@ function TeamAccordionItem({
               "Home Venue -" label is dropped on mobile (icon + name only) to
               save space. Edit Team moved to the action buttons above. */}
           <div className="flex items-center gap-1.5 text-sm">
-            <MapPin className="h-4 w-4 shrink-0 text-blue-600" />
+            <MapPin className="h-4 w-4 shrink-0 text-info" />
             <span className="hidden sm:inline text-muted-foreground">Home Venue -</span>
             {team.venue ? (
               <VenueWithMaps venueId={team.venue.id} showIcon={false} />
@@ -308,7 +308,7 @@ function TeamAccordionItem({
               (C) marker used in the roster. Player number dropped. */}
           <div className="flex items-center gap-1.5 text-sm">
             <span className="hidden sm:inline text-muted-foreground">Captain -</span>
-            <span className="sm:hidden font-bold text-blue-600">(C)</span>
+            <span className="sm:hidden font-bold text-info">(C)</span>
             <PlayerNameLink
               playerId={team.captain.id}
               playerName={`${team.captain.first_name} ${team.captain.last_name}`}

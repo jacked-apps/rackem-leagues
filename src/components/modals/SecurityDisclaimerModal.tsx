@@ -24,7 +24,7 @@ export const SecurityDisclaimerModal: React.FC<
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-card rounded-lg p-6 max-w-2xl max-h-96 overflow-y-auto">
         <h3 className="text-lg font-bold mb-4">Security Disclaimer</h3>
         <div className="space-y-3 text-sm">
@@ -63,7 +63,7 @@ export const SecurityDisclaimerModal: React.FC<
         </div>
         <button
           onClick={onClose}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="mt-4 px-4 py-2 bg-info text-info-foreground rounded hover:bg-info/90"
         >
           Close
         </button>

@@ -56,7 +56,7 @@ export const PlayoffSettingsCard: React.FC<PlayoffSettingsCardProps> = ({
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Settings className="h-5 w-5 text-purple-600" />
+          <Settings className="h-5 w-5 text-highlight" />
           Settings
         </CardTitle>
       </CardHeader>

@@ -306,9 +306,7 @@ export function useMatchPreparation(params: MatchPreparationParams) {
             // shape; the opponent's row is a locked lineup (checked above).
             myLineup as unknown as Lineup,
             opponentLineup as Lineup,
-            matchData.home_team_id,
-            matchData.away_team_id,
-            matchData.season_id,
+            matchId,
             handicapType
           );
           thresholdPayload = {

@@ -83,7 +83,7 @@ function makeLineup(handicaps: Array<number | null>): Lineup {
   };
 }
 
-const ctx = { homeTeamId: 'home', awayTeamId: 'away', seasonId: 'season' };
+const ctx = { matchId: 'match-1' };
 
 describe('composeMatchThresholds — extended-finish (extra_games)', () => {
   it('percentage (BCA 5v5): byte-identical to the 5v5 games-needed chart, no DB call', async () => {

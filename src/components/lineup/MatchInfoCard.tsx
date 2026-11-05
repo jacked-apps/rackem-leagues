@@ -81,12 +81,12 @@ export function MatchInfoCard({
               <span>@</span>
               <VenueWithMaps venueId={displayVenueId} className="text-sm" />
               {assignedTableNumber && (
-                <span className="font-medium text-blue-700">
+                <span className="font-medium text-info">
                   Table {assignedTableNumber}
                 </span>
               )}
               {isOverflow && (
-                <span className="text-xs text-orange-600 font-medium">(overflow)</span>
+                <span className="text-xs text-warning font-medium">(overflow)</span>
               )}
             </>
           )}

@@ -122,8 +122,8 @@ export function VenueWithMaps({
           className
         )}
       >
-        {showIcon && <MapPin className="h-3 w-3 flex-shrink-0 text-blue-600 hover:text-blue-800" />}
-        <span className="text-blue-600 hover:text-blue-800">
+        {showIcon && <MapPin className="h-3 w-3 flex-shrink-0 text-info hover:text-info/80" />}
+        <span className="text-info hover:text-info/80">
           {venue.name}
         </span>
       </button>

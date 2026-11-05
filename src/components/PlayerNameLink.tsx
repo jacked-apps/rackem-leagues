@@ -305,7 +305,7 @@ export function PlayerNameLink({
         <PopoverTrigger asChild>
           <button
             className={cn(
-              'text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium transition-colors inline-flex items-center gap-1.5',
+              'text-info hover:text-info/80 hover:underline cursor-pointer font-medium transition-colors inline-flex items-center gap-1.5',
               className
             )}
           >
@@ -333,7 +333,7 @@ export function PlayerNameLink({
                 {isPlaceholder && <PlaceholderBadge size="sm" />}
               </div>
               {isPlaceholder && (
-                <div className="text-xs text-amber-600 mt-1">
+                <div className="text-xs text-warning mt-1">
                   Unregistered
                 </div>
               )}
@@ -378,7 +378,7 @@ export function PlayerNameLink({
             {/* Report Player - Available for all users */}
             <button
               onClick={handleReportUser}
-              className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-orange-600"
+              className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-warning"
             >
               <Flag className="h-4 w-4" />
               <span>Report Player</span>
@@ -388,7 +388,7 @@ export function PlayerNameLink({
             {!isPlaceholder && (
               <button
                 onClick={handleBlockToggle}
-                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-red-600"
+                className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-destructive"
               >
                 <Ban className="h-4 w-4" />
                 <span>{isBlocked ? 'Unblock User' : 'Block User'}</span>
@@ -402,7 +402,7 @@ export function PlayerNameLink({
                 {/* Set Starting Handicaps */}
                 <button
                   onClick={handleHandicapAction}
-                  className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-blue-600"
+                  className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-info"
                 >
                   <UserCog className="h-4 w-4" />
                   <span>Set Starting H/C</span>
@@ -412,7 +412,7 @@ export function PlayerNameLink({
                   onClick={handleMembershipAction}
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left",
-                    hasMembershipPaid ? "text-red-600" : "text-green-600"
+                    hasMembershipPaid ? "text-destructive" : "text-success"
                   )}
                 >
                   <DollarSign className="h-4 w-4" />

@@ -192,18 +192,18 @@ export function CaptainsModeStep({
                   key={r.sourceTeamId}
                   className={`flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-3 text-xs sm:text-sm border-b py-2 px-2 ${
                     isNotReturning
-                      ? 'border-red-300 bg-red-50 dark:bg-red-950/30 dark:border-red-800'
+                      ? 'border-destructive/40 bg-destructive/10'
                       : isSwap
-                      ? 'border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800'
+                      ? 'border-info/40 bg-info/10'
                       : 'border-border'
                   }`}
                 >
                   <span
                     className={`font-medium ${
                       isNotReturning
-                        ? 'text-red-900 dark:text-red-200'
+                        ? 'text-destructive'
                         : isSwap
-                        ? 'text-blue-900 dark:text-blue-200'
+                        ? 'text-info'
                         : 'text-foreground'
                     }`}
                   >
@@ -216,9 +216,9 @@ export function CaptainsModeStep({
                     <span
                       className={`${
                         isNotReturning
-                          ? 'text-red-800 dark:text-red-300'
+                          ? 'text-destructive'
                           : isSwap
-                          ? 'text-blue-800 dark:text-blue-300'
+                          ? 'text-info'
                           : 'text-muted-foreground'
                       }`}
                     >

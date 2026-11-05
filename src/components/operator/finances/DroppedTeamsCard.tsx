@@ -97,7 +97,7 @@ export function DroppedTeamsCard({ seasonId, totalWeeks }: DroppedTeamsCardProps
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <UserX className="h-5 w-5 text-yellow-600" />
+          <UserX className="h-5 w-5 text-warning" />
           Teams that dropped mid-season
           <span className="text-sm font-normal text-muted-foreground ml-2">
             {droppedEntries.length} dropped
@@ -162,7 +162,7 @@ export function DroppedTeamsCard({ seasonId, totalWeeks }: DroppedTeamsCardProps
                 className="flex items-center justify-between gap-2 py-2 px-2 rounded hover:bg-muted/50 text-sm"
               >
                 <div className="flex items-center gap-2">
-                  <UserX className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                  <UserX className="h-4 w-4 text-warning flex-shrink-0" />
                   <span>{entry.description}</span>
                 </div>
                 <Button
@@ -170,7 +170,7 @@ export function DroppedTeamsCard({ seasonId, totalWeeks }: DroppedTeamsCardProps
                   size="sm"
                   loadingText="none"
                   onClick={() => handleRemove(entry.id)}
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>

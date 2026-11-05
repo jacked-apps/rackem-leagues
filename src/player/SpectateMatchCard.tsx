@@ -33,6 +33,27 @@ interface SpectateMatchCardProps {
 export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) {
   const data = useSpectateMatch(seedMatch.id);
 
+  // A failed load gets a message, not an endless spinner — the loading
+  // branch below would otherwise hold forever because the data never comes.
+  if (!data.isLoading && data.error) {
+    return (
+      <div className="border-y bg-card py-6 text-center text-sm text-muted-foreground">
+        Couldn't load {seedMatch.home_team?.team_name || 'Home'} vs{' '}
+        {seedMatch.away_team?.team_name || 'Away'}. Pull down or refresh to try again.
+      </div>
+    );
+  }
+
+  // Started, but a lineup row is missing — say so rather than spin.
+  if (!data.isLoading && data.match && (!data.homeLineup || !data.awayLineup)) {
+    return (
+      <div className="border-y bg-card py-6 text-center text-sm text-muted-foreground">
+        {seedMatch.home_team?.team_name || 'Home'} vs{' '}
+        {seedMatch.away_team?.team_name || 'Away'} — waiting for lineups.
+      </div>
+    );
+  }
+
   if (data.isLoading || !data.match || !data.homeLineup || !data.awayLineup) {
     return (
       <div className="border-y bg-card py-6 flex items-center justify-center">

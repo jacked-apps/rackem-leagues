@@ -75,9 +75,7 @@ describe('calculateHandicapThresholds — characterization (BCA 3v3 points)', ()
       const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
         home,
         away,
-        'home-team-id',
-        'away-team-id',
-        'season-id',
+        'match-id',
         'points'
       );
 
@@ -99,9 +97,7 @@ describe('calculateHandicapThresholds — characterization (BCA 3v3 points)', ()
       const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
         home,
         away,
-        'home-team-id',
-        'away-team-id',
-        'season-id',
+        'match-id',
         'points'
       );
 
@@ -131,9 +127,7 @@ describe('calculateHandicapThresholds — characterization (BCA 3v3 points)', ()
       const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
         home,
         away,
-        'home-team-id',
-        'away-team-id',
-        'season-id',
+        'match-id',
         'points'
       );
 
@@ -169,9 +163,7 @@ describe('calculateHandicapThresholds — characterization (BCA 3v3 points)', ()
       const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
         home,
         away,
-        'home-team-id',
-        'away-team-id',
-        'season-id',
+        'match-id',
         'points'
       );
 
@@ -202,9 +194,7 @@ describe('calculateHandicapThresholds — characterization (BCA 3v3 points)', ()
       const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
         home,
         away,
-        'home-team-id',
-        'away-team-id',
-        'season-id',
+        'match-id',
         'points'
       );
 
@@ -231,9 +221,7 @@ describe('calculateHandicapThresholds — characterization (BCA 3v3 points)', ()
       const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
         home,
         away,
-        'home-team-id',
-        'away-team-id',
-        'season-id',
+        'match-id',
         'points'
       );
 
@@ -263,9 +251,7 @@ describe('calculateHandicapThresholds — characterization (BCA 3v3 points)', ()
       await calculateHandicapThresholds(
         home,
         away,
-        'home-team-id',
-        'away-team-id',
-        'season-id',
+        'match-id',
         'percentage'
       );
 
@@ -302,9 +288,7 @@ describe('calculateHandicapThresholds — characterization (BCA 3v3 points)', ()
         const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
           home,
           away,
-          'home-team-id',
-          'away-team-id',
-          'season-id',
+          'match-id',
           'points'
         );
 

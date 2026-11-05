@@ -22,7 +22,7 @@ export const organizationNameInfo = {
         <li>• Wednesday Night 9-Ball East Side</li>
         <li>• Friday Mixed Tournament League</li>
       </ul>
-      <p className="mt-3 text-xs text-blue-600">
+      <p className="mt-3 text-xs text-info">
         You'll create the specific leagues later. This is just your
         organization name.
       </p>
@@ -71,7 +71,7 @@ export const emailContactInfo = {
       <p>
         <strong>New Email:</strong> Enter a dedicated league email address
       </p>
-      <p className="mt-3 text-xs text-blue-600">
+      <p className="mt-3 text-xs text-info">
         Consider using a dedicated league email for better organization
         and privacy protection.
       </p>
@@ -97,7 +97,7 @@ export const phoneContactInfo = {
       <p>
         <strong>New Phone:</strong> Enter a dedicated league phone number
       </p>
-      <p className="mt-3 text-xs text-blue-600">
+      <p className="mt-3 text-xs text-info">
         Consider using a dedicated league phone for better organization
         and privacy protection.
       </p>

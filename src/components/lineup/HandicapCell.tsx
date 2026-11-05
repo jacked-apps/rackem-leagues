@@ -130,7 +130,7 @@ export function HandicapCell({
   // Calculated handicap (points / percentage) — read-only
   return (
     <div className="w-16 text-center">
-      <div className="text-sm font-semibold text-blue-600">
+      <div className="text-sm font-semibold text-info">
         {playerId ? formatHandicap(handicap, handicapType === 'percentage') : '-'}
       </div>
     </div>

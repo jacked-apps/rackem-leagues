@@ -70,7 +70,7 @@ export function RunningProjectionCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <TrendingUp className="h-5 w-5 text-green-600" />
+          <TrendingUp className="h-5 w-5 text-success" />
           Projected Prize Pool
         </CardTitle>
       </CardHeader>
@@ -141,8 +141,8 @@ function Row({
       <span
         className={[
           bold ? 'text-foreground' : '',
-          positive ? 'text-green-700 dark:text-green-400' : '',
-          value < 0 ? 'text-red-700 dark:text-red-400' : '',
+          positive ? 'text-success' : '',
+          value < 0 ? 'text-destructive' : '',
         ]
           .filter(Boolean)
           .join(' ')}

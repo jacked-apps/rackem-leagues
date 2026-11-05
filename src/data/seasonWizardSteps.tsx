@@ -155,7 +155,7 @@ export function getSeasonWizardSteps(
               href={websiteURL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
+              className="text-info hover:text-info/80 underline"
             >
               {organization} Website
             </a>
@@ -170,7 +170,7 @@ export function getSeasonWizardSteps(
               href={websiteURL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
+              className="text-info hover:text-info/80 underline"
             >
               {organization} Website
             </a>
@@ -262,7 +262,7 @@ export function getSeasonWizardSteps(
               href={websiteURL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
+              className="text-info hover:text-info/80 underline"
             >
               {organization} Website
             </a>

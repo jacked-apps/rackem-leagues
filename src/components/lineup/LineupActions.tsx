@@ -65,16 +65,16 @@ export function LineupActions({
           )}
           {opponentStatus === 'choosing' && (
             <>
-              <Users className="h-5 w-5 text-yellow-600" />
-              <span className="text-sm font-medium text-yellow-600">
+              <Users className="h-5 w-5 text-warning" />
+              <span className="text-sm font-medium text-warning">
                 {opponentStatusText || 'Choosing Lineup'}
               </span>
             </>
           )}
           {opponentStatus === 'ready' && (
             <>
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-semibold text-green-600">
+              <CheckCircle className="h-5 w-5 text-success" />
+              <span className="text-sm font-semibold text-success">
                 {opponentStatusText || 'Ready'}
               </span>
             </>
@@ -88,8 +88,8 @@ export function LineupActions({
         <div className="flex items-center gap-2">
           {locked ? (
             <>
-              <Lock className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-semibold text-blue-600">Locked</span>
+              <Lock className="h-5 w-5 text-info" />
+              <span className="text-sm font-semibold text-info">Locked</span>
             </>
           ) : (
             <span className="text-sm text-muted-foreground">Not Locked</span>

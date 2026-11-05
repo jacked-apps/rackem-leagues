@@ -40,37 +40,37 @@ export const LeagueProgressBar: React.FC<LeagueProgressBarProps> = ({
     switch (status) {
       case 'setup':
         return {
-          barColor: 'bg-orange-500',
-          textColor: 'text-orange-700',
+          barColor: 'bg-warning',
+          textColor: 'text-warning',
           bgColor: 'bg-accent',
         };
       case 'active':
         return {
-          barColor: 'bg-green-500',
-          textColor: 'text-green-700',
+          barColor: 'bg-success',
+          textColor: 'text-success',
           bgColor: 'bg-accent',
         };
       case 'ending_soon':
         return {
-          barColor: 'bg-yellow-500',
-          textColor: 'text-yellow-700',
+          barColor: 'bg-warning',
+          textColor: 'text-warning',
           bgColor: 'bg-accent',
         };
       case 'playoffs':
         return {
-          barColor: 'bg-orange-500',
-          textColor: 'text-orange-700',
+          barColor: 'bg-warning',
+          textColor: 'text-warning',
           bgColor: 'bg-accent',
         };
       case 'completed':
         return {
-          barColor: 'bg-red-500',
-          textColor: 'text-red-700',
+          barColor: 'bg-destructive',
+          textColor: 'text-destructive',
           bgColor: 'bg-accent',
         };
       default:
         return {
-          barColor: 'bg-blue-500',
+          barColor: 'bg-info',
           textColor: 'text-muted-foreground',
           bgColor: 'bg-accent',
         };

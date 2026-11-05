@@ -40,11 +40,11 @@ export const DayOfWeekWarningModal: React.FC<DayOfWeekWarningModalProps> = ({
   const isDayChanging = oldDay !== newDay;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-card rounded-lg p-6 max-w-md shadow-xl">
         <div className="flex items-start gap-4 mb-4">
           <div className="flex-shrink-0">
-            <AlertTriangle className="h-6 w-6 text-amber-500" />
+            <AlertTriangle className="h-6 w-6 text-warning" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-foreground mb-2">
@@ -71,7 +71,7 @@ export const DayOfWeekWarningModal: React.FC<DayOfWeekWarningModalProps> = ({
                     <li>This change will affect your league's public information</li>
                   </ul>
 
-                  <p className="text-amber-700 font-medium">
+                  <p className="text-warning font-medium">
                     Are you sure you want to change your league night to {newDay}?
                   </p>
                 </>
@@ -87,7 +87,7 @@ export const DayOfWeekWarningModal: React.FC<DayOfWeekWarningModalProps> = ({
                     Please verify this is the correct start date for your first season.
                   </p>
 
-                  <p className="text-amber-700 font-medium">
+                  <p className="text-warning font-medium">
                     Are you sure you want to use this new date?
                   </p>
                 </>
@@ -105,7 +105,7 @@ export const DayOfWeekWarningModal: React.FC<DayOfWeekWarningModalProps> = ({
           </button>
           <button
             onClick={onAccept}
-            className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+            className="px-4 py-2 bg-warning text-warning-foreground rounded-lg hover:bg-warning/90 transition-colors"
           >
             {isDayChanging ? `Yes, Change to ${newDay}` : 'Yes, Use This Date'}
           </button>

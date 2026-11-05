@@ -75,6 +75,11 @@ describe('PageHeader', () => {
     expect(screen.getByRole('button', { name: /open menu/i })).toBeInTheDocument();
   });
 
+  it('hides the hamburger from signed-out visitors (the menu is for members)', () => {
+    renderHeader(<PageHeader title="Home" />, { isLoggedIn: false, initialRoute: '/' });
+    expect(screen.queryByRole('button', { name: /open menu/i })).not.toBeInTheDocument();
+  });
+
   it('does not render the back button when no backTo or onBackClick is set', () => {
     renderHeader(<PageHeader title="Home" />);
     expect(screen.queryByRole('link', { name: /back/i })).not.toBeInTheDocument();
@@ -146,8 +151,6 @@ describe('PageHeader', () => {
   it('suppresses the right-slot Sign-in button on auth-flow routes', () => {
     renderHeader(<PageHeader title="Sign in" />, { isLoggedIn: false, initialRoute: '/login' });
     expect(screen.queryByRole('link', { name: /sign in/i })).not.toBeInTheDocument();
-    // Hamburger remains available.
-    expect(screen.getByRole('button', { name: /open menu/i })).toBeInTheDocument();
   });
 
   it('lazy-mounts the AppDrawer only when the Sheet is open', async () => {

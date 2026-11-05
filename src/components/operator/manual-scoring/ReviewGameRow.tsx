@@ -49,7 +49,7 @@ export interface ReviewGameRowProps {
 function PlayerCell({ id, name, isWinner }: { id: string | null; name: string; isWinner: boolean }) {
   return (
     <span className="inline-flex items-center gap-1">
-      {isWinner && <Trophy className="h-3.5 w-3.5 shrink-0 text-amber-500" />}
+      {isWinner && <Trophy className="h-3.5 w-3.5 shrink-0 text-warning" />}
       {id ? <PlayerNameLink playerId={id} playerName={name} /> : <span>{name}</span>}
     </span>
   );
@@ -96,7 +96,7 @@ export function ReviewGameRow(props: ReviewGameRowProps) {
               <span className="text-xs text-destructive">vacated</span>
             ) : winnerName ? (
               <>
-                <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                <Trophy className="h-3.5 w-3.5 text-warning" />
                 <span className="truncate max-w-[7rem]">{winnerName}</span>
               </>
             ) : (

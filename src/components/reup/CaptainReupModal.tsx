@@ -124,9 +124,9 @@ export function CaptainReupModal({
               return (
                 <div
                   key={team.teamId}
-                  className="border rounded-lg p-4 bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-800 flex items-center gap-2"
+                  className="border rounded-lg p-4 bg-success/10 border-success/40 flex items-center gap-2"
                 >
-                  <CheckCircle2 className="h-5 w-5 text-green-700 dark:text-green-400" />
+                  <CheckCircle2 className="h-5 w-5 text-success" />
                   <span className="font-medium">{team.teamName}</span>
                   <span className="text-sm text-muted-foreground">— saved</span>
                 </div>

@@ -91,7 +91,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
                   onClick={() => onSelect(choice.value)}
                   className={`px-6 py-3 ${
                     selectedValue === choice.value
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      ? 'bg-info hover:bg-info/90 text-info-foreground'
                       : 'hover:bg-muted'
                   }`}
                 >
@@ -110,7 +110,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
 
           {/* Error Message */}
           {error && (
-            <p className="text-red-500 text-sm mt-2">{error}</p>
+            <p className="text-destructive text-sm mt-2">{error}</p>
           )}
 
           <div className="flex justify-between">
@@ -126,7 +126,7 @@ export const ChoiceStep: React.FC<ChoiceStepProps> = ({
               loadingText="none"
               onClick={onNext}
               disabled={!selectedValue}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-info hover:bg-info/90 text-info-foreground"
             >
               {isLastQuestion ? 'Continue' : 'Next'}
             </Button>

@@ -91,7 +91,7 @@ export function LeagueReupStatusCard({ leagueId }: LeagueReupStatusCardProps) {
         <AccordionItem value="reup" className="border-b-0">
           <AccordionTrigger className="py-3 hover:no-underline">
             <div className="flex items-center gap-2 text-lg font-semibold">
-              <ClipboardCheck className="h-5 w-5 text-blue-600" />
+              <ClipboardCheck className="h-5 w-5 text-info" />
               Re-up Status
               <span className="text-sm font-normal text-muted-foreground ml-2">
                 {data.countSubmitted} of {data.entries.length} confirmed
@@ -167,29 +167,29 @@ export function LeagueReupStatusCard({ leagueId }: LeagueReupStatusCardProps) {
 function StateIcon({ state }: { state: ReupResponseState }) {
   switch (state.kind) {
     case 'returning_same':
-      return <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />;
+      return <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />;
     case 'returning_new_captain':
-      return <UserPlus className="h-5 w-5 text-blue-600 flex-shrink-0" />;
+      return <UserPlus className="h-5 w-5 text-info flex-shrink-0" />;
     case 'not_returning':
-      return <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />;
+      return <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />;
     case 'no_response':
-      return <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0" />;
+      return <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0" />;
   }
 }
 
 function StateLabel({ state }: { state: ReupResponseState }) {
   switch (state.kind) {
     case 'returning_same':
-      return <span className="text-green-700 dark:text-green-400">Returning, same captain</span>;
+      return <span className="text-success">Returning, same captain</span>;
     case 'returning_new_captain':
       return (
-        <span className="text-blue-700 dark:text-blue-400">
+        <span className="text-info">
           Returning, new captain: {state.nextCaptainName}
         </span>
       );
     case 'not_returning':
-      return <span className="text-red-700 dark:text-red-400">Not returning (will drop)</span>;
+      return <span className="text-destructive">Not returning (will drop)</span>;
     case 'no_response':
-      return <span className="text-yellow-700 dark:text-yellow-400">No response yet (will drop)</span>;
+      return <span className="text-warning">No response yet (will drop)</span>;
   }
 }

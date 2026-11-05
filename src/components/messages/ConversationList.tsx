@@ -225,7 +225,7 @@ export function ConversationList({
                         so any leftover number is just stale state from
                         before they left. Showing it would be misleading. */}
                     {!conversation.isPastMember && conversation.unreadCount > 0 && (
-                      <span className="ml-2 bg-blue-600 text-white text-xs font-medium rounded-full h-6 w-6 md:h-5 md:w-5 flex items-center justify-center flex-shrink-0">
+                      <span className="ml-2 bg-info text-info-foreground text-xs font-medium rounded-full h-6 w-6 md:h-5 md:w-5 flex items-center justify-center flex-shrink-0">
                         {conversation.unreadCount}
                       </span>
                     )}

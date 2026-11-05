@@ -4,9 +4,11 @@
  * (`AppSidebar`), so the two surfaces can't drift.
  *
  * Shows small filter chips ("Live" / "Makeup", each with a count); tapping one
- * reveals that group's list under a small heading. Radio-style: exactly one
- * chip is selected, defaulting to whichever group has matches (Live first); a
- * 0-count chip stays visible but dimmed + disabled. On phones (`< sm`) the chips
+ * reveals that group's list under a small heading. A live (or today's) match
+ * opens the Live list on its own — one tap to scoring is the point. Makeups
+ * alone do NOT open on their own: the chips show, closed, until tapped
+ * (tapping the open Makeup chip again goes back to the default). A 0-count
+ * chip stays visible but dimmed + disabled. On phones (`< sm`) the chips
  * collapse to icons (Radio for Live, History for Makeup) to save room; from
  * `sm` up they show text labels.
  *
@@ -43,15 +45,15 @@ export function MyMatchPanel({
   const liveItems = items.filter((i) => i.group === 'live');
   const makeupItems = items.filter((i) => i.group === 'makeup');
 
-  // Radio behavior: exactly one group is always selected (no "off" state).
+  // The chip the player tapped; null = the default (Live if any, else closed).
   const [explicit, setExplicit] = useState<'live' | 'makeup' | null>(null);
 
   if (!isHydrating && items.length === 0) return null;
 
   const isPresent = (g: 'live' | 'makeup') =>
     g === 'live' ? liveItems.length > 0 : makeupItems.length > 0;
-  const defaultSel: 'live' | 'makeup' | null =
-    liveItems.length > 0 ? 'live' : makeupItems.length > 0 ? 'makeup' : null;
+  // Only Live opens by default; makeup-only stays closed until tapped.
+  const defaultSel: 'live' | null = liveItems.length > 0 ? 'live' : null;
   const open = explicit && isPresent(explicit) ? explicit : defaultSel;
 
   return (
@@ -79,7 +81,8 @@ export function MyMatchPanel({
               count={makeupItems.length}
               active={open === 'makeup'}
               disabled={makeupItems.length === 0}
-              onClick={() => setExplicit('makeup')}
+              // Tapping the open Makeup chip again goes back to the default.
+              onClick={() => setExplicit(open === 'makeup' ? null : 'makeup')}
             />
           </div>
         ) : null}

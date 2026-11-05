@@ -19,22 +19,28 @@ export function shouldUseTeamBonus(handicapType: string): boolean {
   return handicapType === 'points';
 }
 
+/**
+ * Games-needed thresholds for both teams from their lineups.
+ *
+ * @param homeLineup - Home lineup (frozen per-slot handicaps)
+ * @param awayLineup - Away lineup (frozen per-slot handicaps)
+ * @param matchId - The match; the team bonus reads its week (no bonus in playoffs)
+ * @param handicapType - League handicap type; only points uses the team bonus
+ */
 export const calculateHandicapThresholds = async (
   homeLineup: Lineup,
   awayLineup: Lineup,
-  homeTeamId: string,
-  awayTeamId: string,
-  seasonId: string,
+  matchId: string,
   handicapType: string
 ): Promise<{
   homeThresholds: HandicapThresholds;
   awayThresholds: HandicapThresholds;
 }> => {
-  // Get team handicap bonus (only applies to points system, only to home team)
-  let teamBonus = 0;
-  if (shouldUseTeamBonus(handicapType)) {
-    teamBonus = await getTeamHandicapBonus(homeTeamId, awayTeamId, seasonId, handicapType);
-  }
+  // Team bonus: points system only, home team only, never in playoffs. The
+  // shared helper owns every rule so the lineup screen shows the same number.
+  const teamBonus = shouldUseTeamBonus(handicapType)
+    ? await getTeamHandicapBonus(matchId, handicapType)
+    : 0;
 
   // Sum all non-null player handicaps from the lineup
   const sumLineupHandicaps = (lineup: Lineup): number =>

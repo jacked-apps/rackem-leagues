@@ -47,7 +47,7 @@ export function StatsCard({ leagueId, seasonId }: StatsCardProps) {
           className="h-auto justify-start gap-3 px-3 py-2"
           onClick={() => navigate(`/league/${leagueId}/season/${seasonId}/standings`)}
         >
-          <Trophy className="h-5 w-5 shrink-0 text-blue-600" />
+          <Trophy className="h-5 w-5 shrink-0 text-info" />
           <div className="text-left">
             <div className="text-sm font-semibold text-foreground">Standings</div>
             <div className="text-xs text-muted-foreground">Team + player stats</div>
@@ -60,7 +60,7 @@ export function StatsCard({ leagueId, seasonId }: StatsCardProps) {
           className="h-auto justify-start gap-3 px-3 py-2"
           onClick={() => navigate(`/league/${leagueId}/manual-scoring`)}
         >
-          <SquarePen className="h-5 w-5 shrink-0 text-orange-600" />
+          <SquarePen className="h-5 w-5 shrink-0 text-warning" />
           <div className="text-left">
             <div className="text-sm font-semibold text-foreground">Score a Match</div>
             <div className="text-xs text-muted-foreground">Enter, verify, or edit scores</div>

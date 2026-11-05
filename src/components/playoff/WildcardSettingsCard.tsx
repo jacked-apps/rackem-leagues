@@ -69,7 +69,7 @@ export const WildcardSettingsCard: React.FC<WildcardSettingsCardProps> = ({
       {/* Summary Row */}
       <div className="flex items-center gap-3">
         {/* Circle indicator */}
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-600 text-white font-bold text-sm">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-warning text-warning-foreground font-bold text-sm">
           {circleDisplay}
         </div>
 

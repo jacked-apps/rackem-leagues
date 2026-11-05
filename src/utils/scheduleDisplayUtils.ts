@@ -36,13 +36,13 @@ interface WeekStyle {
  *
  * @example
  * const style = getWeekTypeStyle('playoffs');
- * // Returns: { bgColor: 'bg-purple-50', badge: '', badgeColor: '' }
+ * // Returns: { bgColor: 'bg-highlight/10', badge: '', badgeColor: '' }
  */
 export function getWeekTypeStyle(weekType: string): WeekStyle {
   switch (weekType) {
     case 'playoffs':
       return {
-        bgColor: 'bg-purple-50',
+        bgColor: 'bg-highlight/10',
         badge: '',
         badgeColor: '',
       };
@@ -54,9 +54,9 @@ export function getWeekTypeStyle(weekType: string): WeekStyle {
       };
     case 'season_end_break':
       return {
-        bgColor: 'bg-yellow-50',
+        bgColor: 'bg-warning/10',
         badge: 'BREAK',
-        badgeColor: 'bg-yellow-600 text-white',
+        badgeColor: 'bg-warning text-warning-foreground',
       };
     default:
       return {

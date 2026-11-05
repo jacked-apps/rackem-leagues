@@ -141,9 +141,9 @@ export function PositionsStep({
     onChange(updated.sort((a, b) => a.schedule_position - b.schedule_position));
   };
 
-  if (!seasonId) return <p className="text-red-600">Missing season ID from flow context.</p>;
+  if (!seasonId) return <p className="text-destructive">Missing season ID from flow context.</p>;
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading teams...</p>;
-  if (teams.length < 2) return <p className="text-red-600">Need at least 2 teams to generate matchups.</p>;
+  if (teams.length < 2) return <p className="text-destructive">Need at least 2 teams to generate matchups.</p>;
 
   return (
     <div className="space-y-4">

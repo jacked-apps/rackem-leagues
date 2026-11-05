@@ -13,6 +13,7 @@ import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { useCurrentMember } from '@/api/hooks';
+import { queryKeys } from '@/api/queryKeys';
 import { latestReleasedVersion } from './releaseSelectors';
 
 /**
@@ -62,8 +63,10 @@ export function useMarkWhatsNewSeen(): () => void {
       }
     },
     onSuccess: () => {
-      // The nav marker reads this off the member record.
-      queryClient.invalidateQueries({ queryKey: ['currentMember'] });
+      // The nav marker reads this off the member record, which is cached under
+      // the members key. (It used to invalidate ['currentMember'], a key no
+      // query uses, so "(New)" lingered until the 30-minute refetch.)
+      queryClient.invalidateQueries({ queryKey: queryKeys.members.all });
     },
   });
 

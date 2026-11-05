@@ -43,10 +43,15 @@ export function useSpectateMatch(matchId: string | null | undefined) {
   const matchQuery = useMatchWithLeagueSettings(matchId);
   const match = matchQuery.data ?? null;
 
+  // requireLocked = false: a spectator only reaches this card once the match
+  // has started, and a started match briefly has an UNLOCKED lineup while the
+  // teams pick their tiebreaker order. Requiring locked lineups made that
+  // query throw, which left the card stuck on "Loading…".
   const lineupsQuery = useMatchLineups(
     matchId,
     match?.home_team_id,
     match?.away_team_id,
+    false,
   );
   const homeLineup = lineupsQuery.data?.homeLineup ?? null;
   const awayLineup = lineupsQuery.data?.awayLineup ?? null;
@@ -249,6 +254,16 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     homeTeamQuery.isLoading ||
     awayTeamQuery.isLoading;
 
+  // First failure among the queries the card needs, so the card can say
+  // "couldn't load" instead of spinning forever.
+  const error =
+    matchQuery.error ??
+    lineupsQuery.error ??
+    gamesQuery.error ??
+    homeTeamQuery.error ??
+    awayTeamQuery.error ??
+    null;
+
   return {
     match,
     homeLineup,
@@ -266,6 +281,7 @@ export function useSpectateMatch(matchId: string | null | undefined) {
     getPlayerStats,
     getPlayerPoints,
     isLoading,
+    error,
   };
 }
 

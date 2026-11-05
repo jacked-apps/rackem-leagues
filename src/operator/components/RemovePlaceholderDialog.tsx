@@ -192,7 +192,7 @@ export const RemovePlaceholderDialog: React.FC<RemovePlaceholderDialogProps> = (
           ) : fetchError ? (
             <>
               <DialogTitle className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-red-600" />
+                <XCircle className="h-5 w-5 text-destructive" />
                 Couldn't load state
               </DialogTitle>
               <DialogDescription>{fetchError}</DialogDescription>
@@ -200,7 +200,7 @@ export const RemovePlaceholderDialog: React.FC<RemovePlaceholderDialogProps> = (
           ) : action === 'blocked' ? (
             <>
               <DialogTitle className="flex items-center gap-2">
-                <XCircle className="h-5 w-5 text-amber-600" />
+                <XCircle className="h-5 w-5 text-warning" />
                 Can't remove
               </DialogTitle>
               <DialogDescription>
@@ -214,7 +214,7 @@ export const RemovePlaceholderDialog: React.FC<RemovePlaceholderDialogProps> = (
           ) : action === 'delete' ? (
             <>
               <DialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <AlertTriangle className="h-5 w-5 text-destructive" />
                 Remove {displayName}?
               </DialogTitle>
               <DialogDescription>

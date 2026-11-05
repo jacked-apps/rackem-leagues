@@ -15,6 +15,7 @@
  */
 
 import { Button } from '@/components/ui/button';
+import { getTeamColors, GAME_STATE_COLORS } from './scoreboardColors';
 import type { MatchGame } from '@/types';
 import type { DisplayMode } from '@/hooks/useGameDisplayMode';
 
@@ -187,7 +188,7 @@ export function GamesList({
             // If game has a winner (pending or confirmed)
             if (hasWinner) {
               // Determine styling based on confirmation status
-              const winnerClass = isConfirmed ? 'bg-green-200 font-semibold' : 'bg-yellow-100 font-semibold';
+              const winnerClass = `${isConfirmed ? GAME_STATE_COLORS.confirmed : GAME_STATE_COLORS.pending} font-semibold`;
               const loserClass = 'bg-card text-muted-foreground';
 
               // If vacate requested, show distinctive styling
@@ -202,7 +203,7 @@ export function GamesList({
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`w-full ${leftWon ? 'bg-red-100 font-semibold' : 'bg-card text-muted-foreground'}`}
+                      className={`w-full ${leftWon ? `${GAME_STATE_COLORS.vacate} font-semibold` : 'bg-card text-muted-foreground'}`}
                       disabled={iRequestedVacate}
                       onClick={() => !iRequestedVacate && leftPlayerId && onGameClick(gameResult.game_number, leftPlayerId, leftName, leftTeamId)}
                     >
@@ -224,7 +225,7 @@ export function GamesList({
                     <Button
                       variant="outline"
                       size="sm"
-                      className={`w-full ${rightWon ? 'bg-red-100 font-semibold' : 'bg-card text-muted-foreground'}`}
+                      className={`w-full ${rightWon ? `${GAME_STATE_COLORS.vacate} font-semibold` : 'bg-card text-muted-foreground'}`}
                       disabled={iRequestedVacate}
                       onClick={() => !iRequestedVacate && rightPlayerId && onGameClick(gameResult.game_number, rightPlayerId, rightName, rightTeamId)}
                     >
@@ -310,7 +311,7 @@ export function GamesList({
                   <Button
                     variant="outline"
                     size="sm"
-                    className={`w-full ${leftIsHome ? 'bg-blue-100 hover:bg-blue-200' : 'bg-orange-100 hover:bg-orange-200'}`}
+                    className={`w-full ${getTeamColors(leftIsHome).button}`}
                     onClick={() => leftPlayerId && onGameClick(gameResult.game_number, leftPlayerId, leftName, leftTeamId)}
                   >
                     {leftDisplayName}
@@ -321,7 +322,7 @@ export function GamesList({
                   <Button
                     variant="outline"
                     size="sm"
-                    className={`w-full ${rightIsHome ? 'bg-blue-100 hover:bg-blue-200' : 'bg-orange-100 hover:bg-orange-200'}`}
+                    className={`w-full ${getTeamColors(rightIsHome).button}`}
                     onClick={() => rightPlayerId && onGameClick(gameResult.game_number, rightPlayerId, rightName, rightTeamId)}
                   >
                     {rightDisplayName}

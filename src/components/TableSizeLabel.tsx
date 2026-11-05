@@ -7,7 +7,7 @@
  *
  * Usage:
  * <TableSizeLabel sizeKey="bar_box_tables" />
- * <TableSizeLabel sizeKey="regulation_tables" className="text-blue-600" />
+ * <TableSizeLabel sizeKey="regulation_tables" className="text-info" />
  */
 
 import { useState } from 'react';
@@ -49,7 +49,7 @@ export function TableSizeLabel({ sizeKey, className }: TableSizeLabelProps) {
       <PopoverTrigger asChild>
         <button
           className={cn(
-            'text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer transition-colors',
+            'text-sm font-medium text-info hover:text-info/80 hover:underline cursor-pointer transition-colors',
             className
           )}
         >

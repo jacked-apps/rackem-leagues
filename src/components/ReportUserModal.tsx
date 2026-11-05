@@ -179,7 +179,7 @@ export function ReportUserModal({
             type="submit"
             onClick={handleSubmit}
             disabled={createReportMutation.isPending || description.trim().length < 10}
-            className="bg-orange-600 hover:bg-orange-700"
+            className="bg-warning text-warning-foreground hover:bg-warning/90"
             isLoading={createReportMutation.isPending}
             loadingText="Submitting..."
           >

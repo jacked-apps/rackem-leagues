@@ -334,7 +334,7 @@ function TeamCard({
               separate "+N start" badge needed. */}
           {showPoints && (
             <div className="flex flex-col items-center">
-              <span className={`font-bold ${pointsClass} ${colors.text}`}>
+              <span className={`font-bold ${pointsClass}`}>
                 {formatNumber(points)}
               </span>
               <span className={`text-[10px] ${colors.mutedText}`}>Points</span>
@@ -459,17 +459,17 @@ function TeamCard({
               )}
 
               {/* Team summary row */}
-              <div className={`font-semibold ${colors.text}`}>
+              <div className="font-semibold">
                 {sumLineupHandicaps(lineup, lineupSize)}
               </div>
-              <div className={`font-semibold ${colors.text} truncate`}>
+              <div className="font-semibold truncate">
                 {/* team_id is schema-nullable but always set on a real lineup */}
-                <TeamNameLink teamId={lineup.team_id ?? ''} teamName={teamName} className={colors.linkText} />
+                <TeamNameLink teamId={lineup.team_id ?? ''} teamName={teamName} className={colors.link} />
               </div>
-              <div className={`font-semibold ${colors.text} text-center`}>{wins}</div>
-              <div className={`font-semibold ${colors.text} text-center`}>{losses}</div>
+              <div className="font-semibold text-center">{wins}</div>
+              <div className="font-semibold text-center">{losses}</div>
               {getPlayerPoints && (
-                <div className={`font-semibold ${colors.text} text-center`}>
+                <div className="font-semibold text-center">
                   {formatNumber(points)}
                 </div>
               )}
@@ -492,29 +492,29 @@ function TeamCard({
                   ? [
                       {
                         label: 'Swap Player',
-                        icon: <UserRoundPen className="h-4 w-4 text-purple-600" />,
+                        icon: <UserRoundPen className="h-4 w-4 text-highlight" />,
                         onClick: () => onSwapPlayer?.(player.id, player.position),
                         className:
-                          'flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-purple-600',
+                          'flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted transition-colors text-left text-highlight',
                       },
                     ]
                   : [];
                 return (
                   <div key={`row-${player.position}`} className="contents">
-                    <div className={colors.text}>{player.handicap ?? '–'}</div>
-                    <div className={`${colors.text} truncate`}>
+                    <div>{player.handicap ?? '–'}</div>
+                    <div className="truncate">
                       <PlayerNameLink
                         playerId={player.id}
                         playerName={getPlayerDisplayName(player.id)}
                         customActions={swapAction}
                         hidePlaceholderBadge
-                        className={colors.linkText}
+                        className={colors.link}
                       />
                     </div>
-                    <div className={`text-center ${colors.text}`}>{stats.wins}</div>
-                    <div className={`text-center ${colors.text}`}>{stats.losses}</div>
+                    <div className="text-center">{stats.wins}</div>
+                    <div className="text-center">{stats.losses}</div>
                     {playerPoints != null && (
-                      <div className={`text-center ${colors.text}`}>
+                      <div className="text-center">
                         {formatNumber(playerPoints)}
                       </div>
                     )}
