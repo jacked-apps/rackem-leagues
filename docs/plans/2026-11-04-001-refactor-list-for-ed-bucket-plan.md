@@ -136,7 +136,7 @@ All five also delete TOC line 3 (the old "Last Updated" line).
 
   The order was chosen after review. Stripping the open PRs' edits up front would have left a stretch where those entries were recorded nowhere, and a gated feature could land with no Gated entry.
 - **The audit is checked against main as it is today.** Items that an open PR will close stay in the list as items, and that PR deletes them when it's rebased. Nothing is dropped because of unmerged work.
-- **The Stop Stop explainer leaves the list.** It isn't waiting to be un-gated, because it's staging-only for good, so it doesn't fit Gated or the un-gate rule. Its "never un-gate" note moves to a comment at its gate in `src/navigation/NavRoutes.tsx`, unless an equivalent comment is already there.
+- **The Stop Stop explainer is removed from the app** (Ed, 2026-11-04: the project was dropped). This includes its page, its content, its route and the banner-hiding switch that only it used. It was its own commit on this branch, and its Gated line went with it.
 - **The audit table is saved** as `docs/audits/2026-11-04-list-for-ed-migration.md`. It's a dated snapshot that records the evidence behind each drop and is never maintained, so it can't drift.
 - **This PR's changes to shared files.**
   - It deletes TOC line 3 exactly as the five branches do, so that hunk is identical.
@@ -221,7 +221,7 @@ All five also delete TOC line 3 (the old "Last Updated" line).
 - The table proposes a group for every survivor:
   - Later by default
   - Wish list for ideas
-  - Gated for Become a Host and the Scoring Workshop
+  - Gated for Become a Host and the Scoring Workshop (Stop Stop is gone)
   - up to 3 proposed for Now and about 5 for Next, so the list doesn't start with both empty
 - Ed's approval of the table sets Now and Next. His changes are folded in. **Work stops here until Ed approves.**
 
@@ -246,7 +246,7 @@ All five also delete TOC line 3 (the old "Last Updated" line).
 - Modify: `LIST_FOR_ED.md` (full rewrite)
 - Modify: `src/__tests__/unit/listForEd.test.ts` (add the checks against the real files)
 - Modify: `TABLE_OF_CONTENTS.md` (delete line 3 as the open branches do, and add a `docs/list/` row)
-- Modify: `src/navigation/NavRoutes.tsx` (a comment on the Stop Stop gate, only if one is missing)
+
 
 **Approach:**
 - Each item gets:
