@@ -37,7 +37,6 @@ import WhatsNewPage from '../whatsNew/WhatsNewPage';
 import { useShowWhatsNewAfterUpdate } from '../whatsNew/useShowWhatsNewAfterUpdate';
 import { Pricing } from '../about/Pricing';
 import { PrivacyPolicy } from '../about/PrivacyPolicy';
-import { StopStopExplainer } from '../about/StopStopExplainer';
 import { NewPlayerForm } from '../newPlayer/NewPlayerForm';
 import { CompleteProfileForm } from '../completeProfile';
 import { Profile } from '../profile/Profile';
@@ -187,8 +186,6 @@ export const router = createBrowserRouter([
     children: [
       // === Public Routes ===
       { path: 'privacy', element: <PrivacyPolicy /> },
-      // Stop Stop explainer for invited readers: unlinked, noindex, never on production.
-      { path: 'aboutstopstop', element: <NonProdGate><StopStopExplainer /></NonProdGate> },
       { path: 'login', element: <Login /> },
       { path: 'register', element: <Register /> },
       { path: 'claim-player', element: <ClaimPlayer /> },

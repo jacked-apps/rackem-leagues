@@ -113,4 +113,4 @@ re-proposed:**
   (View Profile / Send Message / Report Player / Block User on tap).
 - Past-member read-only banner (UI). Note: the data-layer RLS
   enforcement of "see only up to when you left" is deferred to the
-  RLS-enablement project — captured in `LIST_FOR_ED.md` #29.
+  RLS-enablement project — captured in `docs/list/2026-05-12-past-member-readonly-rls.md`.
