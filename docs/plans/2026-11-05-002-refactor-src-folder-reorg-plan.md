@@ -71,13 +71,15 @@ squash-merged already; Unit 0 sorts out the rest.
   shadcn `Dialog`.
 - **No deleting live code.** Files with **zero importers** are listed in the
   map for Ed to decide (delete or keep). They are not deleted silently.
-  Today's candidates:
-  - `components/RegisterPlayerModal.tsx`
-  - `components/SponsorLogos.tsx`
-  - `components/player/TeamCard.tsx` (which also clashes by name with
-    `components/TeamCard.tsx`)
-  - `leagueOperator/ChoiceStep.tsx` and `leagueOperator/QuestionStep.tsx`
-  - `assets/react.svg`
+  - **Done 2026-11-05 (Ed: "delete the 5 files before we do this rework").**
+    Deleted as the first commit on this branch:
+    - `components/RegisterPlayerModal.tsx`
+    - `components/SponsorLogos.tsx`
+    - `components/player/TeamCard.tsx`
+    - `leagueOperator/ChoiceStep.tsx`
+    - `leagueOperator/QuestionStep.tsx`
+  - **Still a candidate:** `assets/react.svg`, the unused Vite template
+    image, handled in Unit 2.
 - **No import-style sweep.** Imports change only where a target moved.
 - **These folders stay where they are:** `src/__tests__/`, `src/test/`,
   `api/`, `hooks/`, `utils/`, `types/`, `schemas/`, `systems/`,
@@ -273,7 +275,9 @@ for a clear reason is fine.
   - **abandon**
 - The likely picks:
   - the module-workshop branches: port later (paused)
-  - `fix/promote-sub-to-real-player`: Ed decides
+  - `fix/promote-sub-to-real-player`: **can sit (recommended 2026-11-05).** It only
+    adds hand-run SQL under `database/maintenance/`, which this plan doesn't
+    touch.
   - the small chores: abandon, or land
 - Tell Jack before Unit 2 starts: no new branches until this merges.
 
