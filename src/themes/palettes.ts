@@ -11,7 +11,7 @@
  * GATED: schemes exist so Ed (and others) can compare readability across the
  * whole app before anything is chosen. Outside production only — the Custom
  * option in ThemeToggle and the start-up apply in main.tsx both check
- * `palettesEnabled`. Listed in LIST_FOR_ED.md under "Gated".
+ * `palettesEnabled`. Its Gated item: `docs/list/2026-11-01-gated-custom-colour-schemes.md`.
  *
  * A scheme reaches a screen only through theme tokens, so app code never
  * uses fixed Tailwind colours (guarded by noFixedColours.test.ts). Colour by

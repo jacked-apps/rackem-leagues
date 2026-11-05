@@ -200,7 +200,7 @@ export const LeagueOperatorApplication: React.FC = () => {
     // `useUpdateMemberRole`, which now hold the mutations open until
     // the cache is genuinely fresh. By the time we reach this line
     // both queries are guaranteed up to date — no race left to paper
-    // over. See LIST_FOR_ED #7 closure note for the full diagnosis.)
+    // over.)
 
     // Clear saved progress since form is submitted
     try {
