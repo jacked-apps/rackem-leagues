@@ -1833,7 +1833,6 @@ export type Database = {
           id: string
           last_name: string
           last_seen_whats_new: string | null
-          nav_favorites: string[] | null
           membership_paid_date: string | null
           nav_favorites: string[] | null
           nickname: string | null
@@ -1869,7 +1868,6 @@ export type Database = {
           id?: string
           last_name: string
           last_seen_whats_new?: string | null
-          nav_favorites?: string[] | null
           membership_paid_date?: string | null
           nav_favorites?: string[] | null
           nickname?: string | null
@@ -1905,7 +1903,6 @@ export type Database = {
           id?: string
           last_name?: string
           last_seen_whats_new?: string | null
-          nav_favorites?: string[] | null
           membership_paid_date?: string | null
           nav_favorites?: string[] | null
           nickname?: string | null
