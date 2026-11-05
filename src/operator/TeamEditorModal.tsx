@@ -41,7 +41,7 @@ interface TeamEditorModalProps {
    *  shown when creating a team — only `lineupSize - 1` additional
    *  slots render initially (captain takes one of the lineup spots).
    *  The "+ Add Player" button reveals one substitute slot at a time
-   *  up to `rosterSize - 1`. Closes LIST_FOR_ED #16 — the 20-slot
+   *  up to `rosterSize - 1`, because the 20-slot
    *  empty grid was overwhelming for the typical 5-8-active-plus-
    *  subs case. */
   lineupSize: number;
@@ -195,7 +195,7 @@ export const TeamEditorModal: React.FC<TeamEditorModalProps> = ({
     seasonId,
   });
 
-  // LIST_FOR_ED #16 — show enough slots to cover (a) the lineup
+  // Show enough slots to cover (a) the lineup
   // baseline, (b) every already-filled slot, and (c) ONE extra empty
   // dropdown at the bottom so the next player can be added without
   // clicking a button first. The empty dropdown itself is the

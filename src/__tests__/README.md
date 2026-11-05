@@ -23,7 +23,7 @@ the file's path.
 That's the only placement decision that affects test correctness. The
 `db` project runs files **one at a time** (no race conditions on the
 shared database) and uses **jsdom** (because happy-dom mangles
-`Content-Type` on supabase-js writes — see `LIST_FOR_ED.md` #27 and
+`Content-Type` on supabase-js writes — see
 `memory/project_happy_dom_supabase_insert_limit.md`).
 
 Everywhere else runs in parallel with happy-dom for speed.
@@ -76,5 +76,5 @@ Tests assume the dev seed has been applied. If a DB test fails with
    (`executeSql`) and Supabase client setup.
 4. Be conservative about shared fixture data — every other DB test
    uses the same seed. If two tests pick "the earliest team with a
-   captain," they will fight. See `LIST_FOR_ED.md` #27 for the
-   sequential workaround already in place.
+   captain," they will fight. The `db` project running files one at a time is the
+   workaround already in place.
