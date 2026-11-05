@@ -3,11 +3,13 @@
  * links something real, and every item file has exactly one line. A PR that
  * finishes an item deletes both; this catches it when only one goes.
  *
- * The self-tests below prove each check catches what it should. The checks on
- * the real files are added once the list moves to the new form.
+ * The self-tests prove each check catches what it should; the last block runs
+ * the same checks on the real files. Rules: "The list" in CLAUDE.md.
  */
 
 import { describe, it, expect } from 'vitest';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { itemProblems, listProblems, parseFrontmatter, parseList } from './listForEd.helpers';
 
 const GOOD_ITEM = ['---', 'summary: Line up the league buttons', 'kind: task', 'added: 2026-11-04', 'checked: 2026-11-04', '---', '', 'Detail.'].join('\n');
@@ -77,5 +79,24 @@ describe('LIST_FOR_ED list matching', () => {
     expect(problems.join('\n')).toMatch(/gone\.md, which doesn't exist/);
     expect(problems.join('\n')).toMatch(/orphan\.md has no line/);
     expect(problems.join('\n')).toMatch(/buttons\.md has 2 lines/);
+  });
+});
+
+describe('the real LIST_FOR_ED.md and docs/list/', () => {
+  const root = process.cwd();
+  const itemFiles = readdirSync(join(root, 'docs', 'list'))
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => `docs/list/${f}`);
+
+  it('every item file has valid frontmatter', () => {
+    for (const file of itemFiles) {
+      const fields = parseFrontmatter(readFileSync(join(root, file), 'utf8'));
+      expect(itemProblems(fields), file).toEqual([]);
+    }
+  });
+
+  it('the list and the item files match', () => {
+    const list = parseList(readFileSync(join(root, 'LIST_FOR_ED.md'), 'utf8'));
+    expect(listProblems(list, itemFiles, (p) => existsSync(join(root, p)))).toEqual([]);
   });
 });
