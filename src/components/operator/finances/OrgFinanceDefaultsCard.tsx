@@ -82,7 +82,7 @@ export function OrgFinanceDefaultsCard({ organizationId }: OrgFinanceDefaultsCar
       <CardHeader>
         <CardTitle className="flex items-center justify-between text-lg">
           <span className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-green-600" />
+            <DollarSign className="h-5 w-5 text-success" />
             Finance Defaults
           </span>
           <span className="text-xs font-normal text-muted-foreground">

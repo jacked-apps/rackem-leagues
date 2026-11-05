@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { buttonVariants } from '@/components/ui/button';
 
 /**
  * Props for UnsavedChangesDialog component
@@ -90,7 +91,7 @@ export const UnsavedChangesDialog: React.FC<UnsavedChangesDialogProps> = ({
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={() => blocker.proceed?.()}
-            className="bg-red-600 hover:bg-red-700"
+            className={buttonVariants({ variant: 'destructive' })}
           >
             {confirmLabel}
           </AlertDialogAction>

@@ -1,0 +1,41 @@
+/*
+ * High Contrast — custom scheme (light-based). See src/themes/palettes.ts.
+ *
+ * Built purely for readability: black buttons, black text, strong borders,
+ * and team panels told apart by lightness alone — black with white text for
+ * home, white with black text for away. No colour needed to read anything.
+ *
+ * Selector rule for every scheme file: one `:root[data-palette=…]` block.
+ * Its specificity beats both base blocks in index.css (`:root` and `.dark`),
+ * and ThemeToggle switches to the scheme's mode, so the mode's `dark:`
+ * utilities match the page.
+ */
+
+:root[data-palette='high-contrast'] {
+  --foreground: oklch(0 0 0);
+  --card-foreground: oklch(0 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --muted-foreground: oklch(0.35 0 0);
+  --accent-foreground: oklch(0 0 0);
+  --border: oklch(0.5 0 0);
+  --input: oklch(0.5 0 0);
+  --primary: oklch(0.15 0 0);
+  --primary-foreground: oklch(1 0 0);
+
+  --home-team: oklch(0.13 0 0);
+  --home-team-hover: oklch(0.25 0 0);
+  --home-team-border: oklch(0 0 0);
+  --home-team-border-strong: oklch(1 0 0 / 45%);
+  --home-team-foreground: oklch(1 0 0);
+  --home-team-heading: oklch(1 0 0);
+  --home-team-accent: oklch(1 0 0);
+  --home-team-link: oklch(1 0 0);
+  --away-team: oklch(1 0 0);
+  --away-team-hover: oklch(0.9 0 0);
+  --away-team-border: oklch(0 0 0);
+  --away-team-border-strong: oklch(0 0 0 / 45%);
+  --away-team-foreground: oklch(0 0 0);
+  --away-team-heading: oklch(0 0 0);
+  --away-team-accent: oklch(0 0 0);
+  --away-team-link: oklch(0 0 0);
+}

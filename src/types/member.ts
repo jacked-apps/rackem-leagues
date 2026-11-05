@@ -50,6 +50,12 @@ export interface Member {
    * number, and "1.10.0" sorts before "1.9.0" as text.
    */
   last_seen_whats_new?: string | null;
+  /**
+   * Menu entry ids (see `components/layout/navEntries.ts`) this member starred
+   * into Favorites. NULL = never customised (no favorites). Unknown ids are
+   * ignored on read; order is not meaningful.
+   */
+  nav_favorites?: string[] | null;
   fargo_rating: number | null; // FargoRate rating (100-850). NULL = not set.
   organization_id: string | null; // Placeholder-only: org the placeholder belongs to. NULL for registered members (they span orgs).
   archived_at: string | null; // Placeholder-only: when the LO archived this row. NULL means active.

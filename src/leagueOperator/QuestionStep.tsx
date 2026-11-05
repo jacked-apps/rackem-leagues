@@ -111,12 +111,12 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
               onChange={(e) => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg ${
-                error ? 'border-red-500' : 'border-border'
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-lg ${
+                error ? 'border-destructive' : 'border-border'
               }`}
             />
             {error && (
-              <p className="text-red-500 text-sm mt-2">{error}</p>
+              <p className="text-destructive text-sm mt-2">{error}</p>
             )}
           </div>
 
@@ -127,7 +127,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
               id="autoCapitalize"
               checked={autoCapitalize}
               onChange={(e) => setAutoCapitalize(e.target.checked)}
-              className="w-4 h-4 text-blue-600 bg-muted border-border rounded focus:ring-blue-500"
+              className="w-4 h-4 text-info bg-muted border-border rounded focus:ring-ring"
             />
             <label htmlFor="autoCapitalize" className="text-sm text-foreground">
               {autoCapitalize
@@ -150,7 +150,7 @@ export const QuestionStep: React.FC<QuestionStepProps> = ({
               loadingText="none"
               onClick={handleNext}
               disabled={!value || (typeof value === 'string' && !value.trim())}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-info hover:bg-info/90 text-info-foreground"
             >
               {isLastQuestion ? 'Continue' : 'Next'}
             </Button>

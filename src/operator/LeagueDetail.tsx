@@ -473,15 +473,15 @@ function NextSeasonBanner({
   };
 
   return (
-    <div className="mb-6 rounded-lg border-2 border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-4">
+    <div className="mb-6 rounded-lg border-2 border-info/40 bg-info/10 p-4">
       <div className="flex items-start gap-3">
         <div className="text-2xl">🔵</div>
         <div className="flex-1 space-y-3">
           <div>
-            <h3 className="font-semibold text-blue-900 dark:text-blue-200">
+            <h3 className="font-semibold text-info">
               Next season queued
             </h3>
-            <p className="text-sm text-blue-800 dark:text-blue-300 mt-1">
+            <p className="text-sm text-foreground mt-1">
               <strong>{season.season_name ?? 'A new season'}</strong> is all
               set up and goes live on <strong>{startLabel}</strong>. Players
               won&rsquo;t see it until then.

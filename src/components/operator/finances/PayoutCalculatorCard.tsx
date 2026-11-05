@@ -140,7 +140,7 @@ export function PayoutCalculatorCard({
   );
 
   return (
-    <Card className="border-blue-200 dark:border-blue-900">
+    <Card className="border-info/40">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Calculator className="h-5 w-5 text-info" />
@@ -267,14 +267,14 @@ export function PayoutCalculatorCard({
           {plan.totalIndividualAwardsFromPool > 0 && (
             <div className="flex justify-between">
               <span className="text-muted-foreground">− Individual awards (from pool)</span>
-              <span className="font-medium text-red-700 dark:text-red-400">
+              <span className="font-medium text-destructive">
                 −${plan.totalIndividualAwardsFromPool.toFixed(2)}
               </span>
             </div>
           )}
           <div className="flex justify-between border-t pt-1 mt-1">
             <span className="font-semibold">Team prize pool</span>
-            <span className="font-bold text-lg text-green-700 dark:text-green-400">
+            <span className="font-bold text-lg text-success">
               ${plan.teamPool.toFixed(2)}
             </span>
           </div>
@@ -299,13 +299,13 @@ export function PayoutCalculatorCard({
         <div className="pt-3 border-t space-y-2">
           {isLocked ? (
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-md p-3">
-                <Lock className="h-4 w-4 text-green-700 dark:text-green-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 text-sm bg-success/10 border border-success/40 rounded-md p-3">
+                <Lock className="h-4 w-4 text-success flex-shrink-0" />
                 <div>
-                  <div className="font-medium text-green-900 dark:text-green-100">
+                  <div className="font-medium text-success">
                     Payouts locked
                   </div>
-                  <div className="text-xs text-green-800 dark:text-green-200">
+                  <div className="text-xs text-foreground">
                     Final prize pool: ${lockedRow.final_prize_pool.toFixed(2)} — locked on{' '}
                     {new Date(lockedRow.locked_at).toLocaleDateString()}
                   </div>

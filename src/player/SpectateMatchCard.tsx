@@ -9,8 +9,8 @@
  * This component is deliberately dumb — it doesn't know who's watching,
  * what team they're on, or whether they have any relationship to this
  * match. It just fetches state and renders. `isHomeTeam` is hard-coded to
- * false so no player-team-only affordances leak through; onVerify /
- * onSwapPlayer are no-ops and never visually surface in read-only paths.
+ * false so no player-team-only affordances leak through; onVerify is left
+ * out (hides the Verify button) and onSwapPlayer is omitted.
  *
  * Pre-Unit-7-of-unified-scoreboard-plan, this component had its own
  * 3-way dispatch (Fargo / 5v5 / 3v3). Unit 7 collapsed that to a single
@@ -30,10 +30,29 @@ interface SpectateMatchCardProps {
   match: MatchWithDetails;
 }
 
-const noop = () => {};
-
 export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) {
   const data = useSpectateMatch(seedMatch.id);
+
+  // A failed load gets a message, not an endless spinner — the loading
+  // branch below would otherwise hold forever because the data never comes.
+  if (!data.isLoading && data.error) {
+    return (
+      <div className="border-y bg-card py-6 text-center text-sm text-muted-foreground">
+        Couldn't load {seedMatch.home_team?.team_name || 'Home'} vs{' '}
+        {seedMatch.away_team?.team_name || 'Away'}. Pull down or refresh to try again.
+      </div>
+    );
+  }
+
+  // Started, but a lineup row is missing — say so rather than spin.
+  if (!data.isLoading && data.match && (!data.homeLineup || !data.awayLineup)) {
+    return (
+      <div className="border-y bg-card py-6 text-center text-sm text-muted-foreground">
+        {seedMatch.home_team?.team_name || 'Home'} vs{' '}
+        {seedMatch.away_team?.team_name || 'Away'} — waiting for lineups.
+      </div>
+    );
+  }
 
   if (data.isLoading || !data.match || !data.homeLineup || !data.awayLineup) {
     return (
@@ -81,7 +100,6 @@ export function SpectateMatchCard({ match: seedMatch }: SpectateMatchCardProps) 
       awayLosses={data.awayLosses}
       allGamesComplete={data.allGamesComplete}
       isHomeTeam={false}
-      onVerify={noop}
       isVerifying={false}
       gameType={data.gameType}
       winCondition={data.winCondition}

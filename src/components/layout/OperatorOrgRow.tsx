@@ -1,73 +1,56 @@
 /**
- * @fileoverview OperatorOrgRow — per-organization entry in the Operator nav
- * section (shared by AppDrawer's OperatorSection + AppSidebar's
- * SidebarOperatorSection).
+ * @fileoverview OperatorOrgRow — one organization's rows in the Operator
+ * section of the menu (rendered by the shared `OperatorSection`).
  *
- * Each operator org exposes two actions: its **Dashboard** and **Reports**
- * (Reports carries the pending-reports doorbell badge — "Reports (N)" — so the
- * operator gets nudged when reports are waiting). Create League was removed
- * from the nav (its page/route still exists; may return later).
+ * The **org name** is the row, and it goes straight to that org's dashboard
+ * — for one org or several (Ed, 2026-11-01: "pressing the name of the org
+ * should bring you to the dashboard of that org"). The section then reads as
+ * the list of your organizations, with no "Dashboard Dashboard Dashboard".
  *
- * Owns `usePendingReportsCount(orgId)` for its org — extracting the hook into a
- * per-org component keeps the Rules of Hooks satisfied (a fixed hook count per
- * render regardless of how many orgs exist).
+ * **Reports (N)** sits indented under its org's name, and only while at least
+ * one report is pending — a doorbell, not a fixture. Hiding it at 0 is safe
+ * because the Operator Dashboard already links to Reports.
  *
- * Two render modes:
- * - `flat` — single-org operator: the links inline, no disclosure widget.
- * - `collapsible` — multi-org operator: a native <details>/<summary> with the
- *   org name as the header, collapsed by default and independent per org.
+ * Rows go through `NavRow`, so in the drawer every tap closes it (even when
+ * you're already on that page) and the current page is highlighted, the same
+ * as every other menu row.
+ *
+ * Owns `usePendingReportsCount(orgId)` for its org — a per-org component keeps
+ * the Rules of Hooks satisfied (a fixed hook count however many orgs exist).
  */
 
-import { Link } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
 import { usePendingReportsCount } from '@/hooks/usePendingReportsCount';
+import { NavRow } from './NavRow';
 
 interface OperatorOrgRowProps {
   /** Operator organization ID (used to build org-scoped routes). */
   orgId: string;
-  /** Display name for the organization. */
+  /** Display name for the organization — the row's label. */
   orgName: string;
-  /** Render mode: flat links (single-org) vs collapsible group (multi-org). */
-  mode: 'flat' | 'collapsible';
+  /** True in the drawer, so taps close it. */
+  inSheet?: boolean;
 }
 
-const LINK_CLASS =
-  'flex min-h-11 items-center rounded-md px-3 py-2 text-sm text-primary transition-colors hover:bg-primary/10';
-
 /**
- * Renders the org-scoped operator shortcuts (Dashboard + Reports) for one org.
- * Owns its own `usePendingReportsCount` so the hook count per render is fixed.
+ * Renders `<li>` rows; place inside a `<ul>`.
+ *
+ * @example <ul><OperatorOrgRow orgId="o1" orgName="Triple B Pool" /></ul>
  */
-export function OperatorOrgRow({ orgId, orgName, mode }: OperatorOrgRowProps) {
+export function OperatorOrgRow({ orgId, orgName, inSheet }: OperatorOrgRowProps) {
   const { count: pendingReports } = usePendingReportsCount(orgId);
-  const reportsLabel = pendingReports > 0 ? `Reports (${pendingReports})` : 'Reports';
-
-  const links = (
-    <ul className="space-y-0.5">
-      <li>
-        <Link to={`/operator-dashboard/${orgId}`} className={LINK_CLASS}>
-          Dashboard
-        </Link>
-      </li>
-      <li>
-        <Link to={`/operator-reports/${orgId}`} className={LINK_CLASS}>
-          {reportsLabel}
-        </Link>
-      </li>
-    </ul>
-  );
-
-  if (mode === 'flat') {
-    return links;
-  }
 
   return (
-    <details className="group rounded-md">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10 [&::-webkit-details-marker]:hidden">
-        <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
-        <span className="flex-1 truncate">{orgName}</span>
-      </summary>
-      <div className="ml-6 mt-0.5">{links}</div>
-    </details>
+    <>
+      {/* "Dashboard" only if an org somehow has no name, so the row is never blank. */}
+      <NavRow to={`/operator-dashboard/${orgId}`} label={orgName || 'Dashboard'} inSheet={inSheet} />
+      {pendingReports > 0 ? (
+        <li>
+          {/* Indented so it reads as this org's reports. */}
+          <ul className="ml-4">
+            <NavRow to={`/operator-reports/${orgId}`} label={`Reports (${pendingReports})`} inSheet={inSheet} />
+          </ul>
+        </li>
+      ) : null}
+    </>
   );
 }

@@ -3,7 +3,7 @@
  *
  * Covers role-aware section rendering (logged-out / player / operator),
  * position-based owner-vs-staff classification, the cap-at-4 behavior,
- * single-org flat layout vs multi-org collapsible layout, drawer-internal
+ * single-org "Dashboard" row vs multi-org org-name rows, drawer-internal
  * `(N)` badges for unread messages and pending reports, loading/error
  * graceful fallbacks, and SheetClose-driven dismissal on link tap.
  */
@@ -118,26 +118,14 @@ describe('AppDrawer', () => {
     mockUseMyMatchSurfaces.mockReturnValue(emptyMyMatch());
   });
 
-  // Happy path — logged out
-  it('renders public items when logged out', () => {
+  // Signed-out visitors never see the hamburger (PageHeader hides it); this
+  // is only the guard for a session ending while the drawer is open.
+  it('renders no menu rows when logged out', () => {
     configureLoggedOut();
     renderDrawer({ isLoggedIn: false });
 
     const nav = screen.getByRole('navigation', { name: /main navigation/i });
-    expect(within(nav).getByRole('link', { name: 'Home' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'About' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Pricing' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: /sign in/i })).toBeInTheDocument();
-  });
-
-  it('does not render player or operator sections when logged out', () => {
-    configureLoggedOut();
-    renderDrawer({ isLoggedIn: false });
-
-    const nav = screen.getByRole('navigation', { name: /main navigation/i });
-    expect(within(nav).queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
-    expect(within(nav).queryByText(/^Operator$/)).not.toBeInTheDocument();
+    expect(within(nav).queryAllByRole('link')).toHaveLength(0);
   });
 
   // Happy path — logged-in player
@@ -146,21 +134,20 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     const nav = screen.getByRole('navigation', { name: /main navigation/i });
-    // The player section is My Teams / Stats / Rules / Messages / Profile.
-    // "My Match" is no longer a static link — it's now a dedicated section
-    // that appears only when the player has a current/today/makeup match
-    // (covered by the "My Match section" tests). With no matches (default
-    // mock), it's hidden, so there is no standalone "My Match" link.
+    // "My Match" is a chips panel that appears only when the player has a
+    // live/makeup match; with none (default mock) there's no My Match link.
     expect(within(nav).queryByRole('link', { name: 'My Match' })).not.toBeInTheDocument();
+    // My Teams + Messages are fixed at the top, always visible.
     expect(within(nav).getByRole('link', { name: 'My Teams' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: /^Messages/ })).toBeInTheDocument();
-    // No standalone "Profile" nav link — the name/avatar at the top of the
-    // drawer opens /profile. The reclaimed slot holds the gated "Tournaments"
-    // side tool (un-gated — live in every environment).
-    expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
+    // The rest sit in folds that start closed (one open at a time).
+    fireEvent.click(within(nav).getByRole('button', { name: 'Extras' }));
+    expect(within(nav).getByRole('link', { name: 'Stats' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Tournaments' })).toBeInTheDocument();
+    fireEvent.click(within(nav).getByRole('button', { name: 'Info' }));
+    expect(within(nav).getByRole('link', { name: 'Rules' })).toBeInTheDocument();
+    // No Profile row — the name / avatar row at the top already opens it.
+    expect(within(nav).queryByRole('link', { name: 'Profile' })).not.toBeInTheDocument();
     // No "Dashboard" link and no Sign Out in the drawer — the player nav dropped
     // Dashboard, and Sign Out moved to the bottom of the Profile page (nav
     // redesign, PR #124/#131).
@@ -169,7 +156,7 @@ describe('AppDrawer', () => {
   });
 
   // Happy path — single-org operator
-  it('renders flat operator shortcuts for a single-org operator', () => {
+  it('shows a single-org operator their org name, linking to its dashboard', () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Solo' },
       canAccessLeagueOperatorFeatures: () => true,
@@ -187,20 +174,20 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Dashboard + Reports are the operator nav actions; Create League was removed.
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute(
+    // Even with one org, the row is the org's NAME and opens its dashboard.
+    // Reports only while something is pending (0 here) — the Operator
+    // Dashboard links to Reports, so hiding it is safe. Create League removed.
+    expect(screen.getByRole('link', { name: 'Triple B Pool' })).toHaveAttribute(
       'href',
       '/operator-dashboard/org-a',
     );
-    expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute(
-      'href',
-      '/operator-reports/org-a',
-    );
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Reports/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Create League' })).not.toBeInTheDocument();
   });
 
   // Happy path — multi-org operator
-  it('renders multi-org operator section with collapsed-by-default groups', () => {
+  it("links each org's name straight to its dashboard for a multi-org operator", () => {
     mockUseUserProfile.mockReturnValue({
       member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
       canAccessLeagueOperatorFeatures: () => true,
@@ -221,14 +208,67 @@ describe('AppDrawer', () => {
     renderDrawer();
 
     expect(screen.getByText('Operator')).toBeInTheDocument();
-    // Both org names show as collapsible group headers (owner before staff).
-    const orgHeaders = screen.getAllByRole('group');
-    expect(orgHeaders[0]).toHaveTextContent('Triple B Pool');
-    expect(orgHeaders[1]).toHaveTextContent('Riverside League');
+    // A list of orgs: each name IS the link to its dashboard (owner first).
+    const tripleB = screen.getByRole('link', { name: 'Triple B Pool' });
+    const riverside = screen.getByRole('link', { name: 'Riverside League' });
+    expect(tripleB).toHaveAttribute('href', '/operator-dashboard/org-a');
+    expect(riverside).toHaveAttribute('href', '/operator-dashboard/org-b');
+    expect(tripleB.compareDocumentPosition(riverside) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Nothing pending → no Reports rows and no separate Dashboard rows.
+    expect(screen.queryByRole('link', { name: /^Reports/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
+  });
 
-    // Sub-items are not visible until the group is expanded (collapsed by default).
-    const tripleBSummary = screen.getByText('Triple B Pool').closest('summary')!;
-    expect(tripleBSummary.parentElement).not.toHaveAttribute('open');
+  it("shows Reports (N) under its org's name only when that org has pending reports", () => {
+    mockUseUserProfile.mockReturnValue({
+      member: { id: 'm1', first_name: 'Op', last_name: 'Multi' },
+      canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
+      loading: false,
+    });
+    mockUseOrganizations.mockReturnValue({
+      organizations: [
+        { id: 'org-a', organization_name: 'Triple B Pool', position: 'owner' },
+        { id: 'org-b', organization_name: 'Riverside League', position: 'admin' },
+      ],
+      loading: false,
+      error: null,
+    });
+    mockUseUnreadMessageCount.mockReturnValue({ data: 0 });
+    mockUsePendingReportsCount.mockImplementation((orgId?: string) => ({
+      count: orgId === 'org-b' ? 2 : 0,
+      loading: false,
+    }));
+
+    renderDrawer();
+
+    const reports = screen.getAllByRole('link', { name: /^Reports/ });
+    expect(reports).toHaveLength(1);
+    expect(reports[0]).toHaveTextContent('Reports (2)');
+    expect(reports[0]).toHaveAttribute('href', '/operator-reports/org-b');
+    // It sits right under Riverside League, not Triple B Pool.
+    const riverside = screen.getByRole('link', { name: 'Riverside League' });
+    expect(riverside.compareDocumentPosition(reports[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('closes the drawer when an operator taps the dashboard they are already on', () => {
+    mockUseUserProfile.mockReturnValue({
+      member: { id: 'm1', first_name: 'Op', last_name: 'Solo' },
+      canAccessLeagueOperatorFeatures: () => true,
+      canAccessDeveloperFeatures: () => false,
+      loading: false,
+    });
+    mockUseOrganizations.mockReturnValue({
+      organizations: [{ id: 'org-a', organization_name: 'Triple B Pool', position: 'owner' }],
+      loading: false,
+      error: null,
+    });
+    mockUseUnreadMessageCount.mockReturnValue({ data: 0 });
+    mockUsePendingReportsCount.mockReturnValue({ count: 0, loading: false });
+
+    const { onOpenChange } = renderDrawer();
+    fireEvent.click(screen.getByRole('link', { name: 'Triple B Pool' }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
   // Edge case — unread messages badge
@@ -332,7 +372,7 @@ describe('AppDrawer', () => {
 
     renderDrawer();
 
-    // Two collapsible group headers, alphabetical: Alpha then Beta.
+    // Two org rows, alphabetical: Alpha then Beta.
     expect(screen.getByText('Alpha League')).toBeInTheDocument();
     expect(screen.getByText('Beta League')).toBeInTheDocument();
     // No "More on Dashboard" because we're under cap.
@@ -479,7 +519,7 @@ describe('AppDrawer', () => {
     expect(screen.queryByRole('link', { name: /Sharks/ })).not.toBeInTheDocument();
   });
 
-  it('keeps the Live chip visible (disabled) and defaults to Makeup when there is no live match', () => {
+  it('keeps the Live chip visible (disabled) and leaves makeups closed until tapped', () => {
     configurePlayer();
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
@@ -490,11 +530,18 @@ describe('AppDrawer', () => {
 
     renderDrawer();
 
-    // Live chip always shows, but is disabled with no live matches; Makeup is
-    // selected by default so its list shows without a tap.
+    // Live chip always shows, but is disabled with no live matches. Makeups
+    // alone don't open on their own — the chip shows, closed, until tapped.
     expect(screen.getByRole('button', { name: /Live/ })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Makeup/ })).toHaveAttribute('aria-pressed', 'true');
+    const makeup = screen.getByRole('button', { name: /Makeup/ });
+    expect(makeup).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
+
+    fireEvent.click(makeup);
     expect(screen.getByRole('link', { name: /Rails/ })).toBeInTheDocument();
+    // Tapping it again closes it.
+    fireEvent.click(makeup);
+    expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
   });
 
   it('hides the My Match section entirely when there are no matches', () => {

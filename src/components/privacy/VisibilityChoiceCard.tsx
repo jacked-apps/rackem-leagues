@@ -84,7 +84,7 @@ export const VisibilityChoiceCard: React.FC<VisibilityChoiceCardProps> = ({
             <div
               className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                 isSelected
-                  ? 'border-blue-500 bg-blue-500'
+                  ? 'border-info bg-info'
                   : 'border-border bg-card'
               }`}
             >

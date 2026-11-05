@@ -46,7 +46,7 @@ export const TextField: React.FC<TextFieldProps> = ({
       <div className="flex items-center gap-2 mb-1">
         <Label htmlFor={id}>
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-destructive ml-1">*</span>}
         </Label>
         {infoTitle && infoContent && (
           <InfoButton title={infoTitle}>
@@ -63,7 +63,7 @@ export const TextField: React.FC<TextFieldProps> = ({
         maxLength={maxLength}
       />
       {error && (
-        <p className="text-sm text-red-500 mt-1">{error}</p>
+        <p className="text-sm text-destructive mt-1">{error}</p>
       )}
     </div>
   );
@@ -82,7 +82,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
     <div>
       <Label>
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </Label>
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger>
@@ -97,7 +97,7 @@ export const SelectField: React.FC<SelectFieldProps> = ({
         </SelectContent>
       </Select>
       {error && (
-        <p className="text-sm text-red-500 mt-1">{error}</p>
+        <p className="text-sm text-destructive mt-1">{error}</p>
       )}
     </div>
   );

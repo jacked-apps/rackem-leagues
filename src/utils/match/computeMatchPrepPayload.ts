@@ -101,12 +101,8 @@ export interface ComputeMatchPrepPayloadArgs {
   mechanism?: 'extra_games' | 'start_points' | 'race_length_adjustment' | 'none';
   /** Resolved per-league dial overrides (used by the Fargo start-points calc). */
   systemOverrides?: SystemOverrides;
-  /** Home team id — needed by the non-Fargo team-bonus lookup. */
-  homeTeamId: string;
-  /** Away team id — needed by the non-Fargo team-bonus lookup. */
-  awayTeamId: string;
-  /** Season id — needed by the non-Fargo team-bonus lookup. */
-  seasonId: string;
+  /** The match — needed by the non-Fargo team-bonus lookup (no bonus in playoffs). */
+  matchId: string;
   /** League game_type for the created game rows. Defaults to 'eight_ball'. */
   gameType?: string;
 }
@@ -213,9 +209,7 @@ export async function computeMatchPrepPayload(
     winCondition,
     mechanism,
     systemOverrides,
-    homeTeamId,
-    awayTeamId,
-    seasonId,
+    matchId,
     gameType,
   } = args;
 
@@ -257,9 +251,7 @@ export async function computeMatchPrepPayload(
     const { homeThresholds, awayThresholds } = await calculateHandicapThresholds(
       homeLineup as never,
       awayLineup as never,
-      homeTeamId,
-      awayTeamId,
-      seasonId,
+      matchId,
       handicapType
     );
     thresholds = {

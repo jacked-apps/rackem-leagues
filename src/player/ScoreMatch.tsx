@@ -22,6 +22,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/supabaseClient';
 import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
+import { useTiebreakLineupRedirect } from '@/hooks/useTiebreakLineupRedirect';
 import { useMatchTiebreaker } from '@/api/hooks/useMatchTiebreaker';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -201,7 +202,8 @@ function ScoreMatchBody() {
   const { data: leaguePrefs } = useResolvedLeaguePrefs(match?.league?.id);
 
   // Tiebreak record — its lineups' lock flags gate tiebreaker mode below.
-  const { data: tiebreakRecord } = useMatchTiebreaker(matchId);
+  const tiebreakQuery = useMatchTiebreaker(matchId);
+  const tiebreakRecord = tiebreakQuery.data;
   const handicapType = leaguePrefs?.handicap_type ?? 'points';
 
   // Resolve the active points calculator name with live-prefs fallback.
@@ -862,6 +864,20 @@ function ScoreMatchBody() {
   // renders this body when matches.status='in_progress', so the prior
   // 10-retry waiting loop here was redundant once the guard wired in
   // and is now removed.
+
+  // Tied match whose tiebreak lineups still need setting → send this team to
+  // the lineup page. Backstop for the phone that loses the completion race
+  // (see the hook's header). Called before the early returns below so the
+  // hook order stays fixed.
+  useTiebreakLineupRedirect({
+    matchId,
+    status: match?.status,
+    matchResult: match?.match_result,
+    tiebreakerGamesExist: Array.from(gameResults.values()).some((g) => g.is_tiebreaker),
+    record: tiebreakRecord,
+    refetchRecord: tiebreakQuery.refetch,
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
@@ -888,7 +904,7 @@ function ScoreMatchBody() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="text-lg font-semibold text-red-600 mb-2">
+              <div className="text-lg font-semibold text-destructive mb-2">
                 Error
               </div>
               <div className="text-foreground mb-4">{error}</div>
@@ -913,7 +929,7 @@ function ScoreMatchBody() {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-info mx-auto" />
         </div>
       </div>
     );
@@ -1091,7 +1107,7 @@ function ScoreMatchBody() {
           }}
           gameResults={filteredGameResults}
           isHomeTeam={isHomeTeam ?? false}
-          onVerify={handleVerify}
+          onVerify={isHomeTeam === null ? undefined : handleVerify}
           isVerifying={isVerifying}
           gameType={gameType}
           gamesNeeded={tiebreakRecord.games_needed}
@@ -1111,7 +1127,7 @@ function ScoreMatchBody() {
           awayLosses={awayStats.losses}
           allGamesComplete={allGamesComplete}
           isHomeTeam={isHomeTeam ?? false}
-          onVerify={handleVerify}
+          onVerify={isHomeTeam === null ? undefined : handleVerify}
           isVerifying={isVerifying}
           gameType={gameType}
           winCondition={winCondition}

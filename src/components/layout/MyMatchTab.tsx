@@ -48,7 +48,7 @@ export function MyMatchTab({ memberId }: { memberId: string | null | undefined }
       <Radio className="h-5 w-5" />
       {showLiveDot ? (
         <span
-          className="absolute -right-1 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
+          className="absolute -right-1 -top-0.5 h-2.5 w-2.5 rounded-full bg-success ring-2 ring-background"
           aria-hidden="true"
         />
       ) : null}

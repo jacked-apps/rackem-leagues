@@ -166,7 +166,7 @@ const MatchupDisplay: React.FC<MatchupDisplayProps> = ({
         {/* Home team (higher seed) */}
         <div className="flex items-center justify-between bg-info/10 rounded-lg p-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+            <div className="w-8 h-8 rounded-full bg-info text-info-foreground flex items-center justify-center font-bold text-sm">
               {homeSeed > 0 && homeSeed < 100 ? homeSeed : '?'}
             </div>
             <div>
@@ -192,7 +192,7 @@ const MatchupDisplay: React.FC<MatchupDisplayProps> = ({
         {/* Away team (lower seed) */}
         <div className="flex items-center justify-between bg-muted rounded-lg p-3">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gray-600 text-white flex items-center justify-center font-bold text-sm">
+            <div className="w-8 h-8 rounded-full bg-muted-foreground text-background flex items-center justify-center font-bold text-sm">
               {awaySeed > 0 && awaySeed < 100 ? awaySeed : '?'}
             </div>
             <div>

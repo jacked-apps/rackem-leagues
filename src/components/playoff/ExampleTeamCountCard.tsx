@@ -57,7 +57,7 @@ export const ExampleTeamCountCard: React.FC<ExampleTeamCountCardProps> = ({
       {/* Summary Row */}
       <div className="flex items-center gap-3">
         {/* Circle indicator with team count */}
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white font-bold text-lg">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-info text-info-foreground font-bold text-lg">
           {exampleTeamCount}
         </div>
 

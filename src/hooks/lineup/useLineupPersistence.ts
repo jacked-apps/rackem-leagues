@@ -210,17 +210,13 @@ export function useLineupPersistence(params: LineupPersistenceParams) {
       const isHomeTeam = userTeamId === matchData?.home_team_id;
       const lineupField = isHomeTeam ? 'home_lineup_id' : 'away_lineup_id';
 
-      // Check if opponent lineup is already locked
-      const opponentLineupField = isHomeTeam
-        ? 'away_lineup_id'
-        : 'home_lineup_id';
-      const opponentLineupLocked = matchData?.[opponentLineupField] != null;
-
-      // If both lineups are now locked, set started_at timestamp
+      // Deliberately NO started_at here. The database starts the match once
+      // BOTH lineups are locked (trigger in
+      // 20261101223223_start_match_when_both_lineups_locked.sql). This used to
+      // guess "opponent locked" from the opponent's lineup id on the match
+      // row — but that id is filled in when the match is created, so the
+      // FIRST lock always started the match.
       const matchUpdateData: TablesUpdate<'matches'> = { [lineupField]: result.id };
-      if (opponentLineupLocked && !matchData?.started_at) {
-        matchUpdateData.started_at = new Date().toISOString();
-      }
 
       try {
         await updateMatchMutation.mutateAsync({

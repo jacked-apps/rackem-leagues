@@ -89,7 +89,7 @@ export const WeekOffReasonModal: React.FC<WeekOffReasonModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-card rounded-lg p-6 max-w-md shadow-xl">
         <h3 className="text-lg font-bold text-foreground mb-2">
           Enter Reason for Week Off
@@ -116,10 +116,10 @@ export const WeekOffReasonModal: React.FC<WeekOffReasonModalProps> = ({
               placeholder="e.g., Hurricane"
               maxLength={20}
               autoFocus
-              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent"
             />
             <div className="flex justify-between text-xs mt-1">
-              <span className="text-red-600">{error}</span>
+              <span className="text-destructive">{error}</span>
               <span className="text-muted-foreground">{reason.length}/20</span>
             </div>
           </div>

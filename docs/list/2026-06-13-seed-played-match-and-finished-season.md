@@ -1,13 +1,10 @@
 ---
-summary: Seed a scored match and a finished season for testing
+summary: Seed a finished season so the playoff fill-in can be watched locally
 kind: idea
 added: 2026-06-13
-checked: 2026-11-04
+checked: 2026-11-05
 ---
 
-Clean-database tests showed two gaps in the seed:
+The dev data has no finished-season fixture, so nobody can watch the playoffs fill in on their own, end to end, on a local database. Every seed season is at week 1 of 16.
 
-- No scored games (`match_games` is empty), so the `appendConfirmation` and `gameConfirmations.schema` tests have no fixture.
-- No finished-season fixture, so nobody can watch the playoffs fill in on their own. Every seed season is at week 1 of 16.
-
-Adding a played match with games, plus one completed season, would turn those tests green and let the playoff automation be tested end to end. Seed files are dev-only.
+(The other gap from the same check, no scored games, is covered: `database/dev_play_matches.sql` plays the seeded schedule out.) Seed files are dev-only.

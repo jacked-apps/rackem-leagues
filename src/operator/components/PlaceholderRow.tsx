@@ -65,7 +65,7 @@ export const PlaceholderRow: React.FC<{
               Has stats
             </span>
           ) : isUnused ? (
-            <span className="inline-flex items-center rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white shrink-0">
+            <span className="inline-flex items-center rounded-full bg-destructive px-2 py-0.5 text-xs font-semibold text-destructive-foreground shrink-0">
               Unused
             </span>
           ) : (

@@ -118,7 +118,7 @@ export function TeamCard({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-2xl">{teamName}</CardTitle>
-            <p className="text-base text-foreground dark:text-gray-300 mt-1 font-medium">
+            <p className="text-base text-foreground mt-1 font-medium">
               {formatGameType(season.league.game_type as GameType)} • {formatDayOfWeek(season.league.day_of_week as DayOfWeek)}
               {season.league.division && ` • ${season.league.division}`}
             </p>
@@ -126,7 +126,7 @@ export function TeamCard({
           {showEditButton && onEditClick && (
             <button
               onClick={onEditClick}
-              className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
+              className="text-sm text-info hover:underline font-medium"
             >
               Edit Team
             </button>
@@ -161,13 +161,13 @@ export function TeamCard({
         {/* Home Venue */}
         <div>
           <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Home Venue</p>
-          <p className="text-base text-foreground dark:text-gray-100">{venue?.name || 'No venue assigned'}</p>
+          <p className="text-base text-foreground">{venue?.name || 'No venue assigned'}</p>
         </div>
 
         {/* Captain */}
         <div>
           <p className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Captain</p>
-          <div className={`text-base ${captain.id === currentUserId ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-foreground dark:text-gray-100'}`}>
+          <div className={`text-base ${captain.id === currentUserId ? 'font-semibold text-info' : 'text-foreground'}`}>
             <PlayerNameLink
               playerId={captain.id}
               playerName={`${captain.first_name} ${captain.last_name}`}
@@ -188,10 +188,10 @@ export function TeamCard({
                 key={slot.type === 'player' ? slot.player.member_id : `empty-${index}`}
                 className={`text-sm ${
                   slot.type === 'player' && slot.player.member_id === currentUserId
-                    ? 'font-semibold text-blue-600 dark:text-blue-400'
+                    ? 'font-semibold text-info'
                     : slot.type === 'empty'
                     ? 'text-muted-foreground dark:text-muted-foreground italic'
-                    : 'text-foreground dark:text-gray-100'
+                    : 'text-foreground'
                 }`}
               >
                 {slot.type === 'player' ? (

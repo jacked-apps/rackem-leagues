@@ -122,7 +122,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
         icon: <Shuffle className="h-4 w-4" />,
         label: 'Random Team',
         bgColor: 'bg-accent',
-        circleBg: 'bg-purple-600',
+        circleBg: 'bg-highlight text-highlight-foreground',
         textColor: 'text-foreground',
         badgeColor: isHome ? 'text-accent-foreground' : 'text-accent-foreground',
       };
@@ -136,7 +136,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
           icon: <JokerIcon className="h-6 w-6" size={24} />,
           label: 'Remaining Loser',
           bgColor: 'bg-warning/10',
-          circleBg: 'bg-amber-600',
+          circleBg: 'bg-warning text-warning-foreground',
           textColor: 'text-warning',
           badgeColor: isHome ? 'text-warning' : 'text-warning',
         };
@@ -149,7 +149,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
           icon: <ThumbsDown className="h-4 w-4" />,
           label: `Loser Match ${matchRef}`,
           bgColor: 'bg-muted',
-          circleBg: 'bg-muted-foreground',
+          circleBg: 'bg-muted-foreground text-background',
           textColor: 'text-muted-foreground',
           badgeColor: isHome ? 'text-muted-foreground' : 'text-muted-foreground',
         };
@@ -161,7 +161,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
         icon: <Trophy className="h-4 w-4" />,
         label: `Winner Match ${matchRef}`,
         bgColor: 'bg-info/10',
-        circleBg: 'bg-indigo-600',
+        circleBg: 'bg-highlight text-highlight-foreground',
         textColor: 'text-info',
         badgeColor: isHome ? 'text-info' : 'text-info',
       };
@@ -173,7 +173,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
         icon: <JokerIcon className="h-6 w-6" size={24} />,
         label: 'Wildcard',
         bgColor: 'bg-warning/10',
-        circleBg: 'bg-amber-600',
+        circleBg: 'bg-warning text-warning-foreground',
         textColor: 'text-warning',
         badgeColor: isHome ? 'text-warning' : 'text-warning',
       };
@@ -184,7 +184,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
       icon: seed,
       label: `${getOrdinal(seed)} Place Team`,
       bgColor: isHome ? 'bg-info/10' : 'bg-muted',
-      circleBg: isHome ? 'bg-blue-600' : 'bg-gray-600',
+      circleBg: isHome ? 'bg-info text-info-foreground' : 'bg-muted-foreground text-background',
       textColor: 'text-muted-foreground',
       badgeColor: isHome ? 'text-info' : 'text-muted-foreground',
     };
@@ -202,7 +202,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
         {/* Home team */}
         <div className={`flex items-center justify-between rounded-lg p-3 ${homeDisplay.bgColor}`}>
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm ${homeDisplay.circleBg}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${homeDisplay.circleBg}`}>
               {homeDisplay.icon}
             </div>
             <div>
@@ -219,7 +219,7 @@ export const PlayoffMatchupCard: React.FC<PlayoffMatchupCardProps> = ({
         {/* Away team */}
         <div className={`flex items-center justify-between rounded-lg p-3 ${awayDisplay.bgColor}`}>
           <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-sm ${awayDisplay.circleBg}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${awayDisplay.circleBg}`}>
               {awayDisplay.icon}
             </div>
             <div>

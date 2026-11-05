@@ -26,7 +26,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { getTeamColors } from './scoreboardColors';
+import { getTeamColors, GAME_STATE_COLORS } from './scoreboardColors';
 
 interface GameButtonRowProps {
   /** Game number */
@@ -159,7 +159,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
   // Pending state: buttons with the winner highlighted, no trophy yet.
   if (state === 'pending') {
     const cls = (s: Slot) =>
-      `w-full ${won(s) ? 'bg-yellow-100 font-semibold' : 'bg-card text-muted-foreground'}`;
+      `w-full ${won(s) ? `${GAME_STATE_COLORS.pending} font-semibold` : 'bg-card text-muted-foreground'}`;
     const middle = onConfirmClick ? (
       <Button
         variant="outline"
@@ -191,7 +191,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
   if (state === 'confirmed') {
     const cell = (s: Slot) => (
       <div
-        className={`text-center p-2 rounded ${won(s) ? 'bg-green-200 font-semibold' : 'bg-card text-muted-foreground'}`}
+        className={`text-center p-2 rounded ${won(s) ? `${GAME_STATE_COLORS.confirmed} font-semibold` : 'bg-card text-muted-foreground'}`}
       >
         <SlotName slot={s} trophy={won(s)} />
       </div>
@@ -209,7 +209,7 @@ export function GameButtonRow(props: GameButtonRowProps) {
   // Unscored state: buttons in team colours — tap the player who won.
   const cls = (s: Slot) => {
     const c = getTeamColors(s.isHome);
-    return `w-full ${c.bg} ${c.bgHover}`;
+    return `w-full ${c.button}`;
   };
   return (
     <div className={rowClass}>

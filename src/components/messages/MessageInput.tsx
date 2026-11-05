@@ -73,9 +73,9 @@ export function MessageInput({ onSend, disabled = false, maxLength = 2000 }: Mes
           onClick={handleSendMessage}
           disabled={!messageInput.trim() || sending || disabled}
           size="lg"
-          className="h-11 w-11 md:h-10 md:w-10 p-0 flex-shrink-0 bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+          className="h-11 w-11 md:h-10 md:w-10 p-0 flex-shrink-0 bg-info hover:bg-info/90 disabled:opacity-50"
         >
-          <Send className="h-5 w-5 md:h-4 md:w-4 text-white" />
+          <Send className="h-5 w-5 md:h-4 md:w-4 text-info-foreground" />
         </Button>
       </div>
       <p className="text-xs text-foreground mt-1.5 md:mt-1">

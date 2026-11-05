@@ -144,7 +144,7 @@ export function PremiumFeaturesSection({
                 </div>
                 <p className="text-sm text-muted-foreground">{f.blurb}</p>
                 {f.setupInfo && (
-                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                  <div className="flex items-center gap-1 text-xs text-warning">
                     <span>(some setup required)</span>
                     <InfoButton title={`${f.label} — what you’ll set up`} size="sm" align="left">
                       <p>{f.setupInfo}</p>

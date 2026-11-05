@@ -1,0 +1,10 @@
+[
+  {
+    "text": "In dark mode the scoreboard's numbers and names turned nearly white on the light team panels and were hard to read. They're dark and readable now, on the tiebreaker score too.",
+    "kind": "fix"
+  },
+  {
+    "text": "The Verify Scores button at the end of a match now shows only to players on the two teams. Anyone else watching still sees whether each team has verified.",
+    "kind": "fix"
+  }
+]

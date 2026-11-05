@@ -1,0 +1,5 @@
+{
+  "text": "In dark mode, the scores and player rows on the scoreboard were nearly white on light team panels and hard to read. The panels now darken with the rest of the screen, so the numbers stand out again.",
+  "kind": "fix",
+  "headline": "a readable scoreboard in dark mode"
+}

@@ -304,7 +304,7 @@ export const getQuestionDefinitions = (
                   payload: e.target.checked,
                 })
               }
-              className="w-4 h-4 text-blue-600 bg-muted border-border rounded focus:ring-blue-500 focus:ring-2"
+              className="w-4 h-4 text-info bg-muted border-border rounded focus:ring-ring focus:ring-2"
             />
             <span className="text-sm font-medium text-foreground">
               I agree to the terms and acknowledge that my League Operator contact information may be made public
@@ -381,7 +381,7 @@ export const getQuestionDefinitions = (
                       }
                     }}
                     placeholder="leaguename@gmail.com"
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent ${
                       state.leagueEmail && (() => {
                         try {
                           leagueEmailSchema.parse(state.leagueEmail);
@@ -416,7 +416,7 @@ export const getQuestionDefinitions = (
               onClick={() => dispatch({ type: 'SET_USE_PROFILE_EMAIL', payload: true })}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 state.useProfileEmail === true
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-info text-info-foreground'
                   : 'bg-card border border-border text-foreground hover:bg-muted'
               }`}
             >
@@ -426,7 +426,7 @@ export const getQuestionDefinitions = (
               onClick={() => dispatch({ type: 'SET_USE_PROFILE_EMAIL', payload: false })}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 state.useProfileEmail === false
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-info text-info-foreground'
                   : 'bg-card border border-border text-foreground hover:bg-muted'
               }`}
             >
@@ -522,7 +522,7 @@ export const getQuestionDefinitions = (
                       }
                     }}
                     placeholder="(555) 123-4567"
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-ring focus:border-transparent ${
                       state.leaguePhone && (() => {
                         try {
                           leaguePhoneSchema.parse(state.leaguePhone);
@@ -557,7 +557,7 @@ export const getQuestionDefinitions = (
               onClick={() => dispatch({ type: 'SET_USE_PROFILE_PHONE', payload: true })}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 state.useProfilePhone === true
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-info text-info-foreground'
                   : 'bg-card border border-border text-foreground hover:bg-muted'
               }`}
             >
@@ -567,7 +567,7 @@ export const getQuestionDefinitions = (
               onClick={() => dispatch({ type: 'SET_USE_PROFILE_PHONE', payload: false })}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                 state.useProfilePhone === false
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-info text-info-foreground'
                   : 'bg-card border border-border text-foreground hover:bg-muted'
               }`}
             >

@@ -70,11 +70,11 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
   // Helper: Get status badge color
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-500';
-      case 'in_progress': return 'bg-blue-500';
-      case 'awaiting_verification': return 'bg-yellow-500';
-      case 'scheduled': return 'bg-gray-400';
-      default: return 'bg-gray-400';
+      case 'completed': return 'bg-success text-success-foreground';
+      case 'in_progress': return 'bg-info text-info-foreground';
+      case 'awaiting_verification': return 'bg-warning text-warning-foreground';
+      case 'scheduled': return 'bg-muted text-foreground';
+      default: return 'bg-muted text-foreground';
     }
   };
 
@@ -123,7 +123,7 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
           </Badge>
         )}
         {hasScores && winner && (
-          <Badge className={winner === 'home' ? 'bg-green-600' : winner === 'away' ? 'bg-blue-600' : 'bg-gray-600'}>
+          <Badge className={winner === 'home' ? 'bg-success text-success-foreground' : winner === 'away' ? 'bg-info text-info-foreground' : 'bg-muted text-foreground'}>
             {winner === 'home' ? 'Home Win' : winner === 'away' ? 'Away Win' : 'Tie'}
           </Badge>
         )}
@@ -162,7 +162,7 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
                 )}
               </h3>
               {winner === 'home' && (
-                <Badge className="bg-green-600">WINNER</Badge>
+                <Badge className="bg-success text-success-foreground">WINNER</Badge>
               )}
             </div>
 
@@ -219,7 +219,7 @@ export function MatchDetailCard({ matchId, playerView = false, weekLabel }: Matc
                 )}
               </h3>
               {winner === 'away' && (
-                <Badge className="bg-blue-600">WINNER</Badge>
+                <Badge className="bg-info text-info-foreground">WINNER</Badge>
               )}
             </div>
 
