@@ -275,7 +275,8 @@ for a clear reason is fine.
   - **abandon**
 - The likely picks:
   - the module-workshop branches: port later (paused)
-  - `fix/promote-sub-to-real-player`: **can sit (recommended 2026-11-05).** It only
+  - `fix/promote-sub-to-real-player`: **sits, unused (Ed, 2026-11-05).** It was a one-time fix; the real need is
+    `docs/list/2026-10-28-lo-fix-finished-lineup.md`. It only
     adds hand-run SQL under `database/maintenance/`, which this plan doesn't
     touch.
   - the small chores: abandon, or land

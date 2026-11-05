@@ -2,11 +2,16 @@
 summary: Let a league operator fix a lineup on a match that has already started
 kind: task
 added: 2026-10-28
-checked: 2026-11-04
+checked: 2026-11-05
 ---
 
 Low priority. Ed, 2026-10-28: "it's a rare thing, we have only one league, so
 I can just do it again if it comes to that for now."
+
+Ed, 2026-11-05: the hand-run SQL fix on branch
+`fix/promote-sub-to-real-player` was a one-time thing and won't be reused.
+What's wanted instead is a way for the LO to go in and edit the games by
+hand. The branch can sit, unused.
 
 The situation: a player recorded in a substitute slot earns zero games in
 their record. Sub placeholder ids are stripped from player stats on purpose
