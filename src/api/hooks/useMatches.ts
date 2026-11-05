@@ -220,7 +220,7 @@ export function useMatchWithLeagueSettings(matchId: string | null | undefined) {
     // server-fresh state during the lineup → scoring transition. Was
     // STALE_TIME.SCHEDULES (10 min), which silently swallowed realtime
     // invalidations because the cache was still considered "fresh" and
-    // refetch became a no-op. See LIST_FOR_ED #21/#22 root-cause analysis
+    // refetch became a no-op. See the root-cause analysis
     // in docs/brainstorms/lineup-to-scoring-transition-requirements.md.
     staleTime: STALE_TIME.MATCH_LIVE,
     // Live scoring: always pull fresh server state on (re)mount and on network
