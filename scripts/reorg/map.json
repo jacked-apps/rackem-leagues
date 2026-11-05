@@ -1,0 +1,65 @@
+{
+  "plan": "docs/plans/2026-11-05-002-refactor-src-folder-reorg-plan.md",
+  "readable": "docs/audits/2026-11-05-src-reorg-map.md",
+  "units": {
+    "2": [
+      { "from": "src/officalBCARulebook", "to": "src/bcaRulebook" },
+      { "from": "src/home/Home.tsx", "to": "src/pages/Home.tsx" },
+      { "from": "src/host/BecomeHost.tsx", "to": "src/pages/BecomeHost.tsx" }
+    ],
+    "3": [
+      { "from": "src/components/wizard", "to": "src/wizards/shared" },
+      { "from": "src/components/forms/ChoiceStep.tsx", "to": "src/wizards/shared/ChoiceStep.tsx" },
+      { "from": "src/components/forms/DualDateStep.tsx", "to": "src/wizards/shared/DualDateStep.tsx" },
+      { "from": "src/components/forms/QuestionStep.tsx", "to": "src/wizards/shared/QuestionStep.tsx" },
+      { "from": "src/components/forms/SimpleRadioChoice.tsx", "to": "src/wizards/shared/SimpleRadioChoice.tsx" },
+      { "from": "src/components/forms/WizardProgress.tsx", "to": "src/wizards/shared/WizardProgress.tsx" },
+      { "from": "src/newPlayer/FormField.tsx", "to": "src/components/forms/FormField.tsx" },
+      { "from": "src/operator/SeasonCreationWizard.tsx", "to": "src/wizards/season-v1/SeasonCreationWizard.tsx" },
+      { "from": "src/operator/wizardReducer.ts", "to": "src/wizards/season-v1/wizardReducer.ts" },
+      { "from": "src/data/seasonWizardSteps.tsx", "to": "src/wizards/season-v1/seasonWizardSteps.tsx" },
+      { "from": "src/operator/PlayoffsSetupWizard.tsx", "to": "src/wizards/playoffs-setup/PlayoffsSetupWizard.tsx" }
+    ],
+    "4": [
+      { "from": "src/newPlayer", "to": "src/profile/new-player" },
+      { "from": "src/completeProfile", "to": "src/profile/complete" }
+    ],
+    "5": [
+      { "from": "src/leagueOperator", "to": "src/operator/application" },
+      { "from": "src/components/previews/ApplicationPreview.tsx", "to": "src/operator/application/ApplicationPreview.tsx" },
+      { "from": "src/components/privacy", "to": "src/operator/application/privacy" },
+      { "from": "src/components/modals/SecurityDisclaimerModal.tsx", "to": "src/operator/application/SecurityDisclaimerModal.tsx" },
+      { "from": "src/components/modals/SetupGuideModal.tsx", "to": "src/operator/application/SetupGuideModal.tsx" },
+      { "from": "src/components/operator", "to": "src/operator/components" },
+      { "from": "src/components/operator/SectionCard.tsx", "to": "src/components/SectionCard.tsx" },
+      { "from": "src/components/playoff", "to": "src/operator/components/playoff" },
+      { "from": "src/components/modals/DeleteLeagueModal.tsx", "to": "src/operator/components/DeleteLeagueModal.tsx" },
+      { "from": "src/components/modals/DayOfWeekWarningModal.tsx", "to": "src/operator/components/DayOfWeekWarningModal.tsx" },
+      { "from": "src/components/AllPlayersRosterCard.tsx", "to": "src/operator/components/AllPlayersRosterCard.tsx" },
+      { "from": "src/components/MatchCard.tsx", "to": "src/operator/components/MatchCard.tsx" },
+      { "from": "src/components/RecordDuesModal.tsx", "to": "src/operator/components/RecordDuesModal.tsx" },
+      { "from": "src/components/TableSizeLabel.tsx", "to": "src/operator/components/TableSizeLabel.tsx" },
+      { "from": "src/components/TeamCard.tsx", "to": "src/operator/components/TeamCard.tsx" },
+      { "from": "src/components/VenueListItem.tsx", "to": "src/operator/components/VenueListItem.tsx" }
+    ],
+    "6": [
+      { "from": "src/pages/Messages.tsx", "to": "src/messages/Messages.tsx" },
+      { "from": "src/pages/__tests__/Messages.urlSync.test.tsx", "to": "src/messages/__tests__/Messages.urlSync.test.tsx" },
+      { "from": "src/components/messages", "to": "src/messages" },
+      { "from": "src/components/onboarding/ProfanityOnboardingModal.tsx", "to": "src/messages/ProfanityOnboardingModal.tsx" },
+      { "from": "src/components/onboarding/__tests__", "to": "src/messages/__tests__" },
+      { "from": "src/components/stats", "to": "src/stats/components" },
+      { "from": "src/components/StatsNavBar.tsx", "to": "src/stats/StatsNavBar.tsx" },
+      { "from": "src/player/PlayerStats.tsx", "to": "src/stats/PlayerStats.tsx" },
+      { "from": "src/player/__tests__/PlayerStats.test.tsx", "to": "src/stats/__tests__/PlayerStats.test.tsx" },
+      { "from": "src/pages/TopShooters.tsx", "to": "src/stats/TopShooters.tsx" },
+      { "from": "src/pages/TeamStats.tsx", "to": "src/stats/TeamStats.tsx" },
+      { "from": "src/pages/FeatsOfExcellence.tsx", "to": "src/stats/FeatsOfExcellence.tsx" },
+      { "from": "src/components/match", "to": "src/player/match" },
+      { "from": "src/components/PlayerRoster.tsx", "to": "src/player/PlayerRoster.tsx" }
+    ],
+    "7": [
+      { "from": "src/components/AlertDialog.tsx", "to": "src/components/shared/AlertDialog.tsx" }
+    ]
+  }
+}
