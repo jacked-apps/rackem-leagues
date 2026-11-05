@@ -2,7 +2,7 @@
 
 **Created:** 2026-06-07
 **Status:** findings + sized first slice (members)
-**Relates to:** LIST_FOR_ED #2 (consolidate queries) — this is the *cache-freshness* half of that effort; the #183 members consolidation was the *query-shape* half.
+**Relates to:** `docs/list/2026-11-04-consolidate-match-queries.md` (consolidate queries) — this is the *cache-freshness* half of that effort; the #183 members consolidation was the *query-shape* half.
 
 ## Symptom
 
