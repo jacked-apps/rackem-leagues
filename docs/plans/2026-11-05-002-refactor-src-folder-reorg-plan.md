@@ -184,7 +184,7 @@ for a clear reason is fine.
 ## Key Technical Decisions
 
 - **A committed move script, driven by a committed map.**
-  - `scripts/reorg/move.ts` uses ts-morph (new devDependency) to move each
+  - `scripts/reorg/move.ts` (run with tsx; no new dependency) moves each
     file and rewrite every reference, in both `@/` and relative form:
     - static imports, `export … from`, `import()` and `lazy()`
     - `import type` and `typeof import()`
@@ -299,7 +299,7 @@ map Ed approves before anything moves.
 - Create: `scripts/reorg/move.ts`
 - Create: `src/__tests__/unit/importPaths.test.ts`
 - Create: `docs/audits/2026-11-05-src-reorg-map.md`
-- Modify: `package.json` (ts-morph devDependency)
+- Create: `scripts/reorg/paths.ts` (path logic shared with the checker), `src/__tests__/unit/reorgMove.test.ts`
 - Merge in: the `refactor/toc-replacement` branch (2 doc commits), so Unit 8
   can edit that plan here.
 
