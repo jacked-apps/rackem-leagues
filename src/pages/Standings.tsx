@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowLeft, Lock, Trophy, Award } from 'lucide-react';
 import { useStandings } from '@/api/hooks/useStandings';
-import { StatsNavBar } from '@/components/StatsNavBar';
+import { StatsNavBar } from '@/stats/StatsNavBar';
 import { PageHeader } from '@/components/PageHeader';
 import { useIsOperator } from '@/api/hooks';
 import { useSeasonLockedPayouts } from '@/api/hooks/useSeasonLockedPayouts';

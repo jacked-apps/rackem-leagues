@@ -19,15 +19,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
-import { ConversationList } from '@/components/messages/ConversationList';
-import { CreateTeamChatPrompt } from '@/components/messages/CreateTeamChatPrompt';
-import { MessageView } from '@/components/messages/MessageView';
-import { MessagesEmptyState } from '@/components/messages/MessagesEmptyState';
-import { NewMessageModal } from '@/components/messages/NewMessageModal';
-import { AnnouncementModal } from '@/components/messages/AnnouncementModal';
-import { MessageSettingsModal } from '@/components/messages/MessageSettingsModal';
-import { ProfanityOnboardingModal } from '@/components/onboarding/ProfanityOnboardingModal';
-import { PushOnboardingPrompt } from '@/components/messages/PushOnboardingPrompt';
+import { ConversationList } from '@/messages/ConversationList';
+import { CreateTeamChatPrompt } from '@/messages/CreateTeamChatPrompt';
+import { MessageView } from '@/messages/MessageView';
+import { MessagesEmptyState } from '@/messages/MessagesEmptyState';
+import { NewMessageModal } from '@/messages/NewMessageModal';
+import { AnnouncementModal } from '@/messages/AnnouncementModal';
+import { MessageSettingsModal } from '@/messages/MessageSettingsModal';
+import { ProfanityOnboardingModal } from '@/messages/ProfanityOnboardingModal';
+import { PushOnboardingPrompt } from '@/messages/PushOnboardingPrompt';
 import {
   useCurrentMember,
   useUserProfile,

@@ -24,10 +24,10 @@ import { usePlayerGameHistory } from '@/api/hooks/usePlayerGameHistory';
 import { summarizeGames } from '@/stats/summarizeGames';
 import { applyGameFilter, NO_FILTER, type GameFilter } from '@/stats/gameFilters';
 import { buildFilterOptions } from '@/stats/filterOptions';
-import { StatsSummary } from '@/components/stats/StatsSummary';
-import { GameLogTable } from '@/components/stats/GameLogTable';
-import { FilterBar } from '@/components/stats/FilterBar';
-import { BetaNotice } from '@/components/stats/BetaNotice';
+import { StatsSummary } from '@/stats/components/StatsSummary';
+import { GameLogTable } from '@/stats/components/GameLogTable';
+import { FilterBar } from '@/stats/components/FilterBar';
+import { BetaNotice } from '@/stats/components/BetaNotice';
 
 /** A one-line message in the page's normal frame. */
 function Notice({ title, body }: { title: string; body: string }) {

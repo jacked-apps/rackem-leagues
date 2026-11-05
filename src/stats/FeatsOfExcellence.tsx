@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { InfoButton } from '@/components/InfoButton';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { useFeatsStats } from '@/api/hooks/useFeatsStats';
-import { StatsNavBar } from '@/components/StatsNavBar';
+import { StatsNavBar } from '@/stats/StatsNavBar';
 import { PageHeader } from '@/components/PageHeader';
 import { useIsOperator } from '@/api/hooks';
 import { ArrowLeft } from 'lucide-react';

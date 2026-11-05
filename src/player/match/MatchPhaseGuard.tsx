@@ -55,7 +55,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { queryKeys } from '@/api/queryKeys';
 import { useMatchPhase } from '@/api/hooks/useMatchPhase';
-import { MatchTransitionRecovery } from '@/components/match/MatchTransitionRecovery';
+import { MatchTransitionRecovery } from '@/player/match/MatchTransitionRecovery';
 import { computePhaseRedirect, deriveReasonFromError } from './matchPhaseHelpers';
 
 interface MatchPhaseGuardProps {

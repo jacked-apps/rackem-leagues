@@ -34,7 +34,7 @@ import { Button } from '@/components/ui/button';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
 import type { GameType, DayOfWeek } from '@/types/league';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
-import { PlayerRoster } from '@/components/PlayerRoster';
+import { PlayerRoster } from '@/player/PlayerRoster';
 import { VenueWithMaps } from '@/components/VenueWithMaps';
 import { PageHeader } from '@/components/PageHeader';
 import { MapPin, Users, AlertCircle, ArrowRight, Pencil, Bell } from 'lucide-react';

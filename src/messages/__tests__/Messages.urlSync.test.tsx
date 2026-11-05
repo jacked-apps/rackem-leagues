@@ -23,24 +23,24 @@ const CONV_B = '22222222-2222-4222-8222-222222222222';
 vi.mock('@/components/PageHeader', () => ({
   PageHeader: ({ title }: { title: React.ReactNode }) => <div>{title}</div>,
 }));
-vi.mock('@/components/messages/MessagesEmptyState', () => ({
+vi.mock('@/messages/MessagesEmptyState', () => ({
   MessagesEmptyState: () => <div>empty</div>,
 }));
-vi.mock('@/components/messages/CreateTeamChatPrompt', () => ({
+vi.mock('@/messages/CreateTeamChatPrompt', () => ({
   CreateTeamChatPrompt: () => null,
 }));
-vi.mock('@/components/messages/NewMessageModal', () => ({ NewMessageModal: () => null }));
-vi.mock('@/components/messages/AnnouncementModal', () => ({ AnnouncementModal: () => null }));
-vi.mock('@/components/messages/MessageSettingsModal', () => ({ MessageSettingsModal: () => null }));
-vi.mock('@/components/onboarding/ProfanityOnboardingModal', () => ({
+vi.mock('@/messages/NewMessageModal', () => ({ NewMessageModal: () => null }));
+vi.mock('@/messages/AnnouncementModal', () => ({ AnnouncementModal: () => null }));
+vi.mock('@/messages/MessageSettingsModal', () => ({ MessageSettingsModal: () => null }));
+vi.mock('@/messages/ProfanityOnboardingModal', () => ({
   ProfanityOnboardingModal: () => null,
 }));
-vi.mock('@/components/messages/PushOnboardingPrompt', () => ({
+vi.mock('@/messages/PushOnboardingPrompt', () => ({
   PushOnboardingPrompt: () => null,
 }));
 
 // Conversation list: just enough to click a thread open.
-vi.mock('@/components/messages/ConversationList', () => ({
+vi.mock('@/messages/ConversationList', () => ({
   ConversationList: ({
     onSelectConversation,
   }: {
@@ -54,7 +54,7 @@ vi.mock('@/components/messages/ConversationList', () => ({
 }));
 
 // Message view: exposes its Back so we can assert closing clears the URL.
-vi.mock('@/components/messages/MessageView', () => ({
+vi.mock('@/messages/MessageView', () => ({
   MessageView: ({ conversationId, onBack }: { conversationId: string; onBack: () => void }) => (
     <div>
       <span>viewing {conversationId}</span>

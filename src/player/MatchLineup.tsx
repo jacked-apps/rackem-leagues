@@ -12,7 +12,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/api/queryKeys';
-import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
+import { MatchPhaseGuard } from '@/player/match/MatchPhaseGuard';
 import { ByeWeekNotice } from '@/components/lineup/ByeWeekNotice';
 import { isByeMatch } from '@/utils/match/isByeMatch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +29,7 @@ import {
 import { usePlayerHandicaps } from '@/api/hooks/usePlayerHandicaps';
 import type { Player } from '@/types/match';
 import { MatchInfoCard } from '@/components/lineup/MatchInfoCard';
-import { PlayerRoster } from '@/components/PlayerRoster';
+import { PlayerRoster } from '@/player/PlayerRoster';
 import { LineupActions } from '@/components/lineup/LineupActions';
 import { HandicapSummary } from '@/components/lineup/HandicapSummary';
 import { DuplicateNicknameWarning } from '@/components/lineup/DuplicateNicknameWarning';

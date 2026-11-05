@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/table';
 import { ArrowLeft } from 'lucide-react';
 import { useTopShooters } from '@/api/hooks/useTopShooters';
-import { StatsNavBar } from '@/components/StatsNavBar';
+import { StatsNavBar } from '@/stats/StatsNavBar';
 import { PageHeader } from '@/components/PageHeader';
 import { useIsOperator } from '@/api/hooks';
 import { PlayerNameLink } from '@/components/PlayerNameLink';

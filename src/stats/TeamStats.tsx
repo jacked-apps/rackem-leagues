@@ -22,7 +22,7 @@ import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { usePlayerHandicaps } from '@/api/hooks/usePlayerHandicaps';
 import { getLeagueBySeasonId } from '@/api/queries/leagues';
 import { queryKeys } from '@/api/queryKeys';
-import { StatsNavBar } from '@/components/StatsNavBar';
+import { StatsNavBar } from '@/stats/StatsNavBar';
 import { PageHeader } from '@/components/PageHeader';
 import { useIsOperator } from '@/api/hooks';
 import { ArrowLeft } from 'lucide-react';
