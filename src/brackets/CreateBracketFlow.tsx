@@ -232,7 +232,7 @@ export function CreateBracketFlow() {
                 onMove={form.moveParticipant}
               />
               {validation.hasDuplicates && (
-                <p className="text-sm text-amber-600">
+                <p className="text-sm text-warning">
                   Some names are duplicated — that's allowed, just make sure it's
                   intentional.
                 </p>

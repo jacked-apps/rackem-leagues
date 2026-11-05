@@ -463,7 +463,7 @@ export function TeamSchedule() {
                                 href={mapsUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-0.5 font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                                className="inline-flex items-center gap-0.5 font-semibold text-info hover:text-info/80 hover:underline"
                               >
                                 <MapPin className="h-4 w-4" />
                                 {venue.name}
@@ -480,7 +480,7 @@ export function TeamSchedule() {
                           <Button
                             variant="link"
                             loadingText="none"
-                            className="h-auto gap-0.5 p-0 text-sm text-blue-600 hover:text-blue-800"
+                            className="h-auto gap-0.5 p-0 text-sm text-info hover:text-info/80"
                           >
                             {scoreLinkLabel(entry.kind)}
                             <ArrowRight className="h-3.5 w-3.5" />

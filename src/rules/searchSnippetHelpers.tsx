@@ -49,7 +49,7 @@ function highlightAllOccurrences(slice: string, query: string): React.ReactNode[
     }
     if (hit > cursor) nodes.push(slice.slice(cursor, hit));
     nodes.push(
-      <mark key={key++} className="rounded bg-yellow-200 text-foreground px-0.5">
+      <mark key={key++} className="rounded bg-warning/20 text-foreground px-0.5">
         {slice.slice(hit, hit + query.length)}
       </mark>,
     );

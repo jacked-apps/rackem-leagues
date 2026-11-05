@@ -193,7 +193,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   // Loading state
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-card rounded-lg p-6 max-w-md w-full">
           <p className="text-center text-muted-foreground">Loading league information...</p>
         </div>
@@ -204,7 +204,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   // Error state
   if (error && !stats) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-card rounded-lg p-6 max-w-md w-full">
           <h3 className="text-lg font-semibold text-destructive mb-4">Error</h3>
           <p className="text-foreground mb-4">{error}</p>
@@ -221,7 +221,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   // BLOCK: Completed seasons exist
   if (stats?.hasCompletedSeasons) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
             <XCircle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
@@ -275,7 +275,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
     const requiresConfirmation = confirmText !== 'DELETE';
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
             <AlertTriangle className="h-6 w-6 text-warning flex-shrink-0 mt-1" />
@@ -338,7 +338,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
               isLoading={deleting}
               onClick={handleDelete}
               disabled={requiresConfirmation || deleting}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              variant="destructive"
             >
               Delete League
             </Button>
@@ -351,7 +351,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
   // MODERATE WARNING: Has data but no plays
   if (stats?.hasSeasons || stats?.hasMatches) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-card rounded-lg p-6 max-w-lg w-full">
           <div className="flex items-start gap-3 mb-4">
             <AlertTriangle className="h-6 w-6 text-warning flex-shrink-0 mt-1" />
@@ -392,7 +392,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
               isLoading={deleting}
               onClick={handleDelete}
               disabled={deleting}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              variant="destructive"
             >
               Delete League
             </Button>
@@ -404,7 +404,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
 
   // INFO: Empty league
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-card rounded-lg p-6 max-w-md w-full">
         <div className="flex items-start gap-3 mb-4">
           <Info className="h-6 w-6 text-info flex-shrink-0 mt-1" />
@@ -438,7 +438,7 @@ export const DeleteLeagueModal: React.FC<DeleteLeagueModalProps> = ({
             isLoading={deleting}
             onClick={handleDelete}
             disabled={deleting}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            variant="destructive"
           >
             Delete League
           </Button>

@@ -153,7 +153,7 @@ export function LineupChangeModal({
           <div className="space-y-2">
             <Label htmlFor="replacement-player">Select Replacement</Label>
             {availablePlayers.length === 0 ? (
-              <p className="text-sm text-red-600">
+              <p className="text-sm text-destructive">
                 No available players on roster. All team members are already in the lineup.
               </p>
             ) : (

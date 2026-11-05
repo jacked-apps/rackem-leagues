@@ -26,7 +26,7 @@ export const SetupGuideModal: React.FC<SetupGuideModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div
         className="bg-card rounded-lg p-6 max-w-2xl max-h-96 overflow-y-scroll"
         style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}
@@ -46,7 +46,7 @@ export const SetupGuideModal: React.FC<SetupGuideModalProps> = ({
             <p>• Keep separate from personal email</p>
             <p>• (Optional) Forward into your personal email</p>
             <p>• (Optional) Filter into separate folders</p>
-            <div className="mt-2 text-green-600 font-medium">
+            <div className="mt-2 text-success font-medium">
               This is FREE and EASY - should be done at minimum
             </div>
           </div>
@@ -63,7 +63,7 @@ export const SetupGuideModal: React.FC<SetupGuideModalProps> = ({
             <p>• Set business hours - calls go to voicemail after hours</p>
             <p>• Turn on/off anytime - full control</p>
             <p>• Appears completely separate from personal number</p>
-            <div className="mt-2 text-blue-600 font-medium">
+            <div className="mt-2 text-info font-medium">
               Creates a legitimate business presence that players will trust
             </div>
           </div>
@@ -76,10 +76,10 @@ export const SetupGuideModal: React.FC<SetupGuideModalProps> = ({
             <p>• Facebook Business Page (not personal profile)</p>
             <p>• Instagram: @YourLeagueName</p>
             <p>• Twitter/X: @YourLeagueName</p>
-            <div className="mt-2 text-amber-600 font-medium">
+            <div className="mt-2 text-warning font-medium">
               Regular posting can grow your league and increase venue patronage
             </div>
-            <div className="mt-1 text-amber-700 text-xs">
+            <div className="mt-1 text-warning text-xs">
               Note: Requires ongoing effort and content creation to be effective
             </div>
             <div className="mt-1 text-muted-foreground text-xs">
@@ -123,7 +123,7 @@ export const SetupGuideModal: React.FC<SetupGuideModalProps> = ({
         </div>
         <button
           onClick={onClose}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="mt-4 px-4 py-2 bg-info text-info-foreground rounded hover:bg-info/90"
         >
           Close
         </button>

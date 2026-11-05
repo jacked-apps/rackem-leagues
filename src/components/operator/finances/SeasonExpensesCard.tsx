@@ -129,7 +129,7 @@ export function SeasonExpensesCard({ seasonId }: SeasonExpensesCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Receipt className="h-5 w-5 text-orange-600" />
+          <Receipt className="h-5 w-5 text-warning" />
           Expenses + Credits
           <span className="text-sm font-normal text-muted-foreground ml-2">
             {expenses.length + credits.length} item{expenses.length + credits.length === 1 ? '' : 's'}
@@ -139,8 +139,8 @@ export function SeasonExpensesCard({ seasonId }: SeasonExpensesCardProps) {
       <CardContent className="space-y-4">
         {/* Summary line */}
         <div className="grid grid-cols-3 gap-3 text-sm">
-          <SummaryStat label="Expenses (from pool)" value={totalExpenses} color="text-red-700 dark:text-red-400" />
-          <SummaryStat label="Credits (added)" value={totalCredits} color="text-green-700 dark:text-green-400" />
+          <SummaryStat label="Expenses (from pool)" value={totalExpenses} color="text-destructive" />
+          <SummaryStat label="Credits (added)" value={totalCredits} color="text-success" />
           <SummaryStat label="🎁 LO-funded" value={totalLoFunded} color="text-muted-foreground" tooltip="Doesn't affect the pool" />
         </div>
 
@@ -260,11 +260,11 @@ export function SeasonExpensesCard({ seasonId }: SeasonExpensesCardProps) {
               >
                 <div className="flex items-center gap-2 min-w-0">
                   {entry.entry_type === 'expense' && entry.lo_funded ? (
-                    <Gift className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                    <Gift className="h-4 w-4 text-highlight flex-shrink-0" />
                   ) : entry.entry_type === 'expense' ? (
-                    <Receipt className="h-4 w-4 text-red-600 flex-shrink-0" />
+                    <Receipt className="h-4 w-4 text-destructive flex-shrink-0" />
                   ) : (
-                    <span className="text-green-600">💰</span>
+                    <span className="text-success">💰</span>
                   )}
                   <div className="min-w-0">
                     <div className="truncate font-medium">{entry.description}</div>
@@ -278,10 +278,10 @@ export function SeasonExpensesCard({ seasonId }: SeasonExpensesCardProps) {
                   <span
                     className={
                       entry.entry_type === 'credit'
-                        ? 'text-green-700 dark:text-green-400 font-medium'
+                        ? 'text-success font-medium'
                         : entry.lo_funded
                           ? 'text-muted-foreground'
-                          : 'text-red-700 dark:text-red-400 font-medium'
+                          : 'text-destructive font-medium'
                     }
                   >
                     {entry.entry_type === 'credit' ? '+' : '−'}${(entry.amount ?? 0).toFixed(2)}
@@ -291,7 +291,7 @@ export function SeasonExpensesCard({ seasonId }: SeasonExpensesCardProps) {
                     size="sm"
                     loadingText="none"
                     onClick={() => handleDelete(entry.id)}
-                    className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>

@@ -77,7 +77,7 @@ export function ScheduleWizardStep({
   }, [pendingKeepAdvance, value, onNext]);
 
   if (!startDate) {
-    return <p className="text-red-600">Missing start date from league setup.</p>;
+    return <p className="text-destructive">Missing start date from league setup.</p>;
   }
 
   const handleConfirm = async (destination: 'dashboard' | 'teams') => {

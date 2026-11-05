@@ -203,7 +203,7 @@ export const OrgPlaceholdersCard: React.FC<OrgPlaceholdersCardProps> = ({
               {!isLoading && totalCount > 0 && (
                 <div className="flex flex-wrap gap-2 pb-3 mb-3 border-b border-border">
                   {unusedCount > 0 && (
-                    <span className="inline-flex items-center rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+                    <span className="inline-flex items-center rounded-full bg-destructive px-2.5 py-0.5 text-xs font-semibold text-destructive-foreground">
                       {unusedCount} unused (no team)
                     </span>
                   )}

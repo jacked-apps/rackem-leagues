@@ -28,7 +28,7 @@ export const BecomeLeagueOperator: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-info/10 to-highlight/10">
       {/* Page Header */}
       <PageHeader
         backTo="/my-teams"

@@ -67,7 +67,7 @@ export function PlaceholderRemovalModal({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserX className="h-5 w-5 text-amber-600" />
+            <UserX className="h-5 w-5 text-warning" />
             Cannot Remove Player
           </DialogTitle>
           <DialogDescription className="space-y-3 pt-2">

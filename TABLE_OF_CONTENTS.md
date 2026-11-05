@@ -552,6 +552,17 @@ how to add a new test, demo recording, cleanup model).
 | `vite-env.d.ts` | Vite TypeScript definitions |
 | `config/environment.ts` | App environment detection (dev/staging/prod) + banner config |
 | `components/EnvironmentBanner.tsx` | Top-of-app banner labeling non-production builds |
+| `themes/palettes.ts` | **Custom colour schemes (GATED, non-production)** — the fourth theme choice beside Light/Dark/System: each scheme = one complete look built on one mode (`COLOUR_SCHEMES`); `applyScheme` sets `data-palette` on `<html>`, `ThemeToggle` switches the mode. Applied at boot from `main.tsx` |
+| `themes/palettes.css` | Imports the custom-scheme files into `index.css` |
+| `themes/high-contrast.css` | High Contrast scheme (light-based) — black and white: black home / white away panels |
+| `themes/blue-gold.css` | Blue & Gold scheme (dark-based) — navy page, gold buttons, navy home / gold away |
+| `themes/felt.css` | Felt scheme (dark-based) — felt-green page, green buttons, green home / cue-ball away |
+| `themes/pastel.css` | Pastel scheme (light-based) — blush page, lavender buttons, periwinkle home / peach away |
+| `themes/strawberry-cream.css` | Strawberry & Cream scheme (light-based) — cream page, soft strawberry buttons, strawberry home / cream away |
+| `components/CustomSchemePicker.tsx` | Custom colour-scheme dropdown shown by `ThemeToggle` while "Custom" is selected (non-production) |
+| `themes/palettes.test.ts` | Guard: every scheme CSS rule is scoped to its own `data-palette` (so a scheme can never change Light / Dark / other schemes) + every listed scheme has its imported file |
+| `themes/noFixedColours.test.ts` | Guard: app code uses theme tokens, never fixed Tailwind colours (`bg-blue-50`, `text-red-600`…), so every custom scheme reaches every screen. Allow-list: ball icons, Google logo, printed QR, env banner, dev pages, `bg-black/NN` overlays |
+| `components/ThemeToggle.test.tsx` | Light / Dark / System after a custom scheme clear it completely; Custom opens on the first scheme |
 
 ---
 
@@ -1043,7 +1054,7 @@ Reusable wizard/form step components
 - `PeekConfirmDialog.tsx` - **Many-eyes Layer-2 / Unit 6.** Shadcn `Dialog` opened when a viewer taps a fully-confirmed game row in `GamesList`. Shows the recorded result (winner + achievements + points) + Confirm button (adds my vouch as an extra witness via `confirmOpponentScore`, which Amendment I's 3-step check gates safely). Confirm button hides + "already vouched" note shown when the viewer's `is_initiator=false` row is already in the log. Close paths: shadcn X icon / ESC / outside-click (no redundant footer button).
 - `TableNumberBar.tsx` - Compact bar showing the venue table number assigned to this match.
 - `AdaptiveCounter.tsx` - Tap-target counter optimized for thumb input on mobile scoring.
-- `scoreboardColors.ts` - Single source of truth for team colors (home: blue, away: orange)
+- `scoreboardColors.ts` - Single source of truth for team + scored-game colors (home: blue, away: orange) — THEME TOKENS from `index.css` with light + dark values; text on a team panel uses the panel's own text token, never `text-foreground`
 - `__tests__/UnifiedScoreboard.test.tsx` - Unit tests for the unified scoreboard (preset paths).
 - `__tests__/UnifiedScoreboard.offPreset.test.tsx` - Tests covering off-preset combos (different lineup / scoring calculator combos).
 - `__tests__/TiebreakerScoreboard.test.tsx` - Tests for the tiebreaker panel, incl. "needs 3 does not finish at 2" and the single-race label.

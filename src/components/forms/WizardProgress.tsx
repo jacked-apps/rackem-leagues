@@ -11,7 +11,7 @@ interface WizardProgressProps {
   stepLabel?: string; // Optional custom label (defaults to "Step")
   showStepCounter?: boolean; // Show "Step X of Y" text (default: true)
   showProgressBar?: boolean; // Show visual progress bar (default: true)
-  progressBarColor?: string; // Custom progress bar color (default: blue-600)
+  progressBarColor?: string; // Custom progress bar color (default: bg-info)
   className?: string; // Additional CSS classes for container
 }
 
@@ -27,7 +27,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
   stepLabel = 'Step',
   showStepCounter = true,
   showProgressBar = true,
-  progressBarColor = 'bg-blue-600',
+  progressBarColor = 'bg-info',
   className = ''
 }) => {
   // Calculate progress percentage (currentStep is 0-indexed, so add 1)

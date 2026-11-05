@@ -17,9 +17,9 @@ export type MatchStateKey = 'waiting' | 'onDeck' | 'playing' | 'done';
 /** Border + fill classes per state. Include `border-2` so callers just apply. */
 export const MATCH_STATE_STYLE: Record<MatchStateKey, string> = {
   waiting: 'border-2 border-dashed border-muted-foreground/50',
-  onDeck: 'border-2 border-dotted border-amber-500',
+  onDeck: 'border-2 border-dotted border-warning',
   playing: 'border-2 border-solid border-primary',
-  done: 'border-2 border-solid border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40',
+  done: 'border-2 border-solid border-success bg-success/10',
 };
 
 /** Human label per state, for the legend. */

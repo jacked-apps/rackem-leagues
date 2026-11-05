@@ -86,7 +86,7 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
         {/* Summary Row */}
         <div className="flex items-center gap-3">
           {/* Week Count Circle */}
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-purple-600 text-white font-bold text-lg">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-highlight text-highlight-foreground font-bold text-lg">
             {playoffWeeks}
           </div>
 
@@ -249,7 +249,7 @@ export const PlayoffWeeksCard: React.FC<PlayoffWeeksCardProps> = ({
             </Button>
             <Button
               onClick={() => dispatch({ type: 'ADD_PLAYOFF_WEEKS', payload: weeksToAdd })}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-highlight text-highlight-foreground hover:bg-highlight/90"
               loadingText="none"
             >
               Add Weeks

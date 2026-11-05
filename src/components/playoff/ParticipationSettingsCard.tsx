@@ -107,7 +107,7 @@ export const ParticipationSettingsCard: React.FC<ParticipationSettingsCardProps>
       {/* Summary Row */}
       <div className="flex items-center gap-3">
         {/* Circle indicator */}
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-green-600 text-white font-bold text-sm">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-success text-success-foreground font-bold text-sm">
           {circleDisplay}
         </div>
 

@@ -117,7 +117,7 @@ export function LineupChangeRequestModal({
             Deny
           </Button>
           <Button
-            className="flex-1 bg-green-600 hover:bg-green-700"
+            className="flex-1 bg-success text-success-foreground hover:bg-success/90"
             onClick={onApprove}
             disabled={isProcessing}
             isLoading={isProcessing}

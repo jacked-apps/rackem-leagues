@@ -34,10 +34,10 @@ export function LineupSwapWaitingBanner({
   if (!show) return null;
 
   return (
-    <Card className="border-amber-300 bg-amber-50">
+    <Card className="border-warning/40 bg-warning/10">
       <CardContent className="flex items-center gap-3 py-3">
-        <Hourglass className="h-5 w-5 shrink-0 text-amber-700" aria-hidden />
-        <div className="text-sm text-amber-900">
+        <Hourglass className="h-5 w-5 shrink-0 text-warning" aria-hidden />
+        <div className="text-sm text-foreground">
           Lineup change pending — waiting for <strong>{opponentLabel}</strong> to
           approve swapping in <strong>{newPlayerName}</strong> at position {position}.
         </div>

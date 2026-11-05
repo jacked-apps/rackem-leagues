@@ -107,7 +107,7 @@ export const SimpleRadioChoice: React.FC<SimpleRadioChoiceProps> = ({
                   <div className="flex items-center space-x-3">
                     {/* Radio Button - Selected */}
                     <div className="flex-shrink-0">
-                      <div className="w-4 h-4 rounded-full border-2 border-blue-500 bg-blue-500 flex items-center justify-center">
+                      <div className="w-4 h-4 rounded-full border-2 border-info bg-info flex items-center justify-center">
                         <div className="w-2 h-2 rounded-full bg-card"></div>
                       </div>
                     </div>

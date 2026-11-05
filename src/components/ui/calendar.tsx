@@ -229,7 +229,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                       disabled={isDateDisabled(day)}
                       className={`w-full h-full p-0 text-sm ${
                         isSelected(day)
-                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          ? 'bg-info text-info-foreground hover:bg-info/90'
                           : isToday(day)
                           ? 'bg-info/10 text-info hover:bg-info/20'
                           : 'hover:bg-muted'

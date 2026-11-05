@@ -67,7 +67,7 @@ export default function CaptainReupPage() {
         {teams.map((team) => (
           <div key={team.teamId} className="border rounded-lg p-4 bg-card">
             <div className="flex items-center gap-2 mb-3">
-              <ClipboardCheck className="h-5 w-5 text-blue-600" />
+              <ClipboardCheck className="h-5 w-5 text-info" />
               <h2 className="font-semibold text-lg">
                 <TeamNameLink teamId={team.teamId} teamName={team.teamName} />
               </h2>

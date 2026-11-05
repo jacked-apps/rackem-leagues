@@ -904,7 +904,7 @@ function ScoreMatchBody() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6">
             <div className="text-center">
-              <div className="text-lg font-semibold text-red-600 mb-2">
+              <div className="text-lg font-semibold text-destructive mb-2">
                 Error
               </div>
               <div className="text-foreground mb-4">{error}</div>
@@ -929,7 +929,7 @@ function ScoreMatchBody() {
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-info mx-auto" />
         </div>
       </div>
     );

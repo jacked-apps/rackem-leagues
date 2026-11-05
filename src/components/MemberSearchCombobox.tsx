@@ -172,7 +172,7 @@ export const MemberSearchCombobox: React.FC<MemberSearchComboboxProps> = ({
                     onClick={() => setActiveFilter(filter.id)}
                     className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                       activeFilter === filter.id
-                        ? 'bg-orange-500 text-white'
+                        ? 'bg-warning text-warning-foreground'
                         : 'bg-muted text-foreground hover:bg-accent'
                     }`}
                   >

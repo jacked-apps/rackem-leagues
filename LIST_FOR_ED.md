@@ -32,7 +32,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Decide what happens to beta mock cards on file once real Stripe is live](docs/list/2026-09-05-mock-cards-on-file.md)
 - [Make the LO application use the shared PaymentMethodSetup component](docs/list/2026-09-05-reuse-payment-method-setup.md)
 - [Let a league operator fix a lineup on a match that has already started](docs/list/2026-10-28-lo-fix-finished-lineup.md)
-- [Dark mode turns scoreboard numbers near-white on the light team panels](docs/list/2026-10-29-dark-mode-scoreboard-numbers.md)
+- [Playoffs page shows the final standings and the playoff matchups once set](docs/list/2026-11-01-playoffs-page-standings-and-matchups.md)
 - [Let an operator switch the team bonus on or off for league and playoffs](docs/list/2026-11-01-team-bonus-on-off-setting.md)
 - [Give matches one full-record query, and make every mutation refresh stale data](docs/list/2026-11-04-consolidate-match-queries.md)
 - [Around 2026-12-02, count how many Now and Next items had gone stale](docs/list/2026-11-04-four-week-list-check.md)
@@ -54,6 +54,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 
 ## Gated
 
+- [Custom colour schemes (preview), a fourth theme choice beside Light, Dark and System](docs/list/2026-11-01-gated-custom-colour-schemes.md)
 - [Become a Host, the $1/mo or $10/yr purchase that makes you a host](docs/list/2026-11-04-gated-become-a-host.md)
 - [LMS handicap calculator, a dev and staging tool](docs/list/2026-11-04-gated-lms-handicap-calculator.md)
 - [Scoring Workshop, still in active development](docs/list/2026-11-04-gated-scoring-workshop.md)

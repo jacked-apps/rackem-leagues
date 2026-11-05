@@ -95,7 +95,7 @@ export const SeasonsCard: React.FC<SeasonsCardProps> = ({ leagueId, onCreateSeas
           </p>
           <button
             onClick={onCreateSeason}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-3 bg-info text-info-foreground rounded-lg hover:bg-info/90 transition-colors"
           >
             Create First Season
           </button>

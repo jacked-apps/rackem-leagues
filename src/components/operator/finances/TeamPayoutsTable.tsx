@@ -13,7 +13,7 @@ interface TeamPayoutsTableProps {
 }
 
 const PLACE_LABELS = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
-const PLACE_COLORS = ['text-yellow-600', 'text-slate-400', 'text-amber-700'];
+const PLACE_COLORS = ['text-warning', 'text-muted-foreground', 'text-warning/60'];
 
 export function TeamPayoutsTable({ allocations, totalPool }: TeamPayoutsTableProps) {
   if (allocations.length === 0) {
