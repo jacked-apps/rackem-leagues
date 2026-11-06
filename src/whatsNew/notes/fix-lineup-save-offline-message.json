@@ -1,4 +1,0 @@
-{
-  "text": "If your connection drops while saving or locking a lineup, the app now says it couldn't reach the server, instead of wrongly saying you're not a member of the team.",
-  "kind": "fix"
-}

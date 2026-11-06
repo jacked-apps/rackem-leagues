@@ -120,6 +120,53 @@ export const RELEASES: Release[] = [
   },
   // STAMP: new releases are inserted directly below this line. Keep it.
   {
+    version: '1.13.0',
+    date: '2026-11-06',
+    summary: 'A tidier menu, menu favorites and a readable scoreboard in dark mode',
+    entries: [
+      {
+        text: 'The menu is tidier. My Teams and Messages sit at the top, your match right under them, and everything else is tucked into two groups, Extras and Info. Open one, pick a page, and the menu is tidy again when you get there.',
+        kind: 'improvement',
+      },
+      {
+        text: 'Tap the star next to any menu item to pin it into Favorites. Your favorites follow you between your phone and your computer.',
+        kind: 'feature',
+      },
+      {
+        text: 'In dark mode, the scores and player rows on the scoreboard were nearly white on light team panels and hard to read. The panels now darken with the rest of the screen, so the numbers stand out again.',
+        kind: 'fix',
+      },
+      {
+        text: 'If your connection drops while saving or locking a lineup, the app now says it couldn\'t reach the server, instead of wrongly saying you\'re not a member of the team.',
+        kind: 'fix',
+      },
+      {
+        text: 'A match no longer shows as live when only one team has locked its lineup, and a live scoreboard that can\'t load now says why instead of spinning.',
+        kind: 'fix',
+      },
+      {
+        text: 'In dark mode the scoreboard\'s numbers and names turned nearly white on the light team panels and were hard to read. They\'re dark and readable now, on the tiebreaker score too.',
+        kind: 'fix',
+      },
+      {
+        text: 'The Verify Scores button at the end of a match now shows only to players on the two teams. Anyone else watching still sees whether each team has verified.',
+        kind: 'fix',
+      },
+      {
+        text: 'The home team\'s team bonus no longer applies in playoff matches, and the lineup screen now always shows the same bonus that sets the race.',
+        kind: 'fix',
+      },
+      {
+        text: 'When a match ended in a tie, one team could get stuck on the scoring screen instead of moving to the tiebreaker lineup, and refreshing didn\'t help. Both teams now go to the tiebreaker lineup.',
+        kind: 'fix',
+      },
+      {
+        text: 'Opening What\'s New from the menu left you on a page with no menu or bottom bar to get back. They\'re there now.',
+        kind: 'fix',
+      },
+    ],
+  },
+  {
     version: '1.12.0',
     date: '2026-10-31',
     summary: 'My Stats, fairer tiebreakers and standings, and a batch of fixes',
