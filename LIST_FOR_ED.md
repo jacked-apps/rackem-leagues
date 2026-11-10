@@ -7,6 +7,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 
 ## Now
 
+- [Keep "Become a League Operator" easy to find from anywhere in the app](docs/list/2026-11-10-become-lo-always-findable.md)
 - [Return async calls from sync click handlers so buttons block double taps](docs/list/2026-09-05-double-tap-promise-sweep.md)
 
 ## Next
