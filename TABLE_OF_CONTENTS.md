@@ -1297,7 +1297,11 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `MemberCombobox.tsx` - Member selection combobox
 - `PaymentCardForm.tsx` - Low-level card-entry form ($0 mock verify → returns a tokenized `PaymentCardData`). Used inside `PaymentMethodSetup`.
 - `PaymentMethodSetup.tsx` - **Reusable "set up a payment method" panel** — the no-charge-now reassurance (caller supplies the charge timing) + `PaymentCardForm` verify → returns the card. Used by the tournament paid flow (`PaymentMethodDialog`); the LO application should adopt it (see `LIST_FOR_ED.md`). Test: `PaymentMethodSetup.test.tsx`.
-- `PlayerNameLink.tsx` - Player name link (opens InvitePlayerModal for PPs)
+- `NameLinkTrigger.tsx` - The tappable name shared by PlayerNameLink and TeamNameLink (same look everywhere). Test: `NameLinkTrigger.test.tsx`
+- `PlayerNameLink.tsx` - Player name link; popover with profile / message / report / block, plus operator actions (opens InvitePlayerModal for PPs)
+- `SetStartingHandicapsModal.tsx` - Operator dialog to set a player's starting handicaps (3v3, 5v5); opened from PlayerNameLink
+- `SetStartingHandicapsModal.test.tsx` - Pre-fill, 5v5 range check, save and cancel
+- `usePlayerSocialActions.ts` - Send-message and block/unblock actions behind PlayerNameLink
 - `ProtectedRoute.tsx` - Route protection HOC
 - `ReportUserModal.tsx` - User reporting modal
 - `SponsorLogos.tsx` - Sponsor logo display
