@@ -153,6 +153,11 @@ describe('AppDrawer', () => {
     // redesign, PR #124/#131).
     expect(within(nav).queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(within(nav).queryByRole('button', { name: /sign out/i })).not.toBeInTheDocument();
+    // Not an operator yet: the Operator spot offers the way in instead.
+    expect(within(nav).getByRole('link', { name: 'Become a League Operator' })).toHaveAttribute(
+      'href',
+      '/become-league-operator',
+    );
   });
 
   // Happy path — single-org operator
@@ -184,6 +189,8 @@ describe('AppDrawer', () => {
     expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^Reports/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Create League' })).not.toBeInTheDocument();
+    // Already an operator, so no "Become a League Operator" row.
+    expect(screen.queryByRole('link', { name: 'Become a League Operator' })).not.toBeInTheDocument();
   });
 
   // Happy path — multi-org operator

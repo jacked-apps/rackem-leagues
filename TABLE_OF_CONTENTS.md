@@ -997,6 +997,7 @@ Shared chrome that wraps all authenticated routes. `MemberLayout` is mounted by 
 - `NavIdentityHeader.tsx` - Menu top: theme-swapped logo + signed-in avatar/name row to /profile. Shared by both menus.
 - `NavSectionHeading.tsx` - Small uppercase heading for the menu's fixed sections (Favorites, Operator).
 - `OperatorSection.tsx` - Operator block of the menu: the operator's orgs as a list, one row per org named after it, linking to its dashboard (owned first, capped at 4).
+- `BecomeOperatorSection.tsx` - The Operator spot for non-operators: one "Become a League Operator" row. Swaps with `OperatorSection` in `MemberNavSections`.
 - `useNavLabel.ts` - Adds live markers to entry labels ("Messages (4)", "What's New (New)") and exposes `hasUnseenWhatsNew` for the Info heading.
 - `AppSidebar.test.tsx` - Tests that the sidebar wires in the My Match panel (chips + matchup, chip switching, hidden-when-empty).
 - `MyMatchPanel.tsx` - **✅ Shared My Match panel** used by BOTH the drawer and the desktop sidebar (so they can't drift). Live/Makeup filter chips (icons on phones, text on `sm+`); Live opens on its own, makeup-only stays closed until tapped; a 0-count chip dimmed/disabled; revealed list under a small heading; rows lead with date + matchup that wraps instead of truncating. `inSheet` wraps rows in `SheetClose` for the drawer.

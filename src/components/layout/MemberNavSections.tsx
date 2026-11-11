@@ -15,7 +15,8 @@
  * 5. **Info** fold — Home, Rules, Learn, What's New, About. Its heading reads
  *    "Info (New)" when What's New is unseen AND still in the fold, so the
  *    marker isn't hidden (if What's New is a favorite, its own row says it).
- * 6. **Operator** — per org (`OperatorSection`), operators only.
+ * 6. **Operator** — per org (`OperatorSection`) for operators; everyone else
+ *    gets one "Become a League Operator" row there (`BecomeOperatorSection`).
  *
  * Extras and Info start closed, only one can be open at a time, and both
  * close again on the next page (`NavFolds`).
@@ -33,6 +34,7 @@ import { MyMatchPanel } from './MyMatchPanel';
 import { CoreNavSection } from './CoreNavSection';
 import { FavoritesSection } from './FavoritesSection';
 import { OperatorSection } from './OperatorSection';
+import { BecomeOperatorSection } from './BecomeOperatorSection';
 import { NavFold, NavFolds } from './NavFold';
 import { StarredNavRow } from './StarredNavRow';
 import { splitNavEntries, type NavEntry } from './navEntries';
@@ -88,7 +90,11 @@ export function MemberNavSections({ inSheet }: { inSheet?: boolean }) {
           </NavFold>
         )}
       </NavFolds>
-      {isOperator ? <OperatorSection orgs={orgs} inSheet={inSheet} /> : null}
+      {isOperator ? (
+        <OperatorSection orgs={orgs} inSheet={inSheet} />
+      ) : (
+        <BecomeOperatorSection inSheet={inSheet} />
+      )}
     </>
   );
 }
