@@ -13,7 +13,7 @@
  * framework, its placeholder gets swapped to a wizard stage in this file.
  */
 
-import type { WizardFlowConfig } from '@/components/wizard';
+import type { WizardFlowConfig } from '@/wizards/shared';
 import { leagueWizardConfig } from '@/wizards/league-v2/leagueWizardConfig';
 import { seasonWizardConfig } from '@/wizards/season-v2/seasonWizardConfig';
 import { scheduleWizardConfig } from '@/wizards/schedule-v2/scheduleWizardConfig';

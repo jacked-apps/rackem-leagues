@@ -13,7 +13,7 @@
  */
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import { evaluateCombo } from '../comboCoherence';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 

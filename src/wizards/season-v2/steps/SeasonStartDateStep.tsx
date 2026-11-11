@@ -17,11 +17,11 @@
  */
 
 import { useState } from 'react';
-import { DateStepper } from '@/components/wizard';
+import { DateStepper } from '@/wizards/shared';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { formatLocalDate, parseLocalDate, getDayOfWeekName } from '@/utils/formatters';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { SeasonWizardFormData } from '../seasonWizardTypes';
 
 function addDays(isoDate: string, days: number): string {

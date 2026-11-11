@@ -30,7 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Printer, ChevronLeft, ChevronRight } from 'lucide-react';
-import { LmsEnteredCheckbox } from '@/components/operator/LmsEnteredCheckbox';
+import { LmsEnteredCheckbox } from '@/operator/components/LmsEnteredCheckbox';
 
 /** A match_games row, narrowed to what the sheet reads. */
 interface SheetGame {

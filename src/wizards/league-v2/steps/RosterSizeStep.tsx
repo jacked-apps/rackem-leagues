@@ -6,8 +6,8 @@
  * Max is 12.
  */
 
-import { NumberStepper } from '@/components/wizard';
-import type { WizardStepProps } from '@/components/wizard';
+import { NumberStepper } from '@/wizards/shared';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 
 const DEFAULT_ROSTER = 5;

@@ -2,7 +2,7 @@
  * @fileoverview Cleanup pipeline for the CSI official rulebook PDF.
  *
  * This script turns a freshly-downloaded CSI rulebook PDF into structured
- * TypeScript data modules under `src/officalBCARulebook/cleaned/`. It is
+ * TypeScript data modules under `src/bcaRulebook/cleaned/`. It is
  * operator-only (not part of the app bundle) and expects Node via `tsx`.
  *
  * Usage (from the repo root):

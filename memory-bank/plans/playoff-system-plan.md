@@ -297,8 +297,8 @@ Already has relationship through `playoff_configurations.league_id`.
 
 **Files to create**:
 - `/src/operator/PlayoffConfiguration.tsx`
-- `/src/components/playoff/TemplateSelector.tsx`
-- `/src/components/playoff/PlayoffRulesForm.tsx`
+- `/src/operator/components/playoff/TemplateSelector.tsx`
+- `/src/operator/components/playoff/PlayoffRulesForm.tsx`
 - `/src/operator/OrganizationPlayoffDefaults.tsx`
 
 ### Phase 4: Automatic Seeding System
@@ -315,8 +315,8 @@ Already has relationship through `playoff_configurations.league_id`.
 **Files to create**:
 - `/src/utils/playoffSeeding.ts`
 - `/src/api/mutations/playoffBrackets.ts`
-- `/src/components/playoff/SeedingReview.tsx`
-- `/src/components/playoff/WildCardSelector.tsx`
+- `/src/operator/components/playoff/SeedingReview.tsx`
+- `/src/operator/components/playoff/WildCardSelector.tsx`
 
 ### Phase 5: Bracket Display & Match Flow
 
@@ -328,8 +328,8 @@ Already has relationship through `playoff_configurations.league_id`.
 5. Final placement tracking
 
 **Files to create**:
-- `/src/components/playoff/BracketDisplay.tsx`
-- `/src/components/playoff/PlayoffMatchCard.tsx`
+- `/src/operator/components/playoff/BracketDisplay.tsx`
+- `/src/operator/components/playoff/PlayoffMatchCard.tsx`
 - `/src/hooks/usePlayoffMatch.ts`
 - `/src/api/mutations/advanceWinner.ts`
 
@@ -481,11 +481,11 @@ async function advanceWinner(playoffMatchId: string, winnerTeamId: string) {
 - `src/api/hooks/usePlayoffTemplates.ts`
 
 **Components (5)**:
-- `src/components/playoff/TemplateSelector.tsx`
-- `src/components/playoff/PlayoffRulesForm.tsx`
-- `src/components/playoff/BracketDisplay.tsx`
-- `src/components/playoff/PlayoffMatchCard.tsx`
-- `src/components/playoff/SeedingReview.tsx`
+- `src/operator/components/playoff/TemplateSelector.tsx`
+- `src/operator/components/playoff/PlayoffRulesForm.tsx`
+- `src/operator/components/playoff/BracketDisplay.tsx`
+- `src/operator/components/playoff/PlayoffMatchCard.tsx`
+- `src/operator/components/playoff/SeedingReview.tsx`
 
 **Pages (2)**:
 - `src/operator/PlayoffConfiguration.tsx`

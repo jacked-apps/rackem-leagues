@@ -5,10 +5,10 @@
 import React, { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useUserProfile, useOrganization } from '@/api/hooks';
-import { DashboardCard } from '@/components/operator/DashboardCard';
-import { ActiveLeagues } from '@/components/operator/ActiveLeagues';
-import { QuickStatsCard } from '@/components/operator/QuickStatsCard';
-import { OrganizationStaffCard } from '@/components/operator/OrganizationStaffCard';
+import { DashboardCard } from '@/operator/components/DashboardCard';
+import { ActiveLeagues } from '@/operator/components/ActiveLeagues';
+import { QuickStatsCard } from '@/operator/components/QuickStatsCard';
+import { OrganizationStaffCard } from '@/operator/components/OrganizationStaffCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Users, Settings, BookOpen, Video, MessageCircle, Phone, Flag, Wrench } from 'lucide-react';

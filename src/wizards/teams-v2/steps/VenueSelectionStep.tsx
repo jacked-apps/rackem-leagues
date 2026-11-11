@@ -12,9 +12,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { InfoButton } from '@/components/InfoButton';
-import { VenueCreationModal } from '@/components/operator/VenueCreationModal';
+import { VenueCreationModal } from '@/operator/components/VenueCreationModal';
 import { useVenuesByOrganization } from '@/api/hooks/useVenues';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { TeamsWizardFormData } from '../teamsWizardTypes';
 
 export function VenueSelectionStep({

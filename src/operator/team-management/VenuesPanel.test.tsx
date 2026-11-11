@@ -10,7 +10,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { VenuesPanel } from './VenuesPanel';
 
 // Mock VenueListItem → render a probe that surfaces the derived props.
-vi.mock('@/components/VenueListItem', () => ({
+vi.mock('@/operator/components/VenueListItem', () => ({
   VenueListItem: ({ venue, isAssigned, capacity, teamsAtVenue, onToggle, onLimitClick }: any) => (
     <div data-testid={`venue-${venue.id}`}>
       <span>{venue.name}</span>

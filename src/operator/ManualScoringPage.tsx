@@ -19,9 +19,9 @@ import { useResolvedLeaguePrefs } from '@/api/hooks/useResolvedLeaguePrefs';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { SetupPhase } from '@/components/operator/manual-scoring/SetupPhase';
-import { EntryPhase } from '@/components/operator/manual-scoring/EntryPhase';
-import { ReviewPhase } from '@/components/operator/manual-scoring/ReviewPhase';
+import { SetupPhase } from '@/operator/components/manual-scoring/SetupPhase';
+import { EntryPhase } from '@/operator/components/manual-scoring/EntryPhase';
+import { ReviewPhase } from '@/operator/components/manual-scoring/ReviewPhase';
 import type { SystemOverrides } from '@/types/systemOverrides';
 
 /** The match fields this page reads (the hook's full type is broader). */

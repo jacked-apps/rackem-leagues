@@ -140,7 +140,7 @@ Building a real-time messaging system for league communications with support for
 
 ### ✅ Phase 1: UI Components (COMPLETED - 2025-01-16)
 
-- [x] **Messages Page** (`/src/pages/Messages.tsx`)
+- [x] **Messages Page** (`/src/messages/Messages.tsx`)
 
   - Two-column layout
   - Header with "New Message" button
@@ -148,7 +148,7 @@ Building a real-time messaging system for league communications with support for
   - Route: `/messages`
   - Integrated NewMessageModal
 
-- [x] **ConversationList Component** (`/src/components/messages/ConversationList.tsx`)
+- [x] **ConversationList Component** (`/src/messages/ConversationList.tsx`)
 
   - Search bar for filtering conversations
   - List of conversations with previews, timestamps, unread badges
@@ -156,7 +156,7 @@ Building a real-time messaging system for league communications with support for
   - Click to select conversation
   - Mock data (3 example conversations)
 
-- [x] **MessageView Component** (`/src/components/messages/MessageView.tsx`)
+- [x] **MessageView Component** (`/src/messages/MessageView.tsx`)
 
   - Message bubbles (left = others, right = current user)
   - Sender names and timestamps
@@ -165,7 +165,7 @@ Building a real-time messaging system for league communications with support for
   - Auto-scroll to bottom
   - Mock data for conversations
 
-- [x] **NewMessageModal Component** (`/src/components/messages/NewMessageModal.tsx`)
+- [x] **NewMessageModal Component** (`/src/messages/NewMessageModal.tsx`)
 
   - Search by name or member number
   - Filter tabs: All | My Leagues | My Teams
@@ -890,8 +890,8 @@ useEffect(() => {
 
 ### File Locations
 
-- **Pages**: `/src/pages/Messages.tsx`
-- **Components**: `/src/components/messages/`
+- **Pages**: `/src/messages/Messages.tsx`
+- **Components**: `/src/messages/`
 - **Utilities**: `/src/utils/messageQueries.ts` (to be created)
 - **Database**: `/database/` (SQL files to be created)
 

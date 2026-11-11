@@ -8,7 +8,7 @@
  * - Seasons, schedules, teams, and matchups come after
  */
 
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 
 export function LeagueIntroStep(_props: WizardStepProps<unknown, LeagueWizardFormData>) {

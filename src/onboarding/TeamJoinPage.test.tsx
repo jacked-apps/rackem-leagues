@@ -31,7 +31,7 @@ vi.mock('./components/JoinSignInStep', () => ({
 vi.mock('./components/JoinSubmitStep', () => ({
   JoinSubmitStep: () => <div>submit-step</div>,
 }));
-vi.mock('@/completeProfile/CompleteProfileForm', () => ({
+vi.mock('@/profile/complete/CompleteProfileForm', () => ({
   CompleteProfileForm: () => <div>profile-form</div>,
 }));
 

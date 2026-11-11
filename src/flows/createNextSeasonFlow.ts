@@ -17,7 +17,7 @@
  * flow's `initialContext` when mounted by `NewSeasonFromPreviousPage`.
  */
 
-import type { WizardFlowConfig } from '@/components/wizard';
+import type { WizardFlowConfig } from '@/wizards/shared';
 import { seasonWizardConfig } from '@/wizards/season-v2/seasonWizardConfig';
 import { scheduleWizardConfig } from '@/wizards/schedule-v2/scheduleWizardConfig';
 import { teamsWizardConfig } from '@/wizards/teams-v2/teamsWizardConfig';

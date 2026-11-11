@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { NumberStepper } from '@/components/wizard/NumberStepper';
+import { NumberStepper } from '@/wizards/shared/NumberStepper';
 import { parseLocalDate } from '@/utils/formatters';
 import {
   classifyLengthChange,

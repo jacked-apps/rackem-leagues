@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { InfoButton } from '@/components/InfoButton';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { TeamsWizardFormData, TeamCaptainEntry } from '../teamsWizardTypes';
 
 const MIN_TEAMS = 4;

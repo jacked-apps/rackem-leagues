@@ -11,7 +11,7 @@
  * Only runs once when entering schedule-review step to prevent infinite loops.
  */
 import { useEffect, useRef } from 'react';
-import type { SeasonFormData, ChampionshipPreference } from '@/data/seasonWizardSteps';
+import type { SeasonFormData, ChampionshipPreference } from '@/wizards/season-v1/seasonWizardSteps';
 import type { League } from '@/types/league';
 import type { Season, ChampionshipEvent, WeekEntry, Holiday } from '@/types/season';
 import type { ChampionshipDateOption } from '@/utils/tournamentUtils';

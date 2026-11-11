@@ -24,7 +24,7 @@
 
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
-import { WizardFlowShell } from '@/components/wizard';
+import { WizardFlowShell } from '@/wizards/shared';
 import { createNextSeasonFlow } from '@/flows/createNextSeasonFlow';
 import { useNextSeasonStageDetection } from '@/wizards/next-season/useNextSeasonStageDetection';
 import { useNextSeasonFlowHandlers } from '@/wizards/next-season/useNextSeasonFlowHandlers';

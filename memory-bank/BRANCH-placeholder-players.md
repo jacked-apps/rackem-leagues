@@ -111,7 +111,7 @@ This TODO list covers the remaining work for this branch: detecting when a regis
   - Fields: First Name, Last Name, Nickname, City, State
   - Migration: `20251216140000_allow_nullable_member_fields.sql`
   - Schema: `src/schemas/shortProfileSchema.ts`
-  - Component: `src/completeProfile/CompleteProfileForm.tsx`
+  - Component: `src/profile/complete/CompleteProfileForm.tsx`
   - ProtectedRoute now redirects to `/complete-profile`
 - [ ] **2.2** Add "Are you already on a team in our system?" (Yes/No) question
 - [ ] **2.3** If "Yes" → trigger PP detection flow

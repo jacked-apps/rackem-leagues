@@ -27,16 +27,16 @@ vi.mock('@/components/PageHeader', () => ({
 }));
 vi.mock('@/components/InfoButton', () => ({ InfoButton: () => null }));
 vi.mock('@/components/UnsavedChangesDialog', () => ({ UnsavedChangesDialog: () => null }));
-vi.mock('@/components/playoff/PlayoffMatchRulesCard', () => ({
+vi.mock('@/operator/components/playoff/PlayoffMatchRulesCard', () => ({
   PlayoffMatchRulesCard: () => <div data-testid="rules" />,
 }));
-vi.mock('@/components/playoff/PlayoffTemplateSelector', () => ({
+vi.mock('@/operator/components/playoff/PlayoffTemplateSelector', () => ({
   PlayoffTemplateSelector: () => <div data-testid="template-selector" />,
 }));
-vi.mock('@/components/playoff/PlayoffSettingsCard', () => ({
+vi.mock('@/operator/components/playoff/PlayoffSettingsCard', () => ({
   PlayoffSettingsCard: () => <div data-testid="settings-card" />,
 }));
-vi.mock('@/components/playoff/PlayoffBracketPreviewCard', () => ({
+vi.mock('@/operator/components/playoff/PlayoffBracketPreviewCard', () => ({
   // Renders place-slots only; we assert it's present and that the style reached it.
   PlayoffBracketPreviewCard: ({ matchupStyle, bracketSize }: any) => (
     <div data-testid="place-preview">

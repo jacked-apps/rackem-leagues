@@ -20,11 +20,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { InfoButton } from '@/components/InfoButton';
-import { PlayoffTemplateSelector } from '@/components/playoff/PlayoffTemplateSelector';
-import { PlayoffMatchRulesCard } from '@/components/playoff/PlayoffMatchRulesCard';
-import { PlayoffBracketPreviewCard } from '@/components/playoff/PlayoffBracketPreviewCard';
-import { PlayoffSeedingCard } from '@/components/playoff/PlayoffSeedingCard';
-import { PlayoffSettingsCard } from '@/components/playoff/PlayoffSettingsCard';
+import { PlayoffTemplateSelector } from '@/operator/components/playoff/PlayoffTemplateSelector';
+import { PlayoffMatchRulesCard } from '@/operator/components/playoff/PlayoffMatchRulesCard';
+import { PlayoffBracketPreviewCard } from '@/operator/components/playoff/PlayoffBracketPreviewCard';
+import { PlayoffSeedingCard } from '@/operator/components/playoff/PlayoffSeedingCard';
+import { PlayoffSettingsCard } from '@/operator/components/playoff/PlayoffSettingsCard';
 import { UnsavedChangesDialog } from '@/components/UnsavedChangesDialog';
 import {
   usePlayoffSettingsReducer,

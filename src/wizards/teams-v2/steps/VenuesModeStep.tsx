@@ -14,7 +14,7 @@
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useVenuesByOrganization } from '@/api/hooks/useVenues';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { TeamsWizardFormData } from '../teamsWizardTypes';
 
 type ModeValue = NonNullable<TeamsWizardFormData['venues-mode']>;

@@ -10,10 +10,10 @@
 
 import { describe, expect, it } from 'vitest';
 
-import index from '@/officalBCARulebook/cleaned/index';
-import generalRules from '@/officalBCARulebook/cleaned/general';
-import eightBallRules from '@/officalBCARulebook/cleaned/8-ball';
-import nineBallRules from '@/officalBCARulebook/cleaned/9-ball';
+import index from '@/bcaRulebook/cleaned/index';
+import generalRules from '@/bcaRulebook/cleaned/general';
+import eightBallRules from '@/bcaRulebook/cleaned/8-ball';
+import nineBallRules from '@/bcaRulebook/cleaned/9-ball';
 
 describe('cleaned rulebook — index', () => {
   it('declares nine game sections in source order', () => {

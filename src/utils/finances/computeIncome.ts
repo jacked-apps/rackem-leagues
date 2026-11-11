@@ -92,7 +92,7 @@ export function computeProjectedGreenFees(args: {
 
 /**
  * The app's fee for running this season. Pulled from the proposed
- * pricing on `src/leagueOperator/BecomeLeagueOperator.tsx`:
+ * pricing on `src/operator/application/BecomeLeagueOperator.tsx`:
  *   $1 per team per week + $10 setup per season
  *
  * Fully computable from data the app already has — no LO input.

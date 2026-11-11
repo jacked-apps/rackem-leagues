@@ -8,7 +8,7 @@
 
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { TeamCard } from '@/components/TeamCard';
+import { TeamCard } from '@/operator/components/TeamCard';
 import type { LeagueVenue } from '@/types/venue';
 import type { TeamWithQueryDetails } from '@/types/team';
 

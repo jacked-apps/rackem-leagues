@@ -196,7 +196,7 @@ Dashboard ← → Profile (action vs information separation)
   - `OrganizationSettings.tsx` - Operator profile management
   - `LeagueCreationWizard.tsx` - League creation wizard
   - `OperatorWelcome.tsx` - Post-application welcome page
-- `src/leagueOperator/` - Operator onboarding
+- `src/operator/application/` - Operator onboarding
   - `BecomeLeagueOperator.tsx` - Operator benefits page
   - `LeagueOperatorApplication.tsx` - 6-step application wizard
 - `database/` - SQL schema files

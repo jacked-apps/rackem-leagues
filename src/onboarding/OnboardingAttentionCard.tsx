@@ -14,7 +14,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { SectionCard } from '@/components/operator/SectionCard';
+import { SectionCard } from '@/components/SectionCard';
 import { useLeagueTeamsForOnboarding } from '@/api/hooks/useTeamJoinDistribution';
 import { useTeamJoinRequests } from '@/api/hooks/useTeamJoinRequests';
 import { JoinRequestList } from '@/onboarding/components/JoinRequestList';

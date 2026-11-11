@@ -21,7 +21,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
-import { LmsEnteredCheckbox } from '@/components/operator/LmsEnteredCheckbox';
+import { LmsEnteredCheckbox } from '@/operator/components/LmsEnteredCheckbox';
 import {
   Accordion,
   AccordionItem,

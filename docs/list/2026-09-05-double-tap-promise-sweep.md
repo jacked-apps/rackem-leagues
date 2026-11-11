@@ -22,7 +22,7 @@ fires twice.
   `src/wizards/teams-v2/steps/CaptainsTeamsStep.tsx`,
   `src/components/season/ScheduleReview.tsx`,
   `src/operator/ScheduleSetupPage.tsx`.
-- `src/profile/*Section.tsx` and `src/components/operator/ContactInfoCard.tsx`:
+- `src/profile/*Section.tsx` and `src/operator/components/ContactInfoCard.tsx`:
   several already pass `disabled={isSaving}`, so they're guarded, just with
   no spinner.
 

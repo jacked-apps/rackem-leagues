@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TeamsPanel } from './TeamsPanel';
 
-vi.mock('@/components/TeamCard', () => ({
+vi.mock('@/operator/components/TeamCard', () => ({
   TeamCard: ({ team, onEdit, onDelete, onToggleExpand }: any) => (
     <div data-testid={`team-${team.id}`}>
       <span>{team.team_name}</span>

@@ -9,7 +9,7 @@
  */
 
 import { supabase } from '@/supabaseClient';
-import type { ChampionshipPreference } from '@/data/seasonWizardSteps';
+import type { ChampionshipPreference } from '@/wizards/season-v1/seasonWizardSteps';
 
 // Use the canonical Season type from types/season.ts
 import type { Season } from '@/types/season';

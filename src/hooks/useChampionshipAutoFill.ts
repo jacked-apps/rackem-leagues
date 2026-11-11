@@ -11,11 +11,11 @@
  * - Maintaining consistency across seasons
  */
 import { useEffect } from 'react';
-import type { SeasonFormData, ChampionshipPreference } from '@/data/seasonWizardSteps';
+import type { SeasonFormData, ChampionshipPreference } from '@/wizards/season-v1/seasonWizardSteps';
 import type { League } from '@/types/league';
 import type { Season } from '@/types/season';
 import type { ChampionshipDateOption } from '@/utils/tournamentUtils';
-import { getSeasonWizardSteps } from '@/data/seasonWizardSteps';
+import { getSeasonWizardSteps } from '@/wizards/season-v1/seasonWizardSteps';
 
 /**
  * Parameters for the useChampionshipAutoFill hook

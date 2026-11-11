@@ -14,7 +14,7 @@
  * edits save themselves via the existing useUpdateMatch mutation.
  */
 
-import type { WizardConfig } from '@/components/wizard';
+import type { WizardConfig } from '@/wizards/shared';
 import { MatchupsModeStep } from './steps/MatchupsModeStep';
 import { PositionsStep } from './steps/PositionsStep';
 import { ReviewStep } from './steps/ReviewStep';

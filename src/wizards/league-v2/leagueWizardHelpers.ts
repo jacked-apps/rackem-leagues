@@ -9,7 +9,7 @@ import { parseLocalDate } from '@/utils/formatters';
 import { formatGameType } from '@/types/league';
 import { buildLeagueTitle } from '@/utils/leagueUtils';
 import { PRESET_MAPPINGS } from './presetMappings';
-import type { WizardSummaryItem } from '@/components/wizard';
+import type { WizardSummaryItem } from '@/wizards/shared';
 import type { LeagueWizardFormData } from './leagueWizardTypes';
 
 /**

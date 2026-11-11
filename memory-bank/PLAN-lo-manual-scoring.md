@@ -51,7 +51,7 @@ League Detail → "Match Data" button → Match List Page → Click match → Ma
 ```
 
 ### Entry Point
-- Button in [StatsCard.tsx](../src/components/operator/StatsCard.tsx) (lines 55-66)
+- Button in [StatsCard.tsx](../src/operator/components/StatsCard.tsx) (lines 55-66)
 - Update route from `/match-data` to `/match-list`
 - Keep button label "Match Data / Verify entries" for now
 
@@ -494,7 +494,7 @@ src/
 **Implementation**:
 - New component: `MatchNavigationBar.tsx`
 - New hook or inline query: `useWeekMatches(seasonWeekId)`
-- Lives in `src/components/operator/match-editor/`
+- Lives in `src/operator/components/match-editor/`
 
 ---
 
@@ -767,7 +767,7 @@ interface MatchEditorState {
 #### 2.9 Component Structure
 
 ```
-src/components/operator/match-editor/
+src/operator/components/match-editor/
 ├── MatchNavigationBar.tsx      # Week match pills [1][2][3][4]
 ├── LineupsSection.tsx          # Handicap toggle + player slots + handicaps
 ├── ThresholdsSection.tsx       # Generate button + editable inputs

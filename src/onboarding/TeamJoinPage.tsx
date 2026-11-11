@@ -22,7 +22,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { CompleteProfileForm } from '@/completeProfile/CompleteProfileForm';
+import { CompleteProfileForm } from '@/profile/complete/CompleteProfileForm';
 import { useUser } from '@/context/useUser';
 import { useUserProfile } from '@/api/hooks/useUserProfile';
 import { useTeamJoinView } from '@/api/hooks/useTeamJoinView';

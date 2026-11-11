@@ -64,7 +64,7 @@ import {
   type GameForDispute,
 } from '@/utils/match/deriveDisputes';
 import { TableNumberBar } from '@/components/scoring/TableNumberBar';
-import { ConnectionIndicator } from '@/components/match/ConnectionIndicator';
+import { ConnectionIndicator } from '@/player/match/ConnectionIndicator';
 import {
   decidePendingAction,
   buildConfirmationItem,
@@ -79,7 +79,7 @@ import { getTeamStats, getPlayerStats as getPlayerStatsUtil } from '@/types';
 import { getCalculator } from '@/systems/calculators';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
-import { MatchPhaseGuard } from '@/components/match/MatchPhaseGuard';
+import { MatchPhaseGuard } from '@/player/match/MatchPhaseGuard';
 
 function ScoreMatchBody() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -860,7 +860,7 @@ function ScoreMatchBody() {
 
   // Early returns for loading/error states.
   // Match-prepared readiness is handled upstream by MatchPhaseGuard
-  // (see src/components/match/MatchPhaseGuard.tsx). The guard only
+  // (see src/player/match/MatchPhaseGuard.tsx). The guard only
   // renders this body when matches.status='in_progress', so the prior
   // 10-retry waiting loop here was redundant once the guard wired in
   // and is now removed.

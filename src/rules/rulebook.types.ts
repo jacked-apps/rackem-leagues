@@ -37,7 +37,7 @@ export type RuleKey = `${string}:${string}`;
 
 /**
  * Metadata + lookup index for the whole rulebook. Emitted as the default
- * export of `src/officalBCARulebook/cleaned/index.ts`.
+ * export of `src/bcaRulebook/cleaned/index.ts`.
  */
 export type RulebookIndex = {
   /** Publishing organization (currently always "CSI"). */

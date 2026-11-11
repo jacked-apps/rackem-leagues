@@ -17,7 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DuesRosterList } from '@/components/operator/DuesRosterList';
+import { DuesRosterList } from '@/operator/components/DuesRosterList';
 import { fetchLeagueDuesRoster } from '@/api/queries/duesRoster';
 import { getDuesYearStatus } from '@/utils/membershipUtils';
 

@@ -6,7 +6,7 @@
  * bracket layout) happens on the Playoff Setup page after the wizard.
  */
 
-import type { SelectableCardOption } from '@/components/wizard';
+import type { SelectableCardOption } from '@/wizards/shared';
 
 export const PLAYOFF_OPTIONS: SelectableCardOption<string>[] = [
   {

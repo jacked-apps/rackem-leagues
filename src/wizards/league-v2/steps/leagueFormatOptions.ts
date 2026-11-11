@@ -17,7 +17,7 @@
  * wizard config (LineupSize, RosterSize, MatchFormat, HandicapSystem).
  */
 
-import type { SelectableCardOption } from '@/components/wizard';
+import type { SelectableCardOption } from '@/wizards/shared';
 
 export const LEAGUE_FORMAT_OPTIONS: SelectableCardOption<string>[] = [
   {

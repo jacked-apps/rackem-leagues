@@ -23,7 +23,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import type { WizardStepProps } from '@/components/wizard';
+import type { WizardStepProps } from '@/wizards/shared';
 import type { LeagueWizardFormData } from '../leagueWizardTypes';
 import { classifyThresholdSource, type SourceClass } from './thresholdSourceClassifier';
 

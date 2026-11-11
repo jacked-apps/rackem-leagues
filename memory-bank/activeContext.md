@@ -168,14 +168,14 @@
 
 **Key Features Implemented**:
 
-1. **League Overview Card Redesign** ([LeagueOverviewCard.tsx](../src/components/operator/LeagueOverviewCard.tsx))
+1. **League Overview Card Redesign** ([LeagueOverviewCard.tsx](../src/operator/components/LeagueOverviewCard.tsx))
    - Removed redundant individual fields (game type, league night, etc.)
    - Now displays only current active season information
    - Shows season name, dates, team count, week count, and team format (5-Man/8-Man)
    - Removed duplicate SeasonsCard component from page
    - Compact display taking up less space
 
-2. **Teams Card Enhancement** ([TeamsCard.tsx](../src/components/operator/TeamsCard.tsx))
+2. **Teams Card Enhancement** ([TeamsCard.tsx](../src/operator/components/TeamsCard.tsx))
    - Table layout with columns: Team Name, Captain, Venue
    - Clickable rows with chevron indicators for expansion
    - Expanded state shows:
@@ -187,7 +187,7 @@
    - Phone numbers formatted as (XXX) XXX-XXXX
    - Single "Manage Teams" button (removed redundant Manage Venues button)
 
-3. **Schedule Card Redesign** ([ScheduleCard.tsx](../src/components/operator/ScheduleCard.tsx))
+3. **Schedule Card Redesign** ([ScheduleCard.tsx](../src/operator/components/ScheduleCard.tsx))
    - Summary row showing:
      - Weeks completed vs total (e.g., "3/12 played")
      - Season start date (Week 1)
@@ -234,9 +234,9 @@
   - **Next Priority**: Fix season creation logic to INSERT blackouts between regular weeks, not REPLACE them
 
 **Files Modified**:
-- `/src/components/operator/LeagueOverviewCard.tsx` - Redesigned to show only current season
-- `/src/components/operator/TeamsCard.tsx` - Table layout with expandable contact info
-- `/src/components/operator/ScheduleCard.tsx` - Two-card layout with summary row
+- `/src/operator/components/LeagueOverviewCard.tsx` - Redesigned to show only current season
+- `/src/operator/components/TeamsCard.tsx` - Table layout with expandable contact info
+- `/src/operator/components/ScheduleCard.tsx` - Two-card layout with summary row
 - `/src/operator/ScheduleSetup.tsx` - Added duplicate prevention modal
 - `/src/operator/TeamManagement.tsx` - Added venue creation integration
 - `/src/operator/LeagueDetail.tsx` - Removed SeasonsCard, updated imports
@@ -346,7 +346,7 @@ Schedule Generation → Schedule Display → Accept Schedule → League Dashboar
 2. **Week Name Pollution**
    - Blackout week names storing UI warnings: "Thanksgiving (Monday 2 days before)"
    - These parenthetical notes should be UI-only, not database values
-   - Need to separate display text from stored data in [SeasonCreationWizard.tsx](../src/operator/SeasonCreationWizard.tsx)
+   - Need to separate display text from stored data in [SeasonCreationWizard.tsx](../src/wizards/season-v1/SeasonCreationWizard.tsx)
 
 **Investigation Needed**:
 - Review [scheduleUtils.ts](../src/utils/scheduleUtils.ts) `generateSchedule()` function
@@ -415,7 +415,7 @@ Schedule Generation → Schedule Display → Accept Schedule → League Dashboar
 - `/database/season_weeks.sql` - Unified calendar table with week_type and week_completed
 - `/database/README_DATABASE_INTEGRATION.md` - Complete integration guide for partner
 - `/src/types/season.ts` - Updated Season and SeasonWeek interfaces
-- `/src/operator/SeasonCreationWizard.tsx` - Full database integration with rollback
+- `/src/wizards/season-v1/SeasonCreationWizard.tsx` - Full database integration with rollback
 - `/memory-bank/databaseSchema.md` - Updated with new schema design
 
 ---
@@ -440,7 +440,7 @@ Schedule Generation → Schedule Display → Accept Schedule → League Dashboar
 - `/src/utils/conflictDetectionUtils.ts` - 6 helper functions (detectScheduleConflicts, buildConflictList, etc.)
 - `/src/components/season/ScheduleReview.tsx` - Reduced from ~140 lines to ~20 lines
 - `/src/components/season/ScheduleWeekRow.tsx` - Uses getHighestSeverity() helper
-- `/src/operator/SeasonCreationWizard.tsx` - Uses shared conflict detection
+- `/src/wizards/season-v1/SeasonCreationWizard.tsx` - Uses shared conflict detection
 
 ---
 

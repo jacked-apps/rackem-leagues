@@ -6,7 +6,7 @@
  *   2. ScheduleWizardStep — wraps existing ScheduleReview component
  */
 
-import type { WizardConfig } from '@/components/wizard';
+import type { WizardConfig } from '@/wizards/shared';
 import { ChampionshipStep } from './ChampionshipStep';
 import { ScheduleWizardStep } from './ScheduleWizardStep';
 import type { ScheduleWizardFormData } from './scheduleWizardTypes';
