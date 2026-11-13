@@ -28,16 +28,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 // import { Link } from 'react-router-dom';
 import { formatGameType, formatDayOfWeek } from '@/types/league';
 import type { GameType, DayOfWeek } from '@/types/league';
 import { PlayerNameLink } from '@/components/PlayerNameLink';
 import { PlayerRoster } from '@/player/PlayerRoster';
+import { NoTeamsCard } from '@/player/NoTeamsCard';
 import { VenueWithMaps } from '@/components/VenueWithMaps';
 import { PageHeader } from '@/components/PageHeader';
-import { MapPin, Users, AlertCircle, ArrowRight, Pencil, Bell } from 'lucide-react';
+import { MapPin, AlertCircle, ArrowRight, Pencil, Bell } from 'lucide-react';
 import { parseLocalDate } from '@/utils/formatters';
 import { buildLeagueTitle, getTimeOfYear } from '@/utils/leagueUtils';
 import { TenBallIcon } from '@/components/icons/TenBallIcon';
@@ -449,12 +449,7 @@ export function MyTeams() {
         )}
 
         {teams.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">You are not currently on any teams</p>
-            </CardContent>
-          </Card>
+          <NoTeamsCard />
         ) : (
           <Accordion
             type="single"

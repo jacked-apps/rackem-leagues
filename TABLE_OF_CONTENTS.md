@@ -693,7 +693,8 @@ how to add a new test, demo recording, cleanup model).
 - `about/About.tsx` - About page
 - `about/Pricing.tsx` - Pricing breakdown page
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
-- `home/Home.tsx` - Landing/home page
+- `pages/Home.tsx` - Public landing/home page: "Go to My Teams" for members, live Rules + "Run Your Own League" cards, "Coming Soon" placeholders (league finder etc.)
+- `pages/Home.test.tsx` - Run Your Own League card shows signed out; members get the My Teams button
 - `dashboard/Dashboard.tsx` - Main dashboard
 
 #### Dev-Only Pages (`/dev/`) — `import.meta.env.DEV` only, unlinked
@@ -704,6 +705,7 @@ how to add a new test, demo recording, cleanup model).
 - `MatchLineup.tsx` - Match lineup editor
 - `MyMatch.tsx` - Live-match jump-in landing page (PLACEHOLDER — real detection + jump-in is a backlog item)
 - `MyTeams.tsx` - Player's teams overview
+- `NoTeamsCard.tsx` + `NoTeamsCard.test.tsx` - My Teams empty state: how to get on a team, plus a button to the Home page
 - `PlayerStats.tsx` - Personal stats landing page (PLACEHOLDER — real build-out is a backlog item)
 - `ScoreMatch.tsx` - Match scoring interface
 - `TeamSchedule.tsx` - Team schedule view
@@ -869,7 +871,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `BecomeHost.tsx` - **Become a Host** (`/become-host`) — self-serve purchase (`$1/mo` or `$10/yr`, mock `PaymentCardForm`) that saves the card on file and grants the `host` designation via `useGrantDesignation`, so the member can host game rooms. Reachable from the Profile "Become a Host" CTA. Shows an "already a host" state if held. Self-contained — grants the designation independently of the game room, which reads it separately.
 
 #### League Operator Application (`/leagueOperator/`)
-- `BecomeLeagueOperator.tsx` - Entry point
+- `BecomeLeagueOperator.tsx` - Entry point; public (sales info only), its Start Application button asks visitors to sign in
 - `LeagueOperatorApplication.tsx` - Main application form
 - `ChoiceStep.tsx` - Choice step component
 - `QuestionStep.tsx` - Question step component

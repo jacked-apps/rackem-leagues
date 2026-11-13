@@ -235,8 +235,13 @@ export const router = createBrowserRouter([
           { index: true, element: <Home /> },
           { path: 'about', element: <About /> },
 
+          // Become a League Operator — public sales info (it reads nothing from
+          // the account), so a visitor can learn about running a league before
+          // signing up. Its "Start Application" button leads to the signed-in
+          // application below, which sends a visitor to sign in and back.
+          { path: 'become-league-operator', element: <BecomeLeagueOperator /> },
+
           // --- Signed-in pages reached from Profile (same reason). ---
-          { path: 'become-league-operator', element: withAuth(<BecomeLeagueOperator />) },
           { path: 'league-operator-application', element: withAuth(<LeagueOperatorApplication />) },
           // Become a Host — gated off in production until the game room ships.
           // What it sells is the ability to host game rooms, which production does
