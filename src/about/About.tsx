@@ -122,12 +122,9 @@ export const About: React.FC = () => {
             Tailor handicaps, scoring and point distribution in detail, or build your own.
           </Feature>
           <Feature title="Tournament extras">
-            Optional add-ons for tournament directors: players sign up with a QR code, entry-fee tracking, players
-            score their own matches, handicapped races, automatic table calls, and phone alerts when you're up.
-          </Feature>
-          <Feature title="Scheduled tournaments">
-            Post a tournament ahead of time at its venue, so players can find tournaments near them and reserve
-            a spot early.
+            Optional add-ons for tournament directors: schedule a tournament ahead of time for early registration,
+            players sign up with a QR code, entry-fee tracking, players score their own matches, handicapped races,
+            automatic table calls, and phone alerts when you're up.
           </Feature>
           <Feature title="AI assistants">
             A rules assistant that gives a first ruling on any situation, and a league operator assistant that
