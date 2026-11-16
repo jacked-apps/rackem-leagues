@@ -1,31 +1,36 @@
 /**
  * @fileoverview About page (public, linked from the Home page's About Us card).
  *
- * Written for a visitor deciding whether to sign up: a few short sections of
- * prose (for players, for league operators, tournaments, what's next) instead
- * of one long feature list, which made the page a chore to read (Ed,
- * 2026-11-16). Describe only what is live today; planned work goes under
- * "What's Next". Avoid absolute words ("always", "never").
+ * Written for a visitor deciding whether to sign up. Each section is a list of
+ * features: a bold title you can skim, then one or two plain sentences you can
+ * read or skip (Ed, 2026-11-16). Describe only what is live today; planned
+ * work goes under "What's Next". Avoid absolute words ("always", "never").
  */
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 
-/** One heading and its paragraphs. */
+/** A section heading over a stack of features. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
       <h2 className="text-2xl font-semibold">{title}</h2>
-      {children}
+      {/* Own wrapper so the first Feature is a first child (no divider on top). */}
+      <div className="space-y-4">{children}</div>
     </section>
   );
 }
 
-/** A paragraph with a bold lead-in, so a skimmer can still find each topic. */
-function Topic({ lead, children }: { lead: string; children: React.ReactNode }) {
+/**
+ * One feature: a skimmable title on its own line, the explanation under it in
+ * quieter text, and a divider between features (size + weight + rule, so the
+ * split doesn't depend on color).
+ */
+function Feature({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <p className="text-foreground leading-relaxed">
-      <strong>{lead}</strong> {children}
-    </p>
+    <div className="border-t pt-4 first:border-t-0 first:pt-0">
+      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mt-1 text-muted-foreground leading-relaxed">{children}</p>
+    </div>
   );
 }
 
@@ -35,64 +40,63 @@ export const About: React.FC = () => {
   return (
     <div>
       <PageHeader backTo="/" backLabel="Home" title="Rack'em Leagues" subtitle="Your league, your way." />
-      <div className="max-w-2xl mx-auto p-6 space-y-8">
-        <Section title="What We Do">
-          <p className="text-foreground leading-relaxed">
-            Rack'em Leagues gives independent pool league operators professional-grade tools to run their
-            leagues, and gives their players one place to score matches, follow standings and keep in touch.
-            Whether you own a bar, run a pool hall or are a seasoned player ready to start your own league, the
-            app handles the busywork so you can focus on your pool community.
-          </p>
-        </Section>
+      <div className="max-w-2xl mx-auto p-6 space-y-10">
+        <p className="text-foreground leading-relaxed">
+          Rack'em Leagues gives independent pool league operators professional-grade tools to run their leagues,
+          and gives their players one place to score, follow standings and keep in touch.
+        </p>
 
         <Section title="For Players">
-          <Topic lead="Joining takes minutes.">
-            Your captain shares one link, you sign up, and you land on the team once the captain approves you.
-            My Teams then shows your schedule, roster and venue.
-          </Topic>
-          <Topic lead="Match night, scored together.">
-            Both teams score on their phones at the same time. Handicaps are worked out for you, and standings
-            and stats update as each game is entered. Each game records who scored it and who confirmed it, so
-            a disagreement can be settled from the record instead of from memory. Teammates and fans signed in
-            to the app can follow the match live.
-          </Topic>
-          <Topic lead="Staying in touch.">
-            Team chats and a captains' chat are set up for you and stay in step with the rosters, alongside
-            private messages and league announcements. Push notifications reach your phone even when the app is
-            closed, with quiet hours and per-chat settings so a lively team chat doesn't keep your phone buzzing.
-            Each player can turn a profanity filter on or off for themselves.
-          </Topic>
-          <Topic lead="Stats, rules and more.">
-            Season standings, top shooters, team stats, and a Feats of Excellence board for break-and-runs,
-            golden breaks and other standout shots. The official BCA / CSI{' '}
-            <Link to="/rules" className={linkClass}>rulebook</Link> is built in and searchable, and{' '}
-            <Link to="/learn" className={linkClass}>Learn</Link> explains handicaps, formats and the words we use.
-          </Topic>
+          <Feature title="Your league in one place">
+            Quick sign-up connects you to your team, schedule, stats and standings.
+          </Feature>
+          <Feature title="Detailed stats">
+            Tracks break-and-runs, golden breaks and more. Filter your games to see how you do against a
+            specific player or handicap range, at a venue or table, or in one game type.
+          </Feature>
+          <Feature title="Built-in messaging">
+            Direct messages and group chats, plus team and captains' chats created for you and kept in step with
+            your roster. Push notifications with quiet hours keep you posted without the constant buzz.
+          </Feature>
+          <Feature title="Rules at your fingertips">
+            Search the official <Link to="/rules" className={linkClass}>BCA / CSI rules</Link>, plus the house
+            rules your league operator adds.
+          </Feature>
+          <Feature title="Everyone scores">
+            Players from both teams score at the same time, and the other team confirms each game, so scores are
+            right the first time. If two players record a game differently, it's flagged right away and sorted
+            out on the spot instead of fixed weeks later.
+          </Feature>
+          <Feature title="Live scoreboards">
+            Scoreboards update the moment a game is scored. Follow every live match in your league and see how
+            your rivals are doing.
+          </Feature>
         </Section>
 
         <Section title="For League Operators">
-          <Topic lead="Set up your way.">
-            A step-by-step wizard sets up 8-Ball, 9-Ball and 10-Ball leagues. Choose your team size and players
-            per team, then pair them with the handicap and scoring systems that fit how your league plays. There
-            are two time-tested handicap systems, each adjustable; contact us about adding your own. Schedules are
-            built around US holidays and the BCA and APA championships, using community-verified dates, and both
-            in-house and traveling leagues work across multiple venues with adjustable table assignments.
-          </Topic>
-          <Topic lead="Run the season.">
-            Your dashboard holds every league, season, team and player in one place. You decide how much to hand
-            off: captains can update their own roster, home venue and team name if you allow it. A match played
-            on paper can be entered by you, and a finished match can be reopened and corrected, using the same
-            handicaps and scoring as the live flow. Playoffs are set up at the organization or league level and
-            run through to a champion. When a season ends, the next one launches from it in a few clicks, with
-            rosters and settings carried forward and captains re-upping their own teams.
-          </Topic>
-          <Topic lead="The business side.">
-            Track annual dues across your roster, and work out prize payouts with a calculator while you stay in
-            control of fees, expenses and how the pot is split. House rules sit on top of the official rulesets,
-            picked from a common list or written yourself, so &ldquo;scratch on the 8 is a loss&rdquo; is written
-            down instead of argued about. For CSI / FargoRate leagues, print each match laid out the way LMS
-            wants it and tick off the ones you've already entered.
-          </Topic>
+          <Feature title="Guided league setup">
+            A step-by-step wizard sets up 8-Ball, 9-Ball and 10-Ball leagues with the team size, handicap system
+            and scoring you choose.
+          </Feature>
+          <Feature title="Smart scheduling">
+            Seasons are scheduled around US holidays and the BCA and APA championships, at one venue or many.
+          </Feature>
+          <Feature title="Hand off what you want">
+            Let captains update their own roster, home venue and team name, if you choose.
+          </Feature>
+          <Feature title="Fix it when it happens">
+            Enter matches played on paper, and reopen and correct a finished match.
+          </Feature>
+          <Feature title="Playoffs and the next season">
+            Run playoffs through to a champion, then launch the next season from the last in a few clicks while
+            captains re-up their own teams.
+          </Feature>
+          <Feature title="Dues, payouts and house rules">
+            Track dues, work out prize payouts, and add your own house rules on top of the official ones.
+          </Feature>
+          <Feature title="CSI / FargoRate results sheet">
+            Print each match the way LMS wants it, and tick off the ones you've already entered.
+          </Feature>
           <p>
             <Link to="/become-league-operator" className={linkClass}>
               Become a League Operator →
@@ -100,23 +104,27 @@ export const About: React.FC = () => {
           </p>
         </Section>
 
-        <Section title="Tournaments">
-          <p className="text-foreground leading-relaxed">
-            Run a single or double elimination bracket for a bar night or side event: add names, tap winners, and
-            share a live read-only link so anyone can follow along. Free to use, with no league required.
-          </p>
+        <Section title="For Tournaments">
+          <Feature title="Brackets in minutes">
+            Single or double elimination for a bar night or side event: add names and tap winners.
+          </Feature>
+          <Feature title="Share it live">
+            A read-only link lets anyone follow the bracket. Free to use, with no league required.
+          </Feature>
         </Section>
 
         <Section title="What's Next">
-          <Topic lead="Coming soon:">
-            fully customizable systems, so you can tailor handicaps, scoring and point distribution in detail, or
-            build your own to your exact specifications.
-          </Topic>
-          <Topic lead="Further out:">
-            BCA CSI sanctioning, with league results feeding players' Fargo ratings and Fargo-rated handicap
-            leagues; an AI rules assistant that gives a first ruling on any situation from the official rulesets;
-            and an AI league operator assistant that handles league tasks through plain conversation.
-          </Topic>
+          <Feature title="Customizable systems (coming soon)">
+            Tailor handicaps, scoring and point distribution in detail, or build your own.
+          </Feature>
+          <Feature title="BCA CSI sanctioning">
+            League results feeding players' Fargo ratings, Fargo-rated handicap leagues, and official sanctioning
+            options.
+          </Feature>
+          <Feature title="AI assistants">
+            A rules assistant that gives a first ruling on any situation, and a league operator assistant that
+            handles league tasks through plain conversation.
+          </Feature>
         </Section>
 
         <Section title="Pricing">
