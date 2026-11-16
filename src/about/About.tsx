@@ -121,10 +121,11 @@ export const About: React.FC = () => {
           <Feature title="Customizable systems (coming soon)">
             Tailor handicaps, scoring and point distribution in detail, or build your own.
           </Feature>
-          <Feature title="Tournament extras">
-            Optional add-ons for tournament directors: schedule a tournament ahead of time for early registration,
-            players sign up with a QR code, entry-fee tracking, players score their own matches, handicapped races,
-            automatic table calls, and phone alerts when you're up.
+          <Feature title="Automated tournaments">
+            Optional add-ons let you schedule a tournament ahead of time for early registration, take sign-ups by
+            QR code or link, and track entry fees. Run handicapped races, with each player's handicap worked out
+            automatically or entered by hand. Players score their own matches and the bracket updates itself,
+            and phone alerts tell each player when they're up and at which table, plus when they're on deck.
           </Feature>
           <Feature title="AI assistants">
             A rules assistant that gives a first ruling on any situation, and a league operator assistant that
