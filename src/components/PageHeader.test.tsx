@@ -144,8 +144,13 @@ describe('PageHeader', () => {
   });
 
   it('shows the Sign in button when logged out on a non-auth-flow route', () => {
-    renderHeader(<PageHeader title="Home" />, { isLoggedIn: false, initialRoute: '/' });
+    renderHeader(<PageHeader title="Rules" />, { isLoggedIn: false, initialRoute: '/rules' });
     expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
+  });
+
+  it('leaves Sign in to the Home page itself (its big button), not the header', () => {
+    renderHeader(<PageHeader title="Home" />, { isLoggedIn: false, initialRoute: '/' });
+    expect(screen.queryByRole('link', { name: /sign in/i })).not.toBeInTheDocument();
   });
 
   it('suppresses the right-slot Sign-in button on auth-flow routes', () => {

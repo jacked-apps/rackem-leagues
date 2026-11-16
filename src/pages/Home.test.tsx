@@ -15,7 +15,7 @@ describe('Home', () => {
     expect(card).toHaveAttribute('href', '/become-league-operator');
     expect(screen.getByText('Learn').closest('a')).toHaveAttribute('href', '/learn');
     expect(screen.getByText('About Us').closest('a')).toHaveAttribute('href', '/about');
-    // Two Sign in links: the big button and the header's usual one.
+    // Only the big button: Home hides the header's small Sign in.
     for (const link of screen.getAllByRole('link', { name: /sign in/i })) {
       expect(link).toHaveAttribute('href', '/login');
     }

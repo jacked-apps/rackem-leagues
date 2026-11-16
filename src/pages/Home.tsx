@@ -10,8 +10,9 @@
  * "Go to My Teams" button;
  * My Teams sends a member with no team here for more options.
  *
- * Coming soon (placeholder card): Find a League — the league finder
- * (docs/list/2026-11-13-league-finder.md).
+ * Coming soon (placeholder cards): Find a League — the league finder
+ * (docs/list/2026-11-13-league-finder.md) — and Find a Tournament
+ * (docs/list/2026-11-16-scheduled-tournaments-finder.md).
  */
 import { Link } from 'react-router-dom';
 import { useUser } from '../context/useUser';
@@ -19,7 +20,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/ca
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import {
-  MapPin, BookOpen, Briefcase, GraduationCap, Info, Users, ArrowRight, LogIn, UserPlus,
+  MapPin, Trophy, BookOpen, Briefcase, GraduationCap, Info, Users, ArrowRight, LogIn, UserPlus,
 } from 'lucide-react';
 import { ShareAppCard } from '@/components/ShareAppCard';
 import { toast } from 'sonner';
@@ -159,8 +160,9 @@ export const Home: React.FC = () => {
           </h2>
 
           {/* Ordered by what a newcomer most likely wants: find a league to play
-              in, then start one (Ed, 2026-11-16). Find a League is still a
-              placeholder, so its text says Coming Soon up front. Standings and Live
+              in or a tournament to enter, then start a league (Ed, 2026-11-16). Find a
+              League and Find a Tournament are still placeholders, so their text
+              says Coming Soon up front. Standings and Live
               Scoreboards were dropped: a signed-out visitor has no league for
               us to show, and members reach both from the menu (Ed, 2026-11-16). */}
           <div className="grid grid-cols-1 gap-4">
@@ -168,6 +170,12 @@ export const Home: React.FC = () => {
               icon={<MapPin className="h-6 w-6" />}
               title="Find a League"
               description="Coming soon: search for leagues near you to join."
+            />
+
+            <FeatureCard
+              icon={<Trophy className="h-6 w-6" />}
+              title="Find a Tournament"
+              description="Coming soon: find tournaments near you and sign up early."
             />
 
             <LinkCard

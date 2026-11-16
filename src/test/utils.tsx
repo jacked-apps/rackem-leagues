@@ -48,10 +48,10 @@ export function renderWithProviders(
     ...userContext,
   };
 
-  // Set initial route
-  if (initialRoute !== '/') {
-    window.history.pushState({}, 'Test page', initialRoute);
-  }
+  // Set initial route — always, '/' included. Skipping '/' left the URL
+  // wherever the previous test in the file put it, so a test asking for the
+  // Home page silently ran on some other route.
+  window.history.pushState({}, 'Test page', initialRoute);
 
   const queryClient = new QueryClient({
     defaultOptions: {

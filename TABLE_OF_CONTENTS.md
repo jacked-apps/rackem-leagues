@@ -693,7 +693,7 @@ how to add a new test, demo recording, cleanup model).
 - `about/About.tsx` - About page
 - `about/Pricing.tsx` - Pricing breakdown page
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
-- `pages/Home.tsx` - Public landing/home page: "Go to My Teams" for members; Sign in / Create account for visitors; "Find a League" (Coming Soon) first, then Run Your Own League + Rules + Learn + About cards
+- `pages/Home.tsx` - Public landing/home page: "Go to My Teams" for members; Sign in / Create account for visitors; "Find a League" + "Find a Tournament" (Coming Soon) first, then Run Your Own League + Rules + Learn + About cards
 - `pages/Home.test.tsx` - Run Your Own League card shows signed out; members get the My Teams button
 - `dashboard/Dashboard.tsx` - Main dashboard
 
