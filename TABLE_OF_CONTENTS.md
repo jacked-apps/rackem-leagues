@@ -679,8 +679,8 @@ how to add a new test, demo recording, cleanup model).
 - `appendConfirmation.db.test.ts` - **Many-eyes Layer-2 / Unit 2** — behavior of `appendConfirmation` against the local DB: confirm append carries the full snapshot, append NEVER modifies the `match_games` row (officiality preserved), exact re-tap no-op + change-of-mind new row, extra witnesses accrue without touching `match_games`, vacate marker recorded, finalized match no-op, missing confirmer no-op, and a failure is swallowed (best-effort, never throws). 9 tests.
 
 #### Test Utilities (`/test/`)
-- `setup.ts` - Test environment setup
-- `utils.tsx` - Test helper utilities
+- `setup.ts` - Test environment setup (also resets the shared back-arrow double-tap lock after each test)
+- `utils.tsx` - Test helper utilities, including `pauseBetweenTaps()` for tests that tap the same button twice on purpose
 - `vitest-setup.d.ts` - Vitest type definitions
 - `dbTestUtils.ts` - Supabase/pg clients + `executeSql` for the `db` test project. Test clients are session-isolated (`persistSession:false` + a per-user `storageKey`) — under jsdom two clients otherwise share one localStorage slot and the second sign-in silently overwrites the first
 - `onboardingFixtures.ts` - Builds a placeholder-captain (or staff-captained) team with roster room for the onboarding-cascade DB suites, so they stop hunting the shared seed for shapes it does not contain
@@ -952,7 +952,7 @@ LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade int
 
 | Component | Use For |
 |-----------|---------|
-| `button.tsx` | **ALL buttons** (never use `<button>`) |
+| `button.tsx` | **ALL buttons** (never use `<button>`). Built-in double-tap lock: a second tap on the same button within `DOUBLE_TAP_WINDOW_MS` is ignored (steppers opt out with `allowRapidClicks`); an async `onClick` also locks until it settles. Tests: `__tests__/button.loading.test.tsx`, `__tests__/button.doubleTap.test.tsx` |
 | `input.tsx` | **ALL text inputs** (never use `<input>`) |
 | `label.tsx` | **ALL form labels** (never use `<label>`) |
 | `select.tsx` | **ALL dropdowns** (never use `<select>`) |
@@ -1291,6 +1291,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `AlertDialog.tsx` - Alert/info dialog with OK button (success/warning/error/info)
 - `ConfirmDialog.tsx` - Confirmation dialog with Cancel/Confirm buttons
 - `InfoButton.tsx` - Info button with tooltip
+- `backTapLock.ts` - One double-tap lock shared by every page header back arrow, so a double click goes back one page, not two (the second click lands on the next page's arrow). Tested in `__tests__/PageHeader.backDoubleTap.test.tsx`
 - `NonProdGate.tsx` - Shared route gate for GATED features (dev + staging render children; production redirects to `/`). Wrap the ROUTE and gate every DOOR with the same `!isProduction`; flip together when un-gating. Users: Handicap Calculator (`tools/calc`), Game Room (`rooms/**`). Promoted from `handicapCalculator/` in Game Room Unit 7 so deleting the calculator cannot take the room's gate with it
 - `InstallAppCard.tsx` - **Install the app** — platform-adaptive PWA install entry: Android/desktop fire the native install prompt; iPhone (Safari) + Android-without-a-captured-prompt open a step-by-step add-to-home-screen instructions modal. Renders nothing when already installed or unsupported. Self-contained (drop-in); used at the top of Player Settings. Tested in `InstallAppCard.test.tsx`.
 - `InvitePlayerModal.tsx` - **✅ Phase 8** Captain invite modal for placeholder players

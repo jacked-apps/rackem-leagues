@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderWithProviders, screen, userEvent } from '@/test/utils';
+import { pauseBetweenTaps, renderWithProviders, screen, userEvent } from '@/test/utils';
 import {
   registerTestedPresetCalculators,
   clearRegistry,
@@ -896,6 +896,7 @@ describe('UnifiedScoreboard — threshold trio (drawer-bound, R10 revised 2026-0
     expect(screen.getAllByText('lose').length).toBeGreaterThan(0);
 
     // Tap again → both trio AND drawer collapse.
+    await pauseBetweenTaps();
     await user.click(screen.getAllByText('Home Team')[0]);
     expect(screen.queryByText('tie')).not.toBeInTheDocument();
   });

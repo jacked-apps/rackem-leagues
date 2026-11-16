@@ -44,6 +44,7 @@ import { AppDrawer } from '@/components/layout/AppDrawer';
 import { OrgSwitcher } from '@/components/OrgSwitcher';
 import { useOrganization } from '@/api/hooks/useOrganizations';
 import { useUser } from '@/context/useUser';
+import { isSecondBackTap } from '@/components/backTapLock';
 
 /** Route patterns where the org-switcher dropdown appears in the header. */
 const OPERATOR_ROUTE_PATTERNS: readonly RegExp[] = [
@@ -335,7 +336,9 @@ function BackAffordance({
         ref={setRef as React.RefCallback<HTMLButtonElement>}
         type="button"
         aria-label={ariaLabel}
-        onClick={onBackClick}
+        onClick={() => {
+          if (!isSecondBackTap()) onBackClick();
+        }}
         className={className}
       >
         <ArrowLeft className="h-4 w-4" />
@@ -351,6 +354,10 @@ function BackAffordance({
       ref={setRef as React.RefCallback<HTMLAnchorElement>}
       to={backTo!}
       aria-label={ariaLabel}
+      onClick={(e) => {
+        // Link skips navigating when the click is default-prevented.
+        if (isSecondBackTap()) e.preventDefault();
+      }}
       className={className}
     >
       <ArrowLeft className="h-4 w-4" />

@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { renderWithProviders, screen, within, fireEvent } from '@/test/utils';
+import { pauseBetweenTaps, renderWithProviders, screen, within, fireEvent } from '@/test/utils';
 
 // Mock the data-fetching hooks used by AppDrawer. The drawer's role/auth
 // branching is driven by these return values; controlling them per test lets
@@ -519,7 +519,7 @@ describe('AppDrawer', () => {
     expect(screen.queryByRole('link', { name: /Sharks/ })).not.toBeInTheDocument();
   });
 
-  it('keeps the Live chip visible (disabled) and leaves makeups closed until tapped', () => {
+  it('keeps the Live chip visible (disabled) and leaves makeups closed until tapped', async () => {
     configurePlayer();
     mockUseMyMatchSurfaces.mockReturnValue({
       ...emptyMyMatch(),
@@ -539,7 +539,9 @@ describe('AppDrawer', () => {
 
     fireEvent.click(makeup);
     expect(screen.getByRole('link', { name: /Rails/ })).toBeInTheDocument();
-    // Tapping it again closes it.
+    // Tapping it again closes it (after a person's pause; a tap right on top of
+    // the first is a double tap, which the Button ignores).
+    await pauseBetweenTaps();
     fireEvent.click(makeup);
     expect(screen.queryByRole('link', { name: /Rails/ })).not.toBeInTheDocument();
   });

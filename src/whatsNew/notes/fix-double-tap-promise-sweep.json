@@ -1,5 +1,5 @@
 {
-  "text": "A quick double tap on Save Game, or on Confirm or Deny when checking the other team's score, could send it twice. Those buttons now lock until the first tap has saved.",
+  "text": "A quick double tap could send something twice: a game score, a Confirm or Deny, or a back arrow that went back two pages. Every button now ignores a second tap that comes right after the first, and Save Game, Confirm and Deny also stay locked until the save lands.",
   "kind": "fix",
-  "headline": "double taps while scoring"
+  "headline": "double taps"
 }

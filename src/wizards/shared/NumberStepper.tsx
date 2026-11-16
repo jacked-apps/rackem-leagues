@@ -73,6 +73,8 @@ export function NumberStepper({
           onClick={decrement}
           disabled={atMin}
           className="w-12 h-12 text-xl"
+          // Steppers are tapped fast on purpose (4 → 8 is four taps).
+          allowRapidClicks
         >
           −
         </Button>
@@ -82,6 +84,8 @@ export function NumberStepper({
           onClick={increment}
           disabled={atMax}
           className="w-12 h-12 text-xl"
+          // Steppers are tapped fast on purpose (4 → 8 is four taps).
+          allowRapidClicks
         >
           +
         </Button>
