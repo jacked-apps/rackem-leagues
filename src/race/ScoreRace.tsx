@@ -217,11 +217,14 @@ export function ScoreRace({ raceId, names, extras = true }: ScoreRaceProps) {
               }
             : null
         }
-        onConfirm={(gameNumber) => confirm.mutate({ gameNumber })}
+        // Return the save (errors are toasted by the mutation) so the dialog's
+        // buttons stay disabled until it lands: this dialog stays open until
+        // the result arrives, so a double tap would otherwise send it twice.
+        onConfirm={(gameNumber) => confirm.mutateAsync({ gameNumber }).catch(() => undefined)}
         // Denying is a reversal: the result comes off and the game is replayed
         // or re-entered. It is the same act as reversing the last game, so it
         // goes through the same path rather than inventing a second one.
-        onDeny={(gameNumber) => vacate.mutate({ gameNumber })}
+        onDeny={(gameNumber) => vacate.mutateAsync({ gameNumber }).catch(() => undefined)}
         onDismiss={(gameNumber) => setDismissed((d) => [...d, gameNumber])}
         onClose={() => undefined}
       />

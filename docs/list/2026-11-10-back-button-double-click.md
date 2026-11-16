@@ -17,6 +17,5 @@ user ends up on My Teams.
 
 Fix: make the shared header back button ignore a second click right after the
 first (`src/components/PageHeader.tsx`), so every page gets
-it at once. Related: the double-tap sweep item
-(`docs/list/2026-09-05-double-tap-promise-sweep.md`), which covers buttons
-that start async work.
+it at once. Related: the double-tap sweep (done 2026-11-16) covered buttons
+that start async work; a back button navigates, so it needs its own guard.
