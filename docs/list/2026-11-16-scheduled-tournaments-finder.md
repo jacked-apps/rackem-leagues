@@ -40,8 +40,11 @@ is charged on top of it. Since we're paid either way, the TD's venue is
 saved for good and can be reused. Venues can already be shared by several
 leagues, so leagues and tournaments sharing one is not a big change.
 
-**Double-booking disclaimer:** a warning that tells LOs and TDs we are not
-responsible for fixing scheduling errors or double booking at a shared venue.
+**Double-booking disclaimer:** LOs and TDs are responsible for their own
+scheduling at a shared venue; we are not. The app can't detect conflicts
+(at least not yet), so if two people schedule the same venue at the same
+time, it can't flag or fix that. Show LOs and TDs a warning saying so when
+they schedule at a venue. Conflict flagging could be a later feature.
 
 Venue owners seeing what's booked at their venue is a separate idea:
 `docs/list/2026-11-16-venue-owner-view.md`.
