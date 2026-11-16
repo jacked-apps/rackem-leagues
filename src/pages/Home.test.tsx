@@ -14,6 +14,12 @@ describe('Home', () => {
     const card = screen.getByText('Run Your Own League').closest('a');
     expect(card).toHaveAttribute('href', '/become-league-operator');
     expect(screen.getByText('Learn').closest('a')).toHaveAttribute('href', '/learn');
+    expect(screen.getByText('About Us').closest('a')).toHaveAttribute('href', '/about');
+    // Two Sign in links: the big button and the header's usual one.
+    for (const link of screen.getAllByRole('link', { name: /sign in/i })) {
+      expect(link).toHaveAttribute('href', '/login');
+    }
+    expect(screen.getByRole('link', { name: /create account/i })).toHaveAttribute('href', '/register');
     expect(screen.queryByText('Go to My Teams')).not.toBeInTheDocument();
   });
 
@@ -21,5 +27,6 @@ describe('Home', () => {
     renderWithProviders(<Home />);
     expect(screen.getByText('Go to My Teams').closest('a')).toHaveAttribute('href', '/my-teams');
     expect(screen.getByText('Run Your Own League')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /create account/i })).not.toBeInTheDocument();
   });
 });

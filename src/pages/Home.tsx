@@ -5,7 +5,8 @@
  * whether logged in or not. This is a discovery page for the app.
  *
  * Live today: "Run Your Own League" (the public Become a League Operator page),
- * Official Rules and Learn (the glossary). A signed-in member also gets a
+ * Official Rules, Learn (the glossary) and About Us. Visitors get Sign in +
+ * Create account buttons up top; a signed-in member gets a
  * "Go to My Teams" button;
  * My Teams sends a member with no team here for more options.
  *
@@ -17,7 +18,9 @@ import { useUser } from '../context/useUser';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
-import { MapPin, BookOpen, Briefcase, GraduationCap, Users, ArrowRight } from 'lucide-react';
+import {
+  MapPin, BookOpen, Briefcase, GraduationCap, Info, Users, ArrowRight, LogIn, UserPlus,
+} from 'lucide-react';
 import { ShareAppCard } from '@/components/ShareAppCard';
 import { toast } from 'sonner';
 
@@ -82,11 +85,7 @@ export const Home: React.FC = () => {
   if (authLoading) {
     return (
       <div>
-        <PageHeader
-          backTo="/about"
-          backLabel="About Us"
-          title="Rack'em Leagues"
-        />
+        <PageHeader title="Rack'em Leagues" />
         <div className="max-w-2xl mx-auto p-6">
           <p>Loading...</p>
         </div>
@@ -100,12 +99,8 @@ export const Home: React.FC = () => {
   // longer needs to thread auth buttons through rightContent.
   return (
     <div>
-      <PageHeader
-        backTo="/about"
-        backLabel="About Us"
-        title="Rack'em Leagues"
-        subtitle="Pool league management made simple"
-      />
+      {/* No back arrow: Home is the top page. About is a card below. */}
+      <PageHeader title="Rack'em Leagues" subtitle="Pool league management made simple" />
 
       <div className="max-w-4xl mx-auto p-6 space-y-8">
         {/* My Teams CTA (it said "My Dashboard", which now just forwards to
@@ -130,6 +125,31 @@ export const Home: React.FC = () => {
               <ArrowRight className="h-5 w-5" />
             </Button>
           </Link>
+        )}
+
+        {/* Visitors: the front door. Sign in / create an account right here,
+            instead of only a small icon in the header (Ed, 2026-11-16). The
+            cards below let them look around first. */}
+        {!isLoggedIn && (
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/login" className="block">
+              <Button size="lg" loadingText="none" className="w-full h-14 text-base font-semibold">
+                <LogIn className="h-5 w-5" />
+                Sign in
+              </Button>
+            </Link>
+            <Link to="/register" className="block">
+              <Button
+                size="lg"
+                variant="outline"
+                loadingText="none"
+                className="w-full h-14 text-base font-semibold"
+              >
+                <UserPlus className="h-5 w-5" />
+                Create account
+              </Button>
+            </Link>
+          </div>
         )}
 
         {/* Feature cards */}
@@ -161,6 +181,13 @@ export const Home: React.FC = () => {
               icon={<GraduationCap className="h-6 w-6" />}
               title="Learn"
               description="How Rack'em Leagues works: handicaps, formats, scoring and the words we use."
+            />
+
+            <LinkCard
+              to="/about"
+              icon={<Info className="h-6 w-6" />}
+              title="About Us"
+              description="Who we are and why we built Rack'em Leagues."
             />
 
             <FeatureCard

@@ -310,6 +310,11 @@ export const Login: React.FC = () => {
         <Link to="/register">Register</Link>
         <Link to="/forgot-password">Forgot Password?</Link>
       </CardFooter>
+      {/* Not a dead end: a visitor who isn't ready to sign in can look around
+          first (Home has Run Your Own League, Rules, Learn, About). */}
+      <p className="mt-4 text-center text-sm">
+        New here? <Link to="/" className="underline">See what Rack'em Leagues is about</Link>
+      </p>
       <p className="mt-3 text-center text-xs text-muted-foreground">
         By continuing you agree to our <Link to="/privacy" className="underline">Privacy Policy</Link>.
       </p>
