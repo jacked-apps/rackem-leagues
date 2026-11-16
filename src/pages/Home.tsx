@@ -4,8 +4,9 @@
  * Landing page for Rack'em Leagues. Shows public content that anyone can browse,
  * whether logged in or not. This is a discovery page for the app.
  *
- * Live today: "Run Your Own League" (the public Become a League Operator page)
- * and Official Rules. A signed-in member also gets a "Go to My Teams" button;
+ * Live today: "Run Your Own League" (the public Become a League Operator page),
+ * Official Rules and Learn (the glossary). A signed-in member also gets a
+ * "Go to My Teams" button;
  * My Teams sends a member with no team here for more options.
  *
  * Coming soon (placeholder card): Find a League — the league finder
@@ -16,7 +17,7 @@ import { useUser } from '../context/useUser';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
-import { MapPin, BookOpen, Briefcase, Users, ArrowRight } from 'lucide-react';
+import { MapPin, BookOpen, Briefcase, GraduationCap, Users, ArrowRight } from 'lucide-react';
 import { ShareAppCard } from '@/components/ShareAppCard';
 import { toast } from 'sonner';
 
@@ -153,6 +154,13 @@ export const Home: React.FC = () => {
               icon={<BookOpen className="h-6 w-6" />}
               title="Official Rules"
               description="Browse the BCA / CSI rulebook. Search any rule to settle a dispute."
+            />
+
+            <LinkCard
+              to="/learn"
+              icon={<GraduationCap className="h-6 w-6" />}
+              title="Learn"
+              description="How Rack'em Leagues works: handicaps, formats, scoring and the words we use."
             />
 
             <FeatureCard

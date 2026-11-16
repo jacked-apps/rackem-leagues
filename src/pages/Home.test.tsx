@@ -13,6 +13,7 @@ describe('Home', () => {
     renderWithProviders(<Home />, { userContext: { isLoggedIn: false, user: null } });
     const card = screen.getByText('Run Your Own League').closest('a');
     expect(card).toHaveAttribute('href', '/become-league-operator');
+    expect(screen.getByText('Learn').closest('a')).toHaveAttribute('href', '/learn');
     expect(screen.queryByText('Go to My Teams')).not.toBeInTheDocument();
   });
 

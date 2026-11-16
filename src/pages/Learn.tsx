@@ -4,10 +4,12 @@
  * Phase 1 hub contains the Glossary section only. Walkthroughs and Concepts
  * sections are Phase 2 (gated on evidence from the outside-LO walk).
  *
- * Route is wrapped in `withAuth` (any signed-in user). Originally scoped
- * operator-only, but operators following "Learn more →" links from
- * glossary popovers AND players reading the same content benefit from the
- * shared destination — the disclaimer in the page header frames the
+ * Public (no sign-in), like Rules: the glossary is fixed text that reads
+ * nothing from the account or database, and a visitor deciding whether to
+ * join or run a league can see how the app works (Ed, 2026-11-16; the Home
+ * page links here). It was operator-only, then any signed-in user. Operators
+ * following "Learn more →" links from glossary popovers, players and visitors
+ * all share one destination. The disclaimer in the page header frames the
  * definitions as "how this app uses these words," neutral to who's reading.
  *
  * @see docs/plans/2026-05-28-001-feat-operator-help-system-phase-1-plan.md

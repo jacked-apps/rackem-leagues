@@ -330,9 +330,11 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/season/:seasonId/feats', element: withMember(<FeatsOfExcellence />) },
           { path: 'league/:leagueId/season/:seasonId/match-data', element: withMember(<MatchDataViewer />) },
 
-          // --- Learn hub — any signed-in user (operators AND players share
-          //     this destination; deep links from glossary popovers land here) ---
-          { path: 'learn', element: withAuth(<Suspense fallback={<LoadingSpinner />}><Learn /></Suspense>) },
+          // --- Learn hub — public, like Rules: the glossary is fixed text that
+          //     reads nothing from the account or database, and it shows a
+          //     visitor how the app works (Ed, 2026-11-16). Members reach it from
+          //     the menu; deep links from glossary popovers land here too. ---
+          { path: 'learn', element: <Suspense fallback={<LoadingSpinner />}><Learn /></Suspense> },
 
           // --- Operator Routes (require league_operator role) ---
           { path: 'operator-welcome', element: withOperator(OperatorWelcome) },
