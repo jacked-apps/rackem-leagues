@@ -4,22 +4,19 @@
  * Landing page for Rack'em Leagues. Shows public content that anyone can browse,
  * whether logged in or not. This is a discovery page for the app.
  *
- * Live today: Official Rules and "Run Your Own League" (the public Become a
- * League Operator page). A signed-in member also gets a "Go to My Teams"
- * button; My Teams sends a member with no team here for more options.
+ * Live today: "Run Your Own League" (the public Become a League Operator page)
+ * and Official Rules. A signed-in member also gets a "Go to My Teams" button;
+ * My Teams sends a member with no team here for more options.
  *
- * Public features (coming soon, placeholder cards):
- * - Browse leagues/organizations
- * - View live scoreboards
- * - Check standings
- * - Find a league near you
+ * Coming soon (placeholder card): Find a League — the league finder
+ * (docs/list/2026-11-13-league-finder.md).
  */
 import { Link } from 'react-router-dom';
 import { useUser } from '../context/useUser';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
-import { Building2, Trophy, Radio, MapPin, BookOpen, Briefcase, Users, ArrowRight } from 'lucide-react';
+import { MapPin, BookOpen, Briefcase, Users, ArrowRight } from 'lucide-react';
 import { ShareAppCard } from '@/components/ShareAppCard';
 import { toast } from 'sonner';
 
@@ -58,12 +55,12 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
 }
 
 /**
- * A live Home card that opens a page, spanning both columns on desktop.
+ * A live Home card that opens a page.
  * Same look as FeatureCard, but it navigates instead of saying "Coming Soon".
  */
 function LinkCard({ to, icon, title, description }: FeatureCardProps & { to: string }) {
   return (
-    <Link to={to} className="md:col-span-2">
+    <Link to={to}>
       <Card className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all">
         <CardHeader className="flex flex-row items-center gap-4">
           <div className="p-2 bg-primary/10 rounded-lg text-primary">{icon}</div>
@@ -140,29 +137,15 @@ export const Home: React.FC = () => {
             Explore
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FeatureCard
-              icon={<Building2 className="h-6 w-6" />}
-              title="Browse Leagues"
-              description="View leagues and organizations in your area"
-            />
-
-            <FeatureCard
-              icon={<Radio className="h-6 w-6" />}
-              title="Live Scoreboards"
-              description="Watch matches in progress in real-time"
-            />
-
-            <FeatureCard
-              icon={<Trophy className="h-6 w-6" />}
-              title="Standings"
-              description="Check current season standings and stats"
-            />
-
-            <FeatureCard
-              icon={<MapPin className="h-6 w-6" />}
-              title="Find a League"
-              description="Search for leagues near you to join"
+          {/* Working cards first; the one placeholder last. Standings and Live
+              Scoreboards were dropped: a signed-out visitor has no league for
+              us to show, and members reach both from the menu (Ed, 2026-11-16). */}
+          <div className="grid grid-cols-1 gap-4">
+            <LinkCard
+              to="/become-league-operator"
+              icon={<Briefcase className="h-6 w-6" />}
+              title="Run Your Own League"
+              description="See what it takes to become a league operator, and what it costs."
             />
 
             <LinkCard
@@ -172,11 +155,10 @@ export const Home: React.FC = () => {
               description="Browse the BCA / CSI rulebook. Search any rule to settle a dispute."
             />
 
-            <LinkCard
-              to="/become-league-operator"
-              icon={<Briefcase className="h-6 w-6" />}
-              title="Run Your Own League"
-              description="See what it takes to become a league operator, and what it costs."
+            <FeatureCard
+              icon={<MapPin className="h-6 w-6" />}
+              title="Find a League"
+              description="Search for leagues near you to join"
             />
           </div>
         </div>
