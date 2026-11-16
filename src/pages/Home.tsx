@@ -158,10 +158,18 @@ export const Home: React.FC = () => {
             Explore
           </h2>
 
-          {/* Working cards first; the one placeholder last. Standings and Live
+          {/* Ordered by what a newcomer most likely wants: find a league to play
+              in, then start one (Ed, 2026-11-16). Find a League is still a
+              placeholder, so its text says Coming Soon up front. Standings and Live
               Scoreboards were dropped: a signed-out visitor has no league for
               us to show, and members reach both from the menu (Ed, 2026-11-16). */}
           <div className="grid grid-cols-1 gap-4">
+            <FeatureCard
+              icon={<MapPin className="h-6 w-6" />}
+              title="Find a League"
+              description="Coming soon: search for leagues near you to join."
+            />
+
             <LinkCard
               to="/become-league-operator"
               icon={<Briefcase className="h-6 w-6" />}
@@ -190,11 +198,6 @@ export const Home: React.FC = () => {
               description="Who we are and why we built Rack'em Leagues."
             />
 
-            <FeatureCard
-              icon={<MapPin className="h-6 w-6" />}
-              title="Find a League"
-              description="Search for leagues near you to join"
-            />
           </div>
         </div>
 
