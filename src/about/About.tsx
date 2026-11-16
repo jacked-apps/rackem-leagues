@@ -121,9 +121,13 @@ export const About: React.FC = () => {
           <Feature title="Customizable systems (coming soon)">
             Tailor handicaps, scoring and point distribution in detail, or build your own.
           </Feature>
-          <Feature title="Direct CSI / Fargo integration">
-            League results feeding players' Fargo ratings, Fargo-rated handicap leagues, and official sanctioning
-            options.
+          <Feature title="Tournament extras">
+            Optional add-ons for tournament directors: players sign up with a QR code, entry-fee tracking, players
+            score their own matches, handicapped races, automatic table calls, and phone alerts when you're up.
+          </Feature>
+          <Feature title="Scheduled tournaments">
+            Post a tournament ahead of time at its venue, so players can find tournaments near them and reserve
+            a spot early.
           </Feature>
           <Feature title="AI assistants">
             A rules assistant that gives a first ruling on any situation, and a league operator assistant that
@@ -132,28 +136,27 @@ export const About: React.FC = () => {
         </Section>
 
         <Section title="Pricing">
-          <p className="text-foreground leading-relaxed">
-            <strong>Free to get started.</strong> No upfront costs to become a league operator. We charge $1 per
-            team per week (regular season only) plus a $10 setup fee per season. With a 4-week grace period, you
-            can use your collected league dues to pay for the entire season before week 5. Playoffs are free.
-          </p>
+          <Feature title="Free to get started">
+            No upfront costs to become a league operator, and a 4-week grace period lets you collect league dues
+            before your first payment. We work to keep our costs low so they don't eat into your prize pool.
+          </Feature>
           <p>
             <Link to="/pricing" className={linkClass}>
-              View detailed pricing breakdown with examples →
+              See pricing →
             </Link>
           </p>
         </Section>
 
         <Section title="Our Philosophy">
           <p className="text-foreground leading-relaxed">
-            Personally built by a league operator with over 15 years of experience, this platform is the set of
-            tools you'll wish you had when you first became a league operator. No extensive certifications or
-            intrusive approval processes; just professional-grade software that turns casual league players into
-            professional operators running smooth, well-organized leagues.
+            We want to grow the pool community by making leagues easy to run and easy to play in. Pool is a great
+            sport, and more people should be playing it.
           </p>
           <p className="text-foreground leading-relaxed">
-            We believe in empowering local operators to build thriving pool communities with minimal
-            administrative burden, so more time goes to what matters: growing the sport and connecting players.
+            Rack'em Leagues is built by a longtime league player and operator, so it starts from what players and
+            league operators actually need. Our aim is to take as much of the burden and time out of running a
+            successful league as we can, so more of it goes to what matters: growing the sport and connecting the
+            community.
           </p>
         </Section>
 
