@@ -63,9 +63,9 @@ export const About: React.FC = () => {
             rules your league operator adds.
           </Feature>
           <Feature title="Everyone scores">
-            Players from both teams score at the same time, and the other team confirms each game, so scores are
-            right the first time. If two players record a game differently, it's flagged right away and sorted
-            out on the spot instead of fixed weeks later.
+            Players from both teams score at the same time, and the other team confirms each game. No more
+            keeping two separate scoresheets and checking them line by line when the totals don't match: if a
+            game is recorded differently, that exact game is flagged right away, so you know where the error is.
           </Feature>
           <Feature title="Live scoreboards">
             Scoreboards update the moment a game is scored. Follow every live match in your league and see how
