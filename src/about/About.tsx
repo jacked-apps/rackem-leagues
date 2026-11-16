@@ -74,28 +74,32 @@ export const About: React.FC = () => {
         </Section>
 
         <Section title="For League Operators">
-          <Feature title="Guided league setup">
-            A step-by-step wizard sets up 8-Ball, 9-Ball and 10-Ball leagues with the team size, handicap system
-            and scoring you choose.
+          <Feature title="Fast, easy league setup">
+            A step-by-step wizard gets a league set up in under 10 minutes, starting from proven preset league
+            types. Customizing takes a little longer, and your choices are saved for the next league you create.
           </Feature>
           <Feature title="Smart scheduling">
-            Seasons are scheduled around US holidays and the BCA and APA championships, at one venue or many.
+            US holidays and the BCA and APA championships are flagged automatically so you can move match dates
+            around them, and you can add your own weeks off.
           </Feature>
-          <Feature title="Hand off what you want">
-            Let captains update their own roster, home venue and team name, if you choose.
+          <Feature title="Delegate what you want">
+            Let captains build and update their own rosters and team names, or keep that control yourself. Teams
+            can play a match early or make it up later, and work it out between themselves.
           </Feature>
-          <Feature title="Fix it when it happens">
-            Enter matches played on paper, and reopen and correct a finished match.
+          <Feature title="Scoring control">
+            Enter whole matches yourself or make corrections later. Every game keeps its full record, including
+            every player who entered a score and any conflicts along the way, so you can decide what changes are
+            warranted with the facts in front of you.
           </Feature>
-          <Feature title="Playoffs and the next season">
-            Run playoffs through to a champion, then launch the next season from the last in a few clicks while
-            captains re-up their own teams.
+          <Feature title="Automation and customization">
+            Decide how your season ends and set up playoffs your way. Start the next season in a few clicks, with
+            captains telling you whether their team is coming back. Track yearly dues, work out prize payouts with
+            the built-in calculator, and add your own house and league rules.
           </Feature>
-          <Feature title="Dues, payouts and house rules">
-            Track dues, work out prize payouts, and add your own house rules on top of the official ones.
-          </Feature>
-          <Feature title="CSI / FargoRate results sheet">
-            Print each match the way LMS wants it, and tick off the ones you've already entered.
+          <Feature title="CSI / Fargo sanctioning">
+            We aren't directly connected to CSI or FargoRate, but we make getting officially sanctioned as easy as
+            we can. Each match can be viewed or printed laid out for fast manual entry, and you can track which
+            ones you've already entered.
           </Feature>
           <p>
             <Link to="/become-league-operator" className={linkClass}>
@@ -117,7 +121,7 @@ export const About: React.FC = () => {
           <Feature title="Customizable systems (coming soon)">
             Tailor handicaps, scoring and point distribution in detail, or build your own.
           </Feature>
-          <Feature title="BCA CSI sanctioning">
+          <Feature title="Direct CSI / Fargo integration">
             League results feeding players' Fargo ratings, Fargo-rated handicap leagues, and official sanctioning
             options.
           </Feature>
