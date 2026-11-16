@@ -36,7 +36,6 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Move to Supabase CLI v3 on purpose (config.toml, CI and both deploys together)](docs/list/2026-11-05-supabase-cli-v3.md)
 - [Stop a double click on a back button from going back two pages](docs/list/2026-11-10-back-button-double-click.md)
 - [Build a league finder so a player with no team can find a league near them](docs/list/2026-11-13-league-finder.md)
-- [Rewrite the About page into fewer, fuller sections so it isn't a chore to read](docs/list/2026-11-16-about-page-rewrite.md)
 - [Go through every test, make sure each one can actually fail, and cut the ones that add nothing](docs/list/2026-11-16-test-suite-audit.md)
 
 ## Wish list
