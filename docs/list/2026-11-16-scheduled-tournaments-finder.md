@@ -33,6 +33,19 @@ distance would also need map coordinates, or search can start by zip/city.
 Open point: venues today are added by league operators under an org; a
 director who isn't an LO needs a way to pick or add a venue.
 
+**Venue as a paid extra (Ed, 2026-11-16):** saving the tournament's venue
+would be one more $1 paid extra. Ed: "not adding to the max charge". Confirm
+whether that means it sits inside the current $5 cap (`PRICE_CAP_CENTS`) or
+is charged on top of it. Since we're paid either way, the TD's venue is
+saved for good and can be reused. Venues can already be shared by several
+leagues, so leagues and tournaments sharing one is not a big change.
+
+**Double-booking disclaimer:** a warning that tells LOs and TDs we are not
+responsible for fixing scheduling errors or double booking at a shared venue.
+
+Venue owners seeing what's booked at their venue is a separate idea:
+`docs/list/2026-11-16-venue-owner-view.md`.
+
 **What already exists:** the hopper, the official list, the join link + QR
 poster, Start, and late entry into an unused bye (`LateEntryDialog.tsx`). A
 bracket sits in `setup` until Start (statuses: setup, live, complete,
