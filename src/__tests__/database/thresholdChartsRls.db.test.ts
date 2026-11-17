@@ -14,9 +14,8 @@
  *     across all three entity_type branches (global / organization / league)
  *   - can_write_threshold_chart_via_id() returns false for an unknown chart
  *
- * Org-staff INSERT/UPDATE/DELETE coverage (the happy path) requires the
- * same auth-user + member + organization seed fixture house_rules
- * deferred. Tracked alongside that work.
+ * Org-staff INSERT/UPDATE/DELETE coverage (the happy path) is NOT written
+ * yet; see docs/audits/2026-11-17-data-layer-fakes-triage.md ("Missing coverage").
  */
 
 import { afterAll, describe, expect, it } from 'vitest';
@@ -133,18 +132,4 @@ describe('threshold_charts — RLS (no seed required)', () => {
       expect(data).toBe(false);
     });
   });
-});
-
-// ---------------------------------------------------------------------------
-// TODO(seed-fixture): bootstrap auth user + member + organization +
-// organization_staff(owner) so we can exercise the happy path:
-//   - org owner INSERT/UPDATE/DELETE on org-scoped chart succeeds
-//   - org owner UPDATE blocked when target row belongs to another org
-//   - league_rep INSERT rejected (only owner/admin)
-//   - global chart INSERT/UPDATE/DELETE rejected even for org owner
-//     (defense-in-depth — also enforced by prevent_global_chart_modification trigger)
-// ---------------------------------------------------------------------------
-
-describe.skip('threshold_charts — full owner/admin coverage (requires seed)', () => {
-  it.todo('wire up seed fixture and port the org-staff happy-path coverage');
 });

@@ -26,7 +26,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createServiceClient } from '@/test/dbTestUtils';
+import { createServiceClient, requireSeed } from '@/test/dbTestUtils';
 import { closePostgresPool, executeSql } from '@/test/dbTestUtils';
 import { GAME_SELECT } from '@/api/queries/playerGameHistory';
 
@@ -48,10 +48,7 @@ afterAll(async () => {
 
 describe('playerGameHistory — the select PostgREST has to answer', () => {
   it('resolves every embed without an ambiguity error', async () => {
-    if (!anyPlayer) {
-      console.warn('No played games in this database — run database/dev_play_matches.sql');
-      return;
-    }
+    requireSeed(anyPlayer, 'No played games in this database — run database/dev_play_matches.sql');
 
     const supabase = createServiceClient();
     const { data, error } = await supabase
@@ -69,7 +66,7 @@ describe('playerGameHistory — the select PostgREST has to answer', () => {
   });
 
   it('returns the shape the mapper expects, not just any rows', async () => {
-    if (!anyPlayer) return;
+    requireSeed(anyPlayer, 'anyPlayer is required');
 
     const supabase = createServiceClient();
     const { data, error } = await supabase
@@ -81,7 +78,7 @@ describe('playerGameHistory — the select PostgREST has to answer', () => {
       .limit(1);
 
     expect(error).toBeNull();
-    if (!data || data.length === 0) return;
+    requireSeed(data?.[0], 'a completed regular game for the seeded player');
 
     // Cast through unknown: the generated types don't describe aliased embeds,
     // and this test is about the runtime shape rather than the declared one.

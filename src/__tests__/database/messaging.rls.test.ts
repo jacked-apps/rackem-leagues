@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createTestClient, executeSql } from '@/test/dbTestUtils';
+import { createTestClient, executeSql, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -45,10 +45,7 @@ describe('Conversations Table - RLS Tests', () => {
     });
 
     it('should allow viewing conversation by id', async () => {
-      if (!testConversationId) {
-        console.warn('⚠️ No test conversation found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test conversation found');
 
       const { data, error } = await client
         .from('conversations')
@@ -103,10 +100,7 @@ describe('Conversations Table - RLS Tests', () => {
   describe('UPDATE Operations', () => {
     it('should allow updating conversation title', async () => {
       // The display-name column is `title`, not `name`.
-      if (!testConversationId) {
-        console.warn('⚠️ No test conversation found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test conversation found');
 
       const { data: before } = await client
         .from('conversations')
@@ -131,10 +125,7 @@ describe('Conversations Table - RLS Tests', () => {
     });
 
     it('should allow updating last message info', async () => {
-      if (!testConversationId) {
-        console.warn('⚠️ No test conversation found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test conversation found');
 
       const now = new Date().toISOString();
       const { error } = await client
@@ -241,10 +232,7 @@ describe('Messages Table - RLS Tests', () => {
     });
 
     it('should allow viewing messages for a conversation', async () => {
-      if (!testConversationId) {
-        console.warn('⚠️ No test conversation found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test conversation found');
 
       const { data, error } = await client
         .from('messages')
@@ -274,13 +262,10 @@ describe('Messages Table - RLS Tests', () => {
 
   describe('UPDATE Operations - Message Management', () => {
     it('should allow editing message content', async () => {
-      if (!testMessageId) {
-        console.warn('⚠️ No test message found, skipping test');
-        return;
-      }
+      requireSeed(testMessageId, 'No test message found');
 
       const ownId = await createOwnMessage();
-      if (!ownId) return;
+      requireSeed(ownId, 'ownId is required');
 
       const { error } = await client
         .from('messages')
@@ -293,13 +278,10 @@ describe('Messages Table - RLS Tests', () => {
     });
 
     it('should allow marking message as deleted', async () => {
-      if (!testMessageId) {
-        console.warn('⚠️ No test message found, skipping test');
-        return;
-      }
+      requireSeed(testMessageId, 'No test message found');
 
       const ownId = await createOwnMessage();
-      if (!ownId) return;
+      requireSeed(ownId, 'ownId is required');
 
       const { error } = await client
         .from('messages')
@@ -314,10 +296,7 @@ describe('Messages Table - RLS Tests', () => {
 
   describe('INSERT Operations - Sending Messages', () => {
     it('should allow sending a message', async () => {
-      if (!testConversationId) {
-        console.warn('⚠️ No test conversation found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test conversation found');
 
       // Get a member to be the sender
       const { data: member } = await client
@@ -326,7 +305,7 @@ describe('Messages Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!member) return;
+      requireSeed(member, 'member is required');
 
       const { data: newMessage, error } = await client
         .from('messages')
@@ -353,10 +332,7 @@ describe('Messages Table - RLS Tests', () => {
 
   describe('DELETE Operations', () => {
     it('should allow deleting a message', async () => {
-      if (!testConversationId) {
-        console.warn('⚠️ No test conversation found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test conversation found');
 
       // Create test message
       const { data: member } = await client
@@ -365,7 +341,7 @@ describe('Messages Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!member) return;
+      requireSeed(member, 'member is required');
 
       const { data: testMessage } = await client
         .from('messages')
@@ -377,7 +353,7 @@ describe('Messages Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testMessage) return;
+      requireSeed(testMessage, 'testMessage is required');
 
       // Delete it
       const { error } = await client
@@ -436,10 +412,7 @@ describe('Conversation Participants Table - RLS Tests', () => {
     });
 
     it('should allow viewing participants for a conversation', async () => {
-      if (!testConversationId) {
-        console.warn('⚠️ No test conversation found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test conversation found');
 
       const { data, error } = await client
         .from('conversation_participants')
@@ -456,10 +429,8 @@ describe('Conversation Participants Table - RLS Tests', () => {
 
   describe('UPDATE Operations - Read Receipts', () => {
     it('should allow updating last read timestamp', async () => {
-      if (!testConversationId || !testUserId) {
-        console.warn('⚠️ No test data found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test data found');
+      requireSeed(testUserId, 'No test data found');
 
       const now = new Date().toISOString();
       const { error } = await client
@@ -472,10 +443,8 @@ describe('Conversation Participants Table - RLS Tests', () => {
     });
 
     it('should allow resetting unread count', async () => {
-      if (!testConversationId || !testUserId) {
-        console.warn('⚠️ No test data found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test data found');
+      requireSeed(testUserId, 'No test data found');
 
       const { data: participant } = await client
         .from('conversation_participants')
@@ -484,7 +453,7 @@ describe('Conversation Participants Table - RLS Tests', () => {
         .eq('user_id', testUserId)
         .single();
 
-      if (!participant) return;
+      requireSeed(participant, 'participant is required');
 
       const { error } = await client
         .from('conversation_participants')
@@ -505,10 +474,7 @@ describe('Conversation Participants Table - RLS Tests', () => {
 
   describe('INSERT Operations - Adding Participants', () => {
     it('should allow adding a participant to a conversation', async () => {
-      if (!testConversationId) {
-        console.warn('⚠️ No test conversation found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test conversation found');
 
       // Get existing participants
       const { data: existing } = await client
@@ -526,10 +492,7 @@ describe('Conversation Participants Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!member) {
-        console.warn('⚠️ No available member found, skipping test');
-        return;
-      }
+      requireSeed(member, 'No available member found');
 
       const { data: newParticipant, error } = await client
         .from('conversation_participants')
@@ -556,10 +519,7 @@ describe('Conversation Participants Table - RLS Tests', () => {
 
   describe('DELETE Operations - Leaving Conversations', () => {
     it('should allow removing a participant from a conversation', async () => {
-      if (!testConversationId) {
-        console.warn('⚠️ No test conversation found, skipping test');
-        return;
-      }
+      requireSeed(testConversationId, 'No test conversation found');
 
       // Pick a member NOT already on this conversation so the INSERT
       // doesn't trip the composite primary key.
@@ -576,7 +536,7 @@ describe('Conversation Participants Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!member) return;
+      requireSeed(member, 'member is required');
 
       const { data: testParticipant } = await client
         .from('conversation_participants')
@@ -587,7 +547,7 @@ describe('Conversation Participants Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testParticipant) return;
+      requireSeed(testParticipant, 'testParticipant is required');
 
       // Remove them via composite key.
       const { error } = await client

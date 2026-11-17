@@ -92,6 +92,14 @@ DB-side breaks go inside `BEGIN … ROLLBACK`. Renames and moved imports are
 exempt. Expected values come from the rule or a real result, never from
 running the code and copying its output.
 
+## No silent skips
+
+`src/__tests__/unit/testHygiene.test.ts` fails CI on a skip or todo with no
+`// skip-reason: <why>` comment, any `.only`, a test file no project runs,
+and a test that `return`s part-way through. Missing seed data is a failure,
+not a skip: `requireSeed(testMatchId, 'No test match found')` from
+`src/test/dbTestUtils.ts`.
+
 ## The season replay (scoring answer key)
 
 `src/__tests__/unit/seasonReplay.test.ts` re-scores every match of the one

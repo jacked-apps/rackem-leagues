@@ -393,7 +393,7 @@ test red; an extra fixture field → privacy test red.
 
 ### Phase 2 — Rules and readable results
 
-- [ ] **U5: Break-test rule + PR results template**
+- [x] **U5: Break-test rule + PR results template**
 
 **Goal:** The break-test and real-DB rules live where every session reads
 them, and every PR's results section has a fixed shape.
@@ -418,7 +418,7 @@ values and one excluded row; renames/import moves exempt.
 
 **Verification:** The next test-touching PR uses the template.
 
-- [ ] **U6: Hygiene guards — skips, orphans, silent early returns**
+- [x] **U6: Hygiene guards — skips, orphans, silent early returns**
 
 **Goal:** CI fails on an unexplained skip/todo, any `.only`, any test file no
 project runs, and a db test that returns before asserting.
@@ -459,7 +459,16 @@ carry reasons)
 **Verification:** An unexplained skip on a scratch branch turns the unit job
 red with a message saying what to add.
 
-- [ ] **U7: CI-sourced counts and removed-test report**
+**Result (2026-11-17):** `testHygiene.test.ts` parses tests with the
+TypeScript compiler. The early-return rule was widened from "before the first
+expect" to "anywhere but the last statement" after
+`playerGameHistory.db.test.ts` turned out to assert once and then return. It
+found 133 early returns, all in db tests (RLS files mostly). U10 converted
+them (below), so the guard landed green. Break records: planted unexplained
+`it.skip`, `it.only`, a mid-body `return`, and an orphan test file:
+each one red, naming file:line.
+
+- [x] **U7: CI-sourced counts and removed-test report**
 
 **Goal:** Every PR's Checks run shows passed/failed/skipped counts and names
 any test that exists on main but not on the branch.
@@ -525,7 +534,7 @@ reads without knowing Stryker.
 
 ### Phase 4 — The backlog
 
-- [ ] **U9: Data-layer fake triage list**
+- [x] **U9: Data-layer fake triage list**
 
 **Goal:** Every test that fakes the Supabase client or the query/hook layer
 listed once with keep / convert / delete and a reason, ranked by risk.
@@ -545,7 +554,12 @@ user-facing + recently changed.
 
 **Verification:** Every faking file appears exactly once with a decision.
 
-- [ ] **U10: Skipped groups — wire up or delete; fix existing early returns**
+**Result (2026-11-17):** 72 faking files: 69 keep, 2 convert
+(`matches.test.ts` for `getMyMatchMatches`, `thresholdLookup.test.ts`),
+1 delete (`useTeamJoinView.test.ts`), 2 trim. Five places still need new
+real-DB tests. Conversions are not done here; they are the backlog.
+
+- [x] **U10: Skipped groups — wire up or delete; fix existing early returns**
 
 **Goal:** The 4 skipped DB groups are wired up or deleted, and existing db
 tests that pass on empty data are made to fail instead.
@@ -570,6 +584,23 @@ explicit failure. Removes U6's stopgap skip reasons.
 
 **Verification:** No stopgap `skip-reason` lines remain; U6's early-return
 guard has no exceptions.
+
+**Result (2026-11-17):** the four `describe.skip` groups held only
+empty tests or `it.todo`; deleted, with their coverage plans moved to the
+triage doc ("Missing coverage"). 133 early returns were converted to
+`requireSeed()` (127 by a codemod, 6 by hand). That exposed **5 database
+tests that had been passing while checking nothing**:
+- 2 preference tests queried columns the tables no longer have
+  (`preferences.league_id`/`preference_action`,
+  `operator_blackout_preferences.blackout_name`). The query errored and
+  the test returned. Rewritten against real columns on rows they create.
+- 2 league-venue tests (assign / remove) always hit "already assigned" in CI
+  and returned. They now use their own venue.
+- 1 captain-chat test ("staff can leave") returned because the seed has no
+  staff member who isn't a captain. It now makes one. Break record: staff
+  set to cannot-leave → red.
+Plus 2 bracket tests that depended on seed rows: one now makes its own
+placeholder member, the other requires a logged-in member to exist.
 
 ## System-Wide Impact
 

@@ -22,8 +22,8 @@
  *     (REVOKE EXECUTE FROM authenticated → permission denied)
  *
  * Atomicity tests (forced rollback inside the transaction) and happy-path
- * coverage are deferred alongside the seed-fixture work used by other
- * RLS test files.
+ * coverage are NOT written yet; see
+ * docs/audits/2026-11-17-data-layer-fakes-triage.md ("Missing coverage").
  */
 
 import { afterAll, describe, expect, it } from 'vitest';
@@ -131,22 +131,4 @@ describe('rating-mutation RPCs — RLS + access (no seed required)', () => {
       expect(error).not.toBeNull();
     });
   });
-});
-
-// ---------------------------------------------------------------------------
-// TODO(seed-fixture): bootstrap an authenticated user with a member row,
-// a team_players entry, a match + match_lineup, and exercise:
-//   - happy path: roster member calls set_match_lineup_rating, audit row lands
-//   - reject path: non-roster caller blocked by authz check
-//   - reject path: member not on the lineup blocked by slot-resolution check
-//   - happy path: org owner calls vacate_and_rescore_audit_marker, marker lands
-//   - happy path: service-role calls recompute_member_rating, no-change → null,
-//     change → audit row + UPDATE
-//   - atomicity: force rollback after UPDATE but before audit INSERT, verify
-//     neither persists (requires a custom RPC harness or BEGIN/ROLLBACK
-//     scaffolding that the existing test infra doesn't have yet)
-// ---------------------------------------------------------------------------
-
-describe.skip('rating-mutation RPCs — happy path + atomicity (requires seed)', () => {
-  it.todo('wire up seed fixture and port the full coverage from the plan');
 });

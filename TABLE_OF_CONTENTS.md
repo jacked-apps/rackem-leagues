@@ -52,6 +52,7 @@
 | `docs/file-split-backlog.md` | Ranked do-one-at-a-time list of files worth splitting (single-responsibility, not line count) | Refactor backlog from the 2026-06-06 sweep; each is a behavior-preserving PR |
 | `docs/guides/captain-onboarding-guide.md` | Long-form, hand-holdy captain how-to for the link-share onboarding (copy message → paste → send → wait → approve). Source for the in-app `InviteHelpContent` popup; train-the-trainer reference | Active guide; foundation for a future wizard/video |
 | `docs/audits/2026-10-28-tiebreaker-audit.md` | **Phase 3 tiebreaker audit (read-only)** — what the tiebreaker reads/writes vs the agreed rule; finds that `locked` is a flag with no DB enforcement and four unguarded lineup writers live in `MatchLineup.tsx` | Investigation only, no fix; recommends a brainstorm before Phase 4 |
+| `docs/audits/2026-11-17-data-layer-fakes-triage.md` | **Tests that fake the database — keep / convert / delete** for all 72 faking files (2 convert, 1 delete, 2 trim), the new real-DB tests still needed, and the coverage plans from the four deleted `describe.skip` placeholders | |
 | `docs/audits/2026-11-04-list-for-ed-migration.md` | **LIST_FOR_ED migration audit** — every old section checked against main: dropped (with evidence), gated, or kept with a proposed group | Dated snapshot, never maintained |
 | `docs/brainstorms/2026-10-28-tiebreaker-requirements.md` | **Tiebreaker requirements** — the anti-sandbagging rule (winning team’s 3 players each get a win, losing team nothing) and the CORRECTED finding that the rule is live today, produced by overwriting all three tiebreak games | Requirements agreed and planned; forward-only, no backfill |
 | `docs/brainstorms/2026-11-04-tracking-docs-requirements.md` | REQUIREMENTS for replacing the TOC and reshaping LIST_FOR_ED so both stay true | TOC → a `CLAUDE.md` "start from the closest existing screen" rule + model-screen table (test keeps its paths real), a required "Model screen:" line in every UI plan, a one-screen folder map; delete the TOC + COMPONENTS_INDEX drift. Per-folder READMEs decided AGAINST. LIST_FOR_ED → a short list grouped Now (≤3, Ed curates) / Next / Later / Wish / Gated, each line linking to a plan doc or an item file; finished = deleted; "what is next?" re-checks Now+Next against main; audit of the 33 sections, Ed approves. Two plans, LIST_FOR_ED first |
@@ -244,6 +245,8 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `scripts/query-tests/` | Pure helpers for the query guard: `diff.mjs` (`git diff -U0` → changed lines per file), `spans.mjs` (which lines are inside a query region), `coverage.mjs` (does a db test import AND use a module), `detect.mjs` (which files are app source), `evaluate.mjs` (the verdict + waiver parsing) | Plain JS so CI runs them with bare node |
 | `scripts/fetch-season-fixture.mjs` | **Build the season-replay answer key** — READ-ONLY prod fetch (SELECTs, paged past the 1000-row cap) of the one completed season → `src/__tests__/fixtures/season-2026-sunday-9ball.json`. Needs `PROD_SERVICE_ROLE_KEY` in `.env.local` |
 | `scripts/season-fixture/buildFixture.mjs` | Pure allow-list anonymiser for the fixture: teams → "Team A…", weeks → numbers, no player ids/names/dates, confirmations → yes/no; bye matches dropped |
+| `scripts/test-summary.mjs` | **CI test results in plain language** — reads the vitest JSON report and writes the job summary: counts, failures first, skipped/todo named, and tests on main that are gone from the branch (from main's last uploaded report). Exits 2 on a missing report rather than claiming "0 passed". Run by both test jobs in `checks.yml` with `if: always()` | Pure part `scripts/test-summary/summarize.mjs`; tests `src/__tests__/unit/testSummary.test.ts` |
+| `scripts/mutation-summary.mjs` | Plain-language mutation report: "Of N deliberate mistakes, tests caught X", each miss as file:line + the change in words, accepted ones with their reason, tests that ran on mistakes but caught none | Pure part `scripts/mutation-summary/summarize.mjs`; tests `src/__tests__/unit/mutationSummary.test.ts` |
 | `scripts/stamp-whats-new.mjs` | **Runs automatically inside `npm version`** (the `version` script in package.json): folds every `src/whatsNew/notes/*.json` into a dated block under the STAMP marker in `releases.ts`, builds the summary from headlines, deletes the note files, all in the commit that gets tagged. Quiet success when there are no notes or the version is already stamped. | 2026-11-01 |
 | `scripts/check-migration-versions.sh` | **CI guard: fails if two files in `supabase/migrations/` share a version number.** `schema_migrations` is keyed on version alone, so a collision merges cleanly in git (filenames differ) but can never both apply — it surfaces only at deploy, aborting it before the S3 upload. Run by `.github/workflows/checks.yml` on every PR and as a pre-flight step in both deploy workflows. Takes an optional dir arg (default `supabase/migrations`). |
 
@@ -279,6 +282,8 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 |------|---------|
 | `vite.config.ts` | Vite build tool configuration |
 | `vitest.config.ts` | Vitest test runner configuration |
+| `vitest.stryker.config.ts` | Unit-only vitest config for mutation testing (Stryker can't select a project): scoring/utils tests + `src/__tests__/unit`, never the DB | |
+| `stryker.config.mjs` | **Mutation testing** (`pnpm test:mutation`, local only): makes deliberate mistakes in the scoring/handicap code and checks the tests catch them. Concurrency 2, incremental; report in `reports/mutation/` | Read it with `node scripts/mutation-summary.mjs` |
 | `eslint.config.js` | ESLint code quality configuration |
 | `components.json` | shadcn/ui components configuration |
 
@@ -600,6 +605,9 @@ how to add a new test, demo recording, cleanup model).
 - `cleanup.smoke.test.ts` - Rulebook cleanup output smoke checks (18 tests)
 - `resolveRuleId.test.ts` - Deep-link rule resolver
 - `listForEd.test.ts` + `listForEd.helpers.ts` - Keeps `LIST_FOR_ED.md` and the `docs/list/` item files matched (every line links a real file; every item has exactly one line)
+- `testHygiene.test.ts` + `testHygiene.helpers.ts` - **CI guard against silent skips**: a skip/todo without `// skip-reason:`, any `.only`, a test file no vitest project runs (globs read from `vitest.config.ts`), or a test body that returns part-way through. Parses with the TypeScript compiler, so "skip" in strings/comments is ignored
+- `testSummary.test.ts` - The CI results summary: real counts, failures first with the error's first line, skipped vs todo, a load failure counted as a failure, removed tests named
+- `mutationSummary.test.ts` - The mutation report: "caught all", misses with file:line + change in words, untested lines flagged, accepted shown apart (never as caught), idle tests named
 - `checkQueryTests.test.ts` - The query-test guard: the #277 shape (embed edited inside a select constant, no db test) fails; import-only coverage fails; empty waiver fails; `Array.from` isn't a query; diff parsing
 - `buildSeasonFixture.test.ts` - The fixture anonymiser: no uuid / date / unlisted column leaks; byes skipped; weeks ordered by date; stable fake team names; snapshot ids + timestamp dropped
 - `seasonReplay.test.ts` - **Season replay**: all 64 real matches of the 2026 Sunday 9-ball season re-scored through today's code must reproduce the stored games won + points, engine must agree with legacy, and stored lineups must give the stored targets (6 named exceptions, each must still differ). Fixture + exceptions are hash-pinned
@@ -695,7 +703,7 @@ how to add a new test, demo recording, cleanup model).
 - `setup.ts` - Test environment setup
 - `utils.tsx` - Test helper utilities
 - `vitest-setup.d.ts` - Vitest type definitions
-- `dbTestUtils.ts` - Supabase/pg clients + `executeSql` for the `db` test project. Test clients are session-isolated (`persistSession:false` + a per-user `storageKey`) — under jsdom two clients otherwise share one localStorage slot and the second sign-in silently overwrites the first
+- `dbTestUtils.ts` - Supabase/pg clients + `executeSql` for the `db` test project. Test clients are session-isolated (`persistSession:false` + a per-user `storageKey`) — under jsdom two clients otherwise share one localStorage slot and the second sign-in silently overwrites the first `requireSeed(value, what)` fails a test loudly when the row it needs is missing (replaces the old warn-and-return "skip").
 - `onboardingFixtures.ts` - Builds a placeholder-captain (or staff-captained) team with roster room for the onboarding-cascade DB suites, so they stop hunting the shared seed for shapes it does not contain
 
 ---

@@ -7,8 +7,8 @@
  * - Players viewing venue information
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient } from '@/test/dbTestUtils';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createTestClient, executeSql, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -44,10 +44,7 @@ describe('Venues Table - RLS Tests', () => {
     });
 
     it('should allow viewing venue by id', async () => {
-      if (!testVenueId) {
-        console.warn('⚠️ No test venue found, skipping test');
-        return;
-      }
+      requireSeed(testVenueId, 'No test venue found');
 
       const { data, error } = await client
         .from('venues')
@@ -77,7 +74,7 @@ describe('Venues Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!firstVenue?.city) return;
+      requireSeed(firstVenue?.city, 'firstVenue?.city is required');
 
       const { data, error } = await client
         .from('venues')
@@ -95,7 +92,7 @@ describe('Venues Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!firstVenue?.state) return;
+      requireSeed(firstVenue?.state, 'firstVenue?.state is required');
 
       const { data, error } = await client
         .from('venues')
@@ -109,10 +106,7 @@ describe('Venues Table - RLS Tests', () => {
 
   describe('UPDATE Operations', () => {
     it('should allow updating venue name', async () => {
-      if (!testVenueId) {
-        console.warn('⚠️ No test venue found, skipping test');
-        return;
-      }
+      requireSeed(testVenueId, 'No test venue found');
 
       const { data: before } = await client
         .from('venues')
@@ -138,10 +132,7 @@ describe('Venues Table - RLS Tests', () => {
     });
 
     it('should allow updating venue address', async () => {
-      if (!testVenueId) {
-        console.warn('⚠️ No test venue found, skipping test');
-        return;
-      }
+      requireSeed(testVenueId, 'No test venue found');
 
       const { data: before } = await client
         .from('venues')
@@ -171,10 +162,7 @@ describe('Venues Table - RLS Tests', () => {
     });
 
     it('should allow updating venue contact info', async () => {
-      if (!testVenueId) {
-        console.warn('⚠️ No test venue found, skipping test');
-        return;
-      }
+      requireSeed(testVenueId, 'No test venue found');
 
       const { data: before } = await client
         .from('venues')
@@ -202,10 +190,7 @@ describe('Venues Table - RLS Tests', () => {
     });
 
     it('should allow updating venue table count', async () => {
-      if (!testVenueId) {
-        console.warn('⚠️ No test venue found, skipping test');
-        return;
-      }
+      requireSeed(testVenueId, 'No test venue found');
 
       const { data: before } = await client
         .from('venues')
@@ -257,16 +242,19 @@ describe('League Venues Table - RLS Tests', () => {
       testLeagueId = league.id;
     }
 
-    // Get a test venue
-    const { data: venue } = await client
-      .from('venues')
-      .select('id')
-      .limit(1)
-      .single();
+    // A venue of this group's own. A seeded venue is usually already assigned
+    // to the seeded league, so assigning it again hits the unique constraint —
+    // which is how both assignment tests used to "skip" (pass) in CI.
+    const [venue] = await executeSql(
+      `INSERT INTO public.venues (name, street_address, city, state, zip_code, phone, bar_box_table_numbers)
+       VALUES ('RLS test venue (league_venues)', '1 Test St', 'Testville', 'TS', '00000', '555-0100', '{1,2,3,4}')
+       RETURNING id`,
+    );
+    testVenueId = venue.id;
+  });
 
-    if (venue) {
-      testVenueId = venue.id;
-    }
+  afterAll(async () => {
+    if (testVenueId) await executeSql('DELETE FROM public.venues WHERE id = $1', [testVenueId]);
   });
 
   describe('SELECT Operations', () => {
@@ -285,23 +273,8 @@ describe('League Venues Table - RLS Tests', () => {
 
   describe('INSERT Operations - Assigning Venues', () => {
     it('should allow assigning a venue to a league', async () => {
-      if (!testLeagueId || !testVenueId) {
-        console.warn('⚠️ No test league/venue found, skipping test');
-        return;
-      }
-
-      // Check if already assigned
-      const { data: existing } = await client
-        .from('league_venues')
-        .select('id')
-        .eq('league_id', testLeagueId)
-        .eq('venue_id', testVenueId)
-        .single();
-
-      if (existing) {
-        console.warn('⚠️ Venue already assigned, skipping test');
-        return;
-      }
+      requireSeed(testLeagueId, 'No test league/venue found');
+      requireSeed(testVenueId, 'No test league/venue found');
 
       const { data: newAssignment, error } = await client
         .from('league_venues')
@@ -327,10 +300,8 @@ describe('League Venues Table - RLS Tests', () => {
 
   describe('DELETE Operations - Removing Venues', () => {
     it('should allow removing a venue from a league', async () => {
-      if (!testLeagueId || !testVenueId) {
-        console.warn('⚠️ No test league/venue found, skipping test');
-        return;
-      }
+      requireSeed(testLeagueId, 'No test league/venue found');
+      requireSeed(testVenueId, 'No test league/venue found');
 
       // Create test assignment
       const { data: testAssignment } = await client
@@ -342,10 +313,7 @@ describe('League Venues Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testAssignment) {
-        console.warn('⚠️ Could not create test assignment, skipping test');
-        return;
-      }
+      requireSeed(testAssignment, 'Could not create test assignment');
 
       // Delete it
       const { error } = await client

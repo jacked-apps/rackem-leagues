@@ -236,6 +236,13 @@ query must EXCLUDE. Mocked supabase-js proves nothing about a query.
 CI enforces this (`.github/workflows/query-tests.yml`); the only way past it
 is `[no-db-test: <reason>]` in the PR description, which is printed for Ed.
 
+**No silent skips.** CI (`src/__tests__/unit/testHygiene.test.ts`) fails on:
+a skip/todo without a `// skip-reason: <why>` comment above it; any `.only`;
+a test file no vitest project runs; and a test body that `return`s part-way
+through. For "the row this test needs isn't there", call
+`requireSeed(value, 'what is missing')` from `@/test/dbTestUtils` — it fails
+loudly instead of passing having asserted nothing.
+
 **Expected values come from the rule, not the code.** Write the expected
 number from the league rule or a real result (the season replay,
 `src/__tests__/unit/seasonReplay.test.ts`), never by running the code and
