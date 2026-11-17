@@ -227,7 +227,7 @@ flowchart LR
 
 ### Phase 1 — The two highest-value checks
 
-- [ ] **U1: Query-change guard**
+- [x] **U1: Query-change guard**
 
 **Goal:** A PR that changes Supabase query code without a real-DB test that
 exercises it fails CI; any waiver is printed by CI.
@@ -268,7 +268,7 @@ exercises it fails CI; any waiver is printed by CI.
 **Verification:** The real #277 diff fails; the 30-PR dry run shows a firing
 rate Ed can live with.
 
-- [ ] **U2: Extract the pure scoring glue (refactor)**
+- [x] **U2: Extract the pure scoring glue (refactor)**
 
 **Goal:** The steps between stored rows and the scoring engine become pure,
 exported functions that production and the replay both call — so the replay
@@ -303,7 +303,7 @@ matches before moving code.
 **Verification:** No behaviour change (existing suites green); the builder
 has no Supabase import.
 
-- [ ] **U3: Read-only season fetch + anonymised fixture**
+- [x] **U3: Read-only season fetch + anonymised fixture**
 
 **Goal:** One command reads the completed season from production (SELECT
 only) and writes an allow-listed, anonymised fixture.
@@ -336,7 +336,7 @@ only) and writes an allow-listed, anonymised fixture.
 
 **Verification:** 64 matches in the fixture; the U4 privacy test passes.
 
-- [ ] **U4: Season replay test**
+- [x] **U4: Season replay test**
 
 **Goal:** Every fixture match, re-run through today's scoring code,
 reproduces its recorded result.
@@ -375,6 +375,21 @@ mid-season points recalc was applied in production.
 
 **Verification:** All green or Ed-approved named exceptions; the deliberate
 break turns it red.
+
+**Result (2026-11-17):** 64/64 matches reproduce games won, points and the
+winner; engine and legacy agree on all 64 (the mid-season points recalc WAS
+applied in production). 58/64 stored lineups still give the stored targets.
+The 6 that don't are named exceptions in the test, each with its cause, and
+must STILL differ (no skips): 4 tiebreaker re-locks rewrote the lineup row
+(audit F1, fixed by #291), 1 is the known "Ben vs Duff" hand repair, and 1
+(Week 19) locked its away lineup 1.5h after the match started with no swap —
+the one-lock start fixed by #313. None changed a score. Player ids are not
+in the fixture at all, so the sentinel-sub case is moot for scoring.
+Break records: points from win target instead of par (engine) → 33 matches
+red; same in legacy → 33 engine/legacy disagreements; legacy counting
+tiebreaker games → 6 red; team bonus on the wrong side → 32 red; a win
+needing to exceed the target → 19 red; one edited expected value → hash
+test red; an extra fixture field → privacy test red.
 
 ### Phase 2 — Rules and readable results
 
