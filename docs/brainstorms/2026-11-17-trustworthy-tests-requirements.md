@@ -78,8 +78,16 @@ the machine does it, and Claude's word is never the only evidence.
   actual code change, not just Claude's one-line reason. Tests in that area
   that catch nothing are flagged to strengthen or delete.
 - R11. The scoring math's expected values come from at least one source that
-  isn't the code itself — real, hand-checked results from Ed's league — so
-  the tests can't just lock in wrong behavior.
+  isn't the code itself, so the tests can't just lock in wrong behavior.
+  **Answer key = the one completed production season** (Sunday 9-ball,
+  standard handicap, ~65 matches, 2026-06-14 → 2026-10-25). Ed confirmed it
+  is real, finished, league-accepted data (2026-11-17). Each game's winner
+  was entered and confirmed by both teams on the night; the replay test feeds
+  those recorded games through the scoring code and must reproduce the
+  recorded games-won and points for every match. Player and team names are
+  replaced with fake ones before anything enters the repo. A replay mismatch
+  is investigated, not auto-"fixed" either way: it's either a scoring bug or
+  a mid-season data fix (e.g. the sub-slot credit fix).
 
 **Results Ed can read**
 - R12. When Claude finishes work that touches tests, Ed gets one short,
@@ -143,7 +151,10 @@ the machine does it, and Claude's word is never the only evidence.
   component/hook tests to real DB needs that widened (covered by R3's guard).
 - CI starts Supabase without realtime, so realtime tests stay fakes (R7
   exception).
-- R11 needs Ed to supply a few real, known-correct scored matches.
+- R11 reads production read-only via the existing `PROD_SERVICE_ROLE_KEY`
+  in `.env.local` (same access `scripts/clone-prod-to-local.mjs` uses). Only
+  one league and system exists in production today, so other handicap systems
+  and playoffs get answer keys later, as real seasons complete.
 
 ## Outstanding Questions
 
