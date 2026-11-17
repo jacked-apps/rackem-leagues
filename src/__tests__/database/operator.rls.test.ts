@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient, requireSeed } from '@/test/dbTestUtils';
+import { createTestClient, executeSql, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -290,14 +290,12 @@ describe('Organization Staff Table - RLS Tests', () => {
     it('should allow removing staff from organization', async () => {
       requireSeed(testOrgId, 'No test organization found');
 
-      // Create test staff
-      const { data: member } = await client
-        .from('members')
-        .select('id')
-        .limit(1)
-        .single();
-
-      requireSeed(member, 'member is required');
+      // A member of this test's own: borrowing "the first member" collided
+      // with anyone already on the org's staff (unique per org + member).
+      const [member] = await executeSql(
+        `INSERT INTO public.members (first_name, last_name, city, state)
+         VALUES ('Staff', 'Removal (operator RLS test)', 'Testville', 'TS') RETURNING id`,
+      );
 
       const { data: testStaff } = await client
         .from('organization_staff')
@@ -327,6 +325,7 @@ describe('Organization Staff Table - RLS Tests', () => {
         .single();
 
       expect(deleted).toBeNull();
+      await executeSql('DELETE FROM public.members WHERE id = $1', [member.id]);
     });
   });
 });
