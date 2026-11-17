@@ -240,6 +240,8 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | `scripts/e2e-verify-auth.mjs` | E2E bcrypt-hash verification gate. Wired to `pnpm e2e:verify-auth`. Confirms the committed hash matches `E2E_PW` via Postgres `crypt()`. |
 | `scripts/e2e-verify-factories.ts` | E2E factory smoke-check. Wired to `pnpm e2e:verify-factories`. Calls each factory and asserts the resulting DB rows. |
 | `scripts/check-whats-new.mjs` | **CI guard: a PR must add a What's New note (a file in `src/whatsNew/notes/`), declare `[no-changelog]`, or be a release (version change in `package.json`, so Jack's release PR never goes red).** | 2026-11-01 |
+| `scripts/check-query-tests.mjs` | **CI guard: a PR that changes a database query must have a real-database test that uses it** (My Stats #277 shipped a query Postgres rejected while every unit test passed). Query code = a changed line inside a Supabase call chain or a select constant one uses; covered = a file under `src/__tests__/database/` imports the module AND uses it. Waiver `[no-db-test: <reason>]` in the PR description, printed in the job summary (no approval step). Fails on the #277 bug commit; run by `.github/workflows/query-tests.yml` | Helpers in `scripts/query-tests/`; tests `src/__tests__/unit/checkQueryTests.test.ts` |
+| `scripts/query-tests/` | Pure helpers for the query guard: `diff.mjs` (`git diff -U0` → changed lines per file), `spans.mjs` (which lines are inside a query region), `coverage.mjs` (does a db test import AND use a module), `detect.mjs` (which files are app source), `evaluate.mjs` (the verdict + waiver parsing) | Plain JS so CI runs them with bare node |
 | `scripts/stamp-whats-new.mjs` | **Runs automatically inside `npm version`** (the `version` script in package.json): folds every `src/whatsNew/notes/*.json` into a dated block under the STAMP marker in `releases.ts`, builds the summary from headlines, deletes the note files, all in the commit that gets tagged. Quiet success when there are no notes or the version is already stamped. | 2026-11-01 |
 | `scripts/check-migration-versions.sh` | **CI guard: fails if two files in `supabase/migrations/` share a version number.** `schema_migrations` is keyed on version alone, so a collision merges cleanly in git (filenames differ) but can never both apply — it surfaces only at deploy, aborting it before the S3 upload. Run by `.github/workflows/checks.yml` on every PR and as a pre-flight step in both deploy workflows. Takes an optional dir arg (default `supabase/migrations`). |
 
@@ -248,6 +250,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 | File | Purpose |
 |------|---------|
 | `.github/workflows/checks.yml` | **Pre-merge checks (`pull_request` + push to `main`).** The repo's first PR-triggered workflow — before it, the only automation was the deploy workflows, so a whole class of mistake could only be found by breaking a deployed environment. Three parallel jobs: the duplicate-migration-version guard, the vitest `unit` project (NOT `db`, which needs a local Postgres), and `pnpm run build` (`tsc -b` + vite build) as the authoritative typecheck. |
+| `.github/workflows/query-tests.yml` | Runs `scripts/check-query-tests.mjs` on every PR, including when the description is edited (so adding a `[no-db-test: …]` waiver re-runs it). Diff and PR body go via files (no script injection) |
 | `.github/workflows/deploy-staging.yml` | Build + migrate + deploy to staging on push to `main`. Sets `VITE_PUSH_NOTIFICATIONS=true` (push is un-gated on staging). |
 | `.github/workflows/deploy-production.yml` | Build + migrate + deploy edge functions + deploy to production, on release. |
 
@@ -594,6 +597,7 @@ how to add a new test, demo recording, cleanup model).
 - `cleanup.smoke.test.ts` - Rulebook cleanup output smoke checks (18 tests)
 - `resolveRuleId.test.ts` - Deep-link rule resolver
 - `listForEd.test.ts` + `listForEd.helpers.ts` - Keeps `LIST_FOR_ED.md` and the `docs/list/` item files matched (every line links a real file; every item has exactly one line)
+- `checkQueryTests.test.ts` - The query-test guard: the #277 shape (embed edited inside a select constant, no db test) fails; import-only coverage fails; empty waiver fails; `Array.from` isn't a query; diff parsing
 - `useRulebookSearch.test.ts` - In-memory substring search hook
 - `searchSnippet.test.ts` - Snippet extraction + highlight helpers
 - `copyLinkButton.test.tsx` - Share-link clipboard button

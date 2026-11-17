@@ -1,0 +1,53 @@
+# A change to a database query needs a real-database test that uses it.
+#
+# My Stats (#277) shipped a query Postgres rejected outright while ~4,800 unit
+# tests passed, because none of them asked Postgres anything. This check fails
+# a PR that changes query code (a Supabase call chain, or a select constant one
+# uses) unless a test under src/__tests__/database/ exercises that module.
+#
+# Escape hatch: `[no-db-test: <reason>]` in the PR description. It is printed
+# in the job summary — no approval step (Ed, 2026-11-17).
+#
+# Its own workflow, like whats-new.yml, because it must re-run when the PR
+# DESCRIPTION is edited (adding a waiver), and checks.yml shouldn't re-run the
+# whole suite for a description typo.
+#
+# Rules and history: scripts/check-query-tests.mjs and
+# docs/plans/2026-11-17-001-feat-trustworthy-tests-plan.md (U1).
+
+name: Query tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  query-tests:
+    name: Query changes have a real-database test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Need the base commit to diff against; a shallow clone has neither.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Written to files rather than passed as arguments: a PR description is
+      # arbitrary user text, and interpolating it into a shell command is a
+      # script-injection waiting to happen.
+      - name: Collect the diff and PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff -U0 --diff-filter=d "$BASE_SHA" "$HEAD_SHA" > /tmp/diff.patch
+          printf '%s' "$PR_BODY" > /tmp/pr-body.txt
+
+      - name: Check query changes for real-database tests
+        run: node scripts/check-query-tests.mjs /tmp/diff.patch /tmp/pr-body.txt
