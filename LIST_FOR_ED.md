@@ -51,6 +51,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Optionally rename leftover "View Schedule" buttons to "Matchups"](docs/list/2026-06-13-matchups-label-sweep.md)
 - [Seed a finished season so the playoff fill-in can be watched locally](docs/list/2026-06-13-seed-played-match-and-finished-season.md)
 - [Past-match result cards on the schedule could show more in less room](docs/list/2026-10-29-past-match-result-cards.md)
+- [A printable blank scoresheet, for nights the internet is down](docs/list/2026-11-17-printable-scoresheet.md)
 
 ## Gated
 

@@ -159,8 +159,7 @@ shown by CI, not by the AI. (see origin: docs/brainstorms/2026-11-17-trustworthy
 - **Opt-outs and skip reasons are surfaced by CI, never only by Claude:** the
   query guard's opt-out (`[no-db-test: <reason>]`) and every `skip-reason`
   are printed in the CI job summary under a fixed heading, so a waiver is
-  visible even if Claude's PR text leaves it out. *(Whether Ed must also
-  approve each opt-out — see Open Questions.)*
+  visible even if Claude's PR text leaves it out. No approval step (Ed).
 - **The replay is a regression check against league-accepted results, not
   independent truth.** Per-game winners were entered and confirmed by both
   teams (human input); targets and points were computed by our code at the
@@ -194,13 +193,13 @@ shown by CI, not by the AI. (see origin: docs/brainstorms/2026-11-17-trustworthy
   `getTeamHandicapBonus.ts` is in only if its pure `computeTeamBonus` moves
   to its own file.
 
-### Needs Ed
-
-- **Opt-out approval:** is CI printing every waiver enough, or should a
-  query-guard opt-out also need a label only Ed applies?
-- **Spot-check:** do 2–3 paper score sheets from this season still exist?
-  They'd confirm the replay's stored values against something our code never
-  touched.
+- **Waivers (Ed, 2026-11-17):** printed by CI only — no Ed approval step.
+- **Paper spot-check (Ed, 2026-11-17):** none exist; scoring is paperless.
+  The season is finished, players are satisfied, and its records are
+  effectively final — the replay's league-accepted values are the answer key.
+- **Playoff bonus (Ed, 2026-11-17):** already fixed on main (#312 — team
+  bonus is 0 in a playoff week, DB-tested). What isn't pinned is the other
+  half: player handicaps must still count in playoffs. Added to U2.
 
 ### Deferred to Implementation
 
@@ -298,6 +297,7 @@ matches before moving code.
 - Edge case: unlocked lineup present → ignored; only locked ones used.
 - Edge case: snapshot with `per_game_allocator` null → treated as production does.
 - Error path: missing snapshot → explicit error, not a silent fallback.
+- Happy path (playoffs): playoff match with a 0 team modifier and real player handicaps → player handicaps still summed into the inputs; only the team bonus is absent.
 - Integration: existing `match-adapter` and `engineRunningTotals` tests stay green unchanged.
 
 **Verification:** No behaviour change (existing suites green); the builder
@@ -570,9 +570,9 @@ guard has no exceptions.
 | Risk | Mitigation |
 |---|---|
 | Replay mismatches from un-applied recalcs / data fixes | Named exceptions with reasons, Ed-approved, hash-pinned |
-| Replay enshrines a wrong value the league accepted | Labelled a regression check; paper spot-check if sheets exist |
+| Replay enshrines a wrong value the league accepted | Labelled a regression check; season is final and league-accepted (Ed) |
 | Query guard noisy → gets disabled | 30-PR dry run before enforcing; precise matching; waiver path |
-| Claude waives its way to green | CI prints every waiver and skip reason; optional Ed-only label |
+| Claude waives its way to green | CI prints every waiver and skip reason (Ed: printing is enough) |
 | Fixture leaks private data in a public repo | Field allow-list, uuid scan test, no dates |
 | U2 refactor changes scoring | Characterization first; existing suites must stay green |
 | Mutation run too slow on Ed's machine | concurrency 2, incremental, narrow scope; CI deferred |
