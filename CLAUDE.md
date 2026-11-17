@@ -221,6 +221,26 @@ the rule that matters most for new code:
   `src/__tests__/integration/`. The `unit` project runs these in
   parallel with happy-dom.
 
+**Every new test must be proven able to fail.** Before calling a test done,
+break the code in the way the test exists to catch (not a random line), watch
+the test go red, then restore. Record the break and the red result under
+"Break records" in the PR description (`.github/pull_request_template.md`).
+DB-side breaks (a trigger, a function) go inside `BEGIN … ROLLBACK` — never
+leave a broken local DB. Renames and moved imports are exempt.
+
+**A query change needs a real-database test.** If a PR changes a Supabase
+query (`.from(`/`.rpc(`/`.select(` chains), a test under
+`src/__tests__/database/` must import that module and call it against the
+local DB: insert known rows, assert exact values, and include one row the
+query must EXCLUDE. Mocked supabase-js proves nothing about a query.
+CI enforces this (`.github/workflows/query-tests.yml`); the only way past it
+is `[no-db-test: <reason>]` in the PR description, which is printed for Ed.
+
+**Expected values come from the rule, not the code.** Write the expected
+number from the league rule or a real result (the season replay,
+`src/__tests__/unit/seasonReplay.test.ts`), never by running the code and
+pasting what it returned.
+
 Plain `pnpm test:run` does the right thing for both projects — no
 `--no-file-parallelism` flag, no manual orchestration. CI workflows
 that call `pnpm test:run` inherit the behavior automatically. Don't
