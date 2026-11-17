@@ -36,6 +36,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Line up the league games-list buttons the way the room race does](docs/list/2026-11-04-league-games-list-alignment.md)
 - [Move to Supabase CLI v3 on purpose (config.toml, CI and both deploys together)](docs/list/2026-11-05-supabase-cli-v3.md)
 - [Stop a double click on a back button from going back two pages](docs/list/2026-11-10-back-button-double-click.md)
+- [Make tests prove themselves: CI guards, real-season replay, mutation testing](docs/plans/2026-11-17-001-feat-trustworthy-tests-plan.md)
 
 ## Wish list
 

@@ -37,8 +37,8 @@ the machine does it, and Claude's word is never the only evidence.
 - R2. A PR that adds a skipped, todo, or focus-only test fails CI unless it
   carries an allow-listed reason. Stops "skip it to get green."
 - R3. A test file that matches no vitest project (and so silently never runs)
-  fails CI. (Today a `.tsx` file under `src/__tests__/database/` runs in
-  neither project.)
+  fails CI. (None exist today, but a `.tsx` file under
+  `src/__tests__/database/` would silently run in neither project.)
 
 **Proving each test can fail ("watch it fail first")**
 - R4. Every new test, and every existing test whose checks change, is proven
@@ -80,7 +80,10 @@ the machine does it, and Claude's word is never the only evidence.
 - R11. The scoring math's expected values come from at least one source that
   isn't the code itself, so the tests can't just lock in wrong behavior.
   **Answer key = the one completed production season** (Sunday 9-ball,
-  standard handicap, ~65 matches, 2026-06-14 → 2026-10-25). Ed confirmed it
+  standard handicap, 64 played matches, 2026-06-14 → 2026-10-25). This is a
+  regression check against league-accepted results: per-game winners are
+  human-confirmed, but targets and points were computed by our code at the
+  time. Ed confirmed it
   is real, finished, league-accepted data (2026-11-17). Each game's winner
   was entered and confirmed by both teams on the night; the replay test feeds
   those recorded games through the scoring code and must reproduce the
@@ -103,7 +106,9 @@ the machine does it, and Claude's word is never the only evidence.
 
 **Cleaning up what's already there**
 - R15. Every currently skipped test in the suite (today: 4 database groups
-  waiting on seed data) gets a decision: wire it up, or delete it.
+  waiting on seed data) gets a decision: wire it up, or delete it. Tests that
+  silently skip themselves (e.g. "no rows → return" before any check) count
+  as skipped and are made to fail instead.
 
 ## Success Criteria
 
