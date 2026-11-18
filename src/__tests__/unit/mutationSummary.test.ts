@@ -52,5 +52,7 @@ describe('mutation summary', () => {
     } });
     expect(md).toContain('| File | Caught | Missed |\n|---|---|---|\n| src/b.ts | 0 | 2 |\n| src/a.ts | 1 | 1 |\n');
     expect(md).not.toContain('| src/c.ts');
+    // The headline comes first, then the table.
+    expect(md.indexOf('**Of 5 deliberate mistakes')).toBeLessThan(md.indexOf('| File |'));
   });
 });

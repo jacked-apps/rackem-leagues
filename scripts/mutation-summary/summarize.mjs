@@ -91,7 +91,8 @@ export function summarize(report) {
   }
   const ranked = [...byFile].filter(([, r]) => r.missed).sort((x, y) => y[1].missed - x[1].missed);
   if (ranked.length) {
-    out.splice(2, 0, '', '| File | Caught | Missed |', '|---|---|---|',
+    // After the headline (index 2), before the lists.
+    out.splice(3, 0, '', '| File | Caught | Missed |', '|---|---|---|',
       ...ranked.map(([path, r]) => `| ${path} | ${r.caught} | ${r.missed} |`));
   }
   return `${out.join('\n')}\n`;
