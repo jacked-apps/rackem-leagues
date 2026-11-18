@@ -2,7 +2,7 @@
  * @fileoverview Print the last mutation run (`pnpm test:mutation`) as plain
  * language: how many deliberate mistakes the tests caught, which they missed
  * (file:line + the change in words), which were accepted on purpose and why,
- * and tests that ran on mistakes without catching any.
+ * and a per-file table of where the misses are.
  *
  * Usage: node scripts/mutation-summary.mjs [report.json]
  *   default report: reports/mutation/mutation.json

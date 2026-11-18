@@ -80,14 +80,19 @@ export function summarize(report) {
       `- ${where(m)} — ${change(m)} — reason: ${oneLine(m.statusReason) || '(none written)'}`));
   }
 
-  // Tests that ran on a mistake's line but never caught a single one: they
-  // execute the code without really checking it.
-  const names = new Map(Object.values(report?.testFiles ?? {}).flatMap((f) => (f.tests ?? []).map((t) => [t.id, t.name])));
-  const covering = new Set(all.flatMap((m) => m.coveredBy ?? []));
-  const killing = new Set(all.flatMap((m) => m.killedBy ?? []));
-  const idle = [...covering].filter((id) => !killing.has(id));
-  if (idle.length) {
-    out.push('', '### Tests that ran on mistakes but caught none', ...idle.map((id) => `- ${names.get(id) ?? id}`));
+  // Per file, worst first, so the gaps are easy to rank. (No "tests that
+  // caught nothing" list: Stryker stops at the FIRST test that catches a
+  // mistake, so `killedBy` names one test and good tests would look idle.)
+  const byFile = new Map();
+  for (const m of [...caught, ...missed]) {
+    const row = byFile.get(m.path) ?? { caught: 0, missed: 0 };
+    row[CAUGHT.has(m.status) ? 'caught' : 'missed'] += 1;
+    byFile.set(m.path, row);
+  }
+  const ranked = [...byFile].filter(([, r]) => r.missed).sort((x, y) => y[1].missed - x[1].missed);
+  if (ranked.length) {
+    out.splice(2, 0, '', '| File | Caught | Missed |', '|---|---|---|',
+      ...ranked.map(([path, r]) => `| ${path} | ${r.caught} | ${r.missed} |`));
   }
   return `${out.join('\n')}\n`;
 }

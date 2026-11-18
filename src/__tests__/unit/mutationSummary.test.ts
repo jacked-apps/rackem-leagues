@@ -44,12 +44,13 @@ describe('mutation summary', () => {
     expect(summarize(report([{ status: 'Killed' }, { status: 'CompileError' }]))).toContain('caught all 1.');
   });
 
-  it('names a test that ran on mistakes but caught none', () => {
-    const md = summarize(report(
-      [{ status: 'Killed', coveredBy: ['t1', 't2'], killedBy: ['t1'] }, { status: 'Survived', coveredBy: ['t2'] }],
-      [['t1', 'par › picks the tie target'], ['t2', 'par › renders without crashing']],
-    ));
-    expect(md).toContain('### Tests that ran on mistakes but caught none\n- par › renders without crashing');
-    expect(md).not.toContain('- par › picks the tie target');
+  it('ranks files by how many mistakes they missed, worst first', () => {
+    const md = summarize({ files: {
+      'src/a.ts': { source: SOURCE, mutants: [{ status: 'Survived' }, { status: 'Killed' }].map(mutant) },
+      'src/b.ts': { source: SOURCE, mutants: [{ status: 'Survived' }, { status: 'NoCoverage' }].map(mutant) },
+      'src/c.ts': { source: SOURCE, mutants: [{ status: 'Killed' }].map(mutant) },
+    } });
+    expect(md).toContain('| File | Caught | Missed |\n|---|---|---|\n| src/b.ts | 0 | 2 |\n| src/a.ts | 1 | 1 |\n');
+    expect(md).not.toContain('| src/c.ts');
   });
 });

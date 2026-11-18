@@ -85,10 +85,15 @@ describe('season replay — 2026 Sunday 9-ball', () => {
   });
 
   describe.each(matches.map((m) => [`Week ${m.week}, ${m.home} vs ${m.away} (${m.key})`, m] as const))('%s', (_label, match) => {
-    const { engine, legacy, targets, regularVerdict, tiebreakerWinner } = replayMatch(match);
+    // Each test replays the match itself, inside the test. Replaying once up
+    // here (while the file loads) gives the same answers in a normal run, but
+    // mutation testing switches each deliberate mistake on per TEST, so a
+    // replay done at load time was scoring with the correct code and could
+    // never catch a mistake.
     const { stored } = match;
 
     it('reproduces games won and points', () => {
+      const { engine } = replayMatch(match);
       expect(engine).toEqual({
         home_games_won: stored.home_games_won,
         away_games_won: stored.away_games_won,
@@ -100,6 +105,7 @@ describe('season replay — 2026 Sunday 9-ball', () => {
     // Regular games decide it, or they come out level and the tiebreaker
     // games do — either way the result must be the one the league recorded.
     it('reproduces the winner', () => {
+      const { regularVerdict, tiebreakerWinner } = replayMatch(match);
       const winner = regularVerdict === 'tie' ? tiebreakerWinner : regularVerdict;
       expect({ winner, tiebreakerPlayed: tiebreakerWinner !== null }).toEqual({
         winner: stored.winner,
@@ -109,6 +115,7 @@ describe('season replay — 2026 Sunday 9-ball', () => {
     });
 
     it('engine and legacy scoring agree', () => {
+      const { engine, legacy } = replayMatch(match);
       expect(engine && runningTotalsDiffer(engine, legacy)).toBe(false);
     });
 
@@ -116,6 +123,7 @@ describe('season replay — 2026 Sunday 9-ball', () => {
     // a code change that quietly "fixes" it) fails here instead of hiding.
     const isException = match.key in TARGET_EXCEPTIONS;
     it(isException ? 'listed exception: stored lineups still do NOT give the stored targets' : 'stored lineups give the stored targets', () => {
+      const { targets } = replayMatch(match);
       const storedTargets = [
         { games_to_win: stored.home_to_win, games_to_tie: stored.home_to_tie, games_to_lose: stored.home_to_lose },
         { games_to_win: stored.away_to_win, games_to_tie: stored.away_to_tie, games_to_lose: stored.away_to_lose },
