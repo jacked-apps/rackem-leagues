@@ -1,5 +1,5 @@
 {
-  "text": "The Learn page now has a header with a back arrow, so you can always get back out (to Home if you're not signed in, or My Teams if you are). The Official Rules page now says what's on it: the CSI rulebook, searchable, plus your leagues' house rules when you're signed in.",
+  "text": "The Learn page now has a header with a back arrow, so you can always get back out (to Home if you're not signed in, or My Teams if you are). The Official Rules page now says what's on it: the CSI rulebook, searchable, plus your leagues' house rules when you're signed in. And tapping Start Application on Become a League Operator before signing in now explains that you need an account first, then brings you straight back to the application after you sign in.",
   "kind": "fix",
-  "headline": "Learn and Rules page headers"
+  "headline": "clearer public pages"
 }

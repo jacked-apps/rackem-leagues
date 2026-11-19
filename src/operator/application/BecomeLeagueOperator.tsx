@@ -1,8 +1,9 @@
 /**
  * @fileoverview League Operator Landing Page
  * Informational page explaining benefits and requirements of becoming a league operator.
- * Public: visitors can read it without an account, and its "Start Application"
- * button asks them to sign in (the application itself is signed-in only).
+ * Public: visitors can read it without an account. Its "Start Application"
+ * buttons explain that an account is needed (SignInFirstLink) before sending
+ * a visitor to sign in, and sign-in returns them to the application.
  * Reached from the menu's Operator spot, Profile, Pricing and the Home page.
  */
 import React, { useEffect } from 'react';
@@ -10,6 +11,11 @@ import { Link } from 'react-router-dom';
 import { useUser } from '@/context/useUser';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
+import { SignInFirstLink } from '@/components/SignInFirstLink';
+
+/** Shown to a visitor who taps Start Application before signing in. */
+const APPLY_REASON =
+  "You need an account to apply. After you sign in, we'll take you straight to the application.";
 
 /**
  * League Operator Landing Page Component
@@ -45,11 +51,11 @@ export const BecomeLeagueOperator: React.FC = () => {
         subtitle="Start running your own pool leagues and earn revenue"
       >
         <div className="mt-4">
-          <Link to="/league-operator-application">
+          <SignInFirstLink to="/league-operator-application" reason={APPLY_REASON}>
             <Button loadingText="none" size="lg" className="px-8">
               Start Application
             </Button>
-          </Link>
+          </SignInFirstLink>
         </div>
       </PageHeader>
 
@@ -184,11 +190,11 @@ export const BecomeLeagueOperator: React.FC = () => {
             <p className="opacity-90 mb-6 text-lg">
               Complete our simple application and start running your first league within days.
             </p>
-            <Link to="/league-operator-application">
+            <SignInFirstLink to="/league-operator-application" reason={APPLY_REASON}>
               <Button loadingText="none" size="lg" variant="secondary" className="px-8">
                 Start Application
               </Button>
-            </Link>
+            </SignInFirstLink>
           </div>
         </div>
       </div>
