@@ -894,7 +894,9 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `BecomeHost.tsx` - **Become a Host** (`/become-host`) — self-serve purchase (`$1/mo` or `$10/yr`, mock `PaymentCardForm`) that saves the card on file and grants the `host` designation via `useGrantDesignation`, so the member can host game rooms. Reachable from the Profile "Become a Host" CTA. Shows an "already a host" state if held. Self-contained — grants the designation independently of the game room, which reads it separately.
 
 #### League Operator Application (`/leagueOperator/`)
-- `BecomeLeagueOperator.tsx` - Entry point; public (sales info only), its Start Application button asks visitors to sign in
+- `BecomeLeagueOperator.tsx` - Entry point; public (sales info only). Its Start Application buttons use `SignInFirstLink` (visitors get a "Sign in first" pop-up, then return here)
+- `PricingExampleRow.tsx` - One row of the 16-week pricing example: season cost + "≈ X% of prize pool" with an InfoButton showing the math
+- `pricingMath.ts` - The pricing example math ($1/team/week + $10 setup vs. a $50/team/week example prize pool). Tested in `PricingExampleRow.test.tsx`
 - `LeagueOperatorApplication.tsx` - Main application form
 - `ChoiceStep.tsx` - Choice step component
 - `QuestionStep.tsx` - Question step component

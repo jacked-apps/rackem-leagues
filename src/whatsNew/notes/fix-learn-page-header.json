@@ -1,5 +1,5 @@
 {
-  "text": "The Learn page now has a header with a back arrow, so you can always get back out (to Home if you're not signed in, or My Teams if you are). The Official Rules page now says what's on it: the CSI rulebook, searchable, plus your leagues' house rules when you're signed in. Tapping Start Application on Become a League Operator before signing in now explains that you need an account first. Whether you sign in or create a new account, you land right back on the application when you're done.",
+  "text": "The Learn page now has a header with a back arrow, so you can always get back out (to Home if you're not signed in, or My Teams if you are). The Official Rules page now says what's on it: the CSI rulebook, searchable, plus your leagues' house rules when you're signed in. Tapping Start Application on Become a League Operator before signing in now explains that you need an account first. Whether you sign in or create a new account, you land right back on the application when you're done. The pricing example there now shows what the cost is as a share of a typical prize pool (about 2%), with the math one tap away.",
   "kind": "fix",
   "headline": "clearer public pages"
 }

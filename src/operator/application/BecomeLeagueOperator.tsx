@@ -12,6 +12,11 @@ import { useUser } from '@/context/useUser';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { SignInFirstLink } from '@/components/SignInFirstLink';
+import { PricingExampleRow } from './PricingExampleRow';
+
+/** League sizes shown in the 16-week pricing example. */
+const EXAMPLE_TEAM_COUNTS = [6, 8, 10];
+const EXAMPLE_WEEKS = 16;
 
 /** Shown to a visitor who taps Start Application before signing in. */
 const APPLY_REASON =
@@ -128,18 +133,14 @@ export const BecomeLeagueOperator: React.FC = () => {
                 <div className="bg-muted rounded-lg p-6">
                   <h3 className="font-semibold text-foreground mb-4">Example: 16-Week Season</h3>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span>6 teams × 16 weeks + $10:</span>
-                      <span className="font-semibold text-lg">$106</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span>8 teams × 16 weeks + $10:</span>
-                      <span className="font-semibold text-lg">$138</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span>10 teams × 16 weeks + $10:</span>
-                      <span className="font-semibold text-lg">$170</span>
-                    </div>
+                    {EXAMPLE_TEAM_COUNTS.map((teams, i) => (
+                      <PricingExampleRow
+                        key={teams}
+                        teams={teams}
+                        weeks={EXAMPLE_WEEKS}
+                        last={i === EXAMPLE_TEAM_COUNTS.length - 1}
+                      />
+                    ))}
                   </div>
                   <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
                     <p className="mb-2">✓ 4-week grace period to collect dues</p>
