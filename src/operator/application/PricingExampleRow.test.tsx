@@ -20,12 +20,13 @@ import { PricingExampleRow } from './PricingExampleRow';
 import { seasonPricing } from './pricingMath';
 
 describe('seasonPricing', () => {
+  // Week-1 share by hand: 106/300 = 35.33% → 35.3%; 138/400 = 34.5%; 170/500 = 34%.
   it.each([
-    [6, 106, 4800, 300, '2.2%'],
-    [8, 138, 6400, 400, '2.2%'],
-    [10, 170, 8000, 500, '2.1%'],
-  ])('%i teams, 16 weeks → $%i of a $%i pool ($%i a week) = %s, paid by week 1', (teams, cost, pool, weeklyDues, share) => {
-    expect(seasonPricing(teams, 16)).toEqual({ cost, pool, weeklyDues, share, paidByWeek: 1 });
+    [6, 106, 4800, 300, '2.2%', '35.3%'],
+    [8, 138, 6400, 400, '2.2%', '34.5%'],
+    [10, 170, 8000, 500, '2.1%', '34%'],
+  ])('%i teams, 16 weeks → $%i of a $%i pool ($%i a week) = %s, %s of week 1, paid by week 1', (teams, cost, pool, weeklyDues, share, weekOneShare) => {
+    expect(seasonPricing(teams, 16)).toEqual({ cost, pool, weeklyDues, share, weekOneShare, paidByWeek: 1 });
   });
 
   it('counts on to week 2 when one week of dues is not enough', () => {

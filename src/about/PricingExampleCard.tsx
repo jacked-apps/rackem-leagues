@@ -31,7 +31,7 @@ interface PricingExampleCardProps {
 }
 
 export function PricingExampleCard({ title, teams, weeks, playoffWeeks, playersPerTeam }: PricingExampleCardProps) {
-  const { cost, pool, weeklyDues, share, paidByWeek } = seasonPricing(teams, weeks, playersPerTeam);
+  const { cost, pool, weeklyDues, share, weekOneShare, paidByWeek } = seasonPricing(teams, weeks, playersPerTeam);
   const perTeamNight = playersPerTeam * EXAMPLE_DUES_PER_PLAYER_NIGHT;
 
   return (
@@ -76,6 +76,7 @@ export function PricingExampleCard({ title, teams, weeks, playoffWeeks, playersP
             <p><strong>Each week:</strong> {dollars(perTeamNight)} × {teams} teams = {dollars(weeklyDues)}</p>
             <p><strong>Whole season:</strong> {dollars(weeklyDues)} × {weeks} weeks = {dollars(pool)} prize pool</p>
             <p><strong>Platform cost:</strong> {dollars(cost)} ÷ {dollars(pool)} ≈ {share} of the prize pool</p>
+            <p><strong>Or:</strong> {dollars(cost)} ÷ {dollars(weeklyDues)} ≈ {weekOneShare} of week 1 dues</p>
           </div>
         </div>
 

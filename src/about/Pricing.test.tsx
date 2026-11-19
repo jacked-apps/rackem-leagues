@@ -50,6 +50,8 @@ describe('PricingExampleCard', () => {
     expect(within(dues).getByText(/\$30 × 8 teams = \$240/)).toBeInTheDocument();
     expect(within(dues).getByText(/\$240 × 16 weeks = \$3,840 prize pool/)).toBeInTheDocument();
     expect(within(dues).getByText(/\$138 ÷ \$3,840 ≈ 3\.6% of the prize pool/)).toBeInTheDocument();
+    // 138 / 240 = 57.5%
+    expect(within(dues).getByText(/\$138 ÷ \$240 ≈ 57\.5% of week 1 dues/)).toBeInTheDocument();
     expect(screen.getByText(/Season paid in full from week 1 dues/)).toBeInTheDocument();
   });
 
@@ -61,6 +63,8 @@ describe('PricingExampleCard', () => {
     expect(screen.getByText('$210')).toBeInTheDocument();
     expect(screen.getByText(/\$500 × 20 weeks = \$10,000 prize pool/)).toBeInTheDocument();
     expect(screen.getByText(/\$210 ÷ \$10,000 ≈ 2\.1% of the prize pool/)).toBeInTheDocument();
+    // 210 / 500 = 42% (no trailing ".0")
+    expect(screen.getByText(/\$210 ÷ \$500 ≈ 42% of week 1 dues/)).toBeInTheDocument();
     expect(screen.getByText(/Season paid in full from week 1 dues/)).toBeInTheDocument();
   });
 
