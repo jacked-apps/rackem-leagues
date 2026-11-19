@@ -8,7 +8,8 @@
  *   8 teams:  8×16×1+10 = $138;  8×16×50 = $6,400;  138/6400 = 2.16% → 2.2%
  *  10 teams: 10×16×1+10 = $170; 10×16×50 = $8,000;  170/8000 = 2.13% → 2.1%
  *
- * Paid for by: weekly dues are teams × $50. Week 1 alone covers each example
+ * Paid for by (backs the "week 1 dues cover the entire season" check on
+ * Become a League Operator): weekly dues are teams × $50. Week 1 alone covers each example
  * (6: $300 ≥ $106; 8: $400 ≥ $138; 10: $500 ≥ $170). A 1-team, 52-week
  * league costs 52+10 = $62 against $50 a week → week 2.
  */
@@ -33,11 +34,10 @@ describe('seasonPricing', () => {
 });
 
 describe('PricingExampleRow', () => {
-  it('shows the cost, the share of the prize pool and the paid-by week', () => {
+  it('shows the cost and the share of the prize pool', () => {
     renderWithProviders(<PricingExampleRow teams={8} weeks={16} />);
     expect(screen.getByText('$138')).toBeInTheDocument();
     expect(screen.getByText('≈ 2.2% of prize pool')).toBeInTheDocument();
-    expect(screen.getByText('paid for by week 1 dues')).toBeInTheDocument();
   });
 
   it('the info button shows the math', async () => {
@@ -50,6 +50,5 @@ describe('PricingExampleRow', () => {
     expect(screen.getByText('into the prize pool')).toBeInTheDocument();
     expect(screen.getByText(/8 teams × 16 weeks × \$50 = \$6,400/)).toBeInTheDocument();
     expect(screen.getByText(/8 teams × 16 weeks × \$1 \+ \$10 setup = \$138/)).toBeInTheDocument();
-    expect(screen.getByText(/By week 1: \$400 collected, which covers the whole \$138 season price/)).toBeInTheDocument();
   });
 });

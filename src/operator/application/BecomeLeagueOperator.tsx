@@ -145,7 +145,9 @@ export const BecomeLeagueOperator: React.FC = () => {
                   <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
                     <p className="mb-2">✓ 4-week grace period to collect dues</p>
                     <p className="mb-2">✓ Payment due before week 5</p>
-                    <p>✓ Playoff weeks are FREE</p>
+                    <p className="mb-2">✓ Playoff weeks are FREE</p>
+                    {/* Backed by pricingMath's paidByWeek: every example above is week 1. */}
+                    <p>✓ In most leagues, week 1 dues cover the entire season</p>
                   </div>
                 </div>
               </div>

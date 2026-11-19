@@ -28,7 +28,8 @@ export const dollars = (n: number) => `$${n.toLocaleString('en-US')}`;
  * example league size.
  *
  * `paidByWeek` is the first week whose running total of dues
- * (teams × $50 per week) reaches the season's whole price.
+ * (teams × $50 per week) reaches the season's whole price. It backs the
+ * "week 1 dues cover the entire season" line on Become a League Operator.
  *
  * @param teams - Teams in the league.
  * @param weeks - Regular-season weeks.
