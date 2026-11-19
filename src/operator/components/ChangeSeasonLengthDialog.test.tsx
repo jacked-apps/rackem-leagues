@@ -3,7 +3,7 @@
  * flow, with the apply helper mocked.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, userEvent, waitFor } from '@/test/utils';
+import { pauseBetweenTaps, renderWithProviders, screen, userEvent, waitFor } from '@/test/utils';
 import { ChangeSeasonLengthDialog, type DialogWeek } from './ChangeSeasonLengthDialog';
 import { applySeasonLengthChange } from '@/utils/applySeasonLengthChange';
 
@@ -61,6 +61,8 @@ describe('ChangeSeasonLengthDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Review' }));
     expect(screen.getByText(/Adds 2 weeks/i)).toBeInTheDocument();
 
+    // Confirm sits where Review was; a person pauses before tapping it.
+    await pauseBetweenTaps();
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
     // `user.click` awaits the click, NOT the async work the handler kicks off.
     // `onApplied` fires after the mocked apply resolves, so asserting
@@ -86,6 +88,8 @@ describe('ChangeSeasonLengthDialog', () => {
     expect(screen.getByText(/Week 15/)).toBeInTheDocument();
     expect(screen.getByText(/Week 16/)).toBeInTheDocument();
 
+    // Confirm sits where Review was; a person pauses before tapping it.
+    await pauseBetweenTaps();
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
     // Wait for the async apply to settle before asserting its effects.
     await waitFor(() => expect(onApplied).toHaveBeenCalled());
@@ -103,6 +107,8 @@ describe('ChangeSeasonLengthDialog', () => {
 
     await user.click(screen.getByRole('button', { name: '−' }));
     await user.click(screen.getByRole('button', { name: 'Review' }));
+    // Confirm sits where Review was; a person pauses before tapping it.
+    await pauseBetweenTaps();
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
 
     // The error only renders once the rejected-guard result comes back.

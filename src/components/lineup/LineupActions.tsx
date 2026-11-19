@@ -21,8 +21,10 @@ interface LineupActionsProps {
   opponentStatusText?: string; // Optional detailed status text (e.g., "Players chosen: 2")
   canLock: boolean; // All positions filled
   canUnlock: boolean; // Opponent hasn't locked yet
-  onLock: () => void;
-  onUnlock: () => void;
+  /** Async lock; returned so the Button blocks double taps until it lands. */
+  onLock: () => unknown;
+  /** Async unlock; same double-tap guard as onLock. */
+  onUnlock: () => unknown;
   /**
    * True while prep_match is in flight (or while we're waiting for it to
    * be in flight on the home device, in the away-team case). Disables

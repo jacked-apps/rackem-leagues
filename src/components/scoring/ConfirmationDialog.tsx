@@ -5,6 +5,7 @@
  * Handles both normal score confirmations and vacate requests.
  */
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -38,10 +39,14 @@ interface ConfirmationDialogProps {
   } | null;
   /** Game type for golden break label (8-ball, 9-ball, 10-ball, etc.) */
   gameType: string;
-  /** Handler for confirm/agree button */
-  onConfirm: (gameNumber: number, isVacateRequest?: boolean) => void;
-  /** Handler for deny button */
-  onDeny: (gameNumber: number, isVacateRequest?: boolean) => void;
+  /**
+   * Handler for confirm/agree button. Return the save's promise to keep the
+   * dialog open (button spinning and disabled) until it settles, so a double
+   * tap can't send it twice. Return nothing to close at once (optimistic).
+   */
+  onConfirm: (gameNumber: number, isVacateRequest?: boolean) => unknown;
+  /** Handler for deny button. Same promise rule as `onConfirm`. */
+  onDeny: (gameNumber: number, isVacateRequest?: boolean) => unknown;
   /**
    * Handler when the person dismisses WITHOUT confirming or denying — they tap
    * Cancel, the X, or press Escape. This is the "I didn't witness this / not
@@ -71,6 +76,11 @@ export function ConfirmationDialog({
   onDismiss,
   onClose,
 }: ConfirmationDialogProps) {
+  // True while a Confirm or Deny save is in flight. Locks BOTH buttons, so a
+  // double tap can't send the same answer twice and a tap on the other button
+  // can't send the opposite answer before the first one lands.
+  const [acting, setActing] = useState(false);
+
   if (!game) return null;
 
   const isVacateRequest = game.isVacateRequest;
@@ -83,15 +93,23 @@ export function ConfirmationDialog({
     return 'a Golden Break!';
   };
 
-  const handleConfirm = () => {
-    onConfirm(game.gameNumber, isVacateRequest);
-    onClose();
+  /**
+   * Run the caller's answer, wait for its save (when it returns one), then
+   * close. A caller that returns nothing (ScoreMatch closes optimistically)
+   * resolves at once, as before. Async, so the tapped Button also shows its
+   * loading text while the save is pending.
+   */
+  const answer = async (send: () => unknown) => {
+    setActing(true);
+    try {
+      await send();
+      onClose();
+    } finally {
+      setActing(false);
+    }
   };
-
-  const handleDeny = () => {
-    onDeny(game.gameNumber, isVacateRequest);
-    onClose();
-  };
+  const handleConfirm = () => answer(() => onConfirm(game.gameNumber, isVacateRequest));
+  const handleDeny = () => answer(() => onDeny(game.gameNumber, isVacateRequest));
 
   // Dismiss without acting (Cancel button, the X, or Escape). Neither vouches
   // nor wipes — just closes and tells the caller to stop re-prompting this game
@@ -208,10 +226,16 @@ export function ConfirmationDialog({
 
         <DialogFooter className="flex flex-col gap-2">
           <div className="flex flex-row justify-around gap-4">
-            <Button className="flex-1" onClick={handleConfirm} loadingText="Confirming...">
+            <Button className="flex-1" onClick={handleConfirm} loadingText="Confirming..." disabled={acting}>
               {isVacateRequest ? 'Agree - Vacate Winner' : 'Confirm'}
             </Button>
-            <Button variant="outline" className="flex-1" onClick={handleDeny} loadingText="none">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleDeny}
+              loadingText="Denying..."
+              disabled={acting}
+            >
               {isVacateRequest ? 'Deny - Keep Winner' : 'Deny'}
             </Button>
           </div>

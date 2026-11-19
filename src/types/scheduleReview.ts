@@ -27,7 +27,8 @@ export interface ScheduleReviewProps {
   /** Callback when schedule is modified */
   onScheduleChange: (updatedSchedule: WeekEntry[]) => void;
   /** Callback when user confirms final schedule - destination can be 'dashboard' or 'teams' */
-  onConfirm: (destination: 'dashboard' | 'teams') => void;
+  /** Async save; returned so Save & Exit / Save & Continue block double taps. */
+  onConfirm: (destination: 'dashboard' | 'teams') => unknown;
   /** Callback to go back to previous step */
   onBack: () => void;
 }

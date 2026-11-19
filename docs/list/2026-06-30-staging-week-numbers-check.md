@@ -2,7 +2,7 @@
 summary: Check on staging that schedule week numbers run 1 to N with no duplicates
 kind: task
 added: 2026-06-30
-checked: 2026-11-04
+checked: 2026-11-16
 ---
 
 Needs Ed. The schedule fix (Phases A and B) merged in PR #244. It stops

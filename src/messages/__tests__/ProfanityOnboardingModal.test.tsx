@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, userEvent, waitFor } from '@/test/utils';
+import { pauseBetweenTaps, renderWithProviders, screen, userEvent, waitFor } from '@/test/utils';
 
 const mockMutateAsync = vi.fn();
 
@@ -129,6 +129,8 @@ describe('ProfanityOnboardingModal — failure + double-resolve guards', () => {
     await user.click(screen.getByTestId('onboarding-turn-off'));
     expect(onResolved).not.toHaveBeenCalled();
 
+    // A person retrying after a failure pauses first.
+    await pauseBetweenTaps();
     await user.click(screen.getByTestId('onboarding-turn-off'));
     expect(mockMutateAsync).toHaveBeenCalledTimes(2);
     await waitFor(() => expect(onResolved).toHaveBeenCalledTimes(1));

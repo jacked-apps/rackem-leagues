@@ -2,7 +2,7 @@
 summary: Set up a verified sending address so email invites work (all environments)
 kind: task
 added: 2026-04-21
-checked: 2026-11-05
+checked: 2026-11-16
 ---
 
 Needs Ed. This is environment setup, not app code.

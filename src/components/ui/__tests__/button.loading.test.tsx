@@ -88,10 +88,12 @@ describe('Button — automatic in-flight state', () => {
     consoleError.mockRestore();
   });
 
-  it('leaves synchronous handlers completely alone', () => {
+  it('never shows a loading state for a synchronous handler', () => {
+    // (The separate double-tap lock is covered in button.doubleTap.test.tsx;
+    // allowRapidClicks keeps it out of the way here.)
     const onClick = vi.fn();
     render(
-      <Button loadingText="Saving..." onClick={onClick}>
+      <Button loadingText="Saving..." allowRapidClicks onClick={onClick}>
         Save
       </Button>
     );
@@ -102,6 +104,7 @@ describe('Button — automatic in-flight state', () => {
 
     expect(onClick).toHaveBeenCalledTimes(2);
     expect(button).toBeEnabled();
+    expect(button).toHaveTextContent('Save');
   });
 
   it('an explicit isLoading still wins, so existing call sites are untouched', () => {
@@ -136,7 +139,7 @@ describe('Button — automatic in-flight state', () => {
     const { promise, resolve } = deferred();
     const onClick = vi.fn(() => promise);
     render(
-      <Button variant="outline" loadingText="none" onClick={onClick}>
+      <Button variant="outline" loadingText="none" allowRapidClicks onClick={onClick}>
         Cancel
       </Button>
     );

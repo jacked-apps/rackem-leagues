@@ -87,6 +87,8 @@ export function ParticipantsStep({
               variant="ghost"
               size="icon"
               aria-label="Move up"
+              // Moving a name several spots is several fast taps.
+              allowRapidClicks
               disabled={i === 0}
               onClick={() => onMove(i, -1)}
             >
@@ -97,6 +99,8 @@ export function ParticipantsStep({
               variant="ghost"
               size="icon"
               aria-label="Move down"
+              // Moving a name several spots is several fast taps.
+              allowRapidClicks
               disabled={i === participants.length - 1}
               onClick={() => onMove(i, 1)}
             >
