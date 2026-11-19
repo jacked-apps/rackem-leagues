@@ -700,8 +700,8 @@ how to add a new test, demo recording, cleanup model).
 - `appendConfirmation.db.test.ts` - **Many-eyes Layer-2 / Unit 2** — behavior of `appendConfirmation` against the local DB: confirm append carries the full snapshot, append NEVER modifies the `match_games` row (officiality preserved), exact re-tap no-op + change-of-mind new row, extra witnesses accrue without touching `match_games`, vacate marker recorded, finalized match no-op, missing confirmer no-op, and a failure is swallowed (best-effort, never throws). 9 tests.
 
 #### Test Utilities (`/test/`)
-- `setup.ts` - Test environment setup
-- `utils.tsx` - Test helper utilities
+- `setup.ts` - Test environment setup (also resets the shared back-arrow double-tap lock after each test)
+- `utils.tsx` - Test helper utilities, including `pauseBetweenTaps()` for tests that tap the same button twice on purpose
 - `vitest-setup.d.ts` - Vitest type definitions
 - `dbTestUtils.ts` - Supabase/pg clients + `executeSql` for the `db` test project. Test clients are session-isolated (`persistSession:false` + a per-user `storageKey`) — under jsdom two clients otherwise share one localStorage slot and the second sign-in silently overwrites the first `requireSeed(value, what)` fails a test loudly when the row it needs is missing (replaces the old warn-and-return "skip").
 - `onboardingFixtures.ts` - Builds a placeholder-captain (or staff-captained) team with roster room for the onboarding-cascade DB suites, so they stop hunting the shared seed for shapes it does not contain
@@ -975,7 +975,7 @@ LO-authored rules layered on top of the CSI rulebook. Org-wide rules cascade int
 
 | Component | Use For |
 |-----------|---------|
-| `button.tsx` | **ALL buttons** (never use `<button>`) |
+| `button.tsx` | **ALL buttons** (never use `<button>`). Built-in double-tap lock: a second tap on the same button within `DOUBLE_TAP_WINDOW_MS` is ignored (steppers opt out with `allowRapidClicks`); an async `onClick` also locks until it settles. Tests: `__tests__/button.loading.test.tsx`, `__tests__/button.doubleTap.test.tsx` |
 | `input.tsx` | **ALL text inputs** (never use `<input>`) |
 | `label.tsx` | **ALL form labels** (never use `<label>`) |
 | `select.tsx` | **ALL dropdowns** (never use `<select>`) |
@@ -1082,7 +1082,9 @@ Reusable wizard/form step components
 - `GameButtonRow.tsx` - One game as one line (number, left player, middle slot, right player) — the league games-list row, shared: the room race draws its games with it. `leftIsBreaker` picks Break/Rack vs Home/Away layout; the breaker always wears the "B" badge. Middle slot is opt-in: `onConfirmClick` (pending), `onVacateClick`, else "vs"; `disabled` for spectators. `GAME_ROW_GRID` fixes the number (1.25rem, right-aligned) + middle (3.5rem, buttons natural width) column widths so the player buttons line up on every row
 - `ScoringDialog.tsx` - Game winner selection with B&R and Golden Break (extracted from ScoreMatch). `hideExtras` (room race) hides every extra + the per-side inputs, leaving just "Confirm who won this game."
 - `__tests__/ScoringDialog.hideExtras.test.tsx` - `hideExtras` hides all extras for breaker + non-breaker wins with Save enabled; without it every extra and the counter still render (league scoring unchanged)
-- `ConfirmationDialog.tsx` - Opponent score confirmation and vacate requests (extracted from ScoreMatch). Has a neutral **Cancel** dismiss (also the X / Escape) that neither confirms nor denies — "not sure / didn't witness"; the caller suppresses re-prompting that game for the session. Outside-click stays prevented so a stray backdrop tap can't dismiss.
+- `__tests__/ScoringDialog.doubleTap.test.tsx` - Save Game saves once and stays disabled while the returned save is pending
+- `__tests__/ConfirmationDialog.doubleTap.test.tsx` - Confirm / Deny send once and lock each other while a returned save is pending; a caller that returns nothing still closes at once
+- `ConfirmationDialog.tsx` - Opponent score confirmation and vacate requests (extracted from ScoreMatch). Has a neutral **Cancel** dismiss (also the X / Escape) that neither confirms nor denies — "not sure / didn't witness"; the caller suppresses re-prompting that game for the session. Outside-click stays prevented so a stray backdrop tap can't dismiss. Confirm and Deny lock each other while a returned save is pending (double-tap guard).
 - `ConfirmationModal.tsx` - Modal variant of the confirmation dialog (used in different layouts).
 - `EditGameDialog.tsx` - Vacate winner request dialog (extracted from ScoreMatch)
 - `LineupChangeModal.tsx` - In-scoring lineup substitution modal (captain-driven mid-match swap).
@@ -1313,6 +1315,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `AlertDialog.tsx` - Alert/info dialog with OK button (success/warning/error/info)
 - `ConfirmDialog.tsx` - Confirmation dialog with Cancel/Confirm buttons
 - `InfoButton.tsx` - Info button with tooltip
+- `backTapLock.ts` - One double-tap lock shared by every page header back arrow, so a double click goes back one page, not two (the second click lands on the next page's arrow). Tested in `__tests__/PageHeader.backDoubleTap.test.tsx`
 - `NonProdGate.tsx` - Shared route gate for GATED features (dev + staging render children; production redirects to `/`). Wrap the ROUTE and gate every DOOR with the same `!isProduction`; flip together when un-gating. Users: Handicap Calculator (`tools/calc`), Game Room (`rooms/**`). Promoted from `handicapCalculator/` in Game Room Unit 7 so deleting the calculator cannot take the room's gate with it
 - `InstallAppCard.tsx` - **Install the app** — platform-adaptive PWA install entry: Android/desktop fire the native install prompt; iPhone (Safari) + Android-without-a-captured-prompt open a step-by-step add-to-home-screen instructions modal. Renders nothing when already installed or unsupported. Self-contained (drop-in); used at the top of Player Settings. Tested in `InstallAppCard.test.tsx`.
 - `InvitePlayerModal.tsx` - **✅ Phase 8** Captain invite modal for placeholder players
@@ -1321,7 +1324,11 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `MemberCombobox.tsx` - Member selection combobox
 - `PaymentCardForm.tsx` - Low-level card-entry form ($0 mock verify → returns a tokenized `PaymentCardData`). Used inside `PaymentMethodSetup`.
 - `PaymentMethodSetup.tsx` - **Reusable "set up a payment method" panel** — the no-charge-now reassurance (caller supplies the charge timing) + `PaymentCardForm` verify → returns the card. Used by the tournament paid flow (`PaymentMethodDialog`); the LO application should adopt it (see `LIST_FOR_ED.md`). Test: `PaymentMethodSetup.test.tsx`.
-- `PlayerNameLink.tsx` - Player name link (opens InvitePlayerModal for PPs)
+- `NameLinkTrigger.tsx` - The tappable name shared by PlayerNameLink and TeamNameLink (same look everywhere). Test: `NameLinkTrigger.test.tsx`
+- `PlayerNameLink.tsx` - Player name link; popover with profile / message / report / block, plus operator actions (opens InvitePlayerModal for PPs)
+- `SetStartingHandicapsModal.tsx` - Operator dialog to set a player's starting handicaps (3v3, 5v5); opened from PlayerNameLink
+- `SetStartingHandicapsModal.test.tsx` - Pre-fill, 5v5 range check, save and cancel
+- `usePlayerSocialActions.ts` - Send-message and block/unblock actions behind PlayerNameLink
 - `ProtectedRoute.tsx` - Route protection HOC
 - `ReportUserModal.tsx` - User reporting modal
 - `SponsorLogos.tsx` - Sponsor logo display

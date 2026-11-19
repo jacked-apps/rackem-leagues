@@ -7,7 +7,6 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 
 ## Now
 
-- [Return async calls from sync click handlers so buttons block double taps](docs/list/2026-09-05-double-tap-promise-sweep.md)
 
 ## Next
 
@@ -34,9 +33,10 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Around 2026-12-02, count how many Now and Next items had gone stale](docs/list/2026-11-04-four-week-list-check.md)
 - [Line up the league games-list buttons the way the room race does](docs/list/2026-11-04-league-games-list-alignment.md)
 - [Move to Supabase CLI v3 on purpose (config.toml, CI and both deploys together)](docs/list/2026-11-05-supabase-cli-v3.md)
-- [Stop a double click on a back button from going back two pages](docs/list/2026-11-10-back-button-double-click.md)
 - [Build a league finder so a player with no team can find a league near them](docs/list/2026-11-13-league-finder.md)
+- [Turn on a code check that flags a save fired off and never waited on](docs/list/2026-11-16-floating-promise-lint.md)
 - [Go through every test, make sure each one can actually fail, and cut the ones that add nothing](docs/list/2026-11-16-test-suite-audit.md)
+- [Match-night chats for both teams that close themselves after the match](docs/list/2026-11-17-match-night-chats.md)
 - [Flag a match result that doesn't add up, without ever blocking the match](docs/list/2026-11-18-flag-results-that-dont-add-up.md)
 - [Before a league with a new setup goes live, give that setup's scoring code the full test pass](docs/list/2026-11-19-guard-new-setup-before-it-goes-live.md)
 

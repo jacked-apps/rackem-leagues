@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, userEvent } from '@/test/utils';
+import { pauseBetweenTaps, renderWithProviders, screen, userEvent, waitFor } from '@/test/utils';
 
 const mockNavigate = vi.fn();
 const mockCreate = vi.fn();
@@ -57,7 +57,9 @@ async function fillDetailsAndAdvance(user: ReturnType<typeof userEvent.setup>) {
 /** Add a list of players on the participants step. */
 async function addPlayers(user: ReturnType<typeof userEvent.setup>, names: string[]) {
   const input = screen.getByLabelText('Add players');
-  for (const name of names) {
+  for (const [i, name] of names.entries()) {
+    // Same Add button each time; a person takes longer than the lock.
+    if (i > 0) await pauseBetweenTaps();
     await user.type(input, name);
     await user.click(screen.getByRole('button', { name: 'Add' }));
   }
@@ -80,8 +82,10 @@ describe('CreateBracketFlow', () => {
     await fillDetailsAndAdvance(user);
     await addPlayers(user, ['Ann', 'Bo', 'Cy', 'Di']);
     await user.click(screen.getByRole('button', { name: 'Next' })); // → review
+    await pauseBetweenTaps(); // Start sits where Next was.
     await user.click(screen.getByRole('button', { name: 'Start tournament' }));
 
+    await waitFor(() => expect(mockCreate).toHaveBeenCalled());
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Friday 9-Ball',
@@ -105,7 +109,7 @@ describe('CreateBracketFlow', () => {
       expect.objectContaining({ bracketId: 'bracket-1', participantCount: 4 })
     );
     expect(mockNavigate).toHaveBeenCalledWith('/brackets/bracket-1');
-  });
+  }, 15_000); // Real pauses between taps on the same button (double-tap lock).
 
   it('blocks advancing past participants with fewer than 2 players', async () => {
     const user = userEvent.setup();

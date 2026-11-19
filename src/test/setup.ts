@@ -5,6 +5,7 @@
 import { expect, afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
+import { resetBackTapLock } from '@/components/backTapLock';
 
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
@@ -12,6 +13,9 @@ expect.extend(matchers);
 // Cleanup after each test
 afterEach(() => {
   cleanup();
+  // The header back arrow's double-tap lock is shared module state; clear it
+  // so one test's back tap can't swallow the next test's.
+  resetBackTapLock();
 });
 
 // Mock localStorage for tests
