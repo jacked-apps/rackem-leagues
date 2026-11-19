@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient } from '@/test/dbTestUtils';
+import { createTestClient, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -61,10 +61,7 @@ describe('Teams Table - RLS Tests', () => {
     });
 
     it('should allow filtering teams by season', async () => {
-      if (!testSeasonId) {
-        console.warn('⚠️ No test season found, skipping test');
-        return;
-      }
+      requireSeed(testSeasonId, 'No test season found');
 
       const { data, error } = await client
         .from('teams')
@@ -76,10 +73,7 @@ describe('Teams Table - RLS Tests', () => {
     });
 
     it('should allow filtering teams by league', async () => {
-      if (!testLeagueId) {
-        console.warn('⚠️ No test league found, skipping test');
-        return;
-      }
+      requireSeed(testLeagueId, 'No test league found');
 
       const { data, error } = await client
         .from('teams')
@@ -93,10 +87,7 @@ describe('Teams Table - RLS Tests', () => {
 
   describe('UPDATE Operations - Captain Features', () => {
     it('should allow updating team name', async () => {
-      if (!testTeamId) {
-        console.warn('⚠️ No test team found, skipping test');
-        return;
-      }
+      requireSeed(testTeamId, 'No test team found');
 
       // Get current name
       const { data: before } = await client
@@ -133,10 +124,7 @@ describe('Teams Table - RLS Tests', () => {
     });
 
     it('should allow updating home venue', async () => {
-      if (!testTeamId) {
-        console.warn('⚠️ No test team found, skipping test');
-        return;
-      }
+      requireSeed(testTeamId, 'No test team found');
 
       // Get a venue
       const { data: venue } = await client
@@ -145,10 +133,7 @@ describe('Teams Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!venue) {
-        console.warn('⚠️ No venue found, skipping test');
-        return;
-      }
+      requireSeed(venue, 'No venue found');
 
       const { error } = await client
         .from('teams')
@@ -159,10 +144,7 @@ describe('Teams Table - RLS Tests', () => {
     });
 
     it('should allow updating team status', async () => {
-      if (!testTeamId) {
-        console.warn('⚠️ No test team found, skipping test');
-        return;
-      }
+      requireSeed(testTeamId, 'No test team found');
 
       const { data: before } = await client
         .from('teams')
@@ -189,10 +171,8 @@ describe('Teams Table - RLS Tests', () => {
 
   describe('INSERT Operations - Operator Features', () => {
     it('should allow creating a new team', async () => {
-      if (!testSeasonId || !testLeagueId) {
-        console.warn('⚠️ No test season/league found, skipping test');
-        return;
-      }
+      requireSeed(testSeasonId, 'No test season/league found');
+      requireSeed(testLeagueId, 'No test season/league found');
 
       // Get a member to be captain
       const { data: member } = await client
@@ -201,10 +181,7 @@ describe('Teams Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!member) {
-        console.warn('⚠️ No member found, skipping test');
-        return;
-      }
+      requireSeed(member, 'No member found');
 
       const { data: newTeam, error } = await client
         .from('teams')
@@ -234,10 +211,8 @@ describe('Teams Table - RLS Tests', () => {
 
   describe('DELETE Operations', () => {
     it('should allow deleting a team with no matches', async () => {
-      if (!testSeasonId || !testLeagueId) {
-        console.warn('⚠️ No test season/league found, skipping test');
-        return;
-      }
+      requireSeed(testSeasonId, 'No test season/league found');
+      requireSeed(testLeagueId, 'No test season/league found');
 
       // Create a test team with no matches
       const { data: member } = await client
@@ -246,7 +221,7 @@ describe('Teams Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!member) return;
+      requireSeed(member, 'member is required');
 
       const { data: testTeam } = await client
         .from('teams')
@@ -260,10 +235,7 @@ describe('Teams Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testTeam) {
-        console.warn('⚠️ Could not create test team, skipping test');
-        return;
-      }
+      requireSeed(testTeam, 'Could not create test team');
 
       // Hard delete works because no matches reference this team
       const { error } = await client
@@ -284,10 +256,8 @@ describe('Teams Table - RLS Tests', () => {
     });
 
     it('should refuse to delete a team that has matches (FK RESTRICT)', async () => {
-      if (!testSeasonId || !testLeagueId) {
-        console.warn('⚠️ No test season/league found, skipping test');
-        return;
-      }
+      requireSeed(testSeasonId, 'No test season/league found');
+      requireSeed(testLeagueId, 'No test season/league found');
 
       const { data: member } = await client
         .from('members')
@@ -295,7 +265,7 @@ describe('Teams Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!member) return;
+      requireSeed(member, 'member is required');
 
       // Need a season_week to attach a match to
       const { data: seasonWeek } = await client
@@ -305,10 +275,7 @@ describe('Teams Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!seasonWeek) {
-        console.warn('⚠️ No season_week available, skipping test');
-        return;
-      }
+      requireSeed(seasonWeek, 'No season_week available');
 
       // Create a test team
       const { data: testTeam } = await client
@@ -323,10 +290,7 @@ describe('Teams Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testTeam) {
-        console.warn('⚠️ Could not create test team, skipping test');
-        return;
-      }
+      requireSeed(testTeam, 'Could not create test team');
 
       // Create a match referencing the team. The auto_create_match_lineups
       // trigger fires here, also creating a match_lineups row pointing at
@@ -347,8 +311,7 @@ describe('Teams Table - RLS Tests', () => {
       if (matchInsertError || !testMatch) {
         // Roll back the team insert before bailing
         await client.from('teams').delete().eq('id', testTeam.id);
-        console.warn('⚠️ Could not create test match, skipping test');
-        return;
+        throw new Error(`Could not create the test match: ${matchInsertError?.message ?? 'no row returned'}`);
       }
 
       // Attempt to delete the team — must be refused under FK RESTRICT
@@ -424,10 +387,7 @@ describe('Team Players Table - RLS Tests', () => {
     });
 
     it('should allow filtering by team', async () => {
-      if (!testTeamId) {
-        console.warn('⚠️ No test team found, skipping test');
-        return;
-      }
+      requireSeed(testTeamId, 'No test team found');
 
       const { data, error } = await client
         .from('team_players')
@@ -441,10 +401,7 @@ describe('Team Players Table - RLS Tests', () => {
 
   describe('INSERT Operations - Adding Players to Roster', () => {
     it('should allow adding a player to a team', async () => {
-      if (!testTeamId) {
-        console.warn('⚠️ No test team found, skipping test');
-        return;
-      }
+      requireSeed(testTeamId, 'No test team found');
 
       // Get the season for this team
       const { data: team } = await client
@@ -453,7 +410,7 @@ describe('Team Players Table - RLS Tests', () => {
         .eq('id', testTeamId)
         .single();
 
-      if (!team) return;
+      requireSeed(team, 'team is required');
 
       // Get a member not on this team
       const { data: existingPlayers } = await client
@@ -470,10 +427,7 @@ describe('Team Players Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!newMember) {
-        console.warn('⚠️ No available member found, skipping test');
-        return;
-      }
+      requireSeed(newMember, 'No available member found');
 
       const { data: newPlayer, error } = await client
         .from('team_players')
@@ -502,10 +456,8 @@ describe('Team Players Table - RLS Tests', () => {
 
   describe('UPDATE Operations - Roster Management', () => {
     it('should allow updating player skill level', async () => {
-      if (!testTeamId || !testMemberId) {
-        console.warn('⚠️ No test data found, skipping test');
-        return;
-      }
+      requireSeed(testTeamId, 'No test data found');
+      requireSeed(testMemberId, 'No test data found');
 
       const { data: player } = await client
         .from('team_players')
@@ -514,7 +466,7 @@ describe('Team Players Table - RLS Tests', () => {
         .eq('member_id', testMemberId)
         .single();
 
-      if (!player) return;
+      requireSeed(player, 'player is required');
 
       const newSkillLevel = player.skill_level === 5 ? 6 : 5;
       const { error } = await client
@@ -532,10 +484,8 @@ describe('Team Players Table - RLS Tests', () => {
     });
 
     it('should allow updating player status', async () => {
-      if (!testTeamId || !testMemberId) {
-        console.warn('⚠️ No test data found, skipping test');
-        return;
-      }
+      requireSeed(testTeamId, 'No test data found');
+      requireSeed(testMemberId, 'No test data found');
 
       const { data: player } = await client
         .from('team_players')
@@ -544,7 +494,7 @@ describe('Team Players Table - RLS Tests', () => {
         .eq('member_id', testMemberId)
         .single();
 
-      if (!player) return;
+      requireSeed(player, 'player is required');
 
       const { error } = await client
         .from('team_players')
@@ -563,10 +513,7 @@ describe('Team Players Table - RLS Tests', () => {
 
   describe('DELETE Operations - Removing Players', () => {
     it('should allow removing a player from roster', async () => {
-      if (!testTeamId) {
-        console.warn('⚠️ No test team found, skipping test');
-        return;
-      }
+      requireSeed(testTeamId, 'No test team found');
 
       // Create a test player first
       const { data: team } = await client
@@ -575,7 +522,7 @@ describe('Team Players Table - RLS Tests', () => {
         .eq('id', testTeamId)
         .single();
 
-      if (!team) return;
+      requireSeed(team, 'team is required');
 
       const { data: member } = await client
         .from('members')
@@ -583,7 +530,7 @@ describe('Team Players Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!member) return;
+      requireSeed(member, 'member is required');
 
       const { data: testPlayer } = await client
         .from('team_players')
@@ -596,7 +543,7 @@ describe('Team Players Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testPlayer) return;
+      requireSeed(testPlayer, 'testPlayer is required');
 
       // Delete them
       const { error } = await client

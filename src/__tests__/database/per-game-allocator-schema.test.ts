@@ -7,16 +7,12 @@
  *
  * Covers test scenarios from Unit 1 of
  * `docs/plans/2026-06-04-002-feat-per-game-allocator-room-plan.md`. Tests are
- * structured into two groups:
+ * the structural invariants that hold the moment the migration applies:
+ * the four seeded officials, the resolved view's new column, the CHECK
+ * constraints, and the tamper trigger on official rows.
  *
- *   1. No-seed-required (run by default) — exercises the structural
- *      invariants that hold the moment the migration applies:
- *      the four seeded officials, the resolved view's new column, the
- *      CHECK constraints, and the tamper trigger on official rows.
- *   2. Seed-required (skipped with TODO) — exercises user-row inserts +
- *      FK ON DELETE RESTRICT. These need a real auth.users row, which the
- *      seed_test_users.sql fixture provides; following the houseRules.rls
- *      precedent we skip them here and revisit when seed bootstrap lands.
+ * User-row inserts + the FK ON DELETE RESTRICT are NOT covered yet; see
+ * docs/audits/2026-11-17-data-layer-fakes-triage.md ("Missing coverage").
  */
 
 import { afterAll, describe, expect, it } from 'vitest';
@@ -198,24 +194,5 @@ describe('preferences.per_game_allocator_id — pointer column + cascade view', 
          AND column_name = 'per_game_allocator_id'`,
     );
     expect(rows).toHaveLength(1);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TODO: bootstrap a seeded auth.users fixture so we can exercise:
-//   - Inserting scope='user' rows with a real author_id
-//   - ON DELETE RESTRICT firing when a user row is referenced by
-//     preferences.per_game_allocator_id (require inserting a preferences row
-//     that points at it, then attempting the delete and asserting the FK violation)
-// These behaviors are enforced by the migration's constraints + trigger
-// and eyeball-verifiable in a seeded dev environment. Follows the precedent
-// set by src/__tests__/database/houseRules.rls.test.ts.
-// ---------------------------------------------------------------------------
-describe.skip('per_game_allocators — needs seeded auth user (TODO)', () => {
-  it('user-scope row insert with valid author_id succeeds', () => {
-    // Pending seed bootstrap.
-  });
-  it('preferences.per_game_allocator_id ON DELETE RESTRICT fires when row is in use', () => {
-    // Pending seed bootstrap.
   });
 });
