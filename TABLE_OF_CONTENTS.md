@@ -712,7 +712,8 @@ how to add a new test, demo recording, cleanup model).
 
 #### Static Pages
 - `about/About.tsx` - Public About page: skimmable feature lists (bold title + short explanation) for players, league operators, tournaments, what's next; then pricing, philosophy
-- `about/Pricing.tsx` - Pricing breakdown page
+- `about/Pricing.tsx` - Pricing breakdown page (fee, How Payment Works steps, two worked examples, FAQ). Tested in `about/Pricing.test.tsx`
+- `about/PricingExampleCard.tsx` - One worked pricing example: setup, platform cost, dues, % of prize pool, week-1 result; numbers from `pricingMath`
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
 - `pages/Home.tsx` - Public landing/home page: "Go to My Teams" for members; Sign in / Create account for visitors; "Find a League" + "Find a Tournament" (Coming Soon) first, then Run Your Own League + Rules + Learn + About cards
 - `pages/Home.test.tsx` - Run Your Own League card shows signed out; members get the My Teams button
@@ -896,7 +897,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 #### League Operator Application (`/leagueOperator/`)
 - `BecomeLeagueOperator.tsx` - Entry point; public (sales info only). Its Start Application buttons use `SignInFirstLink` (visitors get a "Sign in first" pop-up, then return here)
 - `PricingExampleRow.tsx` - One row of the 16-week pricing example: season cost + "≈ X% of prize pool" with an InfoButton showing the math
-- `pricingMath.ts` - The pricing example math ($1/team/week + $10 setup vs. a $50/team/week example prize pool). Tested in `PricingExampleRow.test.tsx`
+- `pricingMath.ts` - Pricing example math for Become a League Operator and the Pricing page ($1/team/week + $10 setup vs. players × $10 a night into the prize pool). Tested in `PricingExampleRow.test.tsx` and `about/Pricing.test.tsx`
 - `LeagueOperatorApplication.tsx` - Main application form
 - `ChoiceStep.tsx` - Choice step component
 - `QuestionStep.tsx` - Question step component

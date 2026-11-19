@@ -2,13 +2,15 @@
  * @fileoverview Pricing Page
  *
  * Comprehensive pricing breakdown for league operators.
- * Explains the no-upfront-cost model with detailed examples.
+ * Explains the no-upfront-cost model with two worked examples
+ * (`PricingExampleCard`), each showing the fee as a share of the prize pool.
  */
 
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
+import { PricingExampleCard } from './PricingExampleCard';
 
 export const Pricing: React.FC = () => {
   return (
@@ -88,6 +90,13 @@ export const Pricing: React.FC = () => {
             <div className="flex items-start">
               <span className="text-2xl mr-3">4️⃣</span>
               <div>
+                <h4 className="font-semibold">Week 1 Dues Usually Cover It</h4>
+                <p className="text-foreground">In most leagues, the first week of dues covers the entire season's fee. See the examples below.</p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <span className="text-2xl mr-3">5️⃣</span>
+              <div>
                 <h4 className="font-semibold">Pay Anytime Before Week 5</h4>
                 <p className="text-foreground">Pay upfront, or wait until you've collected enough dues—your choice. Week 5 won't function until the season is paid.</p>
               </div>
@@ -96,57 +105,23 @@ export const Pricing: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Real-World Example */}
-      <Card className="mb-8 border-info/40 bg-info/10">
-        <CardHeader>
-          <CardTitle className="text-2xl">Real Example: 8-Team League</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-card p-4 rounded">
-            <h4 className="font-semibold mb-3">Season Setup:</h4>
-            <ul className="space-y-1 text-foreground">
-              <li>• 8 teams</li>
-              <li>• 16-week regular season</li>
-              <li>• 2-week playoffs (FREE)</li>
-              <li>• $30 per team per week dues</li>
-            </ul>
-          </div>
-
-          <div className="bg-card p-4 rounded">
-            <h4 className="font-semibold mb-3">Your Platform Cost:</h4>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Setup fee:</span>
-                <span className="font-mono">$10</span>
-              </div>
-              <div className="flex justify-between">
-                <span>8 teams × 16 weeks × $1:</span>
-                <span className="font-mono">$128</span>
-              </div>
-              <div className="flex justify-between border-t pt-2 font-bold text-lg">
-                <span>Total Season Cost:</span>
-                <span className="font-mono text-primary">$138</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-card p-4 rounded">
-            <h4 className="font-semibold mb-3">No Out-of-Pocket Expenses:</h4>
-            <p className="text-sm text-muted-foreground mb-1">Most leagues charge $10 per player per night to participate.</p>
-            <p className="text-sm text-muted-foreground mb-3">Teams have a minimum of 3 players per week.</p>
-            <div className="space-y-2 text-foreground">
-              <p><strong>Week 1:</strong> Collect $30 × 8 teams = $240</p>
-              <p className="text-sm pl-4">→ Platform cost: $138</p>
-            </div>
-          </div>
-
-          <div className="bg-success/15 p-4 rounded border border-success/40">
-            <p className="font-semibold text-success">
-              💡 Result: Season paid in full from less than one week of your collected dues!
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Worked examples — every number computed from the price rule
+          (pricingMath), so they can't drift. A small league and a bigger,
+          longer one (Ed, 2026-11-19). */}
+      <PricingExampleCard
+        title="Example 1: 8-Team League"
+        teams={8}
+        weeks={16}
+        playoffWeeks={2}
+        playersPerTeam={3}
+      />
+      <PricingExampleCard
+        title="Example 2: 10-Team League, Longer Season"
+        teams={10}
+        weeks={20}
+        playoffWeeks={2}
+        playersPerTeam={5}
+      />
 
       {/* FAQ */}
       <Card className="mb-8">

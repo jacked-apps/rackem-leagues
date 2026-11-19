@@ -1,10 +1,11 @@
 /**
- * @fileoverview Pricing math for the Become a League Operator example: the
- * season cost and what it is as a share of the prize pool. Kept apart from
+ * @fileoverview Pricing math for the pricing examples on Become a League
+ * Operator and the Pricing page: the season cost and what it is as a share
+ * of the prize pool. Kept apart from
  * the row component so it can be tested on its own.
  *
  *   cost       = teams × weeks × $1 + $10 setup
- *   prize pool = teams × weeks × $50 (example: 5 players × $10 a league night)
+ *   prize pool = teams × weeks × players × $10 a league night
  *   share      = cost ÷ prize pool, one decimal
  *   paid by    = the first week whose dues so far cover the whole price
  */
@@ -25,20 +26,28 @@ export const dollars = (n: number) => `$${n.toLocaleString('en-US')}`;
 
 /**
  * The cost, prize pool, share, and how soon dues cover the cost, for one
- * example league size.
+ * example league. Defaults to the Become a League Operator example (5 players
+ * × $10 a night); the Pricing page passes its own player count.
  *
  * `paidByWeek` is the first week whose running total of dues
- * (teams × $50 per week) reaches the season's whole price. It backs the
- * "week 1 dues cover the entire season" line on Become a League Operator.
+ * (teams × players × $10 per week) reaches the season's whole price. It backs
+ * the "week 1 dues cover the entire season" lines on both pages.
  *
  * @param teams - Teams in the league.
  * @param weeks - Regular-season weeks.
+ * @param playersPerTeam - Players paying dues on each team (default 5).
+ * @param duesPerPlayerNight - What each player pays a league night (default $10).
  * @returns cost, pool and weekly dues in dollars; share as a one-decimal
  *   percent string; paidByWeek as a week number.
  */
-export function seasonPricing(teams: number, weeks: number) {
+export function seasonPricing(
+  teams: number,
+  weeks: number,
+  playersPerTeam = EXAMPLE_PLAYERS_PER_TEAM,
+  duesPerPlayerNight = EXAMPLE_DUES_PER_PLAYER_NIGHT,
+) {
   const cost = teams * weeks * PRICE_PER_TEAM_WEEK + SETUP_FEE;
-  const weeklyDues = teams * EXAMPLE_POOL_PER_TEAM_WEEK;
+  const weeklyDues = teams * playersPerTeam * duesPerPlayerNight;
   const pool = weeklyDues * weeks;
   return {
     cost,
