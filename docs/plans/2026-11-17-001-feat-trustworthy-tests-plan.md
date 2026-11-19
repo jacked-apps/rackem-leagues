@@ -1,14 +1,14 @@
 ---
 title: "feat: Trustworthy tests — machine guards, season replay, mutation testing"
 type: feat
-status: active
+status: completed
 date: 2026-11-17
 origin: docs/brainstorms/2026-11-17-trustworthy-tests-requirements.md
 ---
 
 # feat: Trustworthy tests — machine guards, season replay, mutation testing
 
-**Status:** active — no units started yet (plan written and reviewed 2026-11-17).
+**Status:** completed 2026-11-19 — all units U1–U10 done on `feat/trustworthy-tests`; PR not yet opened.
 
 ## Overview
 
@@ -499,7 +499,7 @@ the job summary even though the test step failed.
 
 ### Phase 3 — Mutation testing
 
-- [ ] **U8: Stryker (local) + plain-language report**
+- [x] **U8: Stryker (local) + plain-language report**
 
 **Goal:** `pnpm test:mutation` mutates the scoring/handicap code, runs only
 unit tests, and writes a summary Ed can read.
@@ -531,6 +531,26 @@ report goes to Ed; survivors get tests or a reasoned disable comment.
 
 **Verification:** A full local run completes on Ed's machine; the summary
 reads without knowing Stryker.
+
+**Results (2026-11-19):**
+- First full run: 71% of deliberate mistakes caught (939 missed).
+- Tooling fixes: the season replay now runs per mistake (it had been skipped
+  inside Stryker); the summary puts the headline first and lists misses per
+  file.
+- Triage rule: a miss is a gap only if it can change a real league result.
+  176 misses sat on code the real season runs; the replay proves none of them
+  changed any of the 64 real results. Six real gaps got tests (null away
+  target, home winner chip, no flag on a normal result, engine-vs-backup
+  alarm, bad-winner counting in the backup, no-saved-targets scoring), each
+  break-checked red.
+- `buildSystemFromPreferences.ts`: 99 missed → 0 (tests for the live handicap
+  choice + written reasons on parts nothing reads live).
+- Left unchanged on purpose (tests-only branch): a tie check in
+  `determineMatchResult` that can never fire.
+- Second full run: 73.9% (2,330 caught, 823 missed, 412 accepted with
+  reasons). The remaining misses are in setups no league uses yet (5-man,
+  10-point, trigger loader, workshop rooms). They stay visible on the missed
+  list and get tests when a league starts using them.
 
 ### Phase 4 — The backlog
 
