@@ -45,11 +45,12 @@ export function PricingExampleRow({ teams, weeks, last = false }: PricingExample
         <div className="flex items-center justify-end gap-1 text-sm text-muted-foreground">
           <span>≈ {share} of prize pool</span>
           <InfoButton title={`How we got ${share}`} size="sm" align="right">
-            <p>
-              Example: {EXAMPLE_PLAYERS_PER_TEAM} players on each team, each player pays{' '}
-              {dollars(EXAMPLE_DUES_PER_PLAYER_NIGHT)} per league night. That's{' '}
-              {dollars(EXAMPLE_POOL_PER_TEAM_WEEK)} per team per night into the prize pool.
-            </p>
+            {/* One fact per line, so the math reads top to bottom (Ed). */}
+            <p className="font-medium">Example:</p>
+            <p>{EXAMPLE_PLAYERS_PER_TEAM} players per team</p>
+            <p>{dollars(EXAMPLE_DUES_PER_PLAYER_NIGHT)} per player per night</p>
+            <p>{dollars(EXAMPLE_POOL_PER_TEAM_WEEK)} per team per night</p>
+            <p>into the prize pool</p>
             <p className="mt-2">
               Prize pool: {teams} teams × {weeks} weeks × {dollars(EXAMPLE_POOL_PER_TEAM_WEEK)} = {dollars(pool)}
             </p>

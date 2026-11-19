@@ -34,9 +34,11 @@ describe('PricingExampleRow', () => {
   it('the info button shows the math', async () => {
     renderWithProviders(<PricingExampleRow teams={8} weeks={16} />);
     await userEvent.setup().click(screen.getByRole('button', { name: /how we got 2\.2%/i }));
-    expect(
-      await screen.findByText(/5 players on each team, each player pays \$10 per league night\. That's \$50 per team per night/),
-    ).toBeInTheDocument();
+    // The example, one fact per line.
+    expect(await screen.findByText('5 players per team')).toBeInTheDocument();
+    expect(screen.getByText('$10 per player per night')).toBeInTheDocument();
+    expect(screen.getByText('$50 per team per night')).toBeInTheDocument();
+    expect(screen.getByText('into the prize pool')).toBeInTheDocument();
     expect(screen.getByText(/8 teams × 16 weeks × \$50 = \$6,400/)).toBeInTheDocument();
     expect(screen.getByText(/8 teams × 16 weeks × \$1 \+ \$10 setup = \$138/)).toBeInTheDocument();
   });
