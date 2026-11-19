@@ -255,6 +255,17 @@ that has one, re-read each reason. If it's no longer true (e.g. something
 now reads a field that "nothing reads live"), delete the comment and write a
 test for that line. Find them with `grep -rn "Stryker disable" src`.
 
+**A new league setup gets the full test pass before it goes live.** Only the
+one real league's setup has been through the mutation pass and has a real
+season replayed. Before a league using any other setup (5-man, Fargo,
+10-point…) plays its first night, do the pass on that setup's code: run the
+mutation test on its files; every miss that could change a result gets a
+test from the rules (proven able to fail); every miss that can't gets a
+reasoned skip comment plus the re-check note; and if someone can hand-score
+a few nights on paper (forfeits, subs, swaps, ties), make them a replay test
+like `src/__tests__/unit/seasonReplay.test.ts`. Replay the real season once
+that league finishes one.
+
 Plain `pnpm test:run` does the right thing for both projects — no
 `--no-file-parallelism` flag, no manual orchestration. CI workflows
 that call `pnpm test:run` inherit the behavior automatically. Don't

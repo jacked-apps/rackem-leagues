@@ -38,6 +38,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Stop a double click on a back button from going back two pages](docs/list/2026-11-10-back-button-double-click.md)
 - [Make tests prove themselves: CI guards, real-season replay, mutation testing](docs/plans/2026-11-17-001-feat-trustworthy-tests-plan.md)
 - [Flag a match result that doesn't add up, without ever blocking the match](docs/list/2026-11-18-flag-results-that-dont-add-up.md)
+- [Before a league with a new setup goes live, give that setup's scoring code the full test pass](docs/list/2026-11-19-guard-new-setup-before-it-goes-live.md)
 
 ## Wish list
 
