@@ -902,10 +902,11 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `ChoiceStep.tsx` - Choice step component
 - `QuestionStep.tsx` - Question step component
 - `VisibilityChoiceCard.tsx` - Visibility choice card ⚠️ **DUPLICATE** (also in `/components/privacy`)
-- `applicationReducer.ts` - State reducer
+- `applicationReducer.ts` - State reducer + browser-saved progress (`claimSavedApplication` wipes progress that belongs to a different account)
 - `questionDefinitions.tsx` - Question config
 - `types.ts` - Type definitions
-- `useApplicationForm.ts` - Form hook
+- `useApplicationForm.ts` - Form hook (loads saved progress only for the account that saved it)
+- `useApplicationForm.test.tsx` - Saved application progress is per account: a new account starts at step 1 with blank answers
 
 #### Player Registration (`/newPlayer/`)
 - `NewPlayerForm.tsx` - Registration form
