@@ -4,7 +4,7 @@
  * the row component so it can be tested on its own.
  *
  *   cost       = teams × weeks × $1 + $10 setup
- *   prize pool = teams × weeks × $50 (the example dues each team puts in)
+ *   prize pool = teams × weeks × $50 (example: 5 players × $10 a league night)
  *   share      = cost ÷ prize pool, one decimal
  */
 
@@ -12,8 +12,12 @@
 export const PRICE_PER_TEAM_WEEK = 1;
 /** One-time setup fee per season, in dollars. */
 export const SETUP_FEE = 10;
-/** Example prize-pool money each team puts in per week, in dollars. */
-export const EXAMPLE_POOL_PER_TEAM_WEEK = 50;
+/** Example: players on each team. */
+export const EXAMPLE_PLAYERS_PER_TEAM = 5;
+/** Example: what each player pays per league night, in dollars. */
+export const EXAMPLE_DUES_PER_PLAYER_NIGHT = 10;
+/** Example prize-pool money each team puts in per league night (5 × $10 = $50). */
+export const EXAMPLE_POOL_PER_TEAM_WEEK = EXAMPLE_PLAYERS_PER_TEAM * EXAMPLE_DUES_PER_PLAYER_NIGHT;
 
 /** Whole dollars with thousands separators, e.g. 6400 → "$6,400". */
 export const dollars = (n: number) => `$${n.toLocaleString('en-US')}`;

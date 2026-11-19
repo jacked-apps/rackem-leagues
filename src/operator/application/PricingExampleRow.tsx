@@ -17,6 +17,8 @@
 import { InfoButton } from '@/components/InfoButton';
 import {
   dollars,
+  EXAMPLE_DUES_PER_PLAYER_NIGHT,
+  EXAMPLE_PLAYERS_PER_TEAM,
   EXAMPLE_POOL_PER_TEAM_WEEK,
   PRICE_PER_TEAM_WEEK,
   seasonPricing,
@@ -44,7 +46,9 @@ export function PricingExampleRow({ teams, weeks, last = false }: PricingExample
           <span>≈ {share} of prize pool</span>
           <InfoButton title={`How we got ${share}`} size="sm" align="right">
             <p>
-              Say each team puts {dollars(EXAMPLE_POOL_PER_TEAM_WEEK)} a week into the prize pool.
+              Example: {EXAMPLE_PLAYERS_PER_TEAM} players on each team, each player pays{' '}
+              {dollars(EXAMPLE_DUES_PER_PLAYER_NIGHT)} per league night. That's{' '}
+              {dollars(EXAMPLE_POOL_PER_TEAM_WEEK)} per team per night into the prize pool.
             </p>
             <p className="mt-2">
               Prize pool: {teams} teams × {weeks} weeks × {dollars(EXAMPLE_POOL_PER_TEAM_WEEK)} = {dollars(pool)}
