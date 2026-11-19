@@ -6,7 +6,10 @@
  * Signed out: tapping the child opens a small "Sign in first" dialog that
  * says why, with Sign in / Create account / Not now. Sign in carries
  * `?redirect=<to>`, so after signing in the visitor lands on the page they
- * were headed to (Login reads it through `getSafeRedirectPath`).
+ * were headed to (Login reads it through `getSafeRedirectPath`). Create
+ * account carries it too: sign-up hands it to the confirmation email and
+ * Google / Facebook, and a brand-new account goes through Complete Profile,
+ * which also honors it.
  *
  * Why: a public page (e.g. Become a League Operator) can have a button that
  * leads somewhere members-only. Dropping a visitor on the login screen with
@@ -66,7 +69,7 @@ export function SignInFirstLink({ to, reason, children }: SignInFirstLinkProps) 
             <DialogClose asChild>
               <Button variant="ghost" loadingText="none">Not now</Button>
             </DialogClose>
-            <Link to="/register">
+            <Link to={`/register?redirect=${encodeURIComponent(to)}`}>
               <Button variant="outline" loadingText="none" className="w-full">Create account</Button>
             </Link>
             <Link to={`/login?redirect=${encodeURIComponent(to)}`}>

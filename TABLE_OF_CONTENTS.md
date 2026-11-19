@@ -849,6 +849,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 #### Auth Pages (`/login/`)
 - `Login.tsx` - Login page
 - `Register.tsx` - Registration page
+- `signupRemembersPath.test.tsx` - Creating an account remembers where you were headed (`?redirect` through Register, its email/Google links, Login ↔ Register and Complete Profile; unsafe values dropped)
 - `ClaimPlayer.tsx` - Claim placeholder player for existing authenticated users (orchestration + the interactive screen)
 - `ClaimStatusScreen.tsx` - The terminal status screens of the claim flow (loading/invalid/expired/claimed/success/rejected/error). Extracted from ClaimPlayer.
 - `claimPlayerTypes.ts` - Shared types for the claim flow (ClaimState, InviteDetails, TeamInfo, PlaceholderExtras, MergeStats).

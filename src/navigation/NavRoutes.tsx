@@ -242,7 +242,9 @@ export const router = createBrowserRouter([
           { path: 'become-league-operator', element: <BecomeLeagueOperator /> },
 
           // --- Signed-in pages reached from Profile (same reason). ---
-          { path: 'league-operator-application', element: withAuth(<LeagueOperatorApplication />) },
+          // Needs a member profile (submit writes created_by = member.id), so a
+          // brand-new account goes through Complete Profile first and comes back.
+          { path: 'league-operator-application', element: withMember(<LeagueOperatorApplication />) },
           // Become a Host — gated off in production until the game room ships.
           // What it sells is the ability to host game rooms, which production does
           // not have yet, and the page takes card details on a mock payment form

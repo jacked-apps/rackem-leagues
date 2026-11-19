@@ -42,11 +42,12 @@ describe('SignInFirstLink', () => {
     expect(screen.getByText(REASON)).toBeInTheDocument();
   });
 
-  it('signed out: Sign in returns to the page afterwards; Create account is offered', async () => {
+  it('signed out: Sign in and Create account both return to the page afterwards', async () => {
     renderLink(false);
     await userEvent.setup().click(screen.getByRole('button', { name: 'Start Application' }));
     expect(screen.getByRole('link', { name: 'Sign in' }))
       .toHaveAttribute('href', '/login?redirect=%2Fleague-operator-application');
-    expect(screen.getByRole('link', { name: 'Create account' })).toHaveAttribute('href', '/register');
+    expect(screen.getByRole('link', { name: 'Create account' }))
+      .toHaveAttribute('href', '/register?redirect=%2Fleague-operator-application');
   });
 });
