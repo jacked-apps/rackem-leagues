@@ -339,7 +339,13 @@ deno_version = 2
 # secret_key = "env(SECRET_VALUE)"
 
 [analytics]
-enabled = true
+# Off for local dev (Ed, 2026-11-19): analytics (logflare) + its log shipper
+# (vector) only feed Studio's Logs tab, cost ~700 MB of RAM, and vector
+# restart-loops on Windows Docker. Turning analytics off makes plain
+# `supabase start` skip both. The database, auth, API and Studio are
+# unaffected. CI already excludes them with -x. Want the Logs tab back on your
+# machine? Set this to true and restart Supabase.
+enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
