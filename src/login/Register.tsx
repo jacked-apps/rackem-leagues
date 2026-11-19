@@ -19,6 +19,7 @@ import { CardAction, CardFooter } from '@/components/ui/card';
 import { LoginCard } from './LoginCard';
 import { Mail, AlertTriangle, UserCheck, Users } from 'lucide-react';
 import { logger } from '@/utils/logger';
+import { getSafeRedirectPath } from './redirect';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +40,14 @@ interface ClaimData {
 export const Register: React.FC = () => {
   const [searchParams] = useSearchParams();
   const claimId = searchParams.get('claim');
+  // Where the visitor was headed before signing up (e.g. the operator
+  // application). Carried through the confirmation email / OAuth so a new
+  // account lands there instead of starting over. Unsafe values are dropped.
+  const redirectTarget = getSafeRedirectPath(searchParams.get('redirect'));
+  const afterAuthUrl = `${window.location.origin}${redirectTarget ?? '/'}`;
+  const loginPath = redirectTarget
+    ? `/login?redirect=${encodeURIComponent(redirectTarget)}`
+    : '/login';
 
   // Claim-related state
   const [claimData, setClaimData] = useState<ClaimData | null>(null);
@@ -120,7 +129,7 @@ export const Register: React.FC = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: afterAuthUrl,
       },
     });
     if (error) {
@@ -136,7 +145,7 @@ export const Register: React.FC = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: afterAuthUrl,
       },
     });
     if (error) {
@@ -171,6 +180,7 @@ export const Register: React.FC = () => {
     const { data: authData, error } = await supabase.auth.signUp({
       email,
       password,
+      options: { emailRedirectTo: afterAuthUrl },
     });
 
     if (error) {
@@ -267,7 +277,7 @@ export const Register: React.FC = () => {
         </div>
         <CardFooter className="mt-4 text-sm flex justify-around w-full">
           <Link to="/register">Register New Account</Link>
-          <Link to="/login">Back to Login</Link>
+          <Link to={loginPath}>Back to Login</Link>
         </CardFooter>
       </LoginCard>
     );
@@ -333,7 +343,7 @@ export const Register: React.FC = () => {
           </div>
         </div>
         <CardFooter className="mt-4 text-sm flex justify-around w-full">
-          <Link to="/login">Back to Login</Link>
+          <Link to={loginPath}>Back to Login</Link>
         </CardFooter>
       </LoginCard>
     );
@@ -520,7 +530,7 @@ export const Register: React.FC = () => {
           </Button>
 
           <CardFooter className="mt-4 text-sm flex justify-around w-full">
-            <Link to="/login">Already have an account? Login</Link>
+            <Link to={loginPath}>Already have an account? Login</Link>
           </CardFooter>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             By registering you agree to our <Link to="/privacy" className="underline">Privacy Policy</Link>.

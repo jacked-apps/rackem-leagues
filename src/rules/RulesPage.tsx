@@ -231,7 +231,12 @@ export default function RulesPage() {
 
   return (
     <div>
-      <PageHeader backTo="/" backLabel="Home" title="Official Rules" />
+      <PageHeader
+        backTo="/"
+        backLabel="Home"
+        title="Official Rules"
+        subtitle="The official CSI rulebook, set up so it is easy to search. Signed in, you also see the house rules your league operators have added for the leagues you play in."
+      />
 
       <div className="mx-auto max-w-4xl p-4">
         {showNudge ? (

@@ -3,9 +3,15 @@
  * Centralizes all form state management and business logic
  */
 import { useReducer, useState } from 'react';
-import { applicationReducer, getInitialApplicationState } from './applicationReducer';
+import {
+  applicationReducer,
+  claimSavedApplication,
+  getInitialApplicationState,
+  STEP_STORAGE_KEY,
+} from './applicationReducer';
 import { getQuestionDefinitions } from './questionDefinitions';
 import { useUserProfile } from '@/api/hooks';
+import { useUser } from '@/context/useUser';
 import { logger } from '@/utils/logger';
 
 /**
@@ -20,15 +26,22 @@ export const useApplicationForm = () => {
   // Get user profile data for address pre-filling
   const { member } = useUserProfile();
 
-  // Main form state using reducer for complex state updates
-  // Load fresh state from localStorage on every mount
-  const [state, dispatch] = useReducer(applicationReducer, getInitialApplicationState());
+  const { user } = useUser();
+
+  // Main form state using reducer for complex state updates.
+  // On mount: first drop saved progress that belongs to a different account
+  // (shared browser), then load whatever is left. Runs once — the init
+  // function form, not a value re-read every render.
+  const [state, dispatch] = useReducer(applicationReducer, undefined, () => {
+    claimSavedApplication(user?.id ?? null);
+    return getInitialApplicationState();
+  });
 
   // Navigation state - tracks which question user is currently on
   // Load saved step from localStorage or start at 0
   const [currentStep, setCurrentStep] = useState(() => {
     try {
-      const savedStep = localStorage.getItem('leagueOperatorApplication_currentStep');
+      const savedStep = localStorage.getItem(STEP_STORAGE_KEY);
       return savedStep ? parseInt(savedStep, 10) : 0;
     } catch {
       return 0;
@@ -82,7 +95,7 @@ export const useApplicationForm = () => {
       setCurrentStep(nextStep);
       // Save current step to localStorage
       try {
-        localStorage.setItem('leagueOperatorApplication_currentStep', nextStep.toString());
+        localStorage.setItem(STEP_STORAGE_KEY, nextStep.toString());
       } catch (error) {
         logger.warn('Failed to save current step', { error, step: nextStep });
       }
@@ -102,7 +115,7 @@ export const useApplicationForm = () => {
       setCurrentStep(prevStep);
       // Save current step to localStorage
       try {
-        localStorage.setItem('leagueOperatorApplication_currentStep', prevStep.toString());
+        localStorage.setItem(STEP_STORAGE_KEY, prevStep.toString());
       } catch (error) {
         logger.warn('Failed to save current step', { error, step: prevStep });
       }

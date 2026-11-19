@@ -712,7 +712,8 @@ how to add a new test, demo recording, cleanup model).
 
 #### Static Pages
 - `about/About.tsx` - Public About page: skimmable feature lists (bold title + short explanation) for players, league operators, tournaments, what's next; then pricing, philosophy
-- `about/Pricing.tsx` - Pricing breakdown page
+- `about/Pricing.tsx` - Pricing breakdown page (fee, How Payment Works steps, two worked examples, FAQ). Tested in `about/Pricing.test.tsx`
+- `about/PricingExampleCard.tsx` - One worked pricing example: setup, platform cost, dues, % of prize pool, week-1 result; numbers from `pricingMath`
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
 - `pages/Home.tsx` - Public landing/home page: "Go to My Teams" for members; Sign in / Create account for visitors; "Find a League" + "Find a Tournament" (Coming Soon) first, then Run Your Own League + Rules + Learn + About cards
 - `pages/Home.test.tsx` - Run Your Own League card shows signed out; members get the My Teams button
@@ -743,6 +744,7 @@ how to add a new test, demo recording, cleanup model).
 
 **Learn hub** (moved to `src/pages/` in 2026-05-29 rename — visible to all signed-in users, not just operators):
 - `src/pages/Learn.tsx` — Phase 1 Learn hub at `/learn`. Page shell + Glossary section. Was `src/operator/OperatorLearn.tsx` at `/operator-learn`.
+- `src/pages/Learn.test.tsx` — Learn page has a way out: back arrow to Home (visitor) or My Teams (member).
 - `src/pages/learn/GlossaryView.tsx` — search input + 3-state UI (single-entry on deep-link, browse on direct nav, search filtered when typing).
 - `src/pages/learn/GlossaryEntry.tsx` — single entry render: canonical heading + aliases ("also called: …") + shortDef + longDef + related links.
 - `src/pages/learn/__tests__/GlossaryView.test.tsx` — 6 tests covering the 3-state UI and the alias-match subtitle.
@@ -848,6 +850,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 #### Auth Pages (`/login/`)
 - `Login.tsx` - Login page
 - `Register.tsx` - Registration page
+- `signupRemembersPath.test.tsx` - Creating an account remembers where you were headed (`?redirect` through Register, its email/Google links, Login ↔ Register and Complete Profile; unsafe values dropped)
 - `ClaimPlayer.tsx` - Claim placeholder player for existing authenticated users (orchestration + the interactive screen)
 - `ClaimStatusScreen.tsx` - The terminal status screens of the claim flow (loading/invalid/expired/claimed/success/rejected/error). Extracted from ClaimPlayer.
 - `claimPlayerTypes.ts` - Shared types for the claim flow (ClaimState, InviteDetails, TeamInfo, PlaceholderExtras, MergeStats).
@@ -892,15 +895,18 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `BecomeHost.tsx` - **Become a Host** (`/become-host`) — self-serve purchase (`$1/mo` or `$10/yr`, mock `PaymentCardForm`) that saves the card on file and grants the `host` designation via `useGrantDesignation`, so the member can host game rooms. Reachable from the Profile "Become a Host" CTA. Shows an "already a host" state if held. Self-contained — grants the designation independently of the game room, which reads it separately.
 
 #### League Operator Application (`/leagueOperator/`)
-- `BecomeLeagueOperator.tsx` - Entry point; public (sales info only), its Start Application button asks visitors to sign in
+- `BecomeLeagueOperator.tsx` - Entry point; public (sales info only). Its Start Application buttons use `SignInFirstLink` (visitors get a "Sign in first" pop-up, then return here)
+- `PricingExampleRow.tsx` - One row of the 16-week pricing example: season cost + "≈ X% of prize pool" with an InfoButton showing the math
+- `pricingMath.ts` - Pricing example math for Become a League Operator and the Pricing page ($1/team/week + $10 setup vs. players × $10 a night into the prize pool). Tested in `PricingExampleRow.test.tsx` and `about/Pricing.test.tsx`
 - `LeagueOperatorApplication.tsx` - Main application form
 - `ChoiceStep.tsx` - Choice step component
 - `QuestionStep.tsx` - Question step component
 - `VisibilityChoiceCard.tsx` - Visibility choice card ⚠️ **DUPLICATE** (also in `/components/privacy`)
-- `applicationReducer.ts` - State reducer
+- `applicationReducer.ts` - State reducer + browser-saved progress (`claimSavedApplication` wipes progress that belongs to a different account)
 - `questionDefinitions.tsx` - Question config
 - `types.ts` - Type definitions
-- `useApplicationForm.ts` - Form hook
+- `useApplicationForm.ts` - Form hook (loads saved progress only for the account that saved it)
+- `useApplicationForm.test.tsx` - Saved application progress is per account: a new account starts at step 1 with blank answers
 
 #### Player Registration (`/newPlayer/`)
 - `NewPlayerForm.tsx` - Registration form
@@ -1316,6 +1322,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `ConfirmDialog.tsx` - Confirmation dialog with Cancel/Confirm buttons
 - `InfoButton.tsx` - Info button with tooltip
 - `backTapLock.ts` - One double-tap lock shared by every page header back arrow, so a double click goes back one page, not two (the second click lands on the next page's arrow). Tested in `__tests__/PageHeader.backDoubleTap.test.tsx`
+- `SignInFirstLink.tsx` - Link to a signed-in-only page that, for a visitor, opens a "Sign in first" dialog explaining why (Sign in returns them via `?redirect`). Used by Become a League Operator's Start Application. Tested in `SignInFirstLink.test.tsx`
 - `NonProdGate.tsx` - Shared route gate for GATED features (dev + staging render children; production redirects to `/`). Wrap the ROUTE and gate every DOOR with the same `!isProduction`; flip together when un-gating. Users: Handicap Calculator (`tools/calc`), Game Room (`rooms/**`). Promoted from `handicapCalculator/` in Game Room Unit 7 so deleting the calculator cannot take the room's gate with it
 - `InstallAppCard.tsx` - **Install the app** — platform-adaptive PWA install entry: Android/desktop fire the native install prompt; iPhone (Safari) + Android-without-a-captured-prompt open a step-by-step add-to-home-screen instructions modal. Renders nothing when already installed or unsupported. Self-contained (drop-in); used at the top of Player Settings. Tested in `InstallAppCard.test.tsx`.
 - `InvitePlayerModal.tsx` - **✅ Phase 8** Captain invite modal for placeholder players
