@@ -7,25 +7,28 @@ behavior-preserving refactor (extract, don't rewrite); land each as its own PR.
 
 Ordered best-first within each tier. Check items off as they ship.
 
+Re-checked 2026-11-10: five items had already been split (or deleted) without
+being ticked; they are ticked now. PlayerNameLink split in its own PR.
+
 ---
 
 ## Tier 1 — Easy wins (low risk, clean seams)
 
-- [ ] **`src/operator/components/OrgPlaceholdersCard.tsx`** (600) — three components
+- [x] **`src/operator/components/OrgPlaceholdersCard.tsx`** (600) — three components
   in one file. Move `PlaceholderRow` and `ArchivedRow` to their own files; export
   the row type + `fetchOrgPlaceholders` from a small `orgPlaceholders.ts`. The
   sub-components already have clean prop interfaces. **Effort: S.**
-- [ ] **`src/components/PlayerNameLink.tsx`** (585) — a ~120-line inline "Set Starting
+- [x] **`src/components/PlayerNameLink.tsx`** (585) — a ~120-line inline "Set Starting
   Handicaps" Dialog (own form state + validation + `useMutation`) is grafted onto a
   name-link. Extract `SetStartingHandicapsModal.tsx`; optionally a
   `usePlayerActions(playerId)` hook for the block/message/report handlers. Drops the
   file well under 300 lines. **Effort: M.** *(Just refactored its props in PR #183 —
   know it well.)*
-- [ ] **`src/operator/VenueLimitModal.tsx`** (584) — one component, but the logic half
+- [x] **`src/operator/VenueLimitModal.tsx`** (584) — one component, but the logic half
   is a self-contained table-limits state machine (~12 handlers). Extract
   `useVenueTableLimits.ts` (state + derived available/unavailable/capacity + save);
   component becomes a thin render. **Effort: M.**
-- [ ] **`src/login/ClaimPlayer.tsx`** (704) — ~320 lines is nine full-screen status
+- [x] **`src/login/ClaimPlayer.tsx`** (704) — ~320 lines is nine full-screen status
   states (loading/invalid/expired/already-claimed/success/rejected/error/…). Extract
   the terminal screens into presentational components (`ClaimStatusScreens.tsx` or a
   data-driven `<ClaimStatus state=… />`); keep orchestration + the interactive `valid`
@@ -45,7 +48,7 @@ Ordered best-first within each tier. Check items off as they ship.
 - [ ] **`src/operator/PlayerManagement.tsx`** (800) — card boundaries are already
   comment-delineated. Extract `PlayerDetailsCard.tsx`, `GameHistoryHandicapsCard.tsx`
   (owns the handicap form + save/validate), `OrganizationInvitesCard.tsx`. **Effort: M.**
-- [ ] **`src/operator/TeamManagement.tsx`** (837) — two concerns (venues vs teams) + a
+- [x] **`src/operator/TeamManagement.tsx`** (837) — two concerns (venues vs teams) + a
   fat handler block. Extract `useTeamManagementActions.ts` + `VenuesPanel.tsx` +
   `TeamsPanel.tsx`. **Effort: L.** ⚠️ `handleImportTeams` is a **dead stub** (builds
   arrays, discards them, fakes a success toast) — confirm intent with the owner, don't
@@ -54,7 +57,7 @@ Ordered best-first within each tier. Check items off as they ship.
   (load/transform/conflict-detect + blackout add/remove/renumber + save) and a
   `ChampionshipSummary.tsx` for the BCA/APA range block. Keep the renumbering logic
   intact when lifting. **Effort: M.**
-- [ ] **`src/operator/SeasonCreationWizard.tsx`** (767) — lower priority (reducer + steps
+- [ ] **`src/wizards/season-v1/SeasonCreationWizard.tsx`** (767) — lower priority (reducer + steps
   data already carry much of the load). Move `saveChampionshipPreference` to
   `api/queries` (pure Supabase, no React) and lift the step-type render switch into
   `WizardStepRenderer.tsx`. **Effort: M.**
@@ -68,7 +71,7 @@ Ordered best-first within each tier. Check items off as they ship.
 - [ ] **`src/components/InvitePlayerModal.tsx`** (671) — extract `useInviteActions`
   (save-email / send-invite / create-token) + `InviteOptionsView.tsx`. Free DRY win:
   hoist the duplicated `getEnvironment()` into `src/utils/getEnvironment.ts`. **Effort: M.**
-- [ ] **`src/components/RegisterPlayerModal.tsx`** (559) — extract
+- [x] **`src/components/RegisterPlayerModal.tsx`** (559) — extract
   `DeviceHandoffSignupForm.tsx` + reuse the shared `getEnvironment()`. ⚠️ **Verify it's
   still reachable first** — InvitePlayerModal now owns the placeholder-invite flow; if
   this is superseded, the move may be **delete, not split**. **Effort: M.**
