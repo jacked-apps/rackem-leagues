@@ -248,6 +248,13 @@ number from the league rule or a real result (the season replay,
 `src/__tests__/unit/seasonReplay.test.ts`), never by running the code and
 pasting what it returned.
 
+**Re-check mutation-skip comments when you touch their code.** A
+`// Stryker disable …: <reason>` comment tells the mutation test to skip a
+line because it can't change a live result *today*. When you change a file
+that has one, re-read each reason. If it's no longer true (e.g. something
+now reads a field that "nothing reads live"), delete the comment and write a
+test for that line. Find them with `grep -rn "Stryker disable" src`.
+
 Plain `pnpm test:run` does the right thing for both projects — no
 `--no-file-parallelism` flag, no manual orchestration. CI workflows
 that call `pnpm test:run` inherit the behavior automatically. Don't

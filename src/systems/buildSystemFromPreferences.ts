@@ -30,7 +30,16 @@
  * honest labels" bar is honored — we never throw because a combo isn't
  * fully wired.
  *
+ * MUTATION-SKIP COMMENTS — RE-CHECK WHEN YOU CHANGE THIS FILE.
+ * Several `// Stryker disable …: <reason>` comments below tell the mutation
+ * test to skip lines that can't change a live result TODAY (mostly fields
+ * nothing reads live yet: handicapSystem, pointsSystem, scoring). If your
+ * change makes any of those reasons untrue — e.g. a screen or score starts
+ * reading one of those fields — delete that skip comment and write a test
+ * for the line instead. A stale skip comment hides a real gap.
+ *
  * @see docs/plans/2026-04-28-001-feat-modular-league-system-plan.md (Unit 5.1)
+ * @see docs/plans/2026-11-17-001-feat-trustworthy-tests-plan.md (U8)
  */
 
 import type { SystemOverrides } from '@/types/systemOverrides';

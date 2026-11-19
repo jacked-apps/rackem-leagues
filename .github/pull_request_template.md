@@ -30,6 +30,11 @@ Ed reads this section, not the test run. Keep the order:
 
 </details>
 
+**Mutation-skip comments:** none in the files I changed
+<!-- If a changed file has `// Stryker disable …: <reason>` comments, say
+     "re-checked, reasons still true" — or that you removed one and added a
+     test because its reason stopped being true. -->
+
 <!--
 Markers the CI checks read from this description:
   [no-changelog]          nothing a user would notice (What's New check)
