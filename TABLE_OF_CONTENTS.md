@@ -803,7 +803,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `ScheduleSetup.tsx` - Schedule setup component
 - `ScheduleSetupPage.tsx` - Schedule setup page
 - `ScheduleView.tsx` - Schedule view
-- `SeasonScheduleManager.tsx` - Season schedule manager
+- `SeasonScheduleManager.tsx` - Season dates page (blackouts, holidays, season length) at `/league/:leagueId/season/:seasonId/schedule`; the old `.../manage-schedule` address redirects here
 - `components/ChangeSeasonLengthDialog.tsx` - Operator dialog to lengthen/shorten an existing season (before the week-5 lock); calls `applySeasonLengthChange`
 - `../utils/seasonLengthEdit.ts` - Pure season-length eligibility (week-5 lock) + [10,52] bounds/classification
 - `../utils/applySeasonLengthChange.ts` - Lengthen (append weeks + generate matches) / shorten (guarded tail delete) for an existing season
@@ -1048,6 +1048,8 @@ Reusable wizard/form step components
 - `EmptyScheduleState.tsx` - Empty state
 - `ScheduleErrorState.tsx` - Error state
 - `ScheduleLoadingState.tsx` - Loading state
+- `TeamSelect.tsx` - Team dropdown for the week editor; offers the season's real bye team (`byeTeamId`) as "BYE" because its team list is active-only. Test: `TeamSelect.test.tsx`
+- `TeamSelect.test.tsx` - A bye side shows "BYE"; a playoff TBD (no team) shows the placeholder, not "BYE"
 
 #### Season Components (`/components/season/`)
 - `ConflictBadge.tsx` - Schedule conflict badge
@@ -1502,6 +1504,7 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 
 #### Match Running Totals (`/utils/match/`)
 - `isByeMatch.ts` - **The one "this matchup is a BYE, not a real match" predicate.** `isByeMatch(home, away)` → true when either side is `status='bye'`. Single source of truth every match-machinery guard keys on (table assignment, lineup entry, manual-scoring eligibility) so they can't drift. `manualScoringEligibility.hasTwoRealTeams` and the lineup page both route through it. Tested in `__tests__/isByeMatch.test.ts` (6 cases).
+- `findByeTeamId.ts` - `findByeTeamId(schedule)` → the season's BYE team id, read from the schedule's team `status` (never an empty slot, which is a playoff TBD). Feeds the week editor's "BYE" choice, since its team list is active-only. Tests: `__tests__/findByeTeamId.test.ts`
 - `composeMatchThresholds.ts` - **System-agnostic match threshold composer** (lineup-swap recalibration, Unit 2). Given resolved prefs + both (post-swap) lineups, returns the six `*_to_win/tie/lose` columns. Builds a SystemModule via `buildSystemFromPreferences` and dispatches on the resolved `handicapMechanism.kind` — NEVER on `handicap_type`. Extended-finish (`extra_games`) delegates to `calculateHandicapThresholds` for byte-identical parity with match prep; head-start (Fargo start-points) recomputes the weaker team's credit fresh from ratings into `*_to_tie`. Replaces the deleted `recalculateMatchThresholds` handicap-type heuristic in `matchLineups.ts`. Tested in `src/__tests__/unit/composeMatchThresholds.test.ts` (percentage/points/fargo/none parity + modularity-invariant source grep).
 - `computeMatchRunningTotals.ts` - **Per-mutation running-totals calculator** (Phase 5 Unit 5.5) — pure helper that filters confirmed regular games, runs the snapshot's points calculator, and returns `{ home_games_won, away_games_won, home_points_earned, away_points_earned }`. Eager recompute on every scoring mutation keeps the match row consistent with the live scoreboard. Tiebreaker games and unconfirmed games are excluded from regular running totals.
 - `auditScoringConsistency.ts` - **Match-completion scoring-consistency audit** (Phase 5 Unit 5.6) — pure `compareRunningTotals(actual, expected)` helper that returns per-field discrepancies between the match row's stored totals and a fresh recompute. Match record is never modified — divergence is logged to `app_logs` for the dev to investigate. Reusable for on-demand audits.
@@ -2009,6 +2012,7 @@ Supabase real-time subscription hooks for live data updates
 - `NavRoutes.tsx` - Route definitions. GATED (non-prod) routes: `tools/calc`, `rooms`, `rooms/join/:joinToken`, `rooms/:roomId` — each wrapped in `NonProdGate`
 - `roomsGate.test.tsx` - **Game Room / Unit 7** — pins that the room and its doors hide TOGETHER: every `rooms/**` route element is `NonProdGate` (walks `router.routes`); the gate renders off production and redirects home on it; the menu’s Rooms door is deliberately NOT on this branch — once the menu PR (#311) is on main it becomes one gated entry in `navEntries.ts`; staying out of the drawer/sidebar files keeps the two PRs conflict-free; signed out, `/rooms/join/x` → `/login?redirect=…` (the QR funnel)
 - `NavRoutes.test.tsx` - Guard: every page a member reaches from the nav or Profile (What's New, Rules, Pricing, Become LO, …) renders inside `MemberLayout`, so it keeps the sidebar / tab bar
+- `scheduleRename.test.tsx` - The dates page lives at `.../schedule`, and the old `.../manage-schedule` address redirects there keeping league + season (redirect pulled from the real router)
 
 ---
 

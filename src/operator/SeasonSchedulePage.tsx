@@ -40,6 +40,7 @@ import { deriveWeekLabels } from '@/utils/scheduleDisplayUtils';
 import type { MatchEditState, TeamVenueMap } from '@/components/schedule/useWeekEditor';
 import type { TeamOption } from '@/components/schedule/TeamSelect';
 import type { VenueOption } from '@/components/schedule/VenueSelect';
+import { findByeTeamId } from '@/utils/match/findByeTeamId';
 
 /**
  * Calculate table numbers per venue within a week
@@ -146,9 +147,6 @@ export const SeasonSchedulePage: React.FC = () => {
     );
   }, [schedule]);
 
-  // Check if season has a BYE team (any REGULAR week match has null home or away team)
-  // This happens when there's an odd number of teams
-  // Note: Playoff matches also have null team IDs (TBD), so we exclude those
   // Week numbers are DERIVED from each week's position by date — never the stored
   // week_name (which can drift/collide, e.g. a duplicate "Week 14").
   const weekLabels = useMemo(
@@ -156,12 +154,9 @@ export const SeasonSchedulePage: React.FC = () => {
     [schedule],
   );
 
-  const hasByeTeam = useMemo(() => {
-    return schedule.some(({ week, matches }) =>
-      week.week_type === 'regular' &&
-      matches.some(m => m.home_team_id === null || m.away_team_id === null)
-    );
-  }, [schedule]);
+  // The season's BYE team, found by team status (an empty slot is a playoff
+  // TBD, not a bye). Offered as the "BYE" choice in the week editor.
+  const byeTeamId = useMemo(() => findByeTeamId(schedule), [schedule]);
 
   // Whether there's anything to export to LMS: at least one regular-week match
   // with both teams present (the round-robin matchups LMS imports).
@@ -394,7 +389,7 @@ export const SeasonSchedulePage: React.FC = () => {
                   venues={venueOptions}
                   teamHomeVenues={teamHomeVenues}
                   seasonId={seasonId!}
-                  hasByeTeam={hasByeTeam}
+                  byeTeamId={byeTeamId}
                   onCancel={() => setEditingWeekId(null)}
                   onSaveSuccess={() => setEditingWeekId(null)}
                 />

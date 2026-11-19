@@ -38,8 +38,8 @@ interface MatchEditRowProps {
   teams: TeamOption[];
   /** All venues available for selection */
   venues: VenueOption[];
-  /** Whether to show BYE option in team dropdowns (only for odd team count) */
-  showByeOption: boolean;
+  /** The season's BYE team id, offered as "BYE" in both dropdowns; null when none */
+  byeTeamId: string | null;
   /** Callback when home team changes */
   onHomeTeamChange: (teamId: string | null) => void;
   /** Callback when away team changes */
@@ -84,7 +84,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
   isEditable,
   teams,
   venues,
-  showByeOption,
+  byeTeamId,
   onHomeTeamChange,
   onAwayTeamChange,
   onVenueChange,
@@ -116,7 +116,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
           disabled={!isEditable}
           placeholder="Home team"
           label={`Match ${matchNumber} Home Team`}
-          showByeOption={showByeOption}
+          byeTeamId={byeTeamId}
         />
       </div>
 
@@ -135,7 +135,7 @@ export const MatchEditRow: React.FC<MatchEditRowProps> = ({
           disabled={!isEditable}
           placeholder="Away team"
           label={`Match ${matchNumber} Away Team`}
-          showByeOption={showByeOption}
+          byeTeamId={byeTeamId}
         />
       </div>
 
