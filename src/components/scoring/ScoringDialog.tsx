@@ -177,8 +177,8 @@ interface ScoringDialogProps {
   onWinnerValueChange?: (value: number) => void;
   /** Handler for cancel button */
   onCancel: () => void;
-  /** Handler for confirm button */
-  onConfirm: () => void;
+  /** Return the save promise: Save Game stays disabled until it settles (double-tap guard). */
+  onConfirm: () => unknown;
 }
 
 /**

@@ -16,6 +16,11 @@
  * <Button loadingText="none" onClick={handleCancel}>
  *   Cancel
  * </Button>
+ *
+ * Every Button also ignores a second tap that lands within
+ * DOUBLE_TAP_WINDOW_MS of the first, whatever its handler does. Buttons meant
+ * to be tapped fast (+ / − steppers, move up / down) opt out with
+ * `allowRapidClicks`.
  */
 
 import * as React from 'react';
@@ -24,6 +29,13 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+
+/**
+ * How long after a tap the same button ignores another one. Matches the
+ * common OS double-click interval, so a real double tap is caught but a
+ * person tapping again on purpose barely notices.
+ */
+export const DOUBLE_TAP_WINDOW_MS = 500;
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
@@ -64,6 +76,12 @@ const buttonVariants = cva(
 type ButtonBaseProps = Omit<React.ComponentProps<'button'>, 'onClick'> & {
   asChild?: boolean;
   message?: string;
+  /**
+   * Turn off the double-tap lock for a button that is MEANT to be tapped fast,
+   * like a + / − stepper or a move up / down arrow. Leave it off everywhere
+   * else; the lock is what stops a double tap from saving or navigating twice.
+   */
+  allowRapidClicks?: boolean;
   /**
    * Force the loading state.
    *
@@ -117,7 +135,7 @@ type ButtonProps = ActionButtonProps | NonActionButtonProps;
  * @param message - Optional error/info message to display below the button.
  * @param asChild - If true, renders as a Slot for composition.
  */
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant, size, asChild = false, message, loadingText, isLoading, disabled, children, onClick, ...props }, ref) => {
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant, size, asChild = false, message, allowRapidClicks = false, loadingText, isLoading, disabled, children, onClick, ...props }, ref) => {
   const Comp = asChild ? Slot : 'button';
 
   // Tracks an async onClick that hasn't settled yet.
@@ -133,6 +151,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, va
   // means a new one can't reintroduce it by forgetting a prop.
   const [isPending, setIsPending] = React.useState(false);
   const mounted = React.useRef(true);
+  // When this button last ran its handler, for the double-tap lock below.
+  const lastClickAt = React.useRef(0);
   React.useEffect(() => {
     mounted.current = true;
     return () => {
@@ -171,6 +191,32 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, va
     // Re-entry guard. `disabled` already blocks the pointer, but a keyboard
     // Enter-repeat or a programmatic click can still arrive.
     if (showLoading) return;
+
+    // Double-tap lock. The promise tracking further down only covers handlers
+    // that return their save. Plenty don't: ones that fire a `mutate()`, ones
+    // that navigate, and every `loadingText="none"` button. Each of those
+    // used to run twice on a double tap (Save Game, Deny, the back button).
+    // Ignoring a second tap that lands this soon covers all of them, including
+    // buttons nobody has written yet.
+    //
+    // Pressing Enter in a text field also "clicks" the form's submit button
+    // (detail 0, focus still in the field). That's typing, not tapping: adding
+    // walk-up players one after another must keep working, so it's let through.
+    const focused = document.activeElement;
+    const fromEnterInField =
+      event.detail === 0 &&
+      (focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement) &&
+      focused.form !== null &&
+      focused.form === event.currentTarget.form;
+    if (!allowRapidClicks && !fromEnterInField) {
+      const now = Date.now();
+      if (now - lastClickAt.current < DOUBLE_TAP_WINDOW_MS) {
+        event.preventDefault();
+        return;
+      }
+      lastClickAt.current = now;
+    }
+
     const result = onClick?.(event);
     if (!hasLoadingBehavior) return;
     if (typeof (result as Promise<unknown>)?.then !== 'function') return;

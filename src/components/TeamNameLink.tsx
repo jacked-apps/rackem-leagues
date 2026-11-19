@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { PlayerNameLink } from './PlayerNameLink';
+import { NameLinkTrigger } from './NameLinkTrigger';
 import { formatPartialMemberNumber } from '@/types/member';
 import { useTeamRosterWithMembers } from '@/api/hooks/useTeamRosterWithMembers';
 
@@ -62,14 +63,7 @@ export function TeamNameLink({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          className={cn(
-            'text-info hover:text-info hover:underline cursor-pointer font-medium transition-colors',
-            className
-          )}
-        >
-          {teamName}
-        </button>
+        <NameLinkTrigger className={className}>{teamName}</NameLinkTrigger>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-2" align="start">
         {isLoading ? (

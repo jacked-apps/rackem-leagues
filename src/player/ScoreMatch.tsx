@@ -1373,7 +1373,9 @@ function ScoreMatchBody() {
             // scan already skips games in `handledConfirmations`; it
             // self-clears once realtime arrives and `action === 'none'` fires.
             handledConfirmations.current.add(scoringGame.gameNumber);
-            mutations.handleConfirmScore(
+            // Return the save so Save Game stays disabled ("Saving...") until it
+            // lands; a double tap on slow bar wifi would otherwise score twice.
+            return mutations.handleConfirmScore(
               scoringGame,
               breakAndRun,
               goldenBreak,

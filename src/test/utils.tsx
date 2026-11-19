@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserContext } from '@/context/UserContext';
 import type { UserContextType } from '@/context/UserContext';
 import type { User } from '@supabase/supabase-js';
+import { DOUBLE_TAP_WINDOW_MS } from '@/components/ui/button';
 
 /**
  * Custom render function that wraps components with necessary providers
@@ -71,6 +72,21 @@ export function renderWithProviders(
   }
 
   return render(ui, { wrapper: Wrapper, ...renderOptions });
+}
+
+/**
+ * Wait the way a person does between two taps on the same button.
+ *
+ * Every Button ignores a second tap that lands within DOUBLE_TAP_WINDOW_MS of
+ * the first (the double-tap lock). A test that taps the same spot twice on
+ * purpose (Review, then Confirm in the same place; Add, then Add again) calls
+ * this between the taps. A real wait, not fake timers, so nothing else in the
+ * test changes.
+ *
+ * @returns A promise that resolves once the lock has passed.
+ */
+export function pauseBetweenTaps(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, DOUBLE_TAP_WINDOW_MS + 10));
 }
 
 // Re-export everything from React Testing Library
