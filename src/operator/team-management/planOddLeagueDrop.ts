@@ -97,9 +97,11 @@ export function planOddLeagueDrop(
     const candidate = (t: string) => ({
       teamId: t, side: sideOf(origin.get(t)!, t), homePlayed: homePlayed(t), homeScheduled: homeScheduled(t), standingsIndex: rank(t),
     });
-    // First pair takes over the BYE's match row; a second pair takes the pulled match's row.
-    choice.pairs.forEach(([a, b], i) => {
-      const row = i === 0 ? bMatch : pulled!;
+    // The pair with Y (the bye-week team) takes over the BYE's match row and the
+    // other pair the pulled match's row, so every team that stays in a row keeps
+    // any lineup its captain already entered there.
+    choice.pairs.forEach(([a, b]) => {
+      const row = a === y || b === y ? bMatch : pulled!;
       const sides = pickHomeTeam(candidate(a), candidate(b), random);
       plan.updates.push({ matchId: row.id, weekId, ...sides });
       live.set(row.id, { ...row, ...sides });

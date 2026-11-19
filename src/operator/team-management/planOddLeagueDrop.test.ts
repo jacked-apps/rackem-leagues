@@ -42,6 +42,23 @@ describe('planOddLeagueDrop', () => {
     expect(p.deleteMatchIds).toEqual(['w5m1']);
   });
 
+  it('when a match is pulled in, each team that stays in a match row keeps that row (and its lineup)', () => {
+    // Teams 1 and 3 already met three times, so pairing them again is unfair
+    // and a third match gets pulled in. Then Y (team 3, the bye-week team) must
+    // stay in the BYE's match row, and the pulled row must keep one of its own teams.
+    const played = (n: number): DropPlanMatch => ({
+      id: `p${n}`, weekId: `p${n}`, weekDate: `2025-12-0${n}`, homeTeamId: 't1', awayTeamId: 't3', started: true,
+    });
+    const week5 = season(5, 0).filter((m) => m.weekId === 'w5');
+    const p = planOddLeagueDrop([played(1), played(2), played(3), ...week5], DROPPED, BYE, [], () => 0.5);
+    expect(p.updates).toHaveLength(2);
+    const byeRow = p.updates.find((u) => u.matchId === 'w5m3')!;
+    expect([byeRow.homeTeamId, byeRow.awayTeamId]).toContain('t3');
+    const pulledRow = p.updates.find((u) => u.matchId !== 'w5m3')!;
+    const original = week5.find((m) => m.id === pulledRow.matchId)!;
+    expect([original.homeTeamId, original.awayTeamId].some((t) => [pulledRow.homeTeamId, pulledRow.awayTeamId].includes(t))).toBe(true);
+  });
+
   it('a full 16-week season, dropped after week 1, ends close to the fairest split possible', () => {
     // 6 teams share the remaining matches across 15 pairs, so the fairest
     // possible worst pair is ceil(matches / 15). Ed's bar: "fairly even". The
