@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient } from '@/test/dbTestUtils';
+import { createTestClient, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -50,10 +50,7 @@ describe('Matches Table - RLS Tests', () => {
     });
 
     it('should allow selecting a specific match by id', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       const { data, error } = await client
         .from('matches')
@@ -71,10 +68,7 @@ describe('Matches Table - RLS Tests', () => {
     // Tests Supabase join syntax, not RLS. SELECT * test above is sufficient.
 
     it('should allow filtering matches by season', async () => {
-      if (!testSeasonId) {
-        console.warn('⚠️ No test season found, skipping test');
-        return;
-      }
+      requireSeed(testSeasonId, 'No test season found');
 
       const { data, error } = await client
         .from('matches')
@@ -89,10 +83,7 @@ describe('Matches Table - RLS Tests', () => {
 
   describe('UPDATE Operations', () => {
     it('should allow updating match status', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       // First, get the current status
       const { data: before } = await client
@@ -127,10 +118,7 @@ describe('Matches Table - RLS Tests', () => {
     });
 
     it('should allow updating match timestamps', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       const now = new Date().toISOString();
       const { error } = await client
@@ -142,10 +130,7 @@ describe('Matches Table - RLS Tests', () => {
     });
 
     it('should allow updating match scores', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       const { error } = await client
         .from('matches')
@@ -159,10 +144,7 @@ describe('Matches Table - RLS Tests', () => {
     });
 
     it('should allow updating lineup references', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       // Get a lineup ID from match_lineups
       const { data: lineup } = await client
@@ -186,10 +168,7 @@ describe('Matches Table - RLS Tests', () => {
 
   describe('DELETE Operations', () => {
     it('should allow deleting a match', async () => {
-      if (!testSeasonId) {
-        console.warn('⚠️ No test season found, skipping test');
-        return;
-      }
+      requireSeed(testSeasonId, 'No test season found');
 
       // First create a test match
       const { data: teams } = await client
@@ -198,10 +177,7 @@ describe('Matches Table - RLS Tests', () => {
         .eq('season_id', testSeasonId)
         .limit(2);
 
-      if (!teams || teams.length < 2) {
-        console.warn('⚠️ Not enough teams found, skipping test');
-        return;
-      }
+      requireSeed(teams?.[1], 'two teams in the test season');
 
       const { data: testMatch } = await client
         .from('matches')
@@ -216,10 +192,7 @@ describe('Matches Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testMatch) {
-        console.warn('⚠️ Could not create test match, skipping test');
-        return;
-      }
+      requireSeed(testMatch, 'Could not create test match');
 
       // Now delete it
       const { error } = await client

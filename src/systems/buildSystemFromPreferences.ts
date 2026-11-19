@@ -30,7 +30,16 @@
  * honest labels" bar is honored — we never throw because a combo isn't
  * fully wired.
  *
+ * MUTATION-SKIP COMMENTS — RE-CHECK WHEN YOU CHANGE THIS FILE.
+ * Several `// Stryker disable …: <reason>` comments below tell the mutation
+ * test to skip lines that can't change a live result TODAY (mostly fields
+ * nothing reads live yet: handicapSystem, pointsSystem, scoring). If your
+ * change makes any of those reasons untrue — e.g. a screen or score starts
+ * reading one of those fields — delete that skip comment and write a test
+ * for the line instead. A stale skip comment hides a real gap.
+ *
  * @see docs/plans/2026-04-28-001-feat-modular-league-system-plan.md (Unit 5.1)
+ * @see docs/plans/2026-11-17-001-feat-trustworthy-tests-plan.md (U8)
  */
 
 import type { SystemOverrides } from '@/types/systemOverrides';
@@ -125,6 +134,7 @@ function matchPreset(prefs: ResolvedSystemConfig): SystemModule | null {
  */
 function deriveAdHocKey(prefs: ResolvedSystemConfig): string {
   const { lineup_size, handicap_type, mechanism, points_calculator } = prefs;
+  // Stryker disable next-line StringLiteral: the key is a label for logs and tests; it never sets a target or a score.
   return `custom_${lineup_size}v${lineup_size}_${handicap_type}_${mechanism}_${points_calculator ?? 'null'}`;
 }
 
@@ -142,6 +152,7 @@ function deriveAdHocKey(prefs: ResolvedSystemConfig): string {
  * 5th variant). For unknown handicap_type values, falls back to null with
  * a warn, matching the resolver's graceful-degradation pattern.
  */
+// Stryker disable all: the handicapSystem field is never read live; only handicapMechanism is read live (composeMatchThresholds).
 function pickHandicapSystem(handicapType: string): HandicapSystem | null {
   if (
     handicapType === 'points' ||
@@ -159,6 +170,7 @@ function pickHandicapSystem(handicapType: string): HandicapSystem | null {
   );
   return null;
 }
+// Stryker restore all
 
 // ============================================================================
 // Threshold Chart Module dispatch
@@ -182,6 +194,7 @@ function pickThresholdChart(
   handicapType: string,
   mechanism: string,
 ): ThresholdChart | null {
+  // Stryker disable next-line all: pickHandicapMechanism checks "none" itself before it uses the chart, so this can't change the method a league gets.
   if (mechanism === 'none' || handicapType === 'none') {
     return null;
   }
@@ -190,10 +203,12 @@ function pickThresholdChart(
     if (handicapType === 'percentage') return gamesNeeded5v5Chart;
     return null;
   }
+  // Stryker disable next-line all: a fargo chart only becomes a method under start_points (pickHandicapMechanism checks), so this can't change the method.
   if (mechanism === 'start_points') {
     if (handicapType === 'fargo') return fargoFormulaChart;
     return null;
   }
+  // Stryker disable next-line all: returns null either way; race charts are reserved and no league uses race_length_adjustment.
   if (mechanism === 'race_length_adjustment') {
     // Both Race Chart variants (race_points / race_percentage) ship as RESERVED stubs.
     // No shipping Scoring System uses race_length_adjustment today; return null and
@@ -235,16 +250,19 @@ function pickHandicapMechanism(
   }
   if (mechanism === 'extra_games') {
     // Type-narrowed via chart.kind — only Games-Needed Charts pair with extra_games.
+    // Stryker disable all: every chart pickThresholdChart hands to extra_games is a games-needed chart, so this check can't change the method.
     if (
       chart.kind === 'games_needed_3v3' ||
       chart.kind === 'games_needed_3v3_formula' ||
       chart.kind === 'games_needed_5v5' ||
       chart.kind === 'games_needed_5v5_formula'
     ) {
+      // Stryker restore all
       return createExtraGamesMechanism(chart as GamesNeededChart);
     }
     return null;
   }
+  // Stryker disable all: pickThresholdChart only gives start_points a fargo chart, and race charts are reserved (never handed out), so these checks can't change the method.
   if (mechanism === 'start_points') {
     if (chart.kind === 'fargo_formula') {
       return createStartPointsMechanism(chart as FargoFormulaChart);
@@ -257,6 +275,7 @@ function pickHandicapMechanism(
     }
     return null;
   }
+  // Stryker restore all
   return null;
 }
 
@@ -273,6 +292,7 @@ function pickHandicapMechanism(
  * Returns null when `points_calculator` is null (the league doesn't track
  * points at all — no Points System applies).
  */
+// Stryker disable all: the pointsSystem field is never read live (live points come from match-adapter.ts); only handicapMechanism is read live (composeMatchThresholds).
 function pickPointsSystem(
   pointsCalculator: string | null,
   perGameAllocatorOverride?: import('./points-system/types').PerGameAllocator | null,
@@ -307,6 +327,7 @@ function pickPointsSystem(
   }
   return composition;
 }
+// Stryker restore all
 
 // ============================================================================
 // Scoring section dispatch
@@ -334,6 +355,7 @@ const NOT_YET_WIRED =
  * dispatch in the scoring mutation. After that, this `scoring` capability
  * on SystemModule is deprecated.
  */
+// Stryker disable all: the scoring field is never read live (MatchEndVerification and match-adapter.ts score matches); only handicapMechanism is read live (composeMatchThresholds).
 function pickScoring(pointsCalculator: string | null): SystemModule['scoring'] {
   if (pointsCalculator === 'accumulated_per_game') {
     // Per-game accumulation — reuse fargo5v5's implementation for any
@@ -380,6 +402,7 @@ function pickScoring(pointsCalculator: string | null): SystemModule['scoring'] {
     },
   };
 }
+// Stryker restore all
 
 // ============================================================================
 // Public API
@@ -426,11 +449,13 @@ export function buildSystemFromPreferences(
   // Normalize game_generation to the strict enum the Team Geometry Module expects.
   // Falls back to single_round_robin for unknown values per the existing graceful-degradation
   // pattern this resolver uses elsewhere.
+  // Stryker disable all: feeds teamGeometry only, which is never read live; only handicapMechanism is read live (composeMatchThresholds).
   const normalizedGameGeneration: 'single_round_robin' | 'double_round_robin' =
     prefs.game_generation === 'double_round_robin' ||
     prefs.game_generation === 'single_round_robin'
       ? prefs.game_generation
       : 'single_round_robin';
+  // Stryker restore all
 
   return {
     key: deriveAdHocKey(prefs),

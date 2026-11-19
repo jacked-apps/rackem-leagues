@@ -78,3 +78,32 @@ Tests assume the dev seed has been applied. If a DB test fails with
    uses the same seed. If two tests pick "the earliest team with a
    captain," they will fight. The `db` project running files one at a time is the
    workaround already in place.
+5. Insert the rows the test needs (known values), assert the EXACT values
+   the query returns, and include at least one row it must exclude. This
+   is what the CI query guard (`scripts/check-query-tests.mjs`) expects for
+   any PR that changes a query.
+
+## Every test must be proven able to fail
+
+Before a test counts as done: break the code the way the test exists to
+catch, see it go red, restore. Write the break and the red result under
+"Break records" in the PR description (`.github/pull_request_template.md`).
+DB-side breaks go inside `BEGIN … ROLLBACK`. Renames and moved imports are
+exempt. Expected values come from the rule or a real result, never from
+running the code and copying its output.
+
+## No silent skips
+
+`src/__tests__/unit/testHygiene.test.ts` fails CI on a skip or todo with no
+`// skip-reason: <why>` comment, any `.only`, a test file no project runs,
+and a test that `return`s part-way through. Missing seed data is a failure,
+not a skip: `requireSeed(testMatchId, 'No test match found')` from
+`src/test/dbTestUtils.ts`.
+
+## The season replay (scoring answer key)
+
+`src/__tests__/unit/seasonReplay.test.ts` re-scores every match of the one
+real, completed season (anonymised fixture in `src/__tests__/fixtures/`) and
+must reproduce what the league accepted. If it goes red after a scoring
+change, the change would have scored a real night differently — fix the
+code, don't edit the fixture (its contents are hash-pinned).

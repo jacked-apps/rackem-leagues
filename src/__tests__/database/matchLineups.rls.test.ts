@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient } from '@/test/dbTestUtils';
+import { createTestClient, executeSql, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -46,10 +46,7 @@ describe('Match Lineups Table - RLS Tests', () => {
     });
 
     it('should allow viewing lineup by id', async () => {
-      if (!testLineupId) {
-        console.warn('⚠️ No test lineup found, skipping test');
-        return;
-      }
+      requireSeed(testLineupId, 'No test lineup found');
 
       const { data, error } = await client
         .from('match_lineups')
@@ -62,10 +59,7 @@ describe('Match Lineups Table - RLS Tests', () => {
     });
 
     it('should allow viewing lineups for a match', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       const { data, error } = await client
         .from('match_lineups')
@@ -83,10 +77,7 @@ describe('Match Lineups Table - RLS Tests', () => {
 
   describe('DELETE Operations', () => {
     it('should allow deleting lineup entries', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       // match_lineups has a UNIQUE (match_id, team_id), NOT-NULL handicaps, and
       // rows are auto-created by a trigger — so a synthetic lineup can't be
@@ -99,7 +90,8 @@ describe('Match Lineups Table - RLS Tests', () => {
         .eq('id', testMatchId)
         .single();
 
-      if (!seedMatch?.home_team_id || !seedMatch?.away_team_id) return;
+      requireSeed(seedMatch?.home_team_id, 'seedMatch?.home_team_id is required');
+      requireSeed(seedMatch?.away_team_id, 'seedMatch?.away_team_id is required');
 
       const { data: throwawayMatch } = await client
         .from('matches')
@@ -114,7 +106,7 @@ describe('Match Lineups Table - RLS Tests', () => {
         .select('id')
         .single();
 
-      if (!throwawayMatch) return;
+      requireSeed(throwawayMatch, 'throwawayMatch is required');
 
       // The insert trigger auto-created a lineup per team; grab one to delete.
       const { data: lineup } = await client
@@ -184,35 +176,28 @@ describe('Preferences Tables - RLS Tests', () => {
   });
 
   describe('Preferences Table - INSERT/UPDATE Operations', () => {
+    // Rewritten 2026-11-17: this used to read `preferences.league_id` and
+    // `preference_action`, columns preferences no longer has. The query
+    // errored, the test returned early, and it "passed" for months. It now
+    // makes its own row (preferences are keyed by entity, and the seed has
+    // none), updates it through the app's client, and reads the value back.
     it('should allow updating preferences', async () => {
-      if (!testLeagueId) {
-        console.warn('⚠️ No test league found, skipping test');
-        return;
+      const [row] = await executeSql(
+        `INSERT INTO public.preferences (entity_type, entity_id, profanity_filter_enabled)
+         VALUES ('league', gen_random_uuid(), false) RETURNING id`,
+      );
+      try {
+        const { error } = await client
+          .from('preferences')
+          .update({ profanity_filter_enabled: true })
+          .eq('id', row.id);
+        expect(error).toBeNull();
+
+        const [after] = await executeSql('SELECT profanity_filter_enabled FROM public.preferences WHERE id = $1', [row.id]);
+        expect(after.profanity_filter_enabled).toBe(true);
+      } finally {
+        await executeSql('DELETE FROM public.preferences WHERE id = $1', [row.id]);
       }
-
-      // Get an existing preference
-      const { data: pref } = await client
-        .from('preferences')
-        .select('id, preference_action')
-        .eq('league_id', testLeagueId)
-        .limit(1)
-        .single();
-
-      if (!pref) return;
-
-      const newAction = pref.preference_action === 'blackout' ? 'ignore' : 'blackout';
-      const { error } = await client
-        .from('preferences')
-        .update({ preference_action: newAction })
-        .eq('id', pref.id);
-
-      expect(error).toBeNull();
-
-      // Restore
-      await client
-        .from('preferences')
-        .update({ preference_action: pref.preference_action })
-        .eq('id', pref.id);
     });
   });
 
@@ -228,10 +213,7 @@ describe('Preferences Tables - RLS Tests', () => {
     });
 
     it('should allow viewing blackouts for an organization', async () => {
-      if (!testOrgId) {
-        console.warn('⚠️ No test organization found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test organization found');
 
       const { data, error } = await client
         .from('operator_blackout_preferences')
@@ -244,34 +226,28 @@ describe('Preferences Tables - RLS Tests', () => {
   });
 
   describe('Operator Blackout Preferences - INSERT/UPDATE Operations', () => {
+    // Rewritten 2026-11-17: this used to update `blackout_name`, a column
+    // the table doesn't have, and returned early (passing) because the seed
+    // has no blackout rows. It now makes its own row and checks the update.
     it('should allow updating blackout preferences', async () => {
-      if (!testOrgId) {
-        console.warn('⚠️ No test organization found, skipping test');
-        return;
+      requireSeed(testOrgId, 'No test organization found');
+      const [row] = await executeSql(
+        `INSERT INTO public.operator_blackout_preferences (organization_id, preference_action, preference_type, custom_name, custom_start_date, custom_end_date)
+         VALUES ($1, 'blackout', 'custom', 'RLS test blackout', '2099-12-24', '2099-12-26') RETURNING id`,
+        [testOrgId],
+      );
+      try {
+        const { error } = await client
+          .from('operator_blackout_preferences')
+          .update({ custom_name: 'Updated Blackout' })
+          .eq('id', row.id);
+        expect(error).toBeNull();
+
+        const [after] = await executeSql('SELECT custom_name FROM public.operator_blackout_preferences WHERE id = $1', [row.id]);
+        expect(after.custom_name).toBe('Updated Blackout');
+      } finally {
+        await executeSql('DELETE FROM public.operator_blackout_preferences WHERE id = $1', [row.id]);
       }
-
-      // Get an existing blackout
-      const { data: blackout } = await client
-        .from('operator_blackout_preferences')
-        .select('id, blackout_name')
-        .eq('organization_id', testOrgId)
-        .limit(1)
-        .single();
-
-      if (!blackout) return;
-
-      const { error } = await client
-        .from('operator_blackout_preferences')
-        .update({ blackout_name: 'Updated Blackout' })
-        .eq('id', blackout.id);
-
-      expect(error).toBeNull();
-
-      // Restore
-      await client
-        .from('operator_blackout_preferences')
-        .update({ blackout_name: blackout.blackout_name })
-        .eq('id', blackout.id);
     });
   });
 });

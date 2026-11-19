@@ -48,4 +48,13 @@ describe('metGoal', () => {
     // home target null; away 6 < 8 (not met) → no decision
     expect(metGoal(10, null, 6, 8)).toEqual({ winner: null });
   });
+
+  it('treats a null AWAY target the same way (a missing target never counts as met)', () => {
+    // away target null → away cannot meet; home 10 >= 10 (met) → home wins.
+    // (A missing target must not read as 0 — that would make it "both met"
+    // and turn a home win into a tie.)
+    expect(metGoal(10, 10, 9, null)).toEqual({ winner: 'home' });
+    // away target null; home 7 < 10 (not met) → no decision
+    expect(metGoal(7, 10, 9, null)).toEqual({ winner: null });
+  });
 });
