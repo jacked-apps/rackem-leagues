@@ -19,10 +19,10 @@
  * the query is one Postgres will actually answer, which is the failure that
  * got through.
  *
- * Needs a seeded local database with played matches — see
- * `database/dev_play_matches.sql`. Skips rather than fails when there are none,
- * since an empty database is a legitimate state and a red suite would just
- * teach people to ignore it.
+ * It builds its OWN completed match with one played game (and removes it
+ * after), so it runs on any database — including CI's, which has no played
+ * games. It used to look for "any played game", find none in CI, and return
+ * early: passing while checking nothing.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -31,24 +31,47 @@ import { closePostgresPool, executeSql } from '@/test/dbTestUtils';
 import { GAME_SELECT } from '@/api/queries/playerGameHistory';
 
 let anyPlayer: string | null = null;
+let matchId: string | null = null;
 
 beforeAll(async () => {
-  const rows = await executeSql(
-    `SELECT home_player_id AS id
-       FROM public.match_games
-      WHERE home_player_id IS NOT NULL
-      LIMIT 1`
+  // Only structural rows come from the seed (a season week, a member); the
+  // played game the query reads is ours.
+  const weeks = await executeSql(
+    `SELECT id AS week_id, season_id FROM public.season_weeks ORDER BY id LIMIT 1`
   );
-  anyPlayer = rows[0]?.id ?? null;
+  const members = await executeSql(`SELECT id FROM public.members ORDER BY id LIMIT 1`);
+  requireSeed(weeks[0], 'a season week');
+  requireSeed(members[0], 'a member');
+
+  const match = await executeSql(
+    `INSERT INTO public.matches (season_id, season_week_id, match_number, status)
+     VALUES ($1, $2, 9902, 'completed')
+     RETURNING id`,
+    [weeks[0].season_id, weeks[0].week_id]
+  );
+  matchId = match[0].id;
+  anyPlayer = members[0].id;
+
+  await executeSql(
+    `INSERT INTO public.match_games
+       (match_id, game_number, home_action, away_action, game_type, home_player_id, is_tiebreaker)
+     VALUES ($1, 1, 'breaks', 'racks', 'eight_ball', $2, false)`,
+    [matchId, anyPlayer]
+  );
 });
 
 afterAll(async () => {
+  // Ours to remove — the game references the match.
+  if (matchId) {
+    await executeSql(`DELETE FROM public.match_games WHERE match_id = $1`, [matchId]);
+    await executeSql(`DELETE FROM public.matches WHERE id = $1`, [matchId]);
+  }
   await closePostgresPool();
 });
 
 describe('playerGameHistory — the select PostgREST has to answer', () => {
   it('resolves every embed without an ambiguity error', async () => {
-    requireSeed(anyPlayer, 'No played games in this database — run database/dev_play_matches.sql');
+    requireSeed(anyPlayer, 'the player on the game this test created');
 
     const supabase = createServiceClient();
     const { data, error } = await supabase
@@ -66,7 +89,7 @@ describe('playerGameHistory — the select PostgREST has to answer', () => {
   });
 
   it('returns the shape the mapper expects, not just any rows', async () => {
-    requireSeed(anyPlayer, 'anyPlayer is required');
+    requireSeed(anyPlayer, 'the player on the game this test created');
 
     const supabase = createServiceClient();
     const { data, error } = await supabase
@@ -78,7 +101,7 @@ describe('playerGameHistory — the select PostgREST has to answer', () => {
       .limit(1);
 
     expect(error).toBeNull();
-    requireSeed(data?.[0], 'a completed regular game for the seeded player');
+    requireSeed(data?.[0], 'the completed game this test created');
 
     // Cast through unknown: the generated types don't describe aliased embeds,
     // and this test is about the runtime shape rather than the declared one.
