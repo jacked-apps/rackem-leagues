@@ -1,5 +1,5 @@
 /**
- * @fileoverview The pricing example's cost and prize-pool share.
+ * @fileoverview The pricing example's cost, prize-pool share and paid-by week.
  *
  * Expected numbers are worked out by hand from the price rule ($1 per team per
  * week + $10 setup) and the example dues (5 players × $10 a league night =
@@ -7,6 +7,10 @@
  *   6 teams:  6×16×1+10 = $106;  6×16×50 = $4,800;  106/4800 = 2.21% → 2.2%
  *   8 teams:  8×16×1+10 = $138;  8×16×50 = $6,400;  138/6400 = 2.16% → 2.2%
  *  10 teams: 10×16×1+10 = $170; 10×16×50 = $8,000;  170/8000 = 2.13% → 2.1%
+ *
+ * Paid for by: weekly dues are teams × $50. Week 1 alone covers each example
+ * (6: $300 ≥ $106; 8: $400 ≥ $138; 10: $500 ≥ $170). A 1-team, 52-week
+ * league costs 52+10 = $62 against $50 a week → week 2.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -16,19 +20,24 @@ import { seasonPricing } from './pricingMath';
 
 describe('seasonPricing', () => {
   it.each([
-    [6, 106, 4800, '2.2%'],
-    [8, 138, 6400, '2.2%'],
-    [10, 170, 8000, '2.1%'],
-  ])('%i teams, 16 weeks → $%i of a $%i pool = %s', (teams, cost, pool, share) => {
-    expect(seasonPricing(teams, 16)).toEqual({ cost, pool, share });
+    [6, 106, 4800, 300, '2.2%'],
+    [8, 138, 6400, 400, '2.2%'],
+    [10, 170, 8000, 500, '2.1%'],
+  ])('%i teams, 16 weeks → $%i of a $%i pool ($%i a week) = %s, paid by week 1', (teams, cost, pool, weeklyDues, share) => {
+    expect(seasonPricing(teams, 16)).toEqual({ cost, pool, weeklyDues, share, paidByWeek: 1 });
+  });
+
+  it('counts on to week 2 when one week of dues is not enough', () => {
+    expect(seasonPricing(1, 52).paidByWeek).toBe(2);
   });
 });
 
 describe('PricingExampleRow', () => {
-  it('shows the cost and the share of the prize pool', () => {
+  it('shows the cost, the share of the prize pool and the paid-by week', () => {
     renderWithProviders(<PricingExampleRow teams={8} weeks={16} />);
     expect(screen.getByText('$138')).toBeInTheDocument();
     expect(screen.getByText('≈ 2.2% of prize pool')).toBeInTheDocument();
+    expect(screen.getByText('paid for by week 1 dues')).toBeInTheDocument();
   });
 
   it('the info button shows the math', async () => {
@@ -41,5 +50,6 @@ describe('PricingExampleRow', () => {
     expect(screen.getByText('into the prize pool')).toBeInTheDocument();
     expect(screen.getByText(/8 teams × 16 weeks × \$50 = \$6,400/)).toBeInTheDocument();
     expect(screen.getByText(/8 teams × 16 weeks × \$1 \+ \$10 setup = \$138/)).toBeInTheDocument();
+    expect(screen.getByText(/By week 1: \$400 collected, which covers the whole \$138 season price/)).toBeInTheDocument();
   });
 });

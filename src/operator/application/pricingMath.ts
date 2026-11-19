@@ -6,6 +6,7 @@
  *   cost       = teams × weeks × $1 + $10 setup
  *   prize pool = teams × weeks × $50 (example: 5 players × $10 a league night)
  *   share      = cost ÷ prize pool, one decimal
+ *   paid by    = the first week whose dues so far cover the whole price
  */
 
 /** Price per team per week, in dollars. */
@@ -23,14 +24,26 @@ export const EXAMPLE_POOL_PER_TEAM_WEEK = EXAMPLE_PLAYERS_PER_TEAM * EXAMPLE_DUE
 export const dollars = (n: number) => `$${n.toLocaleString('en-US')}`;
 
 /**
- * The cost, prize pool and share for one example league size.
+ * The cost, prize pool, share, and how soon dues cover the cost, for one
+ * example league size.
+ *
+ * `paidByWeek` is the first week whose running total of dues
+ * (teams × $50 per week) reaches the season's whole price.
  *
  * @param teams - Teams in the league.
  * @param weeks - Regular-season weeks.
- * @returns cost and pool in dollars, and share as a one-decimal percent string.
+ * @returns cost, pool and weekly dues in dollars; share as a one-decimal
+ *   percent string; paidByWeek as a week number.
  */
 export function seasonPricing(teams: number, weeks: number) {
   const cost = teams * weeks * PRICE_PER_TEAM_WEEK + SETUP_FEE;
-  const pool = teams * weeks * EXAMPLE_POOL_PER_TEAM_WEEK;
-  return { cost, pool, share: `${((cost / pool) * 100).toFixed(1)}%` };
+  const weeklyDues = teams * EXAMPLE_POOL_PER_TEAM_WEEK;
+  const pool = weeklyDues * weeks;
+  return {
+    cost,
+    pool,
+    weeklyDues,
+    share: `${((cost / pool) * 100).toFixed(1)}%`,
+    paidByWeek: Math.ceil(cost / weeklyDues),
+  };
 }

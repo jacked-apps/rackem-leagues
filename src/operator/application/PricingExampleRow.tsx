@@ -3,6 +3,9 @@
  * Become a League Operator: the season's cost, plus what that is as a share
  * of the prize pool, with an InfoButton showing the math.
  *
+ * Also shows how soon the season is paid for: the first week whose dues so
+ * far cover the whole price (Ed, 2026-11-19).
+ *
  * Why the share: "$138" on its own reads like a lot; next to a $6,400 prize
  * pool it's about 2%. Showing it that way makes the real size of the fee
  * clear (Ed, 2026-11-19).
@@ -35,7 +38,7 @@ interface PricingExampleRowProps {
 }
 
 export function PricingExampleRow({ teams, weeks, last = false }: PricingExampleRowProps) {
-  const { cost, pool, share } = seasonPricing(teams, weeks);
+  const { cost, pool, weeklyDues, share, paidByWeek } = seasonPricing(teams, weeks);
 
   return (
     <div className={`flex justify-between items-start gap-4 py-2 ${last ? '' : 'border-b border-border'}`}>
@@ -60,8 +63,15 @@ export function PricingExampleRow({ teams, weeks, last = false }: PricingExample
             <p className="mt-2">
               {dollars(cost)} ÷ {dollars(pool)} ≈ {share}. Playoff weeks are free, so they add nothing.
             </p>
+            <p className="mt-2">
+              Dues each week: {teams} teams × {dollars(EXAMPLE_POOL_PER_TEAM_WEEK)} = {dollars(weeklyDues)}
+            </p>
+            <p>
+              By week {paidByWeek}: {dollars(weeklyDues * paidByWeek)} collected, which covers the whole {dollars(cost)} season price.
+            </p>
           </InfoButton>
         </div>
+        <div className="text-sm text-muted-foreground">paid for by week {paidByWeek} dues</div>
       </div>
     </div>
   );
