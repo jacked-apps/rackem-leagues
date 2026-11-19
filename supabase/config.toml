@@ -186,15 +186,17 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
+# Real SMTP is PRODUCTION-ONLY and set in the hosted dashboard (MXroute; see
+# docs/ops/mxroute-production-email.md). Local dev keeps it OFF so every email
+# lands in Mailpit (http://localhost:54324) and nothing real is sent.
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# host = "heracles.mxrouting.net"
+# port = 465
+# user = "noreply@rackemleagues.com"
+# pass = "env(MXROUTE_SMTP_PASSWORD)"
+# admin_email = "noreply@rackemleagues.com"
+# sender_name = "Rack'em Leagues"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
@@ -208,6 +210,14 @@ otp_expiry = 3600
 [auth.email.template.magic_link]
 subject = "Your Rack'em sign-in code"
 content_path = "./supabase/templates/magic_link.html"
+
+# Confirm signup: a BRAND-NEW user gets this one instead of magic_link when
+# "Confirm email" is on (production). It carries the code (passwordless) AND the
+# /confirm link (password Register), so both flows work. Locally confirmations are
+# off, so it rarely fires; it's wired here so the file stays the source of truth.
+[auth.email.template.confirmation]
+subject = "Welcome to Rack'em - confirm your email"
+content_path = "./supabase/templates/confirmation.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.

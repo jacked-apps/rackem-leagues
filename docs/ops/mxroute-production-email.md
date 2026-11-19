@@ -2,10 +2,10 @@
 
 **Claude: if Jack (or Ed) opened this file, walk them through the steps below
 one at a time.** Wait for a "done" before moving to the next step. They do the
-clicking (MXroute panel, the domain's DNS host, the Supabase dashboard). You can
-run the DNS lookups in Step 2 yourself. **Never ask for the mailbox password in
-chat or in any file.** It goes straight into the Supabase dashboard and a
-password manager, nowhere else.
+clicking (MXroute panel, the domain's DNS host, the Supabase dashboard). You run
+the commands. **Never ask for the mailbox password in chat or in any file.** It
+goes straight into the Supabase dashboard and a password manager, nowhere else.
+**No app code needs to change.** Everything code-side is already on this branch.
 
 ## Why this exists
 
@@ -22,11 +22,20 @@ password manager, nowhere else.
 - Email invites (`supabase/functions/send-invite`) are a separate, later job.
   They're not part of this runbook.
 
+## What's already done (checked 2026-11-19)
+
+- `pnpm run check:email-dns` showed SPF ✅ (`include:mxlogin.com`), DMARC ✅
+  (`p=none`), and MX ✅ (`heracles.mxrouting.net`). **DKIM ❌**: the key was
+  entered as **4 separate TXT records** instead of one, which breaks the
+  signature. Step 2 fixes it.
+- Templates ready to paste: `supabase/templates/magic_link.html` (sign-in code)
+  and `supabase/templates/confirmation.html` (new-user code + confirm link).
+
 ## Step 0 — Look before changing anything
 
 Production Supabase project (ref `cibboozjixxyypzchtvr`) → **Authentication →
 Emails → SMTP Settings**. Write down what's there now. If custom SMTP is already
-on, note the sender and host. You may only need Steps 5–6.
+on, note the sender and host before replacing them.
 
 ## Step 1 — A dedicated sending mailbox
 
@@ -35,22 +44,18 @@ and save the password in a password manager. It's kept separate because MXroute
 caps sending at **400 emails per hour per address** and suspends an address
 that goes over. That way a busy night can never lock up ed@, jack@ or support@.
 
-Note the **SMTP server hostname** the MXroute panel shows for the account (it
-looks like `something.mxrouting.net`).
+## Step 2 — Fix the DKIM record
 
-## Step 2 — DNS records on rackemleagues.com (Claude can check these)
-
-Run the three lookups and check each result:
-
-| Record | Lookup | Should contain |
-|---|---|---|
-| SPF | `nslookup -type=TXT rackemleagues.com` | exactly **one** `v=spf1 …` record that includes `include:mxroute.com` |
-| DKIM | `nslookup -type=TXT x._domainkey.rackemleagues.com` | a `v=DKIM1; k=rsa; p=…` key (copy the exact record from the MXroute panel; confirm the selector there too) |
-| DMARC | `nslookup -type=TXT _dmarc.rackemleagues.com` | `v=DMARC1; p=none; …` (start with `p=none`; tighten later) |
-
-If one is missing, add it wherever the domain's DNS is hosted. DNS changes can
-take up to an hour to show. Without all three, Gmail tends to spam or reject the
-codes.
+1. Wherever the domain's DNS is hosted, find the TXT records named
+   `x._domainkey` (there are 4). **Delete all four.**
+2. In the MXroute panel (Domains → rackemleagues.com → DKIM / DNS), copy the
+   **whole** DKIM value (it starts `v=DKIM1;k=rsa;p=` and is ~400 characters).
+3. Add **one** TXT record: name `x._domainkey`, value = the whole thing. If the
+   DNS screen rejects values over 255 characters, look for its "long TXT"
+   option, or wrap the value as several quoted strings in ONE record
+   (`"first 250 chars" "rest"`). Never split it into separate records.
+4. Claude: run `pnpm run check:email-dns` until all four lines say PASS. DNS
+   can take up to an hour to update.
 
 ## Step 3 — Point production Supabase at MXroute
 
@@ -58,7 +63,7 @@ codes.
 
 - Sender email: `noreply@rackemleagues.com`
 - Sender name: `Rack'em Leagues`
-- Host: the MXroute hostname from Step 1
+- Host: `heracles.mxrouting.net` (the MX host the check prints)
 - Port: `465`
 - Username: `noreply@rackemleagues.com` (the full address)
 - Password: the mailbox password
@@ -71,17 +76,19 @@ That's plenty for sign-ins and stays well under MXroute's 400/hour.
 
 ## Step 5 — Email templates (production)
 
-**Authentication → Emails → Templates.**
+**Authentication → Emails → Templates.** Paste each **whole file**; the comment
+at the top is invisible in email. First save the old body somewhere, in case you
+need to roll back.
 
-1. **Magic Link** (this is the sign-in code email):
-   - Subject: `Your Rack'em sign-in code`
-   - Body: paste the contents of `supabase/templates/magic_link.html` (from
-     `<table` to the end; leave out the top comment). It must show
-     `{{ .Token }}`, the code, and not a link.
-   - The logo loads from `{{ .SiteURL }}/logo-main.png`. Check **Authentication →
-     URL Configuration → Site URL** is the live site's address.
-2. **Confirm signup**: leave it alone for now. Step 6.3 tells us whether it
-   needs a change.
+| Template | Subject | Body |
+|---|---|---|
+| **Magic Link** | `Your Rack'em sign-in code` | `supabase/templates/magic_link.html` |
+| **Confirm signup** | `Welcome to Rack'em - confirm your email` | `supabase/templates/confirmation.html` |
+
+Brand-new users get *Confirm signup* instead of *Magic Link*, so it carries both
+the code (for the sign-in screen) and a confirm button (for the password Register
+flow, which lands on `/confirm`). Also check **Authentication → URL Configuration
+→ Site URL** is the live site's address, since the logo and button use it.
 
 ## Step 6 — Test, in this order
 
@@ -89,15 +96,11 @@ That's plenty for sign-ins and stays well under MXroute's 400/hour.
    should arrive from `noreply@rackemleagues.com` and not land in spam. In Gmail,
    open **⋮ → Show original**: SPF, DKIM and DMARC should all say **PASS**.
 2. **Code sign-in with an existing account:** a code arrives and signing in works.
-3. **Code sign-in with a brand-new email address.**
-   - Code arrives → done.
-   - Instead you get a "Confirm your signup" email with a **link and no code** →
-     that's because "Confirm email" is on, so Supabase sends brand-new users the
-     *Confirm signup* template instead. Fix: **add** the code box from
-     `magic_link.html` (the `{{ .Token }}` block) into the Confirm signup
-     template, **keeping its existing link.** The password Register flow still
-     uses that link (`/confirm`, `src/login/EmailConfirmation.tsx`). Then re-test.
-4. **Something fails?** Supabase → **Logs → Auth** shows SMTP errors (wrong
+3. **Code sign-in with a brand-new email address:** the welcome email arrives
+   with a code, and typing it in signs you in.
+4. **Register with a password using another new address:** the welcome email's
+   button confirms the account.
+5. **Something fails?** Supabase → **Logs → Auth** shows SMTP errors (wrong
    password, blocked port, rejected sender).
 
 ## Step 7 — Finish
