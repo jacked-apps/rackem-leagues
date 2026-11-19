@@ -1,9 +1,10 @@
 /**
  * @fileoverview planOddLeagueDrop on the REAL 8-slot chart (7 teams + BYE).
  *
- * Slot 8 is the BYE, team 7 drops after week 3. Ed's example is week 5 of the
- * chart: 7 vs 1 and 3 vs BYE become 3 vs 1. Expected values come from his
- * rule (2026-11-19), not from running the code.
+ * Slot 8 is the BYE, team 7 drops. Ed's example is week 5 of the chart: 7 vs 1
+ * and 3 vs BYE become 3 vs 1. Expected values come from his rules
+ * (2026-11-19) and from what is mathematically possible, not from running
+ * the code.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -32,11 +33,32 @@ describe('planOddLeagueDrop', () => {
   const matches = season(14, 3);
   const plan = planOddLeagueDrop(matches, DROPPED, BYE, ['t1', 't2', 't3', 't4', 't5', 't6'], never);
 
-  it("Ed's example (week 5): 7 vs 1 and 3 vs BYE become 3 (home) vs 1 (away)", () => {
-    expect(plan.updates.find((u) => u.weekId === 'w5')).toEqual({
-      matchId: 'w5m3', weekId: 'w5', homeTeamId: 't3', awayTeamId: 't1',
-    });
-    expect(plan.deleteMatchIds).toContain('w5m1');
+  it("Ed's example (week 5 alone): 7 vs 1 and 3 vs BYE become 3 (home) vs 1 (away)", () => {
+    // Nothing played yet, so every option is equally fair and the plain swap
+    // (fewest teams changed) wins. 3 was home and 1 was away, so both keep sides.
+    const week5 = season(5, 0).filter((m) => m.weekId === 'w5');
+    const p = planOddLeagueDrop(week5, DROPPED, BYE, [], never);
+    expect(p.updates).toEqual([{ matchId: 'w5m3', weekId: 'w5', homeTeamId: 't3', awayTeamId: 't1' }]);
+    expect(p.deleteMatchIds).toEqual(['w5m1']);
+  });
+
+  it('a full 16-week season, dropped after week 1, ends close to the fairest split possible', () => {
+    // 6 teams share the remaining matches across 15 pairs, so the fairest
+    // possible worst pair is ceil(matches / 15). Ed's bar: "fairly even". The
+    // plain swap left one pair at 8 here; allow at most one above the ideal.
+    const full = season(16, 1);
+    const p = planOddLeagueDrop(full, DROPPED, BYE, [], () => 0.5);
+    const deleted = new Set(p.deleteMatchIds);
+    const updated = new Map(p.updates.map((u) => [u.matchId, u]));
+    const met = new Map<string, number>();
+    for (const m of full.filter((m) => !deleted.has(m.id)).map((m) => updated.get(m.id) ?? m)) {
+      if ([m.homeTeamId, m.awayTeamId].some((t) => t === DROPPED || t === BYE)) continue;
+      const k = [m.homeTeamId, m.awayTeamId].sort().join('-');
+      met.set(k, (met.get(k) ?? 0) + 1);
+    }
+    const total = [...met.values()].reduce((s, n) => s + n, 0);
+    expect(met.size).toBe(15); // every pair still meets
+    expect(Math.max(...met.values())).toBeLessThanOrEqual(Math.ceil(total / 15) + 1);
   });
 
   it('a week where the dropped team already had the bye only removes that match', () => {
