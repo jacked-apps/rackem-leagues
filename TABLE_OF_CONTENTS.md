@@ -711,7 +711,7 @@ how to add a new test, demo recording, cleanup model).
 ### 📄 Pages & Routes
 
 #### Static Pages
-- `about/About.tsx` - About page
+- `about/About.tsx` - Public About page: skimmable feature lists (bold title + short explanation) for players, league operators, tournaments, what's next; then pricing, philosophy
 - `about/Pricing.tsx` - Pricing breakdown page
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
 - `pages/Home.tsx` - Public landing/home page: "Go to My Teams" for members; Sign in / Create account for visitors; "Find a League" + "Find a Tournament" (Coming Soon) first, then Run Your Own League + Rules + Learn + About cards

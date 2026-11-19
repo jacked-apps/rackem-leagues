@@ -1,184 +1,165 @@
+/**
+ * @fileoverview About page (public, linked from the Home page's About Us card).
+ *
+ * Written for a visitor deciding whether to sign up. Each section is a list of
+ * features: a bold title you can skim, then one or two plain sentences you can
+ * read or skip (Ed, 2026-11-16). Describe only what is live today; planned
+ * work goes under "What's Next". Avoid absolute words ("always", "never").
+ */
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
+
+/** A section heading over a stack of features. */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <h2 className="text-2xl font-semibold">{title}</h2>
+      {/* Own wrapper so the first Feature is a first child (no divider on top). */}
+      <div className="space-y-4">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * One feature: a skimmable title on its own line, the explanation under it in
+ * quieter text, and a divider between features (size + weight + rule, so the
+ * split doesn't depend on color).
+ */
+function Feature({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="border-t pt-4 first:border-t-0 first:pt-0">
+      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mt-1 text-muted-foreground leading-relaxed">{children}</p>
+    </div>
+  );
+}
+
+const linkClass = 'text-primary hover:text-primary/80 font-medium transition-colors';
 
 export const About: React.FC = () => {
   return (
     <div>
-      <PageHeader
-        backTo="/"
-        backLabel="Home"
-        title="Rack'em Leagues"
-        subtitle="Your league, your way."
-      />
-      <div className="max-w-2xl mx-auto p-6 space-y-6">
-        <section>
-          <h2 className="text-2xl font-semibold mb-3">What We Do</h2>
-          <p className="text-foreground leading-relaxed">
-            Rackem Leagues Network empowers independent pool league operators with professional-grade management tools.
-            Whether you're a bar owner, pool hall operator, or experienced player looking to start your own league,
-            our platform handles the complexity so you can focus on growing your pool community.
-          </p>
-        </section>
+      <PageHeader backTo="/" backLabel="Home" title="Rack'em Leagues" subtitle="Your league, your way." />
+      <div className="max-w-2xl mx-auto p-6 space-y-10">
+        <p className="text-foreground leading-relaxed">
+          Rack'em Leagues gives independent pool league operators professional-grade tools to run their leagues,
+          and gives their players one place to score, follow standings and keep in touch.
+        </p>
 
-        <section>
-          <h2 className="text-2xl font-semibold mb-3">Current Features</h2>
-          <ul className="space-y-2 text-foreground">
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>League Operator Dashboard:</strong> Centralized control for all league operations and settings</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>League Creation Wizard:</strong> Complete step-by-step setup for 8-Ball, 9-Ball, and 10-Ball leagues with everything you need to run professionally</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Flexible Formats:</strong> Build your league your way—choose your team size and the number of players per team, then pair it with the handicap system and scoring system that fit how your league actually plays</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Smart Scheduling:</strong> Automated conflict detection around US holidays, BCA and APA championships with community-verified tournament dates</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Season Management:</strong> Create and manage multiple seasons with complete team and match tracking</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Team Registration:</strong> Optionally allow team captains to update their own roster, home venue, and team name—you control the level of delegation</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Match Tracking:</strong> Automatic handicap calculations, live collaborative scoring, and instant standings and statistical updates</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Venue Management:</strong> Support for in-house and traveling leagues with multi-venue coordination and adjustable table assignments</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Advanced Handicaps:</strong> Choose from 2 time-tested handicap systems, each adjustable and customizable—contact us to discuss adding your own time-tested system</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Member Management:</strong> Complete profile system with status indicators and player information tracking</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>In-App Messaging:</strong> Team chats and a captains' chat are created automatically and stay in sync with your rosters—plus private direct messaging, league and season announcements, and an optional profanity filter each player turns on or off for themselves</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Educational Resources:</strong> Detailed guides explaining handicap systems and format differences, plus the official BCA / CSI rulebook built right in—search any rule to settle a dispute</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Player Onboarding:</strong> A simple, streamlined join flow—share one link and new players sign up and land on their team in minutes, with captain approval keeping rosters accurate</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Scorecard Dispute Resolution:</strong> Player-verified scoring with full accountability—track who scored and verified each game for easy dispute resolution</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Playoffs:</strong> Configure and run your postseason—playoff settings at the organization or league level, bracket setup, and management through to a champion</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Live Spectating:</strong> Players and fans follow matches in real time, with scoreboards that update as each game is scored</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Leaderboards &amp; Achievements:</strong> Season standings, top shooters, and team stats, plus a Feats of Excellence board celebrating break-and-runs, golden breaks, and other standout shots</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Season Roll-Forward &amp; Captain Re-Up:</strong> Launch a new season from a previous one in a few clicks—rosters and settings carry forward, and captains can re-up their own teams</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Push Notifications:</strong> Get a message on your phone even when the app is closed, with controls that respect your evening—quiet hours, a per-conversation-type default, and a per-chat setting. Busy group chats notify once and then hold off for a set stretch, so a lively team chat doesn&apos;t become a buzzing phone</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Tournament Brackets:</strong> Run a single or double elimination bracket for a bar night or side event—add names, tap winners, and share a live read-only link so anyone can follow along. Free to use, no league required</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>House Rules:</strong> Add your own rules on top of the official rulesets—pick from a common list or write your own, at the organization or league level, so &ldquo;scratch on the 8 is a loss&rdquo; is written down instead of argued about</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>League Finances:</strong> Track annual dues across your roster at a glance, and work out prize distribution with a payout calculator—you stay in control of fees, expenses, and how the pot is split</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Operator Scoring &amp; Corrections:</strong> Enter a match that was played on paper, and reopen and correct a finished match when something was recorded wrong—with the same handicaps and scoring the live flow uses</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>CSI / FargoRate Results Sheet:</strong> Print a match laid out the way LMS wants it, and tick off which matches you&apos;ve already entered—so a few weeks&apos; backlog doesn&apos;t turn into guesswork about where you left off</span>
-            </li>
-          </ul>
-        </section>
+        <Section title="For Players">
+          <Feature title="Your league in one place">
+            Quick sign-up connects you to your team, schedule, stats and standings.
+          </Feature>
+          <Feature title="Detailed stats">
+            Tracks break-and-runs, golden breaks and more. Filter your games to see how you do against a
+            specific player or handicap range, at a venue or table, or in one game type.
+          </Feature>
+          <Feature title="Built-in messaging">
+            Direct messages and group chats, plus team and captains' chats created for you and kept in step with
+            your roster. Push notifications with quiet hours keep you posted without the constant buzz.
+          </Feature>
+          <Feature title="Rules at your fingertips">
+            Search the official <Link to="/rules" className={linkClass}>BCA / CSI rules</Link>, plus the house
+            rules your league operator adds.
+          </Feature>
+          <Feature title="Everyone scores">
+            Players from both teams score at the same time, and the other team confirms each game. No more
+            keeping two separate scoresheets and checking them line by line when the totals don't match: if a
+            game is recorded differently, that exact game is flagged right away, so you know where the error is.
+          </Feature>
+          <Feature title="Live scoreboards">
+            Scoreboards update the moment a game is scored. Follow every live match in your league and see how
+            your rivals are doing.
+          </Feature>
+        </Section>
 
-        <section>
-          <h2 className="text-2xl font-semibold mb-3">Coming Soon</h2>
-          <ul className="space-y-2 text-foreground">
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>Fully Customizable Systems:</strong> Tailor handicaps, scoring, and point distribution down to the detail—choose from time-tested systems or build your own to your exact specifications</span>
-            </li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-semibold mb-3">Future Vision</h2>
-          <ul className="space-y-2 text-foreground">
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>BCA CSI Sanctioning & Integration:</strong> League results contributing to Fargo ratings for players, Fargo rating handicap leagues, and official BCA sanctioning options</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>AI-Integrated Rules Assistant:</strong> Describe any situation and receive instant rule interpretations based on official rulesets—providing guidance for initial rulings</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span><strong>AI League Operator Assistant:</strong> Manage your league using plain speech—create new leagues, update settings, modify schedules, and handle league operations through natural conversation</span>
-            </li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-semibold mb-3">Pricing</h2>
-          <p className="text-foreground leading-relaxed mb-3">
-            <strong>Free to get started.</strong> No upfront costs to become a league operator. We charge $1 per team per week
-            (regular season only) plus a $10 setup fee per season. With a 4-week grace period, you can use your collected league
-            dues to pay for the entire season before week 5. Playoffs are free.
-          </p>
-          <p className="mb-4">
-            <Link to="/pricing" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              View detailed pricing breakdown with examples →
+        <Section title="For League Operators">
+          <Feature title="Fast, easy league setup">
+            A step-by-step wizard gets a league set up in under 10 minutes, starting from proven preset league
+            types. Customizing takes a little longer, and your choices are saved for the next league you create.
+          </Feature>
+          <Feature title="Smart scheduling">
+            US holidays and the BCA and APA championships are flagged automatically so you can move match dates
+            around them, and you can add your own weeks off.
+          </Feature>
+          <Feature title="Delegate what you want">
+            Let captains build and update their own rosters and team names, or keep that control yourself. Teams
+            can play a match early or make it up later, and work it out between themselves.
+          </Feature>
+          <Feature title="Scoring control">
+            Enter whole matches yourself or make corrections later. Every game keeps its full record, including
+            every player who entered a score and any conflicts along the way, so you can decide what changes are
+            warranted with the facts in front of you.
+          </Feature>
+          <Feature title="Automation and customization">
+            Decide how your season ends and set up playoffs your way. Start the next season in a few clicks, with
+            captains telling you whether their team is coming back. Track yearly dues, work out prize payouts with
+            the built-in calculator, and add your own house and league rules.
+          </Feature>
+          <Feature title="CSI / Fargo sanctioning">
+            We aren't directly connected to CSI or FargoRate, but we make getting officially sanctioned as easy as
+            we can. Each match can be viewed or printed laid out for fast manual entry, and you can track which
+            ones you've already entered.
+          </Feature>
+          <p>
+            <Link to="/become-league-operator" className={linkClass}>
+              Become a League Operator →
             </Link>
           </p>
-        </section>
+        </Section>
 
-        <section>
-          <h2 className="text-2xl font-semibold mb-3">Our Philosophy</h2>
-          <p className="text-foreground leading-relaxed mb-3">
-            Personally built by a league operator with over 15 years of experience, this platform represents the tools you'll wish you had
-            when first becoming a league operator. No extensive certifications or intrusive approval processes; just professional-grade software
-            that transforms casual league players into professional operators running smooth, well-organized leagues.
+        <Section title="For Tournaments">
+          <Feature title="Brackets in minutes">
+            Single or double elimination for a bar night or side event: add names and tap winners.
+          </Feature>
+          <Feature title="Share it live">
+            A read-only link lets anyone follow the bracket. Free to use, with no league required.
+          </Feature>
+        </Section>
+
+        <Section title="What's Next">
+          <Feature title="Customizable systems (coming soon)">
+            Tailor handicaps, scoring and point distribution in detail, or build your own.
+          </Feature>
+          <Feature title="Automated tournaments">
+            Optional add-ons let you schedule a tournament ahead of time for early registration, take sign-ups by
+            QR code or link, and track entry fees. Run handicapped races, with each player's handicap worked out
+            automatically or entered by hand. Players score their own matches and the bracket updates itself,
+            and phone alerts tell each player when they're up and at which table, plus when they're on deck.
+          </Feature>
+          <Feature title="AI assistants">
+            A rules assistant that gives a first ruling on any situation, and a league operator assistant that
+            handles league tasks through plain conversation.
+          </Feature>
+        </Section>
+
+        <Section title="Pricing">
+          <Feature title="Free to get started">
+            No upfront costs to become a league operator, and a 4-week grace period lets you collect league dues
+            before your first payment. We work to keep our costs low so they don't eat into your prize pool.
+          </Feature>
+          <p>
+            <Link to="/pricing" className={linkClass}>
+              See pricing →
+            </Link>
+          </p>
+        </Section>
+
+        <Section title="Our Philosophy">
+          <p className="text-foreground leading-relaxed">
+            We want to grow the pool community by making leagues easy to run and easy to play in. Pool is a great
+            sport, and more people should be playing it.
           </p>
           <p className="text-foreground leading-relaxed">
-            We believe in empowering local operators to build thriving pool communities with minimal administrative burden,
-            so more time can be spent on what matters: growing the sport and connecting players.
+            Rack'em Leagues is built by a longtime league player and operator, so it starts from what players and
+            league operators actually need. Our aim is to take as much of the burden and time out of running a
+            successful league as we can, so more of it goes to what matters: growing the sport and connecting the
+            community.
           </p>
-        </section>
+        </Section>
 
         <div className="pt-4 border-t">
-          <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+          <Link to="/login" className={linkClass}>
             Get Started →
           </Link>
         </div>

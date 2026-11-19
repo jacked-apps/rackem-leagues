@@ -34,7 +34,6 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Line up the league games-list buttons the way the room race does](docs/list/2026-11-04-league-games-list-alignment.md)
 - [Move to Supabase CLI v3 on purpose (config.toml, CI and both deploys together)](docs/list/2026-11-05-supabase-cli-v3.md)
 - [Build a league finder so a player with no team can find a league near them](docs/list/2026-11-13-league-finder.md)
-- [Rewrite the About page into fewer, fuller sections so it isn't a chore to read](docs/list/2026-11-16-about-page-rewrite.md)
 - [Turn on a code check that flags a save fired off and never waited on](docs/list/2026-11-16-floating-promise-lint.md)
 - [Go through every test, make sure each one can actually fail, and cut the ones that add nothing](docs/list/2026-11-16-test-suite-audit.md)
 - [Match-night chats for both teams that close themselves after the match](docs/list/2026-11-17-match-night-chats.md)
