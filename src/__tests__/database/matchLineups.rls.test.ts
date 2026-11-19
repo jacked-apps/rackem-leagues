@@ -143,21 +143,19 @@ describe('Match Lineups Table - RLS Tests', () => {
 
 describe('Preferences Tables - RLS Tests', () => {
   let client: SupabaseClient<Database>;
-  let testLeagueId: string;
   let testOrgId: string;
 
   beforeAll(async () => {
     client = createTestClient();
 
-    // Get a test league
+    // Find an organization that has a league (for the blackout tests below)
     const { data: league } = await client
       .from('leagues')
-      .select('id, organization_id')
+      .select('organization_id')
       .limit(1)
       .single();
 
     if (league) {
-      testLeagueId = league.id;
       testOrgId = league.organization_id;
     }
   });

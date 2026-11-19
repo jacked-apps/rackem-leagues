@@ -13,7 +13,7 @@
 #   migration-versions : duplicate migration version guard
 #   unit-tests         : the vitest `unit` project (fast, no database)
 #   db-tests           : the vitest `db` project against a real local Supabase
-#   typecheck          : `pnpm run build` = tsc -b + vite build
+#   typecheck          : `pnpm run lint` (zero warnings) + `pnpm run build` = tsc -b + vite build
 #
 # The What's New check lives in its own workflow (whats-new.yml) because it must
 # also re-run when a PR DESCRIPTION is edited — its opt-out is a line in the
@@ -244,7 +244,7 @@ jobs:
         run: node scripts/test-summary.mjs test-report.json "Database tests" main-report/test-report.json
 
   typecheck:
-    name: Typecheck + build
+    name: Lint + typecheck + build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -273,6 +273,13 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      # Zero warnings, not just zero errors: react-hooks/exhaustive-deps (a hook
+      # reading a value it doesn't list, so it can act on a stale one) is a
+      # WARNING, and those are the ones that hide real bugs. Lint was cleaned to
+      # zero on 2026-11-19; this keeps it there.
+      - name: Lint
+        run: pnpm run lint --max-warnings 0
 
       # `build` is `tsc -b && vite build`, so this is the authoritative
       # typecheck as well as proof the bundle (and the service worker) still

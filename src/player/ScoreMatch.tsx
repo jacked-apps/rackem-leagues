@@ -579,16 +579,20 @@ function ScoreMatchBody() {
   // The mutations hook only needs id + home_team_id + away_team_id;
   // memoize on those primitives so identity is stable across refetches
   // that don't change them.
+  const stableMatchId = match?.id;
+  const stableHomeTeamId = match?.home_team_id;
+  const stableAwayTeamId = match?.away_team_id;
   const stableMatchForMutations = useMemo(
     () =>
-      match
+      // A loaded match always has all three, so this equals the old `match ?` test.
+      stableMatchId && stableHomeTeamId && stableAwayTeamId
         ? {
-            id: match.id,
-            home_team_id: match.home_team_id,
-            away_team_id: match.away_team_id,
+            id: stableMatchId,
+            home_team_id: stableHomeTeamId,
+            away_team_id: stableAwayTeamId,
           }
         : null,
-    [match?.id, match?.home_team_id, match?.away_team_id],
+    [stableMatchId, stableHomeTeamId, stableAwayTeamId],
   );
 
   // Use mutations hook for all database operations
@@ -763,8 +767,11 @@ function ScoreMatchBody() {
         addToConfirmationQueueFromHook(buildConfirmationItem(game, players));
       }
     });
-    // myVacateRequests / handledConfirmations / mutationsRef are refs (stable).
+    // handledConfirmations / mutationsRef are local refs (stable). myVacateRequests
+    // is a ref too, but it comes from a hook, so the lint rule can't see that;
+    // listing it is accurate and never re-runs anything (a ref's identity is fixed).
   }, [
+    myVacateRequests,
     gameResults,
     userTeamId,
     match,
