@@ -492,7 +492,6 @@ export function useMatchRealtime(
     // gameUpdateOptions is intentionally NOT in this dep array — the
     // ref pattern above keeps it accessible at event-fire time without
     // causing the subscription to tear down on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
 
   return { connectionStatus };

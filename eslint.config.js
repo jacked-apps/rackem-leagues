@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'reference-code/**']),
+  // .stryker-tmp holds the mutation test's throwaway copies of the repo (git-
+  // ignored); linting them reported ~2,800 problems that weren't our code.
+  globalIgnores(['dist', 'reference-code/**', '.stryker-tmp/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

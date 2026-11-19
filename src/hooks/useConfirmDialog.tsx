@@ -112,21 +112,25 @@ export function useConfirmDialog() {
     });
   }, []);
 
+  // The resolver of the currently open confirm() promise. Pulled out of
+  // `state` so the callbacks below depend on exactly what they read.
+  const pendingResolve = state.resolve;
+
   /**
    * Handle user clicking confirm
    */
   const handleConfirm = useCallback(() => {
-    state.resolve?.(true);
+    pendingResolve?.(true);
     setState((prev) => ({ ...prev, isOpen: false, resolve: null }));
-  }, [state.resolve]);
+  }, [pendingResolve]);
 
   /**
    * Handle user clicking cancel or clicking outside
    */
   const handleCancel = useCallback(() => {
-    state.resolve?.(false);
+    pendingResolve?.(false);
     setState((prev) => ({ ...prev, isOpen: false, resolve: null }));
-  }, [state.resolve]);
+  }, [pendingResolve]);
 
   /**
    * The dialog component to render in your JSX

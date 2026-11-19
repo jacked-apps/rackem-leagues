@@ -863,7 +863,7 @@ export function useMatchScoringMutations({
         toast.error(`Failed to save game score: ${(err as { message?: string }).message}`);
       }
     },
-    [match, homeLineup, awayLineup, userTeamId, gameResults, memberId]
+    [match, homeLineup, awayLineup, userTeamId, gameResults, memberId, leagueId]
   );
 
   return {
