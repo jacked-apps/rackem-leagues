@@ -72,7 +72,7 @@ export default defineConfig({
           globals: true,
           environment: 'jsdom',
           setupFiles: ['./src/test/setup.ts'],
-          include: ['src/__tests__/database/**/*.{test,spec}.ts'],
+          include: ['src/__tests__/database/**/*.{test,spec}.{ts,tsx}'],
           fileParallelism: false,
         },
       },

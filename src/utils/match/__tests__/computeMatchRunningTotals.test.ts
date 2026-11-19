@@ -116,6 +116,22 @@ describe('computeMatchRunningTotals', () => {
       expect(result.home_points_earned).toBe(-9);
       expect(result.away_points_earned).toBe(-9);
     });
+
+    it('a game counts only for the team that won it — a winner that is neither team counts for nobody', () => {
+      const result = computeMatchRunningTotals({
+        homeTeamId: HOME,
+        awayTeamId: AWAY,
+        homeThresholds: HOME_THRESHOLDS,
+        awayThresholds: AWAY_THRESHOLDS,
+        games: [regularGame(HOME), regularGame(AWAY), regularGame('some-other-team')],
+        pointsCalculator: 'linear_above_threshold',
+        pointsCalculatorParams: {},
+        winCondition: 'games',
+      });
+
+      expect(result.home_games_won).toBe(1);
+      expect(result.away_games_won).toBe(1);
+    });
   });
 
   describe('tiebreaker exclusion', () => {

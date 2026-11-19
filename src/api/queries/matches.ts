@@ -1036,33 +1036,22 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
   // Skip the early-out for those â€” running totals still need to update so
   // the start-credit fold-in (per Ed's 2026-05-04 spec) lands on the
   // points columns.
-  const snapshot = (matchRow.system_snapshot ?? null) as
-    | {
-        points_calculator: string | null;
-        points_calculator_params: Record<string, unknown>;
-        win_condition?: 'games' | 'points';
-        per_game_allocator?: unknown;
-      }
-    | null;
+  // Frozen settings from the snapshot (pure helper, shared with the season
+  // replay test). Null = no usable snapshot → fall back to live prefs below.
+  const { readScoringSnapshot, thresholdsFromMatchRow } = await import(
+    '@/utils/match/scoringSnapshot'
+  );
+  const frozen = readScoringSnapshot(matchRow.system_snapshot);
 
   let pointsCalculator: string | null;
   let pointsCalculatorParams: Record<string, unknown>;
   let winCondition: 'games' | 'points' = 'games';
-  // Per-Game Allocator Room (Unit 5): the snapshot may embed a resolved
-  // variation. Read it as-is â€” the snapshot writer already validated it via
-  // the loader. Snapshots written before Unit 5 don't have the field and the
-  // override is left null (legacy behavior preserved).
-  const perGameAllocatorOverride =
-    (snapshot?.per_game_allocator as
-      | import('@/systems/points-system/types').PerGameAllocator
-      | null
-      | undefined) ?? null;
+  // Per-Game Allocator Room (Unit 5): snapshots written before Unit 5 have no
+  // per_game_allocator, and the override stays null (legacy behavior).
+  const perGameAllocatorOverride = frozen?.perGameAllocatorOverride ?? null;
 
-  if (snapshot && 'points_calculator' in snapshot) {
-    pointsCalculator = snapshot.points_calculator ?? null;
-    pointsCalculatorParams =
-      (snapshot.points_calculator_params as Record<string, unknown>) ?? {};
-    winCondition = snapshot.win_condition ?? 'games';
+  if (frozen) {
+    ({ pointsCalculator, pointsCalculatorParams, winCondition } = frozen);
   } else {
     // Fallback path: resolve league_id via season, then read live prefs.
     // Only fires when system_snapshot wasn't populated (legacy / pre-
@@ -1114,16 +1103,7 @@ export async function updateMatchRunningTotals(matchId: string): Promise<void> {
     return;
   }
 
-  const homeThresholds = {
-    games_to_win: matchRow.home_to_win,
-    games_to_tie: matchRow.home_to_tie,
-    games_to_lose: matchRow.home_to_lose,
-  };
-  const awayThresholds = {
-    games_to_win: matchRow.away_to_win,
-    games_to_tie: matchRow.away_to_tie,
-    games_to_lose: matchRow.away_to_lose,
-  };
+  const { homeThresholds, awayThresholds } = thresholdsFromMatchRow(matchRow);
 
   // Legacy totals: kept as the never-break FALLBACK and the auditor. Post Strand-B
   // flip the new engine is the source of truth, but legacy still runs so (a) we

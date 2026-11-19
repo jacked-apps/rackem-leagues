@@ -12,10 +12,8 @@
  *   - Anonymous INSERT is rejected by RLS (even with bogus parent ids).
  *   - `can_write_house_rule_org(uuid)` returns false for an anonymous caller.
  *
- * The deeper CHECK / CASCADE / view / trigger tests are marked as
- * describe.skip below with a seed-bootstrap TODO. They all exercise behavior
- * that's also enforced in the migration and eyeball-verifiable against a
- * seeded dev environment.
+ * The deeper CHECK / CASCADE / view / trigger / RLS coverage is NOT written
+ * yet; its list lives in docs/audits/2026-11-17-data-layer-fakes-triage.md ("Missing coverage").
  */
 
 import { afterAll, describe, expect, it } from 'vitest';
@@ -54,26 +52,4 @@ describe('house_rules — RLS (no seed required)', () => {
     expect(error).toBeNull();
     expect(data).toBe(false);
   });
-});
-
-// ---------------------------------------------------------------------------
-// TODO(unit-6 or follow-on): bootstrap a minimal seed fixture (auth user +
-// member + organization + league) in a shared beforeAll and enable the full
-// constraint / CASCADE / view / trigger suite. Structure left here as a
-// blueprint for when that infrastructure exists.
-// ---------------------------------------------------------------------------
-
-describe.skip('house_rules — full CHECK / trigger / view / CASCADE (requires seed)', () => {
-  // Placeholder for the complete coverage when seed fixtures land:
-  //   - CHECK: scope exclusivity (both / neither)
-  //   - CHECK: effect_type ↔ related_rule_id
-  //   - CHECK: title length cap (121 rejected)
-  //   - CHECK: body cardinality cap (51 elements rejected)
-  //   - Trigger: per-element body length (> 4000 chars rejected)
-  //   - CASCADE: delete org → rules gone
-  //   - CASCADE: delete league → rules gone
-  //   - View: scope_name populated for org + league rows
-  //   - Trigger: UPDATE bumps updated_at + updated_by
-  //   - RLS: owner + admin INSERT succeeds; league_rep INSERT rejected
-  it.todo('wire up seed fixture and port the constraint/RLS coverage from the plan');
 });

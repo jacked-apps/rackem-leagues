@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { executeSql, closePostgresPool } from '@/test/dbTestUtils';
+import { executeSql, closePostgresPool, requireSeed } from '@/test/dbTestUtils';
 
 describe('add_late_entry', () => {
   let organizerId: string;
@@ -175,7 +175,7 @@ describe('add_late_entry', () => {
               NULLIF(btrim(concat_ws(' ', first_name, last_name)), ''), 'Player') AS name
          FROM public.members WHERE user_id IS NOT NULL LIMIT 1`
     );
-    if (authed.length === 0) return;
+    requireSeed(authed[0], 'a member with a login (user_id set)');
 
     const { byeId } = await makeBracketWithBye();
     const result = await lateEntry(byeId, null, authed[0].id);

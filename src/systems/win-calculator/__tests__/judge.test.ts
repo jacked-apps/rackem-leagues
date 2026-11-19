@@ -39,6 +39,20 @@ describe('decideWinner', () => {
     expect(r.verdict).toEqual({ winner: 'away' });
   });
 
+  it('honors a HOME winner chip the same way', () => {
+    // chip says home; the comparator would say away — the chip wins
+    const r = decideWinner(state({ edge: 'home', home_games: 6, away_games: 12 }), gamesMost);
+    expect(r.verdict).toEqual({ winner: 'home' });
+  });
+
+  it('a normal result raises no flags (a flag must mean something is wrong)', () => {
+    // A clean win and a clean no-decision → tie: neither is an anomaly.
+    const win = state({ home_games: 10, home_games_target: 10, away_games: 7, away_games_target: 12 });
+    const neither = state({ home_games: 9, home_games_target: 10, away_games: 9, away_games_target: 10 });
+    expect(decideWinner(win, gamesMetGoal).flags).toEqual([]);
+    expect(decideWinner(neither, gamesMetGoal).flags).toEqual([]);
+  });
+
   it('decides via met_goal when a side reaches its target', () => {
     const r = decideWinner(
       state({ home_games: 10, home_games_target: 10, away_games: 7, away_games_target: 12 }),

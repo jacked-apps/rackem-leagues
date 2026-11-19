@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createTestClient, executeSql } from '@/test/dbTestUtils';
+import { createTestClient, executeSql, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -61,10 +61,7 @@ describe('Members Table - RLS Tests', () => {
     });
 
     it('should allow viewing member by id', async () => {
-      if (!testMemberId) {
-        console.warn('⚠️ No test member found, skipping test');
-        return;
-      }
+      requireSeed(testMemberId, 'No test member found');
 
       const { data, error } = await client
         .from('members')
@@ -112,10 +109,7 @@ describe('Members Table - RLS Tests', () => {
 
   describe('UPDATE Operations - Profile Management', () => {
     it('should allow updating contact information', async () => {
-      if (!testMemberId) {
-        console.warn('⚠️ No test member found, skipping test');
-        return;
-      }
+      requireSeed(testMemberId, 'No test member found');
 
       const { data: before } = await client
         .from('members')
@@ -146,10 +140,7 @@ describe('Members Table - RLS Tests', () => {
     });
 
     it('should allow updating address', async () => {
-      if (!testMemberId) {
-        console.warn('⚠️ No test member found, skipping test');
-        return;
-      }
+      requireSeed(testMemberId, 'No test member found');
 
       const { data: before } = await client
         .from('members')
@@ -179,10 +170,7 @@ describe('Members Table - RLS Tests', () => {
     });
 
     it('should allow updating nickname', async () => {
-      if (!testMemberId) {
-        console.warn('⚠️ No test member found, skipping test');
-        return;
-      }
+      requireSeed(testMemberId, 'No test member found');
 
       const { data: before } = await client
         .from('members')
@@ -207,10 +195,7 @@ describe('Members Table - RLS Tests', () => {
     });
 
     it('should allow updating profanity filter setting', async () => {
-      if (!testMemberId) {
-        console.warn('⚠️ No test member found, skipping test');
-        return;
-      }
+      requireSeed(testMemberId, 'No test member found');
 
       const { data: before } = await client
         .from('members')
@@ -236,10 +221,7 @@ describe('Members Table - RLS Tests', () => {
     });
 
     it('should allow updating BCA membership info', async () => {
-      if (!testMemberId) {
-        console.warn('⚠️ No test member found, skipping test');
-        return;
-      }
+      requireSeed(testMemberId, 'No test member found');
 
       const { data: before } = await client
         .from('members')

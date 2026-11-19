@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createTestClient, executeSql } from '@/test/dbTestUtils';
+import { createTestClient, executeSql, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -67,10 +67,7 @@ describe('Match Games Table - RLS Tests', () => {
     });
 
     it('should allow viewing games for a specific match', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       const { data, error } = await client
         .from('match_games')
@@ -91,10 +88,7 @@ describe('Match Games Table - RLS Tests', () => {
 
   describe('UPDATE Operations - Scorekeeping', () => {
     it('should allow updating game winner', async () => {
-      if (!testGameId) {
-        console.warn('⚠️ No test game found, skipping test');
-        return;
-      }
+      requireSeed(testGameId, 'No test game found');
 
       // Get current state
       const { data: before } = await client
@@ -110,7 +104,7 @@ describe('Match Games Table - RLS Tests', () => {
         .eq('id', testGameId)
         .single();
 
-      if (!game) return;
+      requireSeed(game, 'game is required');
 
       const { data: match } = await client
         .from('matches')
@@ -118,7 +112,7 @@ describe('Match Games Table - RLS Tests', () => {
         .eq('id', game.match_id)
         .single();
 
-      if (!match) return;
+      requireSeed(match, 'match is required');
 
       // Update winner
       const { error } = await client
@@ -139,10 +133,7 @@ describe('Match Games Table - RLS Tests', () => {
     });
 
     it('should allow updating game confirmations', async () => {
-      if (!testGameId) {
-        console.warn('⚠️ No test game found, skipping test');
-        return;
-      }
+      requireSeed(testGameId, 'No test game found');
 
       // confirmed_by_home / confirmed_by_away are uuid columns holding the
       // confirming member's id (not booleans). Use the game's own players as
@@ -153,7 +144,7 @@ describe('Match Games Table - RLS Tests', () => {
         .eq('id', testGameId)
         .single();
 
-      if (!game) return;
+      requireSeed(game, 'game is required');
 
       const { error } = await client
         .from('match_games')
@@ -176,10 +167,7 @@ describe('Match Games Table - RLS Tests', () => {
     });
 
     it('should allow updating game actions (break/rack)', async () => {
-      if (!testGameId) {
-        console.warn('⚠️ No test game found, skipping test');
-        return;
-      }
+      requireSeed(testGameId, 'No test game found');
 
       const { error } = await client
         .from('match_games')
@@ -193,10 +181,7 @@ describe('Match Games Table - RLS Tests', () => {
     });
 
     it('should allow marking break and run', async () => {
-      if (!testGameId) {
-        console.warn('⚠️ No test game found, skipping test');
-        return;
-      }
+      requireSeed(testGameId, 'No test game found');
 
       const { error } = await client
         .from('match_games')
@@ -214,10 +199,7 @@ describe('Match Games Table - RLS Tests', () => {
     });
 
     it('should allow marking golden break', async () => {
-      if (!testGameId) {
-        console.warn('⚠️ No test game found, skipping test');
-        return;
-      }
+      requireSeed(testGameId, 'No test game found');
 
       const { error } = await client
         .from('match_games')
@@ -234,10 +216,7 @@ describe('Match Games Table - RLS Tests', () => {
     });
 
     it('should allow requesting vacate', async () => {
-      if (!testGameId) {
-        console.warn('⚠️ No test game found, skipping test');
-        return;
-      }
+      requireSeed(testGameId, 'No test game found');
 
       // vacate_requested_by names the SIDE that asked, not the player: it is
       // varchar(4) with a CHECK of ('home','away'). Writing a player id here
@@ -260,10 +239,7 @@ describe('Match Games Table - RLS Tests', () => {
 
   describe('INSERT Operations - Tiebreaker Games', () => {
     it('should allow creating tiebreaker games', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       const { data: newGame, error } = await client
         .from('match_games')
@@ -294,10 +270,7 @@ describe('Match Games Table - RLS Tests', () => {
     });
 
     it('should allow bulk inserting multiple tiebreaker games', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       const { data: newGames, error } = await client
         .from('match_games')
@@ -338,10 +311,7 @@ describe('Match Games Table - RLS Tests', () => {
 
   describe('DELETE Operations', () => {
     it('should allow deleting a game', async () => {
-      if (!testMatchId) {
-        console.warn('⚠️ No test match found, skipping test');
-        return;
-      }
+      requireSeed(testMatchId, 'No test match found');
 
       // Create a test game
       const { data: testGame } = await client
@@ -357,10 +327,7 @@ describe('Match Games Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testGame) {
-        console.warn('⚠️ Could not create test game, skipping test');
-        return;
-      }
+      requireSeed(testGame, 'Could not create test game');
 
       // Delete it
       const { error } = await client

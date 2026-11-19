@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient } from '@/test/dbTestUtils';
+import { createTestClient, executeSql, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -69,10 +69,7 @@ describe('Leagues Table - RLS Tests', () => {
     });
 
     it('should allow viewing leagues by organization', async () => {
-      if (!testOrgId) {
-        console.warn('⚠️ No test organization found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test organization found');
 
       const { data, error } = await client
         .from('leagues')
@@ -86,10 +83,7 @@ describe('Leagues Table - RLS Tests', () => {
 
   describe('UPDATE Operations', () => {
     it('should allow updating league settings', async () => {
-      if (!testLeagueId) {
-        console.warn('⚠️ No test league found, skipping test');
-        return;
-      }
+      requireSeed(testLeagueId, 'No test league found');
 
       const { data: before } = await client
         .from('leagues')
@@ -114,10 +108,7 @@ describe('Leagues Table - RLS Tests', () => {
     });
 
     it('should allow updating league status', async () => {
-      if (!testLeagueId) {
-        console.warn('⚠️ No test league found, skipping test');
-        return;
-      }
+      requireSeed(testLeagueId, 'No test league found');
 
       const { data: before } = await client
         .from('leagues')
@@ -177,10 +168,7 @@ describe('Seasons Table - RLS Tests', () => {
     });
 
     it('should allow viewing seasons by league', async () => {
-      if (!testLeagueId) {
-        console.warn('⚠️ No test league found, skipping test');
-        return;
-      }
+      requireSeed(testLeagueId, 'No test league found');
 
       const { data, error } = await client
         .from('seasons')
@@ -194,10 +182,7 @@ describe('Seasons Table - RLS Tests', () => {
 
   describe('UPDATE Operations', () => {
     it('should allow updating season status', async () => {
-      if (!testSeasonId) {
-        console.warn('⚠️ No test season found, skipping test');
-        return;
-      }
+      requireSeed(testSeasonId, 'No test season found');
 
       const { data: before } = await client
         .from('seasons')
@@ -258,10 +243,7 @@ describe('Organization Staff Table - RLS Tests', () => {
 
   describe('INSERT Operations - Adding Staff', () => {
     it('should allow adding staff to organization', async () => {
-      if (!testOrgId) {
-        console.warn('⚠️ No test organization found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test organization found');
 
       // Get existing staff
       const { data: existingStaff } = await client
@@ -279,10 +261,7 @@ describe('Organization Staff Table - RLS Tests', () => {
         .limit(1)
         .single();
 
-      if (!member) {
-        console.warn('⚠️ No available member found, skipping test');
-        return;
-      }
+      requireSeed(member, 'No available member found');
 
       const { data: newStaff, error } = await client
         .from('organization_staff')
@@ -309,19 +288,14 @@ describe('Organization Staff Table - RLS Tests', () => {
 
   describe('DELETE Operations - Removing Staff', () => {
     it('should allow removing staff from organization', async () => {
-      if (!testOrgId) {
-        console.warn('⚠️ No test organization found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test organization found');
 
-      // Create test staff
-      const { data: member } = await client
-        .from('members')
-        .select('id')
-        .limit(1)
-        .single();
-
-      if (!member) return;
+      // A member of this test's own: borrowing "the first member" collided
+      // with anyone already on the org's staff (unique per org + member).
+      const [member] = await executeSql(
+        `INSERT INTO public.members (first_name, last_name, city, state)
+         VALUES ('Staff', 'Removal (operator RLS test)', 'Testville', 'TS') RETURNING id`,
+      );
 
       const { data: testStaff } = await client
         .from('organization_staff')
@@ -333,7 +307,7 @@ describe('Organization Staff Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testStaff) return;
+      requireSeed(testStaff, 'testStaff is required');
 
       // Delete them
       const { error } = await client
@@ -351,6 +325,7 @@ describe('Organization Staff Table - RLS Tests', () => {
         .single();
 
       expect(deleted).toBeNull();
+      await executeSql('DELETE FROM public.members WHERE id = $1', [member.id]);
     });
   });
 });
