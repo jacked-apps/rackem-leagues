@@ -20,12 +20,13 @@
  * stable for the whole match — a mid-match handicap change cannot move them.
  *
  * @see ./computeMatchRunningTotals.ts — the legacy path (fallback + auditor)
+ * @see ./engineInputs.ts — the pure middle (shared with the season replay test)
  * @see src/systems/points-system/match-adapter.ts — the engine adapter
  */
 
 import { supabase } from '@/supabaseClient';
-import { computeMatchRunningTotalsViaEngine } from '@/systems/points-system/match-adapter';
-import type { PerGameAllocator, ThresholdInputs } from '@/systems/points-system/types';
+import type { PerGameAllocator } from '@/systems/points-system/types';
+import { computeEngineTotalsFromLineups, type LineupRow } from './engineInputs';
 import type { HandicapThresholds } from '@/types/match';
 import type {
   MatchRunningTotals,
@@ -52,55 +53,6 @@ export interface EngineRunningTotalsArgs {
    * undefined = today's behavior.
    */
   perGameAllocatorOverride?: PerGameAllocator | null;
-}
-
-/** A single locked-lineup row, narrowed to the handicap fields we read. */
-interface LineupRow {
-  team_id: string | null;
-  player1_handicap: number | null;
-  player2_handicap: number | null;
-  player3_handicap: number | null;
-  player4_handicap: number | null;
-  player5_handicap: number | null;
-  home_team_modifier: number | null;
-}
-
-/** Sum the non-null player handicaps on a lineup row. */
-function sumLineupHandicaps(row: LineupRow): number {
-  return [
-    row.player1_handicap,
-    row.player2_handicap,
-    row.player3_handicap,
-    row.player4_handicap,
-    row.player5_handicap,
-  ].reduce<number>((sum, h) => sum + (typeof h === 'number' ? h : 0), 0);
-}
-
-/** The non-null player handicaps on a lineup row, as a ratings array. */
-function lineupRatings(row: LineupRow): number[] {
-  return [
-    row.player1_handicap,
-    row.player2_handicap,
-    row.player3_handicap,
-    row.player4_handicap,
-    row.player5_handicap,
-  ].filter((h): h is number => typeof h === 'number');
-}
-
-/**
- * Per-position handicaps for a lineup row, in position order (index 0 =
- * position 1, …). Preserves nulls so the adapter's lookup can detect
- * "no player at this position" and fall back to 0 in the formula
- * context.
- */
-function lineupPositionHandicaps(row: LineupRow): (number | null)[] {
-  return [
-    row.player1_handicap,
-    row.player2_handicap,
-    row.player3_handicap,
-    row.player4_handicap,
-    row.player5_handicap,
-  ];
 }
 
 /**
@@ -139,53 +91,11 @@ export async function computeEngineRunningTotals(
       .eq('locked', true);
 
     // Without both locked lineups the engine can't resolve handicap inputs —
-    // signal the caller to fall back to legacy.
-    if (error || !lineups || lineups.length < 2) return null;
-
-    const home = (lineups as LineupRow[]).find((l) => l.team_id === args.homeTeamId);
-    const away = (lineups as LineupRow[]).find((l) => l.team_id === args.awayTeamId);
-    if (!home || !away) return null;
-
-    // Handicap diff, mirroring prep's calculateHandicapThresholds: the team
-    // bonus is the FROZEN home_team_modifier (not a fresh standings lookup),
-    // applied to the home side only.
-    const teamBonus =
-      typeof home.home_team_modifier === 'number' ? home.home_team_modifier : 0;
-    const homeTotal = sumLineupHandicaps(home) + teamBonus;
-    const awayTotal = sumLineupHandicaps(away);
-
-    const thresholdInputs: ThresholdInputs = {
-      homeRatings: lineupRatings(home),
-      awayRatings: lineupRatings(away),
-      homeHandicapDiff: homeTotal - awayTotal,
-      awayHandicapDiff: awayTotal - homeTotal,
-      gameCount: args.games.filter((g) => !g.is_tiebreaker).length,
-      prefs: {},
-      // Team handicap totals — home includes the locked team bonus,
-      // away is just the sum of the lineup. Runtime writes these into
-      // the state bag at match start so allocator formulas can reference
-      // them via `this_side_team_handicap` / `other_side_team_handicap`.
-      homeTeamHandicap: homeTotal,
-      awayTeamHandicap: awayTotal,
-    };
-
-    return computeMatchRunningTotalsViaEngine({
-      homeTeamId: args.homeTeamId,
-      awayTeamId: args.awayTeamId,
-      games: args.games,
-      pointsCalculator: args.pointsCalculator,
-      pointsCalculatorParams: args.pointsCalculatorParams,
-      winCondition: args.winCondition,
-      thresholdInputs,
-      homeThresholds: args.homeThresholds,
-      awayThresholds: args.awayThresholds,
-      perGameAllocatorOverride: args.perGameAllocatorOverride,
-      // Locked per-position handicaps so allocator formulas can resolve
-      // `this_side_handicap` / `other_side_handicap` against the actual
-      // player who played each game.
-      homePositionHandicaps: lineupPositionHandicaps(home),
-      awayPositionHandicaps: lineupPositionHandicaps(away),
-    });
+    // signal the caller to fall back to legacy. The pure part (handicap sums,
+    // frozen team bonus, the engine call) lives in engineInputs.ts so the
+    // season replay test runs this exact code.
+    if (error || !lineups) return null;
+    return computeEngineTotalsFromLineups(args, lineups as LineupRow[]);
   } catch (e) {
     // Never surface — caller falls back to legacy so the write still happens.
     console.warn(

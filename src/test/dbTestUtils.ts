@@ -218,6 +218,28 @@ export function getSingleResult<T>(result: { data: T[] | null; error: TestQueryE
 }
 
 /**
+ * Fail the test — loudly — when the data it needs isn't there.
+ *
+ * Replaces the old `if (!testMatchId) { console.warn('skipping'); return; }`
+ * pattern: that made a test PASS having asserted nothing whenever the seed
+ * was missing a row, so a whole RLS file could be green while testing
+ * nothing. Now the missing row is a red test that says what's missing. Also
+ * narrows the type, so the value is non-null after the call.
+ *
+ * @param value - The seeded id / row the test depends on
+ * @param what - What's missing, in words (shown in the failure)
+ *
+ * @example
+ * requireSeed(testMatchId, 'No test match found');
+ * await client.from('matches').select('*').eq('id', testMatchId);
+ */
+export function requireSeed<T>(value: T, what: string): asserts value is NonNullable<T> {
+  if (!value) {
+    throw new Error(`Seed data missing — ${what}. This test needs that row to exist; it does not skip.`);
+  }
+}
+
+/**
  * Create a direct Postgres connection pool for test data setup
  * BYPASSES PostgREST entirely - use for INSERT operations that hit PGRST102
  *

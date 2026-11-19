@@ -155,25 +155,31 @@ describe('createCaptainChat()', () => {
     }
   });
 
+  // Makes its own staff-only member. It used to return (pass) whenever every
+  // seeded staff member was also a captain — which is the case in the dev
+  // seed, so the rule below had never actually been checked.
   it('staff-only members have cannot_leave=false (D6: staff CAN leave the captain chat)', async () => {
-    const result = await createCaptainChat({ seasonId, leagueId });
+    const [member] = await executeSql(
+      `INSERT INTO public.members (first_name, last_name, city, state)
+       VALUES ('Staff', 'Only (captain chat test)', 'Testville', 'TS') RETURNING id`
+    );
+    try {
+      await executeSql(
+        `INSERT INTO public.organization_staff (organization_id, member_id, position) VALUES ($1, $2, 'admin')`,
+        [orgId, member.id]
+      );
+      const result = await createCaptainChat({ seasonId, leagueId });
 
-    const captainSet = new Set(expectedCaptainIds);
-    const staffOnly = expectedStaffIds.filter((s) => !captainSet.has(s));
-
-    if (staffOnly.length === 0) {
-      // All staff are also captains in this seed — skip without failing
-      return;
-    }
-
-    for (const staffId of staffOnly) {
       const rows = await executeSql(
         `SELECT cannot_leave FROM conversation_participants
           WHERE conversation_id = $1 AND user_id = $2`,
-        [result.conversationId, staffId]
+        [result.conversationId, member.id]
       );
-      expect(rows.length).toBe(1);
-      expect(rows[0].cannot_leave).toBe(false);
+      expect(rows).toEqual([{ cannot_leave: false }]);
+    } finally {
+      await executeSql(`DELETE FROM conversations WHERE scope_type = 'season' AND scope_id = $1 AND conversation_type = 'captains_chat' AND auto_managed = TRUE`, [seasonId]);
+      await executeSql('DELETE FROM public.organization_staff WHERE member_id = $1', [member.id]);
+      await executeSql('DELETE FROM public.members WHERE id = $1', [member.id]);
     }
   });
 

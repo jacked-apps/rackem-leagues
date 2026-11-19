@@ -46,3 +46,11 @@ database_backups/
 
 # Git worktrees (per-developer)
 .worktrees
+
+# CI test reports (scripts/test-summary.mjs)
+test-report.json
+main-report/
+
+# Mutation testing (pnpm test:mutation)
+reports/
+.stryker-tmp/

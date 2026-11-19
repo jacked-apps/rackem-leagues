@@ -108,15 +108,21 @@ describe('add_registered_to_hopper', () => {
   });
 
   it('refuses a placeholder — they belong to a league, not a tournament', async () => {
-    const placeholder = await executeSql(
-      `SELECT id FROM public.members WHERE user_id IS NULL LIMIT 1`
+    // Our own placeholder (no login), so this never depends on the seed having
+    // one — it used to return early, passing without asserting, when it didn't.
+    const [placeholder] = await executeSql(
+      `INSERT INTO public.members (first_name, last_name, city, state)
+       VALUES ('Placeholder', 'Organizer-Add Test', 'Testville', 'TS') RETURNING id`
     );
-    if (placeholder.length === 0) return; // no placeholders seeded; nothing to assert
-
-    const bracketId = await makeBracket();
-    const result = await add(bracketId, placeholder[0].id);
-    expect(result.ok).toBe(false);
-    expect(result.reason).toBe('not_registered');
+    try {
+      const bracketId = await makeBracket();
+      const result = await add(bracketId, placeholder.id);
+      expect(result.ok).toBe(false);
+      expect(result.reason).toBe('not_registered');
+    } finally {
+      await executeSql('DELETE FROM public.bracket_hopper WHERE member_id = $1', [placeholder.id]);
+      await executeSql('DELETE FROM public.members WHERE id = $1', [placeholder.id]);
+    }
   });
 
   it('refuses once the tournament has started', async () => {

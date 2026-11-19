@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createTestClient } from '@/test/dbTestUtils';
+import { createTestClient, requireSeed } from '@/test/dbTestUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -109,10 +109,7 @@ describe('Championship Date Options Table - RLS Tests', () => {
 
   describe('UPDATE Operations - Vote Counts', () => {
     it('should allow incrementing vote count', async () => {
-      if (!testChampionshipId) {
-        console.warn('⚠️ No test championship found, skipping test');
-        return;
-      }
+      requireSeed(testChampionshipId, 'No test championship found');
 
       const { data: before } = await client
         .from('championship_date_options')
@@ -120,7 +117,7 @@ describe('Championship Date Options Table - RLS Tests', () => {
         .eq('id', testChampionshipId)
         .single();
 
-      if (!before) return;
+      requireSeed(before, 'before is required');
 
       const newVoteCount = before.vote_count + 1;
       const { error } = await client
@@ -147,10 +144,7 @@ describe('Championship Date Options Table - RLS Tests', () => {
     });
 
     it('should allow marking as dev-verified', async () => {
-      if (!testChampionshipId) {
-        console.warn('⚠️ No test championship found, skipping test');
-        return;
-      }
+      requireSeed(testChampionshipId, 'No test championship found');
 
       const { data: before } = await client
         .from('championship_date_options')
@@ -158,7 +152,7 @@ describe('Championship Date Options Table - RLS Tests', () => {
         .eq('id', testChampionshipId)
         .single();
 
-      if (!before) return;
+      requireSeed(before, 'before is required');
 
       const { error } = await client
         .from('championship_date_options')
@@ -175,10 +169,7 @@ describe('Championship Date Options Table - RLS Tests', () => {
     });
 
     it('should allow updating championship dates', async () => {
-      if (!testChampionshipId) {
-        console.warn('⚠️ No test championship found, skipping test');
-        return;
-      }
+      requireSeed(testChampionshipId, 'No test championship found');
 
       const { data: before } = await client
         .from('championship_date_options')
@@ -186,7 +177,7 @@ describe('Championship Date Options Table - RLS Tests', () => {
         .eq('id', testChampionshipId)
         .single();
 
-      if (!before) return;
+      requireSeed(before, 'before is required');
 
       const { error } = await client
         .from('championship_date_options')
@@ -266,10 +257,7 @@ describe('Championship Date Options Table - RLS Tests', () => {
         .select()
         .single();
 
-      if (!testChampionship) {
-        console.warn('⚠️ Could not create test championship, skipping test');
-        return;
-      }
+      requireSeed(testChampionship, 'Could not create test championship');
 
       // Delete it
       const { error } = await client
@@ -369,10 +357,8 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
 
   describe('INSERT Operations - Setting Championship Preferences', () => {
     it('should allow creating blackout preference for BCA championship', async () => {
-      if (!testOrgId || !testChampionshipId) {
-        console.warn('⚠️ No test org/championship found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test org/championship found');
+      requireSeed(testChampionshipId, 'No test org/championship found');
 
       const { data: newPref, error } = await client
         .from('operator_blackout_preferences')
@@ -401,10 +387,8 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
     });
 
     it('should allow creating ignore preference for championship', async () => {
-      if (!testOrgId || !testChampionshipId) {
-        console.warn('⚠️ No test org/championship found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test org/championship found');
+      requireSeed(testChampionshipId, 'No test org/championship found');
 
       const { data: newPref, error } = await client
         .from('operator_blackout_preferences')
@@ -432,10 +416,7 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
     });
 
     it('should enforce championship_id is required for championship type', async () => {
-      if (!testOrgId) {
-        console.warn('⚠️ No test org found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test org found');
 
       // Try to create championship preference without championship_id
       const { error } = await client
@@ -454,10 +435,8 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
 
   describe('UPDATE Operations - Changing Championship Preferences', () => {
     it('should allow changing from blackout to ignore', async () => {
-      if (!testOrgId || !testChampionshipId) {
-        console.warn('⚠️ No test org/championship found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test org/championship found');
+      requireSeed(testChampionshipId, 'No test org/championship found');
 
       // Create test preference
       const { data: testPref } = await client
@@ -471,7 +450,7 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
         .select()
         .single();
 
-      if (!testPref) return;
+      requireSeed(testPref, 'testPref is required');
 
       // Change to ignore
       const { error } = await client
@@ -498,10 +477,8 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
     });
 
     it('should allow toggling auto_apply', async () => {
-      if (!testOrgId || !testChampionshipId) {
-        console.warn('⚠️ No test org/championship found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test org/championship found');
+      requireSeed(testChampionshipId, 'No test org/championship found');
 
       // Create test preference
       const { data: testPref } = await client
@@ -516,7 +493,7 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
         .select()
         .single();
 
-      if (!testPref) return;
+      requireSeed(testPref, 'testPref is required');
 
       // Toggle auto_apply
       const { error } = await client
@@ -536,10 +513,8 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
 
   describe('DELETE Operations - Removing Championship Preferences', () => {
     it('should allow deleting championship preferences', async () => {
-      if (!testOrgId || !testChampionshipId) {
-        console.warn('⚠️ No test org/championship found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test org/championship found');
+      requireSeed(testChampionshipId, 'No test org/championship found');
 
       // Create test preference
       const { data: testPref } = await client
@@ -553,7 +528,7 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
         .select()
         .single();
 
-      if (!testPref) return;
+      requireSeed(testPref, 'testPref is required');
 
       // Delete it
       const { error } = await client
@@ -576,10 +551,7 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
 
   describe('Integration Tests - Full Workflow', () => {
     it('should support full championship preference workflow', async () => {
-      if (!testOrgId) {
-        console.warn('⚠️ No test org found, skipping test');
-        return;
-      }
+      requireSeed(testOrgId, 'No test org found');
 
       // Step 1: Create championship date option
       const year = 2028;
@@ -595,7 +567,7 @@ describe('Operator Blackout Preferences - Championship Integration', () => {
         .select()
         .single();
 
-      if (!championship) return;
+      requireSeed(championship, 'championship is required');
 
       // Step 2: Create blackout preference for this championship
       const { data: preference } = await client

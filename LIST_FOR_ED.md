@@ -38,6 +38,8 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Build a league finder so a player with no team can find a league near them](docs/list/2026-11-13-league-finder.md)
 - [Rewrite the About page into fewer, fuller sections so it isn't a chore to read](docs/list/2026-11-16-about-page-rewrite.md)
 - [Go through every test, make sure each one can actually fail, and cut the ones that add nothing](docs/list/2026-11-16-test-suite-audit.md)
+- [Flag a match result that doesn't add up, without ever blocking the match](docs/list/2026-11-18-flag-results-that-dont-add-up.md)
+- [Before a league with a new setup goes live, give that setup's scoring code the full test pass](docs/list/2026-11-19-guard-new-setup-before-it-goes-live.md)
 
 ## Wish list
 
@@ -54,6 +56,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Past-match result cards on the schedule could show more in less room](docs/list/2026-10-29-past-match-result-cards.md)
 - [Schedule a tournament ahead of time so players can find it nearby and join its hopper early](docs/list/2026-11-16-scheduled-tournaments-finder.md)
 - [Let a venue owner see and manage what's booked at their venue](docs/list/2026-11-16-venue-owner-view.md)
+- [A printable blank scoresheet, for nights the internet is down](docs/list/2026-11-17-printable-scoresheet.md)
 
 ## Gated
 
