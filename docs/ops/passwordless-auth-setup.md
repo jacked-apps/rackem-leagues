@@ -1,21 +1,28 @@
 # Passwordless Sign-In — Production Setup Checklist
 
-Hosted-dashboard + env steps to do **before** turning the passwordless one-door on
-in production. These cannot be verified by tests or code review — they live in the
-Supabase dashboard and deploy env. See also the top-level `PRE_LAUNCH_CHECKLIST.md`.
+Hosted-dashboard + env steps for the passwordless one-door in production. These
+cannot be verified by tests or code review — they live in the Supabase dashboard
+and deploy env. See also the top-level `PRE_LAUNCH_CHECKLIST.md`.
+
+> **Status (2026-11-19):** the flag is already ON in production (PR #174, June
+> 2026). It was flipped before the SMTP and template boxes below were confirmed.
+> The step-by-step fix, using MXroute as the mail server, is
+> `docs/ops/mxroute-production-email.md`. Staging deliberately stays on Supabase's
+> built-in mailer as a sandbox.
 
 > Local dev needs none of this: the local Magic Link template
 > (`supabase/templates/magic_link.html`) already sends a typed code, and Mailpit
 > (`http://localhost:54324`) captures it. The feature flag defaults ON in dev.
 
-## Required before flipping the flag in production
+## Production checklist
 
 - [ ] **OTP email template → code.** In Supabase Dashboard → Authentication → Email
   Templates → *Magic Link*, ensure the body uses `{{ .Token }}` (the 6-digit code),
   not `{{ .ConfirmationURL }}` (a link).
-- [ ] **Custom SMTP.** Configure custom SMTP (Resend — already used for invites).
-  The built-in mailer is capped at ~2 emails/hour project-wide and is unusable for
-  real sign-in volume.
+- [ ] **Custom SMTP.** Configure custom SMTP through **MXroute** (decided
+  2026-11-19, already paid for; see `docs/ops/mxroute-production-email.md`). The
+  built-in mailer only reaches Supabase team members, a few emails an hour, so it
+  can't handle real sign-in volume.
 - [ ] **Email confirmations ON.** Authentication → Providers → Email → "Confirm
   email" enabled. Required so same-email Google/Facebook/email-OTP accounts auto-link
   into one user instead of duplicating (and to prevent email-takeover).
@@ -29,8 +36,8 @@ Supabase dashboard and deploy env. See also the top-level `PRE_LAUNCH_CHECKLIST.
 - [ ] **Facebook** (when Unit 5 ships): create the Facebook developer app, pass
   **App Review** for the `email` permission, register the OAuth callback. Until
   review clears, only tester accounts can use it.
-- [ ] **Flip the flag.** Set `VITE_PASSWORDLESS_SIGN_IN=true` in the production
-  deploy env only after all the above are verified.
+- [x] **Flip the flag.** `VITE_PASSWORDLESS_SIGN_IN=true` is set in
+  `.github/workflows/deploy-production.yml` (PR #174) and in `deploy-staging.yml`.
 
 ## Local testing (already works)
 

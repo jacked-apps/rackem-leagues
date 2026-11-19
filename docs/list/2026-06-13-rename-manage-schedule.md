@@ -2,7 +2,7 @@
 summary: Rename the dates page from "Manage Schedule" to "Schedule"
 kind: task
 added: 2026-06-13
-checked: 2026-11-16
+checked: 2026-11-19
 ---
 
 `SeasonScheduleManager` is the dates and blackouts page. It is still titled "Manage Schedule" at `/manage-schedule`. It should be "Schedule" at `/schedule`, which is free now that the matchups page lives at `/matchups`.

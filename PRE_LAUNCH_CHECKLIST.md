@@ -68,10 +68,13 @@
 ## 🔐 Passwordless sign-in go-live (when that feature ships)
 
 See `docs/plans/2026-05-28-001-feat-passwordless-sign-in-plan.md`. The plan gates the
-new one-door behind a **feature flag / env guard**; do NOT flip it on until:
+new one-door behind a **feature flag / env guard**. **The flag is already ON in
+production** (PR #174, June 2026), so the boxes below are now catch-up work, not a
+gate. Mail-server setup: `docs/ops/mxroute-production-email.md`.
 
-- [ ] **Custom SMTP** configured (Resend) — the default Supabase mailer is only
-  2 emails/hour, unusable for real sign-in volume.
+- [ ] **Custom SMTP** configured (**MXroute**, decided 2026-11-19). The default
+  Supabase mailer only reaches team members, a few emails an hour, so it can't
+  handle real sign-in volume.
 - [ ] **OTP email template** set to send a **code** (`{{ .Token }}`), not a magic link.
 - [ ] **Redirect allow-list** — exact URLs added (production `site_url` + the OAuth
   landing route), one entry per environment.
@@ -79,7 +82,7 @@ new one-door behind a **feature flag / env guard**; do NOT flip it on until:
   enabled on the public email box.
 - [ ] **Facebook** — App Review cleared before exposing the button to non-tester
   users (Google + email cover everyone meanwhile).
-- [ ] **Flip the feature flag ON** only after all of the above are verified.
+- [x] **Feature flag ON**: done in PR #174, before the boxes above were checked.
 
 ---
 
