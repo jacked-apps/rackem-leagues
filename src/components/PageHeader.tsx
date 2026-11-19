@@ -56,6 +56,12 @@ const OPERATOR_ROUTE_PATTERNS: readonly RegExp[] = [
   /^\/league-rules\//,
 ];
 
+/** Pages that show their own big Sign in button, so the header's small one
+ *  would be a second copy. Home (`/`) has Sign in + Create account up top
+ *  for visitors (Ed, 2026-11-16). Unlike AUTH_FLOW_ROUTES this only hides
+ *  the button; the header layout is unchanged. */
+const OWN_SIGN_IN_ROUTES: readonly string[] = ['/'];
+
 /** Routes where the right-slot Sign-in button is suppressed (rendering it
  *  would be redundant on the login page or contextually wrong on the other
  *  auth-flow pages). */
@@ -377,7 +383,7 @@ function BackAffordance({
 function IdentitySlot({ pathname }: { pathname: string }) {
   const { isLoggedIn } = useUser();
 
-  if (AUTH_FLOW_ROUTES.includes(pathname)) {
+  if (AUTH_FLOW_ROUTES.includes(pathname) || OWN_SIGN_IN_ROUTES.includes(pathname)) {
     return null;
   }
 

@@ -4,18 +4,24 @@
  * Landing page for Rack'em Leagues. Shows public content that anyone can browse,
  * whether logged in or not. This is a discovery page for the app.
  *
- * Public features (coming soon):
- * - Browse leagues/organizations
- * - View live scoreboards
- * - Check standings
- * - Find a league near you
+ * Live today: "Run Your Own League" (the public Become a League Operator page),
+ * Official Rules, Learn (the glossary) and About Us. Visitors get Sign in +
+ * Create account buttons up top; a signed-in member gets a
+ * "Go to My Teams" button;
+ * My Teams sends a member with no team here for more options.
+ *
+ * Coming soon (placeholder cards): Find a League — the league finder
+ * (docs/list/2026-11-13-league-finder.md) — and Find a Tournament
+ * (docs/list/2026-11-16-scheduled-tournaments-finder.md).
  */
 import { Link } from 'react-router-dom';
 import { useUser } from '../context/useUser';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
-import { Building2, Trophy, Radio, MapPin, BookOpen, LayoutDashboard, ArrowRight } from 'lucide-react';
+import {
+  MapPin, Trophy, BookOpen, Briefcase, GraduationCap, Info, Users, ArrowRight, LogIn, UserPlus,
+} from 'lucide-react';
 import { ShareAppCard } from '@/components/ShareAppCard';
 import { toast } from 'sonner';
 
@@ -53,6 +59,26 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
   );
 }
 
+/**
+ * A live Home card that opens a page.
+ * Same look as FeatureCard, but it navigates instead of saying "Coming Soon".
+ */
+function LinkCard({ to, icon, title, description }: FeatureCardProps & { to: string }) {
+  return (
+    <Link to={to}>
+      <Card className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all">
+        <CardHeader className="flex flex-row items-center gap-4">
+          <div className="p-2 bg-primary/10 rounded-lg text-primary">{icon}</div>
+          <div>
+            <CardTitle className="text-lg">{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
+          </div>
+        </CardHeader>
+      </Card>
+    </Link>
+  );
+}
+
 export const Home: React.FC = () => {
   const { loading: authLoading, isLoggedIn } = useUser();
 
@@ -60,11 +86,7 @@ export const Home: React.FC = () => {
   if (authLoading) {
     return (
       <div>
-        <PageHeader
-          backTo="/about"
-          backLabel="About Us"
-          title="Rack'em Leagues"
-        />
+        <PageHeader title="Rack'em Leagues" />
         <div className="max-w-2xl mx-auto p-6">
           <p>Loading...</p>
         </div>
@@ -78,15 +100,12 @@ export const Home: React.FC = () => {
   // longer needs to thread auth buttons through rightContent.
   return (
     <div>
-      <PageHeader
-        backTo="/about"
-        backLabel="About Us"
-        title="Rack'em Leagues"
-        subtitle="Pool league management made simple"
-      />
+      {/* No back arrow: Home is the top page. About is a card below. */}
+      <PageHeader title="Rack'em Leagues" subtitle="Pool league management made simple" />
 
       <div className="max-w-4xl mx-auto p-6 space-y-8">
-        {/* Dashboard CTA — only shown when the user is signed in.
+        {/* My Teams CTA (it said "My Dashboard", which now just forwards to
+            My Teams) — only shown when the user is signed in.
             Previously the only route to /dashboard from the home page
             was via the hamburger menu, which is too hidden for what
             is effectively the primary landing destination for every
@@ -96,17 +115,42 @@ export const Home: React.FC = () => {
             (which makes sense for the public-discovery framing of
             the home page). */}
         {isLoggedIn && (
-          <Link to="/dashboard" className="block">
+          <Link to="/my-teams" className="block">
             <Button
               size="lg"
               loadingText="none"
               className="w-full h-14 text-base font-semibold flex items-center justify-center gap-3"
             >
-              <LayoutDashboard className="h-5 w-5" />
-              Go to My Dashboard
+              <Users className="h-5 w-5" />
+              Go to My Teams
               <ArrowRight className="h-5 w-5" />
             </Button>
           </Link>
+        )}
+
+        {/* Visitors: the front door. Sign in / create an account right here,
+            instead of only a small icon in the header (Ed, 2026-11-16). The
+            cards below let them look around first. */}
+        {!isLoggedIn && (
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/login" className="block">
+              <Button size="lg" loadingText="none" className="w-full h-14 text-base font-semibold">
+                <LogIn className="h-5 w-5" />
+                Sign in
+              </Button>
+            </Link>
+            <Link to="/register" className="block">
+              <Button
+                size="lg"
+                variant="outline"
+                loadingText="none"
+                className="w-full h-14 text-base font-semibold"
+              >
+                <UserPlus className="h-5 w-5" />
+                Create account
+              </Button>
+            </Link>
+          </div>
         )}
 
         {/* Feature cards */}
@@ -115,46 +159,53 @@ export const Home: React.FC = () => {
             Explore
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Ordered by what a newcomer most likely wants: find a league to play
+              in or a tournament to enter, then start a league (Ed, 2026-11-16). Find a
+              League and Find a Tournament are still placeholders, so their text
+              says Coming Soon up front. Standings and Live
+              Scoreboards were dropped: a signed-out visitor has no league for
+              us to show, and members reach both from the menu (Ed, 2026-11-16). */}
+          <div className="grid grid-cols-1 gap-4">
             <FeatureCard
-              icon={<Building2 className="h-6 w-6" />}
-              title="Browse Leagues"
-              description="View leagues and organizations in your area"
-            />
-
-            <FeatureCard
-              icon={<Radio className="h-6 w-6" />}
-              title="Live Scoreboards"
-              description="Watch matches in progress in real-time"
+              icon={<MapPin className="h-6 w-6" />}
+              title="Find a League"
+              description="Coming soon: search for leagues near you to join."
             />
 
             <FeatureCard
               icon={<Trophy className="h-6 w-6" />}
-              title="Standings"
-              description="Check current season standings and stats"
+              title="Find a Tournament"
+              description="Coming soon: find tournaments near you and sign up early."
             />
 
-            <FeatureCard
-              icon={<MapPin className="h-6 w-6" />}
-              title="Find a League"
-              description="Search for leagues near you to join"
+            <LinkCard
+              to="/become-league-operator"
+              icon={<Briefcase className="h-6 w-6" />}
+              title="Run Your Own League"
+              description="See what it takes to become a league operator, and what it costs."
             />
 
-            <Link to="/rules" className="md:col-span-2">
-              <Card className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all">
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                    <BookOpen className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Official Rules</CardTitle>
-                    <CardDescription>
-                      Browse the BCA / CSI rulebook. Search any rule to settle a dispute.
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-              </Card>
-            </Link>
+            <LinkCard
+              to="/rules"
+              icon={<BookOpen className="h-6 w-6" />}
+              title="Official Rules"
+              description="Browse the BCA / CSI rulebook. Search any rule to settle a dispute."
+            />
+
+            <LinkCard
+              to="/learn"
+              icon={<GraduationCap className="h-6 w-6" />}
+              title="Learn"
+              description="How Rack'em Leagues works: handicaps, formats, scoring and the words we use."
+            />
+
+            <LinkCard
+              to="/about"
+              icon={<Info className="h-6 w-6" />}
+              title="About Us"
+              description="Who we are and why we built Rack'em Leagues."
+            />
+
           </div>
         </div>
 

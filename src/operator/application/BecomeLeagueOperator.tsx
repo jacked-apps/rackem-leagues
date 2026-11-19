@@ -1,9 +1,13 @@
 /**
  * @fileoverview League Operator Landing Page
- * Informational page explaining benefits and requirements of becoming a league operator
+ * Informational page explaining benefits and requirements of becoming a league operator.
+ * Public: visitors can read it without an account, and its "Start Application"
+ * button asks them to sign in (the application itself is signed-in only).
+ * Reached from the menu's Operator spot, Profile, Pricing and the Home page.
  */
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useUser } from '@/context/useUser';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 
@@ -22,6 +26,8 @@ import { PageHeader } from '@/components/PageHeader';
  * - Call-to-action to start application
  */
 export const BecomeLeagueOperator: React.FC = () => {
+  const { isLoggedIn } = useUser();
+
   // Scroll to top on mount (fixes issue where page loads in middle)
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -30,9 +36,11 @@ export const BecomeLeagueOperator: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-info/10 to-highlight/10">
       {/* Page Header */}
+      {/* The page is public: a visitor goes back to Home, since My Teams
+          would only send them to the sign-in screen. */}
       <PageHeader
-        backTo="/my-teams"
-        backLabel="Back to My Teams"
+        backTo={isLoggedIn ? '/my-teams' : '/'}
+        backLabel={isLoggedIn ? 'Back to My Teams' : 'Back to Home'}
         title="Become a League Operator"
         subtitle="Start running your own pool leagues and earn revenue"
       >

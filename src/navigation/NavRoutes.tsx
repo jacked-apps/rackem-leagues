@@ -235,8 +235,13 @@ export const router = createBrowserRouter([
           { index: true, element: <Home /> },
           { path: 'about', element: <About /> },
 
+          // Become a League Operator — public sales info (it reads nothing from
+          // the account), so a visitor can learn about running a league before
+          // signing up. Its "Start Application" button leads to the signed-in
+          // application below, which sends a visitor to sign in and back.
+          { path: 'become-league-operator', element: <BecomeLeagueOperator /> },
+
           // --- Signed-in pages reached from Profile (same reason). ---
-          { path: 'become-league-operator', element: withAuth(<BecomeLeagueOperator />) },
           { path: 'league-operator-application', element: withAuth(<LeagueOperatorApplication />) },
           // Become a Host — gated off in production until the game room ships.
           // What it sells is the ability to host game rooms, which production does
@@ -325,9 +330,11 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/season/:seasonId/feats', element: withMember(<FeatsOfExcellence />) },
           { path: 'league/:leagueId/season/:seasonId/match-data', element: withMember(<MatchDataViewer />) },
 
-          // --- Learn hub — any signed-in user (operators AND players share
-          //     this destination; deep links from glossary popovers land here) ---
-          { path: 'learn', element: withAuth(<Suspense fallback={<LoadingSpinner />}><Learn /></Suspense>) },
+          // --- Learn hub — public, like Rules: the glossary is fixed text that
+          //     reads nothing from the account or database, and it shows a
+          //     visitor how the app works (Ed, 2026-11-16). Members reach it from
+          //     the menu; deep links from glossary popovers land here too. ---
+          { path: 'learn', element: <Suspense fallback={<LoadingSpinner />}><Learn /></Suspense> },
 
           // --- Operator Routes (require league_operator role) ---
           { path: 'operator-welcome', element: withOperator(OperatorWelcome) },

@@ -1,0 +1,32 @@
+/**
+ * @fileoverview Tests for the Home page's live doors: "Run Your Own League"
+ * shows to everyone (the Become a League Operator page is public), and a
+ * signed-in member's big button goes straight to My Teams.
+ */
+
+import { describe, it, expect } from 'vitest';
+import { renderWithProviders, screen } from '@/test/utils';
+import { Home } from './Home';
+
+describe('Home', () => {
+  it('shows a signed-out visitor the Run Your Own League card', () => {
+    renderWithProviders(<Home />, { userContext: { isLoggedIn: false, user: null } });
+    const card = screen.getByText('Run Your Own League').closest('a');
+    expect(card).toHaveAttribute('href', '/become-league-operator');
+    expect(screen.getByText('Learn').closest('a')).toHaveAttribute('href', '/learn');
+    expect(screen.getByText('About Us').closest('a')).toHaveAttribute('href', '/about');
+    // Only the big button: Home hides the header's small Sign in.
+    for (const link of screen.getAllByRole('link', { name: /sign in/i })) {
+      expect(link).toHaveAttribute('href', '/login');
+    }
+    expect(screen.getByRole('link', { name: /create account/i })).toHaveAttribute('href', '/register');
+    expect(screen.queryByText('Go to My Teams')).not.toBeInTheDocument();
+  });
+
+  it('gives a signed-in member a button to My Teams', () => {
+    renderWithProviders(<Home />);
+    expect(screen.getByText('Go to My Teams').closest('a')).toHaveAttribute('href', '/my-teams');
+    expect(screen.getByText('Run Your Own League')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /create account/i })).not.toBeInTheDocument();
+  });
+});
