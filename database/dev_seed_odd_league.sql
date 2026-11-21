@@ -8,9 +8,13 @@
 -- What you get, in "Tester Org" (log in as dev@test.com / password):
 --   * League "7-team drop test" (8-Ball), starting one week from today
 --   * Season: 16 regular weeks + Season End Break + Playoffs, status upcoming
---   * 7 active teams with captains + 4 placeholder players each
---       Teams 1-4 captained by the 4 dev logins (cap1, cap3, dev, cap2)
---       Teams 5-7 captained by placeholder members
+--   * 3 more captain logins (password "password"), created if missing:
+--       cap4@test.com (Mike Captain), cap5@test.com (Tina Captain),
+--       cap6@test.com (Oscar Captain)
+--   * 7 active teams, each a captain login + 4 placeholder players:
+--       Team 1 cap1, Team 2 cap3, Team 3 dev, Team 4 cap2,
+--       Team 5 cap4, Team 6 cap5, Team 7 cap6
+--     so every team has someone who can log in and score.
 --   * Two venues so you can SEE "venue follows the home team":
 --       Teams 1-4 home = Sams's Billiards, Teams 5-7 home = Corner Pocket
 --   * NO matches. Generate the schedule in the app (league page →
@@ -39,6 +43,46 @@ BEGIN
   END IF;
 END $$;
 
+-- ----------------------------------------------------------------------------
+-- 3 extra captain logins (same shape as dev_starting_point Step 1-2: GoTrue
+-- needs '' token columns + an email identity row). Created only if missing,
+-- so re-running never disturbs anything they've done.
+-- ----------------------------------------------------------------------------
+INSERT INTO auth.users (id, instance_id, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, aud, role, created_at, updated_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change)
+VALUES
+  ('c4c4c4c4-aaaa-aaaa-aaaa-c4c4c4c4c4c4'::uuid, '00000000-0000-0000-0000-000000000000', 'cap4@test.com',
+   '$2a$10$K8ZVjU8Oc5P67Fdy1VK.vOxU/vbguRDS.2WAoAE46QhkW8aoIBdXO', NOW(), '{"provider": "email", "providers": ["email"]}', '{}',
+   'authenticated', 'authenticated', NOW(), NOW(), '', '', '', ''),
+  ('c5c5c5c5-aaaa-aaaa-aaaa-c5c5c5c5c5c5'::uuid, '00000000-0000-0000-0000-000000000000', 'cap5@test.com',
+   '$2a$10$K8ZVjU8Oc5P67Fdy1VK.vOxU/vbguRDS.2WAoAE46QhkW8aoIBdXO', NOW(), '{"provider": "email", "providers": ["email"]}', '{}',
+   'authenticated', 'authenticated', NOW(), NOW(), '', '', '', ''),
+  ('c6c6c6c6-aaaa-aaaa-aaaa-c6c6c6c6c6c6'::uuid, '00000000-0000-0000-0000-000000000000', 'cap6@test.com',
+   '$2a$10$K8ZVjU8Oc5P67Fdy1VK.vOxU/vbguRDS.2WAoAE46QhkW8aoIBdXO', NOW(), '{"provider": "email", "providers": ["email"]}', '{}',
+   'authenticated', 'authenticated', NOW(), NOW(), '', '', '', '')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+VALUES
+  ('c4c4c4c4-aaaa-aaaa-aaaa-c4c4c4c4c4c4', 'c4c4c4c4-aaaa-aaaa-aaaa-c4c4c4c4c4c4'::uuid,
+   '{"sub":"c4c4c4c4-aaaa-aaaa-aaaa-c4c4c4c4c4c4","email":"cap4@test.com","email_verified":false,"phone_verified":false}'::jsonb, 'email', NOW(), NOW(), NOW()),
+  ('c5c5c5c5-aaaa-aaaa-aaaa-c5c5c5c5c5c5', 'c5c5c5c5-aaaa-aaaa-aaaa-c5c5c5c5c5c5'::uuid,
+   '{"sub":"c5c5c5c5-aaaa-aaaa-aaaa-c5c5c5c5c5c5","email":"cap5@test.com","email_verified":false,"phone_verified":false}'::jsonb, 'email', NOW(), NOW(), NOW()),
+  ('c6c6c6c6-aaaa-aaaa-aaaa-c6c6c6c6c6c6', 'c6c6c6c6-aaaa-aaaa-aaaa-c6c6c6c6c6c6'::uuid,
+   '{"sub":"c6c6c6c6-aaaa-aaaa-aaaa-c6c6c6c6c6c6","email":"cap6@test.com","email_verified":false,"phone_verified":false}'::jsonb, 'email', NOW(), NOW(), NOW())
+ON CONFLICT DO NOTHING;
+
+INSERT INTO members (id, user_id, first_name, last_name, nickname, email, city, state, role)
+VALUES
+  ('c4c4c4c4-bbbb-bbbb-bbbb-c4c4c4c4c4c4'::uuid, 'c4c4c4c4-aaaa-aaaa-aaaa-c4c4c4c4c4c4'::uuid,
+   'Mike', 'Captain', 'Mikey', 'cap4@test.com', 'Somecity', 'FL', 'player'),
+  ('c5c5c5c5-bbbb-bbbb-bbbb-c5c5c5c5c5c5'::uuid, 'c5c5c5c5-aaaa-aaaa-aaaa-c5c5c5c5c5c5'::uuid,
+   'Tina', 'Captain', 'Tee', 'cap5@test.com', 'Somecity', 'FL', 'player'),
+  ('c6c6c6c6-bbbb-bbbb-bbbb-c6c6c6c6c6c6'::uuid, 'c6c6c6c6-aaaa-aaaa-aaaa-c6c6c6c6c6c6'::uuid,
+   'Oscar', 'Captain', 'Oz', 'cap6@test.com', 'Somecity', 'FL', 'player')
+ON CONFLICT (id) DO NOTHING;
+
 DO $$
 DECLARE
   v_org_id     UUID := '01010101-cccc-cccc-cccc-010101010101';
@@ -51,11 +95,13 @@ DECLARE
     'c1c1c1c1-bbbb-bbbb-bbbb-c1c1c1c1c1c1'::uuid,  -- Team 1: cap1
     'c3c3c3c3-bbbb-bbbb-bbbb-c3c3c3c3c3c3'::uuid,  -- Team 2: cap3
     'd0d0d0d0-bbbb-bbbb-bbbb-d0d0d0d0d0d0'::uuid,  -- Team 3: dev
-    'c2c2c2c2-bbbb-bbbb-bbbb-c2c2c2c2c2c2'::uuid   -- Team 4: cap2
+    'c2c2c2c2-bbbb-bbbb-bbbb-c2c2c2c2c2c2'::uuid,  -- Team 4: cap2
+    'c4c4c4c4-bbbb-bbbb-bbbb-c4c4c4c4c4c4'::uuid,  -- Team 5: cap4
+    'c5c5c5c5-bbbb-bbbb-bbbb-c5c5c5c5c5c5'::uuid,  -- Team 6: cap5
+    'c6c6c6c6-bbbb-bbbb-bbbb-c6c6c6c6c6c6'::uuid   -- Team 7: cap6
   ];
   v_pool       UUID[];
   v_team_id    UUID;
-  v_captain    UUID;
   v_pidx       INT := 1;
   v_i          INT;
   v_j          INT;
@@ -124,30 +170,23 @@ BEGIN
 
   --------------------------------------------------------------------------
   -- 7 teams. Placeholder pool: skip the 48 used by Leagues 1-3, then take
-  -- 3 captains (teams 5-7) + 28 roster players, in stable email order.
+  -- 28 roster players (4 per team), in stable email order.
   --------------------------------------------------------------------------
   SELECT array_agg(id ORDER BY email) INTO v_pool
     FROM (SELECT id, email FROM members WHERE email LIKE '%@example.com'
-          ORDER BY email OFFSET 48 LIMIT 31) p;
-  IF coalesce(array_length(v_pool, 1), 0) < 31 THEN
-    RAISE EXCEPTION 'Need 79 placeholder members (@example.com); found fewer. Run dev_starting_point.sql.';
+          ORDER BY email OFFSET 48 LIMIT 28) p;
+  IF coalesce(array_length(v_pool, 1), 0) < 28 THEN
+    RAISE EXCEPTION 'Need 76 placeholder members (@example.com); found fewer. Run dev_starting_point.sql.';
   END IF;
 
   FOR v_i IN 1..7 LOOP
     v_team_id := ('0c0c0c0c-4444-4444-4444-0c0c0c0c0c0' || v_i)::uuid;
-    IF v_i <= 4 THEN
-      v_captain := v_captains[v_i];
-    ELSE
-      v_captain := v_pool[v_pidx];
-      v_pidx := v_pidx + 1;
-    END IF;
-
     INSERT INTO teams (id, season_id, league_id, team_name, captain_id, home_venue_id, roster_size, status)
-    VALUES (v_team_id, v_season_id, v_league_id, 'Team ' || v_i, v_captain,
+    VALUES (v_team_id, v_season_id, v_league_id, 'Team ' || v_i, v_captains[v_i],
       CASE WHEN v_i <= 4 THEN v_sams_id ELSE v_corner_id END, 5, 'active');
 
     INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
-    VALUES (v_team_id, v_season_id, v_captain, TRUE, 'active');
+    VALUES (v_team_id, v_season_id, v_captains[v_i], TRUE, 'active');
 
     FOR v_j IN 1..4 LOOP
       INSERT INTO team_players (team_id, season_id, member_id, is_captain, status)
