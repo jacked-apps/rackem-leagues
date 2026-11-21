@@ -95,7 +95,17 @@ export function useTeamActions(
     });
   };
 
-  const generateDefaultTeamName = (): string => `Team ${teams.length + 1}`;
+  /**
+   * The first "Team N" not already used. Counting teams instead (count + 1)
+   * collided after a drop: 6 teams left as 1-4, 6, 7 made the new one a second
+   * "Team 7".
+   */
+  const generateDefaultTeamName = (): string => {
+    const taken = new Set(teams.map((t) => t.team_name));
+    let n = 1;
+    while (taken.has(`Team ${n}`)) n++;
+    return `Team ${n}`;
+  };
 
   return {
     showTeamEditor,

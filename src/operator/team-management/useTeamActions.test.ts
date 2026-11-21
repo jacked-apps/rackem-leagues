@@ -10,13 +10,20 @@ import { renderHook, act } from '@testing-library/react';
 import { useTeamActions } from './useTeamActions';
 
 const team = (id: string) => ({ id, team_name: `Team ${id}` } as any);
+const named = (team_name: string) => ({ id: team_name, team_name } as any);
 const setup = (teams: any[] = []) =>
   renderHook(() => useTeamActions(teams, vi.fn(), vi.fn().mockResolvedValue(true)));
 
 describe('useTeamActions', () => {
-  it('default team name is "Team <count+1>"', () => {
-    const { result } = setup([team('a'), team('b')]);
+  it('default team name is the next "Team N" when names run 1..count', () => {
+    const { result } = setup([named('Team 1'), named('Team 2')]);
     expect(result.current.generateDefaultTeamName()).toBe('Team 3');
+  });
+
+  it('default team name fills the gap a dropped team left, never a name in use', () => {
+    // Team 5 was dropped: 1-4, 6, 7 remain. "Team 7" (count + 1) is taken.
+    const { result } = setup(['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 6', 'Team 7'].map(named));
+    expect(result.current.generateDefaultTeamName()).toBe('Team 5');
   });
 
   it('openAddTeam opens the editor with no existing team', () => {
