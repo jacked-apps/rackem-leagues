@@ -9,6 +9,7 @@
  * completes the wizard.
  */
 
+import { invalidateSeasonSchedule } from '@/api/hooks/useInvalidateSeasonSchedule';
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -72,10 +73,8 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
       if (!result.success) throw new Error(result.error ?? 'Schedule generation failed');
       return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['schedules'] });
-      queryClient.invalidateQueries({ queryKey: ['matches'] });
-    },
+    // Also refreshes teams: generating creates the BYE for an odd count.
+    onSuccess: () => invalidateSeasonSchedule(queryClient, seasonId),
   });
 
   // Generate matches on mount if none exist for this season
@@ -142,8 +141,7 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
       toast.error(result.error ?? 'Failed to reset matchups');
       return;
     }
-    queryClient.invalidateQueries({ queryKey: ['schedules'] });
-    queryClient.invalidateQueries({ queryKey: ['matches'] });
+    await invalidateSeasonSchedule(queryClient, seasonId);
     toast.success('Matchups reset — adjust positions and regenerate');
     onBack();
   };

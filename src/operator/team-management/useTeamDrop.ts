@@ -21,6 +21,7 @@ import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { convertTeamToBye } from '@/api/mutations/teams';
 import { isProduction } from '@/config/environment';
+import { useInvalidateSeasonSchedule } from '@/api/hooks/useInvalidateSeasonSchedule';
 import { dropTeamOddLeague, fetchSeasonByeTeamId } from './dropTeamOddLeague';
 import { fetchSeasonScheduleState, removeTeamAndClearSchedule } from './preSeasonSchedule';
 import type { TeamWithQueryDetails } from '@/types/team';
@@ -40,11 +41,18 @@ const destructive = (title: string, message: string, confirmText: string): Confi
 const MID_SEASON_DROP = 'This team is withdrawn and its past results stay on the record. ';
 
 export function useTeamDrop({ teams, refreshTeams, confirm, onScheduleCleared }: UseTeamDropArgs) {
-  /** Confirm, run, refresh, toast. Returns true when the action succeeded. */
-  const run = async (options: ConfirmOptions, action: () => Promise<unknown>, success: string): Promise<boolean> => {
+  const scheduleChanged = useInvalidateSeasonSchedule();
+
+  /**
+   * Confirm, run, refresh, toast. Returns true when the action succeeded.
+   * `seasonId` set = the action changed that season's schedule, so the cache
+   * is told (otherwise other pages keep showing the old schedule).
+   */
+  const run = async (options: ConfirmOptions, action: () => Promise<unknown>, success: string, seasonId?: string): Promise<boolean> => {
     if (!(await confirm(options))) return false;
     try {
       await action();
+      if (seasonId) await scheduleChanged(seasonId);
       await refreshTeams();
       toast.success(success);
       return true;
@@ -70,7 +78,7 @@ export function useTeamDrop({ teams, refreshTeams, confirm, onScheduleCleared }:
           'No games have been played yet, so this team will be removed and the schedule deleted. You will then build a fresh schedule for the remaining teams. This cannot be undone.',
           'Remove & Rebuild'),
         () => removeTeamAndClearSchedule(teamId, seasonId),
-        'Team removed. Build the new schedule next.');
+        'Team removed. Build the new schedule next.', seasonId);
       if (done) onScheduleCleared?.(seasonId);
       return;
     }
@@ -81,7 +89,7 @@ export function useTeamDrop({ teams, refreshTeams, confirm, onScheduleCleared }:
           "For each remaining week, the team that was due to play it gets a new opponent (usually the team that had the bye that week), so nobody gets a bye from this. Played weeks don't change. This cannot be undone.",
           'Drop Team'),
         () => dropTeamOddLeague(teamId, seasonId, byeTeamId),
-        'Team dropped. The remaining schedule has been re-paired.');
+        'Team dropped. The remaining schedule has been re-paired.', seasonId);
       return;
     }
     await run(
@@ -89,7 +97,7 @@ export function useTeamDrop({ teams, refreshTeams, confirm, onScheduleCleared }:
         'A BYE replaces it for all its remaining matches, so its upcoming opponents get bye weeks. This cannot be undone.',
         'Drop Team'),
       midSeasonRpc(teamId, seasonId),
-      'Team dropped. Its remaining matches are now BYE weeks.');
+      'Team dropped. Its remaining matches are now BYE weeks.', seasonId);
   };
 
   /** Production rules, unchanged until the gate is lifted. */
@@ -106,7 +114,7 @@ export function useTeamDrop({ teams, refreshTeams, confirm, onScheduleCleared }:
           'A BYE replaces it for all its REMAINING matches, so its upcoming opponents get bye weeks. This cannot be undone.',
           'Drop Team'),
         midSeasonRpc(teamId, seasonId),
-        'Team dropped. Its remaining matches are now BYE weeks.');
+        'Team dropped. Its remaining matches are now BYE weeks.', seasonId);
       return;
     }
     await run(
@@ -114,7 +122,7 @@ export function useTeamDrop({ teams, refreshTeams, confirm, onScheduleCleared }:
         'This team becomes the BYE: its name and roster are cleared, its players are freed, and every team scheduled against it gets a bye week that week. The schedule is NOT regenerated. This cannot be undone.',
         'Drop to BYE'),
       () => convertTeamToBye({ teamId, seasonId }),
-      'Team dropped. Its schedule slot is now a BYE.');
+      'Team dropped. Its schedule slot is now a BYE.', seasonId);
   };
 
   const handleDeleteTeam = async (teamId: string) => {

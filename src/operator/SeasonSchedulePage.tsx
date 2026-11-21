@@ -13,6 +13,7 @@
  * "Schedule" page.)
  */
 
+import { useInvalidateSeasonSchedule } from '@/api/hooks/useInvalidateSeasonSchedule';
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
@@ -113,6 +114,7 @@ export const SeasonSchedulePage: React.FC = () => {
   const navigate = useNavigate();
   const isOperator = useIsOperator();
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+  const scheduleChanged = useInvalidateSeasonSchedule();
 
   // Fetch season data with TanStack Query
   const { data: season, isLoading: seasonLoading } = useSeasonById(seasonId);
@@ -301,6 +303,7 @@ export const SeasonSchedulePage: React.FC = () => {
     const result = await clearSchedule(seasonId);
 
     if (result.success) {
+      await scheduleChanged(seasonId);
       navigate(`/league/${leagueId}/season/${seasonId}/schedule-setup`);
     } else {
       setError(result.error || 'Failed to clear schedule');

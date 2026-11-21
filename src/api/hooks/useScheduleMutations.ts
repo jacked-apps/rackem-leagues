@@ -8,7 +8,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '../queryKeys';
+import { invalidateSeasonSchedule } from './useInvalidateSeasonSchedule';
 import {
   generateScheduleMutation,
   deleteSchedule,
@@ -48,17 +48,8 @@ export function useGenerateSchedule() {
   return useMutation({
     mutationFn: generateScheduleMutation,
     onSuccess: (result, variables) => {
-      if (result.success) {
-        // Invalidate all match queries for this season
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.schedules.bySeason(variables.seasonId),
-        });
-
-        // Invalidate match count queries
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.matches.all,
-        });
-      }
+      // Shared list of what a schedule change makes stale (incl. teams: BYE).
+      if (result.success) return invalidateSeasonSchedule(queryClient, variables.seasonId);
     },
   });
 }
@@ -96,17 +87,8 @@ export function useDeleteSchedule() {
   return useMutation({
     mutationFn: deleteSchedule,
     onSuccess: (result, variables) => {
-      if (result.success) {
-        // Invalidate all match queries for this season
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.schedules.bySeason(variables.seasonId),
-        });
-
-        // Invalidate all match queries
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.matches.all,
-        });
-      }
+      // Shared list of what a schedule change makes stale (incl. teams: BYE).
+      if (result.success) return invalidateSeasonSchedule(queryClient, variables.seasonId);
     },
   });
 }

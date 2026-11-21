@@ -15,6 +15,7 @@ import { Shuffle, Lock } from 'lucide-react';
 import { assignRandomPositions, generateSchedule, clearSchedule } from '@/utils/scheduleGenerator';
 import { hasMatchupTable } from '@/utils/matchupTables';
 import { createByeTeam } from '@/api/mutations/teams';
+import { useInvalidateSeasonSchedule } from '@/api/hooks/useInvalidateSeasonSchedule';
 import type { TeamWithQueryDetails } from '@/types/team';
 import { logger } from '@/utils/logger';
 
@@ -51,6 +52,7 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
   onSuccess,
   onCancel,
 }) => {
+  const scheduleChanged = useInvalidateSeasonSchedule();
   const needsByeTeam = teams.length % 2 !== 0;
   const effectiveTeamCount = needsByeTeam ? teams.length + 1 : teams.length;
   const hasTable = hasMatchupTable(effectiveTeamCount);
@@ -257,6 +259,9 @@ export const ScheduleSetup: React.FC<ScheduleSetupProps> = ({
         return;
       }
 
+      // New matches + (maybe) a new BYE: drop the cached schedule/teams so
+      // the next page shows this schedule, not the one it replaced.
+      await scheduleChanged(seasonId);
       onSuccess();
     } catch (err) {
       logger.error('Error generating schedule', { error: err instanceof Error ? err.message : String(err) });

@@ -20,6 +20,7 @@ import { isProduction } from '@/config/environment';
 import { clearSchedule } from '@/utils/scheduleGenerator';
 import { fetchSeasonScheduleState } from './preSeasonSchedule';
 import { useTeamDrop } from './useTeamDrop';
+import { useInvalidateSeasonSchedule } from '@/api/hooks/useInvalidateSeasonSchedule';
 import type { TeamWithQueryDetails } from '@/types/team';
 import type { ConfirmOptions } from '@/hooks/useConfirmDialog';
 
@@ -40,6 +41,7 @@ export function useTeamActions(
   const [editingTeam, setEditingTeam] = useState<TeamWithQueryDetails | null>(null);
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
   const { handleDeleteTeam } = useTeamDrop({ teams, refreshTeams, confirm, onScheduleCleared });
+  const scheduleChanged = useInvalidateSeasonSchedule();
 
   const openAddTeam = () => {
     setEditingTeam(null);
@@ -68,6 +70,7 @@ export function useTeamActions(
       if (!state.hasSchedule || state.started) return;
       const cleared = await clearSchedule(id);
       if (!cleared.success) throw new Error(cleared.error ?? 'Failed to clear the schedule');
+      await scheduleChanged(id);
       toast.success('Team added. The schedule was cleared so you can build a fresh one for the new team count.');
       onScheduleCleared?.(id);
     } catch (err) {

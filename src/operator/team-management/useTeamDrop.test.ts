@@ -33,6 +33,8 @@ vi.mock('./preSeasonSchedule', () => ({
 const toBye = vi.fn();
 vi.mock('@/api/mutations/teams', () => ({ convertTeamToBye: (...a: unknown[]) => toBye(...a) }));
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+const scheduleChanged = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/api/hooks/useInvalidateSeasonSchedule', () => ({ useInvalidateSeasonSchedule: () => scheduleChanged }));
 
 import { useTeamDrop } from './useTeamDrop';
 
@@ -55,6 +57,7 @@ describe('useTeamDrop: removing a scheduled team', () => {
     await drop();
     expect(removeAndClear).toHaveBeenCalledWith('t1', 's1');
     expect(onScheduleCleared).toHaveBeenCalledWith('s1');
+    expect(scheduleChanged).toHaveBeenCalledWith('s1'); // no stale schedule on other pages
     expect(oddDrop).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
     expect(toBye).not.toHaveBeenCalled();
@@ -65,6 +68,7 @@ describe('useTeamDrop: removing a scheduled team', () => {
     byeLookup.mockResolvedValue('bye-1');
     await drop();
     expect(oddDrop).toHaveBeenCalledWith('t1', 's1', 'bye-1');
+    expect(scheduleChanged).toHaveBeenCalledWith('s1');
     expect(removeAndClear).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
   });

@@ -1776,6 +1776,8 @@ High-level business logic services
 - `useReportQueries.ts` - User-report query hooks.
 - `useResolvedLeaguePrefs.ts` - Resolved-preference reader (the single shared resolver for org→league→season inheritance).
 - `useScheduleMutations.ts` - Schedule CRUD hooks.
+- `useInvalidateSeasonSchedule.ts` - The one "this season's schedule changed" cache refresh (schedule, match lists, team lists incl. BYE, standings). Every schedule writer calls it; without it pages show the old schedule for up to 5 minutes.
+- `useInvalidateSeasonSchedule.test.ts` - Marks this season stale, leaves other seasons cached.
 - `useSeasonMutations.ts` - Season CRUD hooks.
 - `useSeasons.ts` - Season query hooks.
 - `useStandings.ts` - Standings query hook.

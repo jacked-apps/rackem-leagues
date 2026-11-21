@@ -17,6 +17,8 @@ const clear = vi.fn().mockResolvedValue({ success: true, matchesDeleted: 64 });
 vi.mock('@/utils/scheduleGenerator', () => ({ clearSchedule: (...a: unknown[]) => clear(...a) }));
 vi.mock('./useTeamDrop', () => ({ useTeamDrop: () => ({ handleDeleteTeam: vi.fn() }) }));
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+const scheduleChanged = vi.fn().mockResolvedValue(undefined);
+vi.mock('@/api/hooks/useInvalidateSeasonSchedule', () => ({ useInvalidateSeasonSchedule: () => scheduleChanged }));
 
 import { useTeamActions } from './useTeamActions';
 
@@ -33,6 +35,7 @@ describe('useTeamActions: schedule after adding a team', () => {
     act(() => result.current.openAddTeam());
     await act(() => result.current.handleTeamCreateSuccess());
     expect(clear).toHaveBeenCalledWith('s1');
+    expect(scheduleChanged).toHaveBeenCalledWith('s1');
     expect(onScheduleCleared).toHaveBeenCalledWith('s1');
   });
 

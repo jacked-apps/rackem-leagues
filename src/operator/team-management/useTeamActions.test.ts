@@ -6,13 +6,18 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
+import { createElement, type ReactNode } from 'react';
 import { renderHook, act } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTeamActions } from './useTeamActions';
 
 const team = (id: string) => ({ id, team_name: `Team ${id}` } as any);
 const named = (team_name: string) => ({ id: team_name, team_name } as any);
+// The hook reads the query client (it refreshes the schedule cache after a rebuild).
+const wrapper = ({ children }: { children: ReactNode }) =>
+  createElement(QueryClientProvider, { client: new QueryClient() }, children);
 const setup = (teams: any[] = []) =>
-  renderHook(() => useTeamActions(teams, vi.fn(), vi.fn().mockResolvedValue(true)));
+  renderHook(() => useTeamActions(teams, vi.fn(), vi.fn().mockResolvedValue(true)), { wrapper });
 
 describe('useTeamActions', () => {
   it('default team name is the next "Team N" when names run 1..count', () => {
