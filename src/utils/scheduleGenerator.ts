@@ -565,8 +565,14 @@ export async function generateSchedule({
 }
 
 /**
- * Delete all matches for a season
- * Use this to clear a schedule before regenerating
+ * Delete all matches for a season, and the season's BYE team.
+ * Use this to clear a schedule before regenerating.
+ *
+ * The BYE only exists to fill the odd slot of the schedule being cleared (no
+ * roster, no history once its matches are gone). Generation creates a fresh
+ * one when the new team count is odd. Leaving the old row behind made a
+ * regenerate at an odd count create a SECOND BYE, which then broke the
+ * odd-league team drop ("expected one BYE") and convertTeamToBye.
  *
  * @param seasonId - Season ID to clear matches for
  * @returns Result indicating success and number of matches deleted
@@ -594,6 +600,15 @@ export async function clearSchedule(seasonId: string): Promise<{
       .eq('season_id', seasonId);
 
     if (deleteError) throw deleteError;
+
+    // Its matches are gone, so nothing references the BYE any more.
+    const { error: byeError } = await supabase
+      .from('teams')
+      .delete()
+      .eq('season_id', seasonId)
+      .eq('status', 'bye');
+
+    if (byeError) throw byeError;
 
     return {
       success: true,
