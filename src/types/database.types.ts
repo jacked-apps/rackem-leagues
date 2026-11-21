@@ -4336,6 +4336,16 @@ export type Database = {
         Args: { p_accept: boolean; p_room_id: string }
         Returns: Json
       }
+      apply_odd_league_drop: {
+        Args: {
+          p_delete_ids: string[]
+          p_rewire_ids: string[]
+          p_season_id: string
+          p_team_id: string
+          p_updates: Json
+        }
+        Returns: number
+      }
       approve_join_request: {
         Args: {
           p_action: string

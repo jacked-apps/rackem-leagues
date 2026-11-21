@@ -13,6 +13,8 @@ import { supabase } from '@/supabaseClient';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { convertTeamToBye } from '@/api/mutations/teams';
+import { dropTeamOddLeague, fetchSeasonByeTeamId } from './dropTeamOddLeague';
+import { isProduction } from '@/config/environment';
 import type { TeamWithQueryDetails } from '@/types/team';
 import type { ConfirmOptions } from '@/hooks/useConfirmDialog';
 
@@ -50,6 +52,9 @@ export function useTeamActions(
    * Delete or DROP a team, depending on its schedule state:
    *
    * - No matches yet → genuine hard delete (typo / pre-schedule cleanup).
+   * - Season already has a BYE (odd team count) → re-pair the remaining weeks
+   *   (`dropTeamOddLeague`: the dropped team's opponent and the bye-week team
+   *   play each other, Ed's hybrid), pre-season or mid-season alike.
    * - Schedule exists, no games played (pre-season) → repurpose the team's slot
    *   as the BYE (`convertTeamToBye`), keeping the round-robin even with NO
    *   reschedule.
@@ -114,6 +119,38 @@ export function useTeamActions(
     const seasonForTeam = teams.find((t) => t.id === teamId)?.season_id;
     if (!seasonForTeam) {
       toast.error('Could not determine the season for this team.');
+      return;
+    }
+
+    // Odd league (a BYE already exists): the two even-league paths below would
+    // need a second BYE, so re-pair the remaining weeks instead.
+    // GATED (docs/list/2026-11-21-gated-odd-league-drop.md): production skips
+    // this and keeps the old behavior (the even-league paths refuse a 2nd BYE).
+    let byeTeamId: string | null = null;
+    try {
+      if (!isProduction) byeTeamId = await fetchSeasonByeTeamId(seasonForTeam);
+    } catch (err) {
+      logger.error('Error checking for a BYE', { error: err instanceof Error ? err.message : String(err) });
+      toast.error("Could not check the season's schedule. Please try again.");
+      return;
+    }
+    if (byeTeamId) {
+      const confirmed = await confirm({
+        title: 'Drop this team?',
+        message:
+          "This team is withdrawn and its past results stay on the record. For each remaining week, the team that was due to play it gets a new opponent (usually the team that had the bye that week), so nobody gets a bye from this. Played weeks don't change. This cannot be undone.",
+        confirmText: 'Drop Team',
+        confirmVariant: 'destructive',
+      });
+      if (!confirmed) return;
+      try {
+        await dropTeamOddLeague(teamId, seasonForTeam, byeTeamId);
+        await refreshTeams();
+        toast.success('Team dropped. The remaining schedule has been re-paired.');
+      } catch (err) {
+        logger.error('Error dropping team from odd league', { error: err instanceof Error ? err.message : String(err) });
+        toast.error(err instanceof Error ? err.message : 'Failed to drop team');
+      }
       return;
     }
 

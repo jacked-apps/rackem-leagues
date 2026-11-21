@@ -12,7 +12,6 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 
 - [Rename the dates page from "Manage Schedule" to "Schedule"](docs/list/2026-06-13-rename-manage-schedule.md)
 - [Two screens still spot a bye by an empty team slot instead of its status](docs/list/2026-06-09-bye-detection-two-places.md)
-- [Add a way to remove a bye team (only "Fill" exists today)](docs/list/2026-06-09-remove-bye-team.md)
 - [Check on staging that schedule week numbers run 1 to N with no duplicates](docs/list/2026-06-30-staging-week-numbers-check.md)
 - [Set up a verified sending address so email invites work (all environments)](docs/list/2026-04-21-staging-email.md)
 
@@ -65,3 +64,4 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [LMS handicap calculator, a dev and staging tool](docs/list/2026-11-04-gated-lms-handicap-calculator.md)
 - [Room Race - a race to 5 as the room's second game](docs/list/2026-11-04-gated-room-race.md)
 - [Scoring Workshop, still in active development](docs/list/2026-11-04-gated-scoring-workshop.md)
+- [Drop a team from a league that already has a BYE (re-pairs the remaining weeks)](docs/list/2026-11-21-gated-odd-league-drop.md)
