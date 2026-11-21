@@ -28,7 +28,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Playoffs page shows the final standings and the playoff matchups once set](docs/list/2026-11-01-playoffs-page-standings-and-matchups.md)
 - [Let an operator switch the team bonus on or off for league and playoffs](docs/list/2026-11-01-team-bonus-on-off-setting.md)
 - [Finish the last notification controls - rate limits, pause-until, @mention alerts](docs/list/2026-11-02-notification-leftovers.md)
-- [Give matches one full-record query, and make every mutation refresh stale data](docs/list/2026-11-04-consolidate-match-queries.md)
+- [Give matches one full-record query, cached by match id](docs/list/2026-11-04-consolidate-match-queries.md)
 - [Around 2026-12-02, count how many Now and Next items had gone stale](docs/list/2026-11-04-four-week-list-check.md)
 - [Line up the league games-list buttons the way the room race does](docs/list/2026-11-04-league-games-list-alignment.md)
 - [Move to Supabase CLI v3 on purpose (config.toml, CI and both deploys together)](docs/list/2026-11-05-supabase-cli-v3.md)
@@ -38,6 +38,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 - [Match-night chats for both teams that close themselves after the match](docs/list/2026-11-17-match-night-chats.md)
 - [Flag a match result that doesn't add up, without ever blocking the match](docs/list/2026-11-18-flag-results-that-dont-add-up.md)
 - [Before a league with a new setup goes live, give that setup's scoring code the full test pass](docs/list/2026-11-19-guard-new-setup-before-it-goes-live.md)
+- [Any save to a table refreshes every screen built from that table (no more old data after a change)](docs/list/2026-11-21-refresh-cache-by-table.md)
 
 ## Wish list
 

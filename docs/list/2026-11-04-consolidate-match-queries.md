@@ -1,5 +1,5 @@
 ---
-summary: Give matches one full-record query, and make every mutation refresh stale data
+summary: Give matches one full-record query, cached by match id
 kind: task
 added: 2026-11-04
 checked: 2026-11-04
@@ -11,11 +11,8 @@ Members is done (slice 1, PR #183). Matches is slice 2 and was never started.
 
 - Matches: one canonical query and one full type, cached by match id.
   Components use the fields they need instead of each fetching its own subset.
-- Stale updates: every mutation should either update the cache
-  optimistically (with rollback) or invalidate the right query keys,
-  including any lists that hold the entity.
-  Today some mutations invalidate nothing, some miss related keys, and
-  there's no consistent pattern.
+- Stale data after saves is now its own app-wide item:
+  `docs/list/2026-11-21-refresh-cache-by-table.md`.
 
 ## Why it matters
 
