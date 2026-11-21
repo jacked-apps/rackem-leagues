@@ -64,7 +64,11 @@ export function TeamManagementContent({ leagueId, renderFooter }: TeamManagement
   const organizationId = league?.organization_id || null;
 
   const venueLogic = useVenueAssignment(leagueId, venues, leagueVenues);
-  const teamLogic = useTeamActions(teams, refreshTeams, confirm);
+  const teamLogic = useTeamActions(teams, refreshTeams, confirm, {
+    seasonId,
+    // Pre-season add/remove cleared the schedule: go build a fresh one.
+    onScheduleCleared: (id) => navigate(`/league/${leagueId}/season/${id}/schedule-setup`),
+  });
   const importLogic = useTeamImport(leagueId, previousSeasonId, seasonId, confirm);
 
   const stats = computeTeamSetupStats(leagueVenues, teams);

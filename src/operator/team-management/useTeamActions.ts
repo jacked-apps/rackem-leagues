@@ -1,31 +1,45 @@
 /**
  * @fileoverview useTeamActions — team-side logic for the Manage Teams surface:
- * the team-editor modal state (add/edit), delete (gated on the team having zero
- * matches), row expansion, and the default-name helper. Extracted from
+ * the team-editor modal state (add/edit), delete/drop (see useTeamDrop), row
+ * expansion, and the default-name helper. Extracted from
  * `src/operator/TeamManagement.tsx` as part of the content decomposition.
  *
  * `confirm` is passed in (the container owns `useConfirmDialog` so it can render
  * the dialog) — the hook calls it for the delete confirmation.
+ *
+ * Ed's "perfect schedule" rule (2026-11-21): ADDING a team after the schedule
+ * exists but before any game is played clears the schedule and sends the
+ * operator to build a new one (removing does the same, in useTeamDrop).
+ * GATED with the odd-league drop: production keeps the old schedule.
  */
 
 import { useState } from 'react';
-import { supabase } from '@/supabaseClient';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
-import { convertTeamToBye } from '@/api/mutations/teams';
-import { dropTeamOddLeague, fetchSeasonByeTeamId } from './dropTeamOddLeague';
 import { isProduction } from '@/config/environment';
+import { clearSchedule } from '@/utils/scheduleGenerator';
+import { fetchSeasonScheduleState } from './preSeasonSchedule';
+import { useTeamDrop } from './useTeamDrop';
 import type { TeamWithQueryDetails } from '@/types/team';
 import type { ConfirmOptions } from '@/hooks/useConfirmDialog';
+
+export interface TeamActionsOptions {
+  /** The season being managed (needed to rebuild its schedule after an add). */
+  seasonId?: string | null;
+  /** Called after the schedule was cleared (pre-season add/remove): go rebuild it. */
+  onScheduleCleared?: (seasonId: string) => void;
+}
 
 export function useTeamActions(
   teams: TeamWithQueryDetails[],
   refreshTeams: () => Promise<void> | void,
   confirm: (options: ConfirmOptions) => Promise<boolean>,
+  { seasonId, onScheduleCleared }: TeamActionsOptions = {},
 ) {
   const [showTeamEditor, setShowTeamEditor] = useState(false);
   const [editingTeam, setEditingTeam] = useState<TeamWithQueryDetails | null>(null);
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set());
+  const { handleDeleteTeam } = useTeamDrop({ teams, refreshTeams, confirm, onScheduleCleared });
 
   const openAddTeam = () => {
     setEditingTeam(null);
@@ -42,167 +56,34 @@ export function useTeamActions(
     setEditingTeam(null);
   };
 
+  /**
+   * A NEW team was added to a season whose schedule exists but hasn't started:
+   * that schedule no longer fits, so clear it and send the operator to build a
+   * fresh one. (Editing a team, incl. "Fill" on the BYE, keeps the schedule:
+   * Fill puts a real team into the BYE's slot, which stays perfect.)
+   */
+  const rebuildAfterAdd = async (id: string) => {
+    try {
+      const state = await fetchSeasonScheduleState(id);
+      if (!state.hasSchedule || state.started) return;
+      const cleared = await clearSchedule(id);
+      if (!cleared.success) throw new Error(cleared.error ?? 'Failed to clear the schedule');
+      toast.success('Team added. The schedule was cleared so you can build a fresh one for the new team count.');
+      onScheduleCleared?.(id);
+    } catch (err) {
+      logger.error('Error rebuilding schedule after adding a team', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      toast.error('Team added, but the old schedule could not be cleared. Rebuild it from the Schedule page.');
+    }
+  };
+
   const handleTeamCreateSuccess = async () => {
+    const wasAdd = editingTeam === null;
     setShowTeamEditor(false);
     setEditingTeam(null);
     await refreshTeams();
-  };
-
-  /**
-   * Delete or DROP a team, depending on its schedule state:
-   *
-   * - No matches yet → genuine hard delete (typo / pre-schedule cleanup).
-   * - Season already has a BYE (odd team count) → re-pair the remaining weeks
-   *   (`dropTeamOddLeague`: the dropped team's opponent and the bye-week team
-   *   play each other, Ed's hybrid), pre-season or mid-season alike.
-   * - Schedule exists, no games played (pre-season) → repurpose the team's slot
-   *   as the BYE (`convertTeamToBye`), keeping the round-robin even with NO
-   *   reschedule.
-   * - Schedule exists, games played (mid-season) → withdraw the team (its past
-   *   results stay on the record) and replace it with a fresh BYE for every
-   *   remaining match, via the atomic `drop_team_mid_season` RPC.
-   *
-   * The DB FK is RESTRICT, so a raw delete of a team with matches would fail —
-   * the drop paths are the supported way to remove a scheduled team.
-   */
-  const handleDeleteTeam = async (teamId: string) => {
-    const { count: matchCount, error: countError } = await supabase
-      .from('matches')
-      .select('id', { count: 'exact', head: true })
-      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`);
-
-    if (countError) {
-      logger.error('Error counting team matches', { error: countError.message });
-      toast.error('Could not check team matches. Please try again.');
-      return;
-    }
-
-    // No schedule yet → genuine hard delete (typo / pre-schedule cleanup).
-    if ((matchCount ?? 0) === 0) {
-      const confirmed = await confirm({
-        title: 'Delete Team?',
-        message:
-          'This team has no matches yet. Deleting it will permanently remove the team and its roster. This cannot be undone.',
-        confirmText: 'Delete Team',
-        confirmVariant: 'destructive',
-      });
-      if (!confirmed) return;
-
-      try {
-        const { error } = await supabase.from('teams').delete().eq('id', teamId);
-        if (error) throw error;
-        await refreshTeams();
-      } catch (err) {
-        logger.error('Error deleting team', {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        toast.error(err instanceof Error ? err.message : 'Failed to delete team');
-      }
-      return;
-    }
-
-    // Schedule exists → this is a "drop", not a delete. Split on whether any
-    // game has been played: pre-season repurposes the slot as a bye; mid-season
-    // withdraws + replaces remaining matches.
-    const { count: playedCount, error: playedError } = await supabase
-      .from('matches')
-      .select('id', { count: 'exact', head: true })
-      .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-      .or('winner_team_id.not.is.null,status.in.(in_progress,awaiting_verification,completed,forfeited)');
-
-    if (playedError) {
-      logger.error('Error checking played matches', { error: playedError.message });
-      toast.error("Could not check the team's matches. Please try again.");
-      return;
-    }
-
-    const seasonForTeam = teams.find((t) => t.id === teamId)?.season_id;
-    if (!seasonForTeam) {
-      toast.error('Could not determine the season for this team.');
-      return;
-    }
-
-    // Odd league (a BYE already exists): the two even-league paths below would
-    // need a second BYE, so re-pair the remaining weeks instead.
-    // GATED (docs/list/2026-11-21-gated-odd-league-drop.md): production skips
-    // this and keeps the old behavior (the even-league paths refuse a 2nd BYE).
-    let byeTeamId: string | null = null;
-    try {
-      if (!isProduction) byeTeamId = await fetchSeasonByeTeamId(seasonForTeam);
-    } catch (err) {
-      logger.error('Error checking for a BYE', { error: err instanceof Error ? err.message : String(err) });
-      toast.error("Could not check the season's schedule. Please try again.");
-      return;
-    }
-    if (byeTeamId) {
-      const confirmed = await confirm({
-        title: 'Drop this team?',
-        message:
-          "This team is withdrawn and its past results stay on the record. For each remaining week, the team that was due to play it gets a new opponent (usually the team that had the bye that week), so nobody gets a bye from this. Played weeks don't change. This cannot be undone.",
-        confirmText: 'Drop Team',
-        confirmVariant: 'destructive',
-      });
-      if (!confirmed) return;
-      try {
-        await dropTeamOddLeague(teamId, seasonForTeam, byeTeamId);
-        await refreshTeams();
-        toast.success('Team dropped. The remaining schedule has been re-paired.');
-      } catch (err) {
-        logger.error('Error dropping team from odd league', { error: err instanceof Error ? err.message : String(err) });
-        toast.error(err instanceof Error ? err.message : 'Failed to drop team');
-      }
-      return;
-    }
-
-    // Mid-season (games already played) → withdraw the team (past results stay)
-    // and replace it with a fresh BYE for every remaining match. One atomic RPC.
-    if ((playedCount ?? 0) > 0) {
-      const confirmed = await confirm({
-        title: 'Drop this team mid-season?',
-        message:
-          'This team is withdrawn — its past results stay on the record — and a BYE replaces it for all its REMAINING matches, so its upcoming opponents get bye weeks. This cannot be undone.',
-        confirmText: 'Drop Team',
-        confirmVariant: 'destructive',
-      });
-      if (!confirmed) return;
-
-      try {
-        const { error: rpcError } = await supabase.rpc('drop_team_mid_season', {
-          p_team_id: teamId,
-          p_season_id: seasonForTeam,
-        });
-        if (rpcError) throw new Error(rpcError.message);
-        await refreshTeams();
-        toast.success('Team dropped — its remaining matches are now BYE weeks.');
-      } catch (err) {
-        logger.error('Error dropping team mid-season', {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        toast.error(err instanceof Error ? err.message : 'Failed to drop team');
-      }
-      return;
-    }
-
-    // Pre-season (no games played) → repurpose the team's slot as the BYE.
-    const confirmed = await confirm({
-      title: 'Drop this team?',
-      message:
-        'This team becomes the BYE: its name and roster are cleared, its players are freed, and every team scheduled against it gets a bye week that week. The schedule is NOT regenerated. This cannot be undone.',
-      confirmText: 'Drop to BYE',
-      confirmVariant: 'destructive',
-    });
-    if (!confirmed) return;
-
-    try {
-      await convertTeamToBye({ teamId, seasonId: seasonForTeam });
-      await refreshTeams();
-      toast.success('Team dropped — its schedule slot is now a BYE.');
-    } catch (err) {
-      logger.error('Error converting team to bye', {
-        error: err instanceof Error ? err.message : String(err),
-      });
-      toast.error(err instanceof Error ? err.message : 'Failed to drop team');
-    }
+    if (wasAdd && seasonId && !isProduction) await rebuildAfterAdd(seasonId);
   };
 
   const toggleTeamExpansion = (teamId: string) => {
