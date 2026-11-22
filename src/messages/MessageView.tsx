@@ -105,15 +105,18 @@ export function MessageView({ conversationId, currentUserId, onBack, onLeaveConv
     loadConversationDetails();
   }, [conversationId, currentUserId]);
 
-  // Mark conversation as read when messages load
+  // Mark conversation as read when messages load. Depends on `mutate` alone:
+  // TanStack Query keeps it stable, while the mutation object itself changes on
+  // every status change and would re-fire this effect in a loop.
+  const markRead = updateLastReadMutation.mutate;
   useEffect(() => {
     if (messages.length > 0) {
-      updateLastReadMutation.mutate({
+      markRead({
         conversationId,
         userId: currentUserId,
       });
     }
-  }, [conversationId, currentUserId, messages.length]);
+  }, [conversationId, currentUserId, messages.length, markRead]);
 
   // Submit a message: add an optimistic bubble to the conversation,
   // fire the mutation, and either remove the bubble on success (realtime

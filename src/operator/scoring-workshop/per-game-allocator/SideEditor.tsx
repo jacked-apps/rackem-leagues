@@ -208,10 +208,13 @@ function FormulaSection({
   const [formulaOn, setFormulaOn] = useState<boolean>(value.formula !== null);
 
   // Re-sync when the parent swaps the SideConfig wholesale (kind change
-  // upstream, clone load, etc.).
+  // upstream, clone load, etc.). Keyed on the formula's KIND, not the formula
+  // object, so ordinary edits inside the builder don't re-run it. A non-null
+  // formula always has an operationKind, so "has a kind" == "has a formula".
+  const formulaKind = value.formula?.operationKind;
   useEffect(() => {
-    setFormulaOn(value.formula !== null);
-  }, [value.formula?.operationKind]);
+    setFormulaOn(formulaKind !== undefined);
+  }, [formulaKind]);
 
   const turnOn = () => setFormulaOn(true);
   const turnOff = () => {

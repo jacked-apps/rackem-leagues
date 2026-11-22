@@ -8,7 +8,7 @@
  * The component adapts its display text and behavior based on entityType.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Settings } from 'lucide-react';
 import { supabase } from '@/supabaseClient';
@@ -68,12 +68,31 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     ? 'Override organization defaults for this league'
     : 'Default settings for all your leagues';
 
-  // Fetch preferences on mount
-  useEffect(() => {
-    fetchPreferences();
-  }, [entityId, entityType]);
+  // Sync local edit state with fetched preferences
+  const syncLocalState = useCallback((prefs: Preferences) => {
+    setHandicapVariant(prefs.handicap_variant || 'default');
+    setTeamHandicapVariant(prefs.team_handicap_variant || 'default');
+    setGameHistoryLimit(prefs.game_history_limit ?? SYSTEM_DEFAULTS.game_history_limit);
+    // Roster: null at league level means "inherit org default". Store as
+    // empty string in the input when inheriting so the placeholder shows.
+    const rosterRaw = prefs.max_roster_size;
+    setMaxRosterSize(rosterRaw == null ? '' : String(rosterRaw));
+    setUseOrgDefaultMaxRoster(rosterRaw == null);
+    // Map boolean/null to our three-way setting
+    if (prefs.golden_break_counts_as_win === null) {
+      setGoldenBreakSetting('bca_standard');
+    } else if (prefs.golden_break_counts_as_win === true) {
+      setGoldenBreakSetting('always');
+    } else {
+      setGoldenBreakSetting('never');
+    }
+    setAllowUnauthorizedPlayers(prefs.allow_unauthorized_players ?? SYSTEM_DEFAULTS.allow_unauthorized_players);
+    setProfanityFilterEnabled(prefs.profanity_filter_enabled ?? SYSTEM_DEFAULTS.profanity_filter_enabled);
+    setIsUsingOrgDefault(prefs.allow_unauthorized_players === null);
+    setIsUsingOrgDefaultModeration(prefs.profanity_filter_enabled === null);
+  }, []);
 
-  const fetchPreferences = async () => {
+  const fetchPreferences = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -114,31 +133,13 @@ export const PreferencesCard: React.FC<PreferencesCardProps> = ({
     }
 
     setLoading(false);
-  };
+  }, [entityType, entityId, syncLocalState]);
 
-  // Sync local edit state with fetched preferences
-  const syncLocalState = (prefs: Preferences) => {
-    setHandicapVariant(prefs.handicap_variant || 'default');
-    setTeamHandicapVariant(prefs.team_handicap_variant || 'default');
-    setGameHistoryLimit(prefs.game_history_limit ?? SYSTEM_DEFAULTS.game_history_limit);
-    // Roster: null at league level means "inherit org default". Store as
-    // empty string in the input when inheriting so the placeholder shows.
-    const rosterRaw = prefs.max_roster_size;
-    setMaxRosterSize(rosterRaw == null ? '' : String(rosterRaw));
-    setUseOrgDefaultMaxRoster(rosterRaw == null);
-    // Map boolean/null to our three-way setting
-    if (prefs.golden_break_counts_as_win === null) {
-      setGoldenBreakSetting('bca_standard');
-    } else if (prefs.golden_break_counts_as_win === true) {
-      setGoldenBreakSetting('always');
-    } else {
-      setGoldenBreakSetting('never');
-    }
-    setAllowUnauthorizedPlayers(prefs.allow_unauthorized_players ?? SYSTEM_DEFAULTS.allow_unauthorized_players);
-    setProfanityFilterEnabled(prefs.profanity_filter_enabled ?? SYSTEM_DEFAULTS.profanity_filter_enabled);
-    setIsUsingOrgDefault(prefs.allow_unauthorized_players === null);
-    setIsUsingOrgDefaultModeration(prefs.profanity_filter_enabled === null);
-  };
+  // Fetch preferences on mount, and again if the card is pointed at another
+  // org/league (fetchPreferences changes exactly when entityType/entityId do).
+  useEffect(() => {
+    fetchPreferences();
+  }, [fetchPreferences]);
 
   // Start editing a section
   const startEditing = (section: 'handicap' | 'roster' | 'rules' | 'authorization' | 'moderation') => {

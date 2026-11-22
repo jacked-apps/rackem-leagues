@@ -10,7 +10,7 @@
  * - Action tracking (warnings, suspensions, etc.)
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMemberId } from '@/api/hooks';
 import {
@@ -88,6 +88,19 @@ export function ReportsManagement() {
   const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
   /**
+   * Fetch pending reports from database for this organization
+   */
+  const loadReports = useCallback(async () => {
+    if (!orgId) return;
+    setLoading(true);
+    const { data, error } = await getPendingReportsForOperator(orgId);
+    if (data && !error) {
+      setReports(data as Report[]);
+    }
+    setLoading(false);
+  }, [orgId]);
+
+  /**
    * Load pending reports on mount and when orgId changes
    */
   useEffect(() => {
@@ -97,20 +110,7 @@ export function ReportsManagement() {
       return;
     }
     loadReports();
-  }, [orgId, navigate]);
-
-  /**
-   * Fetch pending reports from database for this organization
-   */
-  const loadReports = async () => {
-    if (!orgId) return;
-    setLoading(true);
-    const { data, error } = await getPendingReportsForOperator(orgId);
-    if (data && !error) {
-      setReports(data as Report[]);
-    }
-    setLoading(false);
-  };
+  }, [orgId, navigate, loadReports]);
 
   /**
    * Load full report details when operator clicks on a report

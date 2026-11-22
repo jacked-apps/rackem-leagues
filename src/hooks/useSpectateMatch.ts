@@ -57,7 +57,9 @@ export function useSpectateMatch(matchId: string | null | undefined) {
   const awayLineup = lineupsQuery.data?.awayLineup ?? null;
 
   const gamesQuery = useMatchGames(matchId);
-  const games = gamesQuery.data ?? [];
+  // Memoized: a bare `?? []` is a NEW empty array every render while games
+  // load, which would rebuild filteredGameResults below on every render.
+  const games = useMemo(() => gamesQuery.data ?? [], [gamesQuery.data]);
 
   const homeTeamQuery = useTeamDetails(match?.home_team_id);
   const awayTeamQuery = useTeamDetails(match?.away_team_id);

@@ -266,7 +266,15 @@ export function MatchEndVerification({
     judgeFlags = [`win-calc judge threw — fell back to legacy: ${String(err)}`];
   }
 
-  // Auto-complete match when both teams verify
+  // TanStack keeps `refetch` stable, unlike the query objects (new every
+  // render), so the completion effect below lists these instead.
+  const refetchMatch = matchQuery.refetch;
+  const refetchGames = gamesQuery.refetch;
+
+  // Auto-complete match when both teams verify. Every value the effect reads is
+  // listed, so it never acts on a stale one; re-runs are cheap because the
+  // guards on its first lines (bothVerified / isCompleting /
+  // completionStartedRef) return at once unless a completion is due.
   useEffect(() => {
     if (!bothVerified || isCompleting || completionStartedRef.current) return;
     // Item 15 guard: don't re-fire completion on a match that's already
@@ -297,7 +305,7 @@ export function MatchEndVerification({
 
       try {
         // Step 1: Fetch fresh match data to see who verified FIRST
-        const { data: freshMatch } = await matchQuery.refetch();
+        const { data: freshMatch } = await refetchMatch();
 
         if (!freshMatch) {
           throw new Error('Failed to fetch match verification status');
@@ -496,7 +504,7 @@ export function MatchEndVerification({
           const maxAttempts = 20; // 20 attempts = 10 seconds max
 
           while (!gamesReady && attempts < maxAttempts) {
-            const { data: checkGames } = await gamesQuery.refetch();
+            const { data: checkGames } = await refetchGames();
             const tiebreakerGamesCount = (checkGames || []).filter(g => g.is_tiebreaker).length;
 
             if (tiebreakerGamesCount >= expectedTiebreakGames) {
@@ -552,7 +560,14 @@ export function MatchEndVerification({
     };
 
     completeTheMatch();
-  }, [bothVerified, isCompleting, matchId, homeTeamId, awayTeamId, homeWins, awayWins, homePoints, awayPoints, result, updateMatchMutation, createGamesMutation, gameType, navigate, homeVerifiedBy, awayVerifiedBy, isTiebreakerMode, tiebreakerGames, matchTotalGames, tiebreakerFormat]);
+  }, [
+    bothVerified, isCompleting, match?.status, matchId, homeTeamId, awayTeamId,
+    homeWins, awayWins, homePoints, awayPoints, homeWinThreshold, awayWinThreshold,
+    result, legacyResult, judgeFlags, winCondition, isHomeTeam,
+    homeVerifiedBy, awayVerifiedBy, homeVerifiedBy_actual, awayVerifiedBy_actual,
+    isTiebreakerMode, tiebreakerGames, matchTotalGames, tiebreakerFormat, gameType,
+    refetchMatch, refetchGames, updateMatchMutation, createGamesMutation, navigate,
+  ]);
 
   return (
     <div className="bg-muted border-b-2 border-border">

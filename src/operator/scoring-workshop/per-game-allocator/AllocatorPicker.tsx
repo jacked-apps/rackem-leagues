@@ -11,7 +11,7 @@
  * row if none exists).
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/supabaseClient';
 import { useUserProfile } from '@/api/hooks';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,12 @@ export function AllocatorPicker({ leagueId }: AllocatorPickerProps) {
   const [preview, setPreview] = useState<ApplyTimePreview | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
-  const all: AllocatorRow[] = [...room.officials, ...room.mine];
+  // Memoized so handleSelect below (which searches it) keeps a stable identity
+  // between renders instead of being rebuilt every time.
+  const all: AllocatorRow[] = useMemo(
+    () => [...room.officials, ...room.mine],
+    [room.officials, room.mine],
+  );
 
   useEffect(() => {
     void (async () => {
