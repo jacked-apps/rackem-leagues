@@ -7,7 +7,7 @@
  * rotation); shorten trims the tail and is refused if a removed week was already played.
  *
  * Kept self-contained (not the heavy creation-wizard infra) — it's a small, low-stakes,
- * early-season correction. The entry button on the Manage Schedule page gates it on the
+ * early-season correction. The entry button on the Schedule (dates) page gates it on the
  * week-5 lock.
  *
  * @see docs/plans/2026-06-11-002-feat-change-season-length-plan.md — Unit 4

@@ -179,7 +179,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({ leagueId }) => {
   const handleViewSchedule = () => {
     if (activeSeason) {
       setIsNavigating(true);
-      navigate(`/league/${leagueId}/season/${activeSeason.id}/manage-schedule`);
+      navigate(`/league/${leagueId}/season/${activeSeason.id}/schedule`);
     }
   };
 

@@ -372,7 +372,9 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
           { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
           { path: 'operator/start-next-season/:leagueId', element: withOperator(NewSeasonFromPreviousPage) },
-          { path: 'league/:leagueId/season/:seasonId/manage-schedule', element: withOperator(SeasonScheduleManager) },
+          { path: 'league/:leagueId/season/:seasonId/schedule', element: withOperator(SeasonScheduleManager) },
+          // Old address of the dates page (renamed 2026-11-19); keeps bookmarks working.
+          { path: 'league/:leagueId/season/:seasonId/manage-schedule', element: <Navigate to="../schedule" relative="path" replace /> },
           { path: 'league/:leagueId/manage-teams', element: withOperator(TeamManagement) },
           { path: 'league/:leagueId/season/:seasonId/setup-teams', element: withOperator(SetupTeamsPage) },
           { path: 'league/:leagueId/season/:seasonId/playoffs-setup', element: withOperator(PlayoffsSetupWizard) },

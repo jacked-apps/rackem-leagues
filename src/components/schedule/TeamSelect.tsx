@@ -31,7 +31,7 @@ export interface TeamOption {
  * Props for TeamSelect component
  */
 interface TeamSelectProps {
-  /** Currently selected team ID (null for BYE) */
+  /** Currently selected team ID (null = none chosen, e.g. a playoff TBD) */
   value: string | null;
   /** Callback when team is selected */
   onChange: (teamId: string | null) => void;
@@ -43,8 +43,12 @@ interface TeamSelectProps {
   placeholder?: string;
   /** Label for accessibility */
   label?: string;
-  /** Whether to show BYE option (only for seasons with odd team count) */
-  showByeOption?: boolean;
+  /**
+   * The season's BYE team id (a real team row, `status='bye'`), or null when
+   * the season has none. When set, it's offered as the "BYE" choice: the team
+   * list is active-only, so the bye team isn't among `teams`.
+   */
+  byeTeamId?: string | null;
 }
 
 /**
@@ -68,25 +72,15 @@ export const TeamSelect: React.FC<TeamSelectProps> = ({
   disabled = false,
   placeholder = 'Select team',
   label,
-  showByeOption = false,
+  byeTeamId = null,
 }) => {
-  // Handle the select change
-  const handleValueChange = (newValue: string) => {
-    // Special case: "BYE" represents null
-    if (newValue === '__BYE__') {
-      onChange(null);
-    } else {
-      onChange(newValue);
-    }
-  };
-
-  // Get display value - map null to BYE
-  const displayValue = value === null ? '__BYE__' : value;
+  // No team chosen (null) shows the placeholder.
+  const displayValue = value ?? '';
 
   return (
     <Select
       value={displayValue}
-      onValueChange={handleValueChange}
+      onValueChange={onChange}
       disabled={disabled}
     >
       <SelectTrigger
@@ -96,9 +90,9 @@ export const TeamSelect: React.FC<TeamSelectProps> = ({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {/* BYE option - only shown for seasons with odd team count */}
-        {showByeOption && (
-          <SelectItem value="__BYE__">
+        {/* BYE: the season's real bye team, only when it has one (odd team count) */}
+        {byeTeamId && (
+          <SelectItem value={byeTeamId}>
             <span className="text-muted-foreground italic">BYE</span>
           </SelectItem>
         )}

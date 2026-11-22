@@ -27,6 +27,7 @@ import type { VenueOption } from '@/components/schedule/VenueSelect';
 import type { MatchWithDetails } from '@/types';
 import type { WizardStepProps } from '@/wizards/shared';
 import type { MatchupsWizardFormData } from '../matchupsWizardTypes';
+import { findByeTeamId } from '@/utils/match/findByeTeamId';
 
 function toEditState(matches: MatchWithDetails[]): MatchEditState[] {
   return matches.map((m) => ({
@@ -101,14 +102,8 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
     for (const t of teams) map[t.id] = t.home_venue_id ?? null;
     return map;
   }, [teams]);
-  const hasByeTeam = useMemo(
-    () =>
-      schedule.some(
-        ({ week, matches }) =>
-          week.week_type === 'regular' && matches.some((m) => m.home_team_id === null || m.away_team_id === null),
-      ),
-    [schedule],
-  );
+  // The season's BYE team, found by team status (see findByeTeamId).
+  const byeTeamId = useMemo(() => findByeTeamId(schedule), [schedule]);
 
   // Week numbers are DERIVED from position by date (across all weeks), never the
   // stored week_name which can drift/collide (e.g. a duplicate "Week 14").
@@ -181,7 +176,7 @@ export function ReviewStep({ formData, onBack }: WizardStepProps<unknown, Matchu
               venues={venueOptions}
               teamHomeVenues={teamHomeVenues}
               seasonId={seasonId}
-              hasByeTeam={hasByeTeam}
+              byeTeamId={byeTeamId}
               onCancel={() => setEditingWeekId(null)}
               onSaveSuccess={() => setEditingWeekId(null)}
             />
