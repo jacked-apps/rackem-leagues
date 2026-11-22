@@ -97,6 +97,35 @@ export const clearApplicationState = (): void => {
   }
 };
 
+/** Saved wizard step (written by useApplicationForm). */
+export const STEP_STORAGE_KEY = 'leagueOperatorApplication_currentStep';
+/** Which signed-in account the saved progress belongs to. */
+export const OWNER_STORAGE_KEY = 'leagueOperatorApplication_owner';
+
+/**
+ * Make sure saved application progress belongs to the account now signed in.
+ *
+ * Progress lives in this browser's localStorage so an applicant can leave and
+ * come back. It used to be shared by every account on the browser, so a new
+ * account opened someone else's half-finished application — their step AND
+ * their answers (Ed, 2026-11-19: a fresh account landed on step 3 of 6). If
+ * the saved progress belongs to a different account (or to nobody on record),
+ * it is wiped before anything loads; then this account is recorded as owner.
+ *
+ * @param userId - The signed-in auth user's id (null if unknown → wipe).
+ */
+export const claimSavedApplication = (userId: string | null): void => {
+  try {
+    if (!userId || localStorage.getItem(OWNER_STORAGE_KEY) !== userId) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STEP_STORAGE_KEY);
+    }
+    if (userId) localStorage.setItem(OWNER_STORAGE_KEY, userId);
+  } catch (error) {
+    logger.warn('Failed to check saved application owner', { error });
+  }
+};
+
 /**
  * Get initial state for the league operator application form
  * This function should be called each time the component mounts

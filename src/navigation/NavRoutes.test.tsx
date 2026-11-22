@@ -52,3 +52,25 @@ describe('member-reached pages keep the member nav', () => {
     expect(inside).toContain(path);
   });
 });
+
+describe('the operator application needs a member profile', () => {
+  // Submitting writes created_by = member.id, so a brand-new account (signed
+  // in, no profile yet) must go through Complete Profile first — which carries
+  // ?redirect back to the application (Ed, 2026-11-19). Auth-only let them
+  // fill the whole form and then fail on submit.
+  function findRoute(routes: RouteObject[], path: string): RouteObject | undefined {
+    for (const r of routes) {
+      if (r.path === path) return r;
+      const hit = findRoute(r.children ?? [], path);
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+
+  it('/league-operator-application requires a completed member profile', () => {
+    const route = findRoute(router.routes, 'league-operator-application');
+    const props = (route?.element as { props?: Record<string, unknown> } | undefined)?.props;
+    expect(props?.requireAuth).toBe(true);
+    expect(props?.requireApprovedApplication).toBe(true);
+  });
+});

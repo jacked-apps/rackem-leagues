@@ -12,6 +12,7 @@
  * Users can complete their full profile (phone, address, DOB) later in settings.
  */
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,13 +48,18 @@ export const CompleteProfileForm: React.FC<CompleteProfileFormProps> = ({
   redirectTo,
 }) => {
   const { state, dispatch } = useShortProfileForm();
+  // ProtectedRoute sends a profile-less member here with ?redirect=<where
+  // they were going>; land them there after the profile is saved. The prop
+  // still wins (join flow). useShortProfileSubmission re-checks it is safe.
+  const [searchParams] = useSearchParams();
+  const target = redirectTo ?? searchParams.get('redirect') ?? undefined;
 
   const { handleSubmit } = useShortProfileSubmission({
     state,
     onError: (errors) => dispatch({ type: 'SET_ERRORS', errors }),
     onSuccess: () => dispatch({ type: 'CLEAR_ERRORS' }),
     onLoading: (loading) => dispatch({ type: 'SET_LOADING', loading }),
-    redirectTo,
+    redirectTo: target,
   });
 
   return (

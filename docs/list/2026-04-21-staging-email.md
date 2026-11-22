@@ -2,7 +2,7 @@
 summary: Set up a verified sending address so email invites work (all environments)
 kind: task
 added: 2026-04-21
-checked: 2026-11-16
+checked: 2026-11-19
 ---
 
 Needs Ed. This is environment setup, not app code.
@@ -25,3 +25,14 @@ Fix direction:
 - Decide on purpose whether staging sends real mail or only captures it.
   Capturing is usually safer.
 - Document the setup in memory-bank so future environments inherit it.
+
+**2026-11-19: the same setup unlocks passwordless sign-in.** Jack pays for
+an email service that can do this; Ed is asking him to set it up or grant
+access. Supabase needs its SMTP details: server + port, username + password
+(or API key), and a sending address on a verified domain — entered in the
+Supabase dashboard (Authentication → Emails → SMTP), once per environment,
+never pasted into chat or code. Once it works, the rest of the passwordless
+go-live list in `PRE_LAUNCH_CHECKLIST.md` follows (code template, redirect
+allow-list, bot check, send limits, flip the flag). At that point also send
+"Create account" (Home and the Sign-in-first pop-up) to the one-door sign-in
+instead of the password Register page, keeping `?redirect`.

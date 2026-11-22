@@ -307,7 +307,16 @@ export const Login: React.FC = () => {
       )}
 
       <CardFooter className="mt-4 text-sm flex justify-around w-full">
-        <Link to="/register">Register</Link>
+        {/* Keep where they were headed if they choose to sign up instead. */}
+        <Link
+          to={
+            redirectTarget === '/my-teams'
+              ? '/register'
+              : `/register?redirect=${encodeURIComponent(redirectTarget)}`
+          }
+        >
+          Register
+        </Link>
         <Link to="/forgot-password">Forgot Password?</Link>
       </CardFooter>
       {/* Not a dead end: a visitor who isn't ready to sign in can look around
