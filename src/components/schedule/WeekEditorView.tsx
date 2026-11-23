@@ -55,8 +55,8 @@ interface WeekEditorViewProps {
   teamHomeVenues: TeamVenueMap;
   /** Season ID (for cache invalidation) */
   seasonId: string;
-  /** Whether the season has a BYE team (odd number of teams) */
-  hasByeTeam: boolean;
+  /** The season's BYE team id (odd number of teams), or null when it has none */
+  byeTeamId: string | null;
   /** Called when user cancels (exit edit mode without saving) */
   onCancel: () => void;
   /** Called after successful save */
@@ -88,7 +88,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
   venues,
   teamHomeVenues,
   seasonId,
-  hasByeTeam,
+  byeTeamId,
   onCancel,
   onSaveSuccess,
 }) => {
@@ -240,7 +240,7 @@ export const WeekEditorView: React.FC<WeekEditorViewProps> = ({
               isEditable={match.isEditable}
               teams={teams}
               venues={venues}
-              showByeOption={hasByeTeam}
+              byeTeamId={byeTeamId}
               onHomeTeamChange={(teamId) => handleTeamChange(match.matchId, 'home', teamId)}
               onAwayTeamChange={(teamId) => handleTeamChange(match.matchId, 'away', teamId)}
               onVenueChange={(venueId) => handleVenueChange(match.matchId, venueId)}

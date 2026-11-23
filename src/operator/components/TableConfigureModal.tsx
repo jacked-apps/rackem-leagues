@@ -57,6 +57,32 @@ interface TableConfigureModalProps {
 const SIZE_OPTIONS = TABLE_SIZES.map(({ key, label }) => ({ value: key, label }));
 
 /**
+ * Build the table list from the current numbering: one entry per numbered
+ * table of each size, sorted by table number. Pure (reads only its argument), so
+ * the re-initialize effect below depends on exactly the props it uses.
+ *
+ * @param tableNumbers - Table numbers per size, e.g. { bar_box_tables: [1, 2], ... }
+ * @returns Every table as a TableConfig, ordered by number
+ */
+function buildInitialTables(tableNumbers: TableConfigureModalProps['tableNumbers']): TableConfig[] {
+  const tables: TableConfig[] = [];
+
+  // Add tables from each size with their current numbers
+  (['bar_box_tables', 'eight_foot_tables', 'regulation_tables'] as const).forEach(size => {
+    tableNumbers[size].forEach(num => {
+      tables.push({
+        id: `${size}-${num}`,
+        number: num,
+        size,
+        sizeLabel: getTableSizeLabel(size),
+      });
+    });
+  });
+
+  return tables.sort((a, b) => a.number - b.number);
+}
+
+/**
  * TableConfigureModal Component
  *
  * Allows users to reorder tables and change their sizes.
@@ -67,27 +93,7 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
   onSave,
   onCancel,
 }) => {
-  // Build initial table list from current configuration
-  const buildInitialTables = (): TableConfig[] => {
-    const tables: TableConfig[] = [];
-
-    // Add tables from each size with their current numbers
-    (['bar_box_tables', 'eight_foot_tables', 'regulation_tables'] as const).forEach(size => {
-      tableNumbers[size].forEach(num => {
-        tables.push({
-          id: `${size}-${num}`,
-          number: num,
-          size,
-          sizeLabel: getTableSizeLabel(size),
-        });
-      });
-    });
-
-    // Sort by table number
-    return tables.sort((a, b) => a.number - b.number);
-  };
-
-  const [tables, setTables] = useState<TableConfig[]>(buildInitialTables);
+  const [tables, setTables] = useState<TableConfig[]>(() => buildInitialTables(tableNumbers));
 
   // Skip numbers - these numbers will be skipped in auto-numbering
   const [skipNumbers, setSkipNumbers] = useState<number[]>([]);
@@ -96,7 +102,7 @@ export const TableConfigureModal: React.FC<TableConfigureModalProps> = ({
 
   // Re-initialize when props change
   useEffect(() => {
-    const initial = buildInitialTables();
+    const initial = buildInitialTables(tableNumbers);
     setTables(initial);
     setSkipNumbers([]);
   }, [values, tableNumbers]);

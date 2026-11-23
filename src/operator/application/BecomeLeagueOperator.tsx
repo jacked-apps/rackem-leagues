@@ -1,8 +1,9 @@
 /**
  * @fileoverview League Operator Landing Page
  * Informational page explaining benefits and requirements of becoming a league operator.
- * Public: visitors can read it without an account, and its "Start Application"
- * button asks them to sign in (the application itself is signed-in only).
+ * Public: visitors can read it without an account. Its "Start Application"
+ * buttons explain that an account is needed (SignInFirstLink) before sending
+ * a visitor to sign in, and sign-in returns them to the application.
  * Reached from the menu's Operator spot, Profile, Pricing and the Home page.
  */
 import React, { useEffect } from 'react';
@@ -10,6 +11,16 @@ import { Link } from 'react-router-dom';
 import { useUser } from '@/context/useUser';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/PageHeader';
+import { SignInFirstLink } from '@/components/SignInFirstLink';
+import { PricingExampleRow } from './PricingExampleRow';
+
+/** League sizes shown in the 16-week pricing example. */
+const EXAMPLE_TEAM_COUNTS = [6, 8, 10];
+const EXAMPLE_WEEKS = 16;
+
+/** Shown to a visitor who taps Start Application before signing in. */
+const APPLY_REASON =
+  "You need an account to apply. After you sign in, we'll take you straight to the application.";
 
 /**
  * League Operator Landing Page Component
@@ -45,11 +56,11 @@ export const BecomeLeagueOperator: React.FC = () => {
         subtitle="Start running your own pool leagues and earn revenue"
       >
         <div className="mt-4">
-          <Link to="/league-operator-application">
+          <SignInFirstLink to="/league-operator-application" reason={APPLY_REASON}>
             <Button loadingText="none" size="lg" className="px-8">
               Start Application
             </Button>
-          </Link>
+          </SignInFirstLink>
         </div>
       </PageHeader>
 
@@ -122,21 +133,20 @@ export const BecomeLeagueOperator: React.FC = () => {
                 <div className="bg-muted rounded-lg p-6">
                   <h3 className="font-semibold text-foreground mb-4">Example: 16-Week Season</h3>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span>6 teams × 16 weeks + $10:</span>
-                      <span className="font-semibold text-lg">$106</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span>8 teams × 16 weeks + $10:</span>
-                      <span className="font-semibold text-lg">$138</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span>10 teams × 16 weeks + $10:</span>
-                      <span className="font-semibold text-lg">$170</span>
-                    </div>
+                    {EXAMPLE_TEAM_COUNTS.map((teams, i) => (
+                      <PricingExampleRow
+                        key={teams}
+                        teams={teams}
+                        weeks={EXAMPLE_WEEKS}
+                        last={i === EXAMPLE_TEAM_COUNTS.length - 1}
+                      />
+                    ))}
                   </div>
                   <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
                     <p className="mb-2">✓ 4-week grace period to collect dues</p>
+                    {/* Backed by pricingMath's paidByWeek: every example above is week 1.
+                        Sits between the two payment-timing lines (Ed). */}
+                    <p className="mb-2">✓ In most leagues, week 1 dues cover the entire season</p>
                     <p className="mb-2">✓ Payment due before week 5</p>
                     <p>✓ Playoff weeks are FREE</p>
                   </div>
@@ -184,11 +194,11 @@ export const BecomeLeagueOperator: React.FC = () => {
             <p className="opacity-90 mb-6 text-lg">
               Complete our simple application and start running your first league within days.
             </p>
-            <Link to="/league-operator-application">
+            <SignInFirstLink to="/league-operator-application" reason={APPLY_REASON}>
               <Button loadingText="none" size="lg" variant="secondary" className="px-8">
                 Start Application
               </Button>
-            </Link>
+            </SignInFirstLink>
           </div>
         </div>
       </div>

@@ -242,7 +242,9 @@ export const router = createBrowserRouter([
           { path: 'become-league-operator', element: <BecomeLeagueOperator /> },
 
           // --- Signed-in pages reached from Profile (same reason). ---
-          { path: 'league-operator-application', element: withAuth(<LeagueOperatorApplication />) },
+          // Needs a member profile (submit writes created_by = member.id), so a
+          // brand-new account goes through Complete Profile first and comes back.
+          { path: 'league-operator-application', element: withMember(<LeagueOperatorApplication />) },
           // Become a Host — gated off in production until the game room ships.
           // What it sells is the ability to host game rooms, which production does
           // not have yet, and the page takes card details on a mock payment form
@@ -370,7 +372,9 @@ export const router = createBrowserRouter([
           { path: 'league/:leagueId/settings', element: withOperator(LeagueSettings) },
           { path: 'league/:leagueId/create-season', element: withOperator(SeasonCreationWizard) },
           { path: 'operator/start-next-season/:leagueId', element: withOperator(NewSeasonFromPreviousPage) },
-          { path: 'league/:leagueId/season/:seasonId/manage-schedule', element: withOperator(SeasonScheduleManager) },
+          { path: 'league/:leagueId/season/:seasonId/schedule', element: withOperator(SeasonScheduleManager) },
+          // Old address of the dates page (renamed 2026-11-19); keeps bookmarks working.
+          { path: 'league/:leagueId/season/:seasonId/manage-schedule', element: <Navigate to="../schedule" relative="path" replace /> },
           { path: 'league/:leagueId/manage-teams', element: withOperator(TeamManagement) },
           { path: 'league/:leagueId/season/:seasonId/setup-teams', element: withOperator(SetupTeamsPage) },
           { path: 'league/:leagueId/season/:seasonId/playoffs-setup', element: withOperator(PlayoffsSetupWizard) },

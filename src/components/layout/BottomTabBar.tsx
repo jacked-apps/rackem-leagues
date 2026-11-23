@@ -24,7 +24,7 @@ import { MyMatchTab } from './MyMatchTab';
  *  bottom action bar (Save/Cancel). */
 const HIDDEN_TAB_ROUTES = [
   /^\/league\/[^/]+\/manage-teams$/,
-  /^\/league\/[^/]+\/season\/[^/]+\/manage-schedule$/,
+  /^\/league\/[^/]+\/season\/[^/]+\/schedule$/,
 ];
 
 interface TabItem {

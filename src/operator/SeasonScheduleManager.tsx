@@ -390,7 +390,7 @@ export const SeasonScheduleManager: React.FC = () => {
       <PageHeader
         backTo={`/league/${leagueId}`}
         backLabel="Back To League"
-        title="Manage Schedule"
+        title="Schedule"
         subtitle={`${season?.season_name} • ${league?.division || 'League'}`}
       />
       {/*

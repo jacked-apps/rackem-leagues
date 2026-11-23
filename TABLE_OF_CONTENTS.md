@@ -257,7 +257,7 @@ Node-only tooling the operator runs manually (not part of the app bundle).
 
 | File | Purpose |
 |------|---------|
-| `.github/workflows/checks.yml` | **Pre-merge checks (`pull_request` + push to `main`).** The repo's first PR-triggered workflow — before it, the only automation was the deploy workflows, so a whole class of mistake could only be found by breaking a deployed environment. Three parallel jobs: the duplicate-migration-version guard, the vitest `unit` project (NOT `db`, which needs a local Postgres), and `pnpm run build` (`tsc -b` + vite build) as the authoritative typecheck. |
+| `.github/workflows/checks.yml` | **Pre-merge checks (`pull_request` + push to `main`).** The repo's first PR-triggered workflow — before it, the only automation was the deploy workflows, so a whole class of mistake could only be found by breaking a deployed environment. Three parallel jobs: the duplicate-migration-version guard, the vitest `unit` project (NOT `db`, which needs a local Postgres), and `pnpm run lint --max-warnings 0` + `pnpm run build` (`tsc -b` + vite build) as the authoritative typecheck. Lint is zero-warning because `react-hooks/exhaustive-deps` (stale-value hooks) is only a warning. |
 | `.github/workflows/query-tests.yml` | Runs `scripts/check-query-tests.mjs` on every PR, including when the description is edited (so adding a `[no-db-test: …]` waiver re-runs it). Diff and PR body go via files (no script injection) |
 | `.github/pull_request_template.md` | PR description skeleton: what changes, then **Test results** in a fixed order — failures first, counts from the Checks run, one line per new/changed test (what it protects + exact value), collapsed Break records. Lists the CI markers (`[no-changelog]`, `[no-db-test: …]`) | |
 | `.github/workflows/deploy-staging.yml` | Build + migrate + deploy to staging on push to `main`. Sets `VITE_PUSH_NOTIFICATIONS=true` (push is un-gated on staging) and `VITE_PASSWORDLESS_SIGN_IN=true` (matches production; staging keeps the built-in mailer). |
@@ -716,7 +716,8 @@ how to add a new test, demo recording, cleanup model).
 
 #### Static Pages
 - `about/About.tsx` - Public About page: skimmable feature lists (bold title + short explanation) for players, league operators, tournaments, what's next; then pricing, philosophy
-- `about/Pricing.tsx` - Pricing breakdown page
+- `about/Pricing.tsx` - Pricing breakdown page (fee, How Payment Works steps, two worked examples, FAQ). Tested in `about/Pricing.test.tsx`
+- `about/PricingExampleCard.tsx` - One worked pricing example: setup, platform cost, dues, % of prize pool, week-1 result; numbers from `pricingMath`
 - `about/PrivacyPolicy.tsx` - Public privacy policy at `/privacy` (required by Google/Facebook OAuth review)
 - `pages/Home.tsx` - Public landing/home page: "Go to My Teams" for members; Sign in / Create account for visitors; "Find a League" + "Find a Tournament" (Coming Soon) first, then Run Your Own League + Rules + Learn + About cards
 - `pages/Home.test.tsx` - Run Your Own League card shows signed out; members get the My Teams button
@@ -747,6 +748,7 @@ how to add a new test, demo recording, cleanup model).
 
 **Learn hub** (moved to `src/pages/` in 2026-05-29 rename — visible to all signed-in users, not just operators):
 - `src/pages/Learn.tsx` — Phase 1 Learn hub at `/learn`. Page shell + Glossary section. Was `src/operator/OperatorLearn.tsx` at `/operator-learn`.
+- `src/pages/Learn.test.tsx` — Learn page has a way out: back arrow to Home (visitor) or My Teams (member).
 - `src/pages/learn/GlossaryView.tsx` — search input + 3-state UI (single-entry on deep-link, browse on direct nav, search filtered when typing).
 - `src/pages/learn/GlossaryEntry.tsx` — single entry render: canonical heading + aliases ("also called: …") + shortDef + longDef + related links.
 - `src/pages/learn/__tests__/GlossaryView.test.tsx` — 6 tests covering the 3-state UI and the alias-match subtitle.
@@ -807,7 +809,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `ScheduleSetup.tsx` - Schedule setup component
 - `ScheduleSetupPage.tsx` - Schedule setup page
 - `ScheduleView.tsx` - Schedule view
-- `SeasonScheduleManager.tsx` - Season schedule manager
+- `SeasonScheduleManager.tsx` - Season dates page (blackouts, holidays, season length) at `/league/:leagueId/season/:seasonId/schedule`; the old `.../manage-schedule` address redirects here
 - `components/ChangeSeasonLengthDialog.tsx` - Operator dialog to lengthen/shorten an existing season (before the week-5 lock); calls `applySeasonLengthChange`
 - `../utils/seasonLengthEdit.ts` - Pure season-length eligibility (week-5 lock) + [10,52] bounds/classification
 - `../utils/applySeasonLengthChange.ts` - Lengthen (append weeks + generate matches) / shorten (guarded tail delete) for an existing season
@@ -852,6 +854,7 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 #### Auth Pages (`/login/`)
 - `Login.tsx` - Login page
 - `Register.tsx` - Registration page
+- `signupRemembersPath.test.tsx` - Creating an account remembers where you were headed (`?redirect` through Register, its email/Google links, Login ↔ Register and Complete Profile; unsafe values dropped)
 - `ClaimPlayer.tsx` - Claim placeholder player for existing authenticated users (orchestration + the interactive screen)
 - `ClaimStatusScreen.tsx` - The terminal status screens of the claim flow (loading/invalid/expired/claimed/success/rejected/error). Extracted from ClaimPlayer.
 - `claimPlayerTypes.ts` - Shared types for the claim flow (ClaimState, InviteDetails, TeamInfo, PlaceholderExtras, MergeStats).
@@ -896,15 +899,18 @@ The workshop building. One sub-folder per module room. Each room owns a list pag
 - `BecomeHost.tsx` - **Become a Host** (`/become-host`) — self-serve purchase (`$1/mo` or `$10/yr`, mock `PaymentCardForm`) that saves the card on file and grants the `host` designation via `useGrantDesignation`, so the member can host game rooms. Reachable from the Profile "Become a Host" CTA. Shows an "already a host" state if held. Self-contained — grants the designation independently of the game room, which reads it separately.
 
 #### League Operator Application (`/leagueOperator/`)
-- `BecomeLeagueOperator.tsx` - Entry point; public (sales info only), its Start Application button asks visitors to sign in
+- `BecomeLeagueOperator.tsx` - Entry point; public (sales info only). Its Start Application buttons use `SignInFirstLink` (visitors get a "Sign in first" pop-up, then return here)
+- `PricingExampleRow.tsx` - One row of the 16-week pricing example: season cost + "≈ X% of prize pool" with an InfoButton showing the math
+- `pricingMath.ts` - Pricing example math for Become a League Operator and the Pricing page ($1/team/week + $10 setup vs. players × $10 a night into the prize pool). Tested in `PricingExampleRow.test.tsx` and `about/Pricing.test.tsx`
 - `LeagueOperatorApplication.tsx` - Main application form
 - `ChoiceStep.tsx` - Choice step component
 - `QuestionStep.tsx` - Question step component
 - `VisibilityChoiceCard.tsx` - Visibility choice card ⚠️ **DUPLICATE** (also in `/components/privacy`)
-- `applicationReducer.ts` - State reducer
+- `applicationReducer.ts` - State reducer + browser-saved progress (`claimSavedApplication` wipes progress that belongs to a different account)
 - `questionDefinitions.tsx` - Question config
 - `types.ts` - Type definitions
-- `useApplicationForm.ts` - Form hook
+- `useApplicationForm.ts` - Form hook (loads saved progress only for the account that saved it)
+- `useApplicationForm.test.tsx` - Saved application progress is per account: a new account starts at step 1 with blank answers
 
 #### Player Registration (`/newPlayer/`)
 - `NewPlayerForm.tsx` - Registration form
@@ -1052,6 +1058,8 @@ Reusable wizard/form step components
 - `EmptyScheduleState.tsx` - Empty state
 - `ScheduleErrorState.tsx` - Error state
 - `ScheduleLoadingState.tsx` - Loading state
+- `TeamSelect.tsx` - Team dropdown for the week editor; offers the season's real bye team (`byeTeamId`) as "BYE" because its team list is active-only. Test: `TeamSelect.test.tsx`
+- `TeamSelect.test.tsx` - A bye side shows "BYE"; a playoff TBD (no team) shows the placeholder, not "BYE"
 
 #### Season Components (`/components/season/`)
 - `ConflictBadge.tsx` - Schedule conflict badge
@@ -1320,6 +1328,7 @@ Reusable section components composed by `PreferencesCard.tsx`. Same components d
 - `ConfirmDialog.tsx` - Confirmation dialog with Cancel/Confirm buttons
 - `InfoButton.tsx` - Info button with tooltip
 - `backTapLock.ts` - One double-tap lock shared by every page header back arrow, so a double click goes back one page, not two (the second click lands on the next page's arrow). Tested in `__tests__/PageHeader.backDoubleTap.test.tsx`
+- `SignInFirstLink.tsx` - Link to a signed-in-only page that, for a visitor, opens a "Sign in first" dialog explaining why (Sign in returns them via `?redirect`). Used by Become a League Operator's Start Application. Tested in `SignInFirstLink.test.tsx`
 - `NonProdGate.tsx` - Shared route gate for GATED features (dev + staging render children; production redirects to `/`). Wrap the ROUTE and gate every DOOR with the same `!isProduction`; flip together when un-gating. Users: Handicap Calculator (`tools/calc`), Game Room (`rooms/**`). Promoted from `handicapCalculator/` in Game Room Unit 7 so deleting the calculator cannot take the room's gate with it
 - `InstallAppCard.tsx` - **Install the app** — platform-adaptive PWA install entry: Android/desktop fire the native install prompt; iPhone (Safari) + Android-without-a-captured-prompt open a step-by-step add-to-home-screen instructions modal. Renders nothing when already installed or unsupported. Self-contained (drop-in); used at the top of Player Settings. Tested in `InstallAppCard.test.tsx`.
 - `InvitePlayerModal.tsx` - **✅ Phase 8** Captain invite modal for placeholder players
@@ -1506,6 +1515,7 @@ Lineup-page workhorse hooks. Extracted from the monolithic `useMatchLineup` so e
 
 #### Match Running Totals (`/utils/match/`)
 - `isByeMatch.ts` - **The one "this matchup is a BYE, not a real match" predicate.** `isByeMatch(home, away)` → true when either side is `status='bye'`. Single source of truth every match-machinery guard keys on (table assignment, lineup entry, manual-scoring eligibility) so they can't drift. `manualScoringEligibility.hasTwoRealTeams` and the lineup page both route through it. Tested in `__tests__/isByeMatch.test.ts` (6 cases).
+- `findByeTeamId.ts` - `findByeTeamId(schedule)` → the season's BYE team id, read from the schedule's team `status` (never an empty slot, which is a playoff TBD). Feeds the week editor's "BYE" choice, since its team list is active-only. Tests: `__tests__/findByeTeamId.test.ts`
 - `composeMatchThresholds.ts` - **System-agnostic match threshold composer** (lineup-swap recalibration, Unit 2). Given resolved prefs + both (post-swap) lineups, returns the six `*_to_win/tie/lose` columns. Builds a SystemModule via `buildSystemFromPreferences` and dispatches on the resolved `handicapMechanism.kind` — NEVER on `handicap_type`. Extended-finish (`extra_games`) delegates to `calculateHandicapThresholds` for byte-identical parity with match prep; head-start (Fargo start-points) recomputes the weaker team's credit fresh from ratings into `*_to_tie`. Replaces the deleted `recalculateMatchThresholds` handicap-type heuristic in `matchLineups.ts`. Tested in `src/__tests__/unit/composeMatchThresholds.test.ts` (percentage/points/fargo/none parity + modularity-invariant source grep).
 - `computeMatchRunningTotals.ts` - **Per-mutation running-totals calculator** (Phase 5 Unit 5.5) — pure helper that filters confirmed regular games, runs the snapshot's points calculator, and returns `{ home_games_won, away_games_won, home_points_earned, away_points_earned }`. Eager recompute on every scoring mutation keeps the match row consistent with the live scoreboard. Tiebreaker games and unconfirmed games are excluded from regular running totals.
 - `auditScoringConsistency.ts` - **Match-completion scoring-consistency audit** (Phase 5 Unit 5.6) — pure `compareRunningTotals(actual, expected)` helper that returns per-field discrepancies between the match row's stored totals and a fresh recompute. Match record is never modified — divergence is logged to `app_logs` for the dev to investigate. Reusable for on-demand audits.
@@ -2013,6 +2023,7 @@ Supabase real-time subscription hooks for live data updates
 - `NavRoutes.tsx` - Route definitions. GATED (non-prod) routes: `tools/calc`, `rooms`, `rooms/join/:joinToken`, `rooms/:roomId` — each wrapped in `NonProdGate`
 - `roomsGate.test.tsx` - **Game Room / Unit 7** — pins that the room and its doors hide TOGETHER: every `rooms/**` route element is `NonProdGate` (walks `router.routes`); the gate renders off production and redirects home on it; the menu’s Rooms door is deliberately NOT on this branch — once the menu PR (#311) is on main it becomes one gated entry in `navEntries.ts`; staying out of the drawer/sidebar files keeps the two PRs conflict-free; signed out, `/rooms/join/x` → `/login?redirect=…` (the QR funnel)
 - `NavRoutes.test.tsx` - Guard: every page a member reaches from the nav or Profile (What's New, Rules, Pricing, Become LO, …) renders inside `MemberLayout`, so it keeps the sidebar / tab bar
+- `scheduleRename.test.tsx` - The dates page lives at `.../schedule`, and the old `.../manage-schedule` address redirects there keeping league + season (redirect pulled from the real router)
 
 ---
 

@@ -490,6 +490,7 @@ function MatchLineupBody() {
       opponentLineup,
       playerCount,
       handicapType,
+      leaguePrefs?.win_condition,
       matchData?.home_to_lose,
       matchData?.away_to_lose,
       isHomeTeam,

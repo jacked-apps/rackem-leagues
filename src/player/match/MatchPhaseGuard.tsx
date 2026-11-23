@@ -125,18 +125,20 @@ export function MatchPhaseGuard({ children }: MatchPhaseGuardProps) {
   // refetch fails again, softRetryFailed flips and the Hard Reset
   // button appears.
   //
-  // useCallback dep is `phase.refetch` (a stable function) rather than
-  // `phase` (a fresh object every render), so the callback identity
-  // is genuinely stable and the recovery surface doesn't re-render
-  // unnecessarily.
+  // useCallback dep is `refetchPhase` (TanStack keeps `refetch` stable)
+  // rather than `phase` (a fresh object every render), so the callback
+  // identity is genuinely stable and the recovery surface doesn't
+  // re-render unnecessarily. Pulled into its own name because the lint
+  // rule can't tell `phase.refetch()` apart from a call that reads `phase`.
+  const refetchPhase = phase.refetch;
   const handleTryAgainSoft = useCallback(async () => {
-    const result = await phase.refetch();
+    const result = await refetchPhase();
     if (result.isError) {
       setSoftRetryFailed(true);
     } else {
       setSoftRetryFailed(false);
     }
-  }, [phase.refetch]);
+  }, [refetchPhase]);
 
   // Hard reset: also kick off a phase refetch so the recovery surface
   // doesn't immediately re-render in the same isError state. The
@@ -148,8 +150,8 @@ export function MatchPhaseGuard({ children }: MatchPhaseGuardProps) {
   const handleTryAgainHard = useCallback(() => {
     setSoftRetryFailed(false);
     setRecoveryEpoch((e) => e + 1);
-    void phase.refetch();
-  }, [phase.refetch]);
+    void refetchPhase();
+  }, [refetchPhase]);
 
   // Reset the softRetryFailed latch on EVERY isError transition (in or
   // out). This ensures each fresh error episode starts clean: Hard

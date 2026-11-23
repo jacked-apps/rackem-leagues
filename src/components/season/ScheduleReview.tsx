@@ -4,7 +4,7 @@
  * Smart container component for reviewing and modifying the generated season schedule
  * Manages schedule state, conflict detection, and week toggling logic
  */
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScheduleReviewTable } from './ScheduleReviewTable';
 import { InfoButton } from '../InfoButton';
@@ -252,7 +252,7 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
    * Sort by date to show chronological order
    * Deduplicate: if a date appears in both arrays, keep only the blackout version
    */
-  const displaySchedule = (() => {
+  const displaySchedule = useMemo(() => {
     // First, create a Set of blackout dates for quick lookup
     const blackoutDates = new Set(blackoutWeeks.map(b => b.date));
 
@@ -264,7 +264,7 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
 
     // Sort by date
     return combined.sort((a, b) => a.date.localeCompare(b.date));
-  })();
+  }, [schedule, blackoutWeeks]);
 
   /**
    * Notify parent component whenever the complete schedule changes
@@ -274,7 +274,11 @@ export const ScheduleReview: React.FC<ScheduleReviewProps> = ({
     if (displaySchedule.length > 0 && onScheduleChange) {
       onScheduleChange(displaySchedule);
     }
-  }, [displaySchedule.length, schedule.length, blackoutWeeks.length, onScheduleChange]);
+    // Keyed on the memoized list itself (not just its length), so an edit that
+    // keeps the week count the same still reaches the parent. Safe from loops:
+    // the `schedule` prop only seeds local state on mount, so the parent storing
+    // this list never feeds back in.
+  }, [displaySchedule, onScheduleChange]);
 
   /**
    * Counts total conflicts across all weeks

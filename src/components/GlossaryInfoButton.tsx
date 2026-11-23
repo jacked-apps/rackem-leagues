@@ -60,7 +60,6 @@ export function GlossaryInfoButton({
   // through. Surface it loudly in dev; degrade gracefully in prod.
   if (!entry) {
     if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
       console.error(
         `[GlossaryInfoButton] unknown glossary slug: "${slug}". Add an entry under src/glossary/entries/ or fix the call site.`,
       );
@@ -81,7 +80,6 @@ export function GlossaryInfoButton({
         </span>
       );
     }
-    // eslint-disable-next-line no-console
     console.warn(`[GlossaryInfoButton] unknown glossary slug: "${slug}"`);
     return (
       <span style={GUARD_STYLE} onClick={stop} onPointerDown={stop}>

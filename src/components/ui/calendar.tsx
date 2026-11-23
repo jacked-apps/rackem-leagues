@@ -64,13 +64,18 @@ export const Calendar: React.FC<CalendarProps> = ({
     setIsOpen(false);
   };
 
-  // Sync view date when manual input changes
+  // Sync view date when manual input changes. Compared inside the updater
+  // (not against `viewDate` from render) so this effect never needs to re-run
+  // when the user browses months — re-running would snap them back to the
+  // typed date's month.
   useEffect(() => {
     if (value && selectedDate) {
       const inputDate = parseLocalDate(value);
-      if (inputDate.getMonth() !== viewDate.getMonth() || inputDate.getFullYear() !== viewDate.getFullYear()) {
-        setViewDate(inputDate);
-      }
+      setViewDate(prev =>
+        inputDate.getMonth() !== prev.getMonth() || inputDate.getFullYear() !== prev.getFullYear()
+          ? inputDate
+          : prev,
+      );
     }
   }, [value, selectedDate]);
 
