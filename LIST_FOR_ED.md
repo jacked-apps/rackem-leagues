@@ -12,7 +12,7 @@ How it works, and the item format: "The list" in `CLAUDE.md`.
 
 - [Add a way to remove a bye team (only "Fill" exists today)](docs/list/2026-06-09-remove-bye-team.md)
 - [Check on staging that schedule week numbers run 1 to N with no duplicates](docs/list/2026-06-30-staging-week-numbers-check.md)
-- [Set up a verified sending address so email invites work (all environments)](docs/list/2026-04-21-staging-email.md)
+- [Send app email through MXroute - production sign-in codes first, then email invites](docs/list/2026-04-21-staging-email.md)
 
 ## Later
 

@@ -69,6 +69,12 @@ jobs:
           # subscribe flow works; set it in the `staging` GitHub Environment secrets.
           VITE_PUSH_NOTIFICATIONS: 'true'
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          # Passwordless one-door sign-in, matching production (on there since
+          # PR #174). Staging stays on Supabase's BUILT-IN mailer on purpose: it's
+          # a sandbox, and the built-in mailer reaches Supabase team members, which
+          # is enough for Ed and Jack to test. Production uses MXroute; see
+          # docs/ops/mxroute-production-email.md.
+          VITE_PASSWORDLESS_SIGN_IN: 'true'
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v2

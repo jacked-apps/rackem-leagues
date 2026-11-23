@@ -1,38 +1,30 @@
 ---
-summary: Set up a verified sending address so email invites work (all environments)
+summary: Send app email through MXroute - production sign-in codes first, then email invites
 kind: task
 added: 2026-04-21
-checked: 2026-11-19
+checked: 2026-11-23
+owner: both
 ---
 
-Needs Ed. This is environment setup, not app code.
+**Decided 2026-11-19:** app email goes through **MXroute**, which we already pay
+for, instead of adding a paid service. Supabase Auth on **staging stays on the
+built-in mailer** as a sandbox. Our own functions (invites) get the MXroute
+secrets on staging too, so Ed can try invites there first.
 
-**Re-checked 2026-11-02: bigger than staging.** Email invites are switched off on every environment (`EMAIL_INVITES_ENABLED` in `src/config/featureFlags.ts`), because the invite function still sends from Resend's sandbox address, which only delivers to the account owner. The real task is a verified sending address for invites, everywhere. Invites by link or QR still work meanwhile.
+**Part 1: production sign-in email: DONE 2026-11-23.** Jack set MXroute as
+production Supabase Auth's mail server (`docs/ops/mxroute-production-email.md`).
+The DNS check passes all four records. A reset email reached Gmail's inbox from
+`noreply@rackemleagues.com` with SPF, DKIM and DMARC all PASS. Still to try: the
+code sign-in and the new-user welcome email (runbook Step 6, items 2-4).
 
-Found 2026-04-21 during the first real-player staging test. The staging
-Supabase environment sends no email. A captain's email invite for a
-placeholder player silently goes nowhere. Only Device Handoff and Share Link /
-QR work on staging. No email-confirmation tests can run there either.
+**Part 2: email invites: code BUILT, waiting on Jack.** `send-invite` now sends
+through the same mailbox (`supabase/functions/_shared/sendMail.ts`, SMTP on port
+465, which Supabase doesn't block), and only signed-in users can call it.
+`send-test-email` is locked with a secret. Tested locally against Mailpit.
+Jack's steps: `docs/ops/mxroute-app-email.md` (function secrets on staging and
+production, then one test email each).
 
-The `send-invite` edge function (`supabase/functions/send-invite/`) uses
-Resend and degrades quietly when `RESEND_API_KEY` is unset.
-
-Fix direction:
-
-- Configure staging with a real SMTP provider (Resend, SendGrid, Postmark,
-  Supabase's built-in SMTP), or route staging mail through a capture inbox
-  like Mailtrap or Inbucket so the flow can be tested end to end.
-- Decide on purpose whether staging sends real mail or only captures it.
-  Capturing is usually safer.
-- Document the setup in memory-bank so future environments inherit it.
-
-**2026-11-19: the same setup unlocks passwordless sign-in.** Jack pays for
-an email service that can do this; Ed is asking him to set it up or grant
-access. Supabase needs its SMTP details: server + port, username + password
-(or API key), and a sending address on a verified domain — entered in the
-Supabase dashboard (Authentication → Emails → SMTP), once per environment,
-never pasted into chat or code. Once it works, the rest of the passwordless
-go-live list in `PRE_LAUNCH_CHECKLIST.md` follows (code template, redirect
-allow-list, bot check, send limits, flip the flag). At that point also send
-"Create account" (Home and the Sign-in-first pop-up) to the one-door sign-in
-instead of the password Register page, keeping `?redirect`.
+**After Jack's test passes (Claude):** turn on `EMAIL_INVITES_ENABLED`
+(`src/config/featureFlags.ts`), gated to non-production first. Make the invite
+screens say when the email didn't send (they ignore `email_sent` today). Invites
+by link or QR keep working meanwhile.

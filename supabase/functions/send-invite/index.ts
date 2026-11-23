@@ -6,11 +6,17 @@
  * with an email MUST have a corresponding pending invite_token — this
  * function enforces that half of the contract.
  *
- * Email delivery is secondary. If RESEND_API_KEY isn't configured or
- * the Resend call fails/times out (common in local dev), the token is
- * still persisted and the response returns `success: true` with
- * `email_sent: false`. Callers can decide whether to surface the
- * delivery failure — the important thing is the DB state is correct.
+ * Email delivery is secondary. It goes through the app's MXroute mailbox
+ * (`_shared/sendMail.ts`, SMTP secrets set per environment, see
+ * docs/ops/mxroute-app-email.md). If the secrets aren't set or the send
+ * fails, the token is still persisted and the response returns
+ * `success: true` with `email_sent: false`. Callers can decide whether to
+ * surface the delivery failure — the important thing is the DB state is correct.
+ *
+ * Only a signed-in user may call it. verify_jwt is off (config.toml, for the
+ * CORS preflight), so the function checks the caller's token itself. Without
+ * that, anyone on the internet could send mail from our domain, and MXroute
+ * suspends a mailbox that goes over 400 emails an hour.
  *
  * Two recipient flows:
  *   - Email belongs to an existing auth user → /claim-player
@@ -30,8 +36,9 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendMail } from "../_shared/sendMail.ts";
+import { escapeHtml } from "../_shared/mailConfig.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -90,6 +97,17 @@ serve(async (req) => {
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+
+    // Signed-in callers only (see the file header). The app sends the user's
+    // session token; the public anon key is not a user and is refused.
+    const jwt = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+    const { data: caller } = await supabaseAdmin.auth.getUser(jwt);
+    if (!caller?.user) {
+      return new Response(
+        JSON.stringify({ error: "Sign in to send invites" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     const emailLower = email.toLowerCase();
 
@@ -162,50 +180,25 @@ serve(async (req) => {
     const actionLink = `${baseUrl}${linkPath}?claim=${memberId}&token=${token}`;
 
     // =====================================================================
-    // Step 3: best-effort email delivery. If RESEND_API_KEY isn't set or
-    // the call fails/times out, we return success for the token part and
-    // a clear email_sent=false flag for the caller.
+    // Step 3: best-effort email delivery through MXroute. If the SMTP
+    // secrets aren't set or the send fails, we return success for the token
+    // part and a clear email_sent=false flag for the caller.
     // =====================================================================
-    let emailSent = false;
+    const emailSubject = isExistingUser
+      ? `Claim your player history on ${teamName || "Rack'em Leagues"}`
+      : `You've been invited to ${teamName || "Rack'em Leagues"}`;
 
-    if (RESEND_API_KEY) {
-      const emailSubject = isExistingUser
-        ? `Claim your player history on ${teamName || "Rack'em Leagues"}`
-        : `You've been invited to ${teamName || "Rack'em Leagues"}`;
+    const emailHtml = buildEmailHtml({
+      isExistingUser,
+      actionLink,
+      captainName,
+      teamName,
+    });
 
-      const emailHtml = buildEmailHtml({
-        isExistingUser,
-        actionLink,
-        captainName,
-        teamName,
-      });
-
-      const sendResult = await withTimeout(
-        fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: "onboarding@resend.dev",
-            to: email,
-            subject: emailSubject,
-            html: emailHtml,
-          }),
-        }),
-        5000
-      );
-
-      if (sendResult && sendResult.ok) {
-        emailSent = true;
-      } else {
-        console.warn(
-          "Email delivery failed or timed out — token is saved, UI can surface this"
-        );
-      }
-    } else {
-      console.warn("RESEND_API_KEY not configured — token saved, email skipped");
+    const sendResult = await sendMail({ to: email, subject: emailSubject, html: emailHtml });
+    const emailSent = sendResult.sent;
+    if (!sendResult.sent) {
+      console.warn("Invite email not sent (token is saved, UI can surface this):", sendResult.error);
     }
 
     return new Response(
@@ -243,6 +236,9 @@ function buildEmailHtml({
   captainName,
   teamName,
 }: EmailTemplateParams): string {
+  // User-typed names go into HTML sent from our domain: escape them first.
+  captainName = captainName ? escapeHtml(captainName) : captainName;
+  teamName = teamName ? escapeHtml(teamName) : teamName;
   const title = isExistingUser ? "Claim Your Player History" : "Join Your Team";
   const headline = isExistingUser
     ? `${captainName ? `<strong>${captainName}</strong> has` : "Your team captain has"}

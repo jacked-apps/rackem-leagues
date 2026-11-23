@@ -1,113 +1,45 @@
 /**
- * @fileoverview Test Edge Function for sending emails via Resend
+ * @fileoverview Send one test email through the app's MXroute mailbox, to prove
+ * Edge Functions can send in an environment (the SMTP secrets are right and
+ * Supabase lets port 465 out). Jack runs it once per environment
+ * (docs/ops/mxroute-app-email.md, Step 3). The app never calls it.
  *
- * Phase 1: Proof of concept - just send a test email to verify
- * the Edge Function + Resend integration works.
+ * Locked with a shared secret: without it anyone could send mail from our
+ * domain, and MXroute suspends a mailbox that goes over 400 emails an hour.
+ * If EMAIL_TEST_SECRET isn't set, the function refuses everything.
  *
  * Usage:
- *   curl -X POST http://127.0.0.1:54321/functions/v1/send-test-email \
+ *   curl -X POST https://<project-ref>.supabase.co/functions/v1/send-test-email \
  *     -H "Content-Type: application/json" \
- *     -d '{"to": "your@email.com"}'
+ *     -H "X-Email-Test-Secret: <EMAIL_TEST_SECRET>" \
+ *     -d '{"to": "you@example.com"}'
+ *
+ * Response: { sent: true } or { sent: false, error: "<the SMTP error>" }.
+ * The error is shown on purpose: it's how Jack tells a blocked port from a
+ * wrong password.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { sendMail } from "../_shared/sendMail.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const json = (body: unknown, status: number) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-// For local testing, we can skip auth. In production, this would be secured.
 serve(async (req) => {
-  // Skip Supabase's built-in auth check for this test function
-  // by not requiring the Authorization header
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    });
+  const secret = Deno.env.get("EMAIL_TEST_SECRET");
+  if (!secret || req.headers.get("X-Email-Test-Secret") !== secret) {
+    return json({ error: "Not allowed" }, 403);
   }
 
-  try {
-    // Check for API key
-    if (!RESEND_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "RESEND_API_KEY not configured" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
+  const { to } = await req.json().catch(() => ({}));
+  if (!to) return json({ error: "Missing 'to' email address" }, 400);
 
-    // Parse request body
-    const { to } = await req.json();
-
-    if (!to) {
-      return new Response(
-        JSON.stringify({ error: "Missing 'to' email address" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Send email via Resend
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: "onboarding@resend.dev", // Resend's test domain - no verification needed
-        to: to,
-        subject: "Test Email from Rack'em Leagues",
-        html: `
-          <h1>It works! 🎱</h1>
-          <p>This is a test email sent from a Supabase Edge Function using Resend.</p>
-          <p>If you're seeing this, Phase 1 is complete!</p>
-          <hr>
-          <p style="color: #666; font-size: 12px;">
-            Sent at: ${new Date().toISOString()}
-          </p>
-        `,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error("Resend error:", data);
-      return new Response(
-        JSON.stringify({ error: "Failed to send email", details: data }),
-        {
-          status: res.status,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({ success: true, message: "Email sent!", data }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-      }
-    );
-  } catch (error) {
-    console.error("Error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-  }
+  const result = await sendMail({
+    to,
+    subject: "Rack'em Leagues test email",
+    html: `<h1>It works! 🎱</h1>
+<p>This test email was sent by a Rack'em Leagues Edge Function through our own mailbox.</p>
+<p style="color:#666;font-size:12px">Sent at ${new Date().toISOString()}</p>`,
+  });
+  return json(result, result.sent ? 200 : 502);
 });
